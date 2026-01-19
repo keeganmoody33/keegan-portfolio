@@ -1,0 +1,623 @@
+{
+  "export_metadata": {
+    "generated_date": "2026-01-19",
+    "agent": "@editor-in-chief",
+    "source": "Portfolio Assembly Agent System v2.1",
+    "verification_status": "VERIFIED"
+  },
+
+  "candidate_profile": {
+    "id": "keegan-moody-001",
+    "first_name": "Keegan",
+    "last_name": "Moody",
+    "email": "keeganmoody@gmail.com",
+    "location": "Atlanta, Georgia",
+    "headline": "GTM Engineer | I build go-to-market infrastructure from scratch at early-stage startups",
+    "summary": "I build GTM infrastructure from scratch at early-stage startups. Not campaigns—systems. The methodology, the automation, the intelligence layer that makes outbound repeatable. Track record includes work at a digital health unicorn (Biofourmis), a Series B construction tech company (TraceAir), and an AI-native sales platform (Mixmax). The pattern is consistent: give me a greenfield problem and autonomy, and I build something that outlasts my tenure.",
+    "primary_role_type": "GTM Engineer / Sales Development / Business Development",
+    "ideal_company_stage": ["Seed", "Series A", "Series B"],
+    "ideal_environment": ["High autonomy", "Outcome-measured", "Technical B2B SaaS", "Healthcare tech"],
+    "work_style": "Builder, not optimizer. Quality over quantity. Systems thinker.",
+    "linkedin_url": null,
+    "github_url": null,
+    "portfolio_url": null,
+    "created_at": "2026-01-19",
+    "updated_at": "2026-01-19"
+  },
+
+  "experiences": [
+    {
+      "id": "exp-001",
+      "candidate_id": "keegan-moody-001",
+      "company_name": "Mixmax",
+      "company_url": "https://www.mixmax.com",
+      "role_title": "Founding GTM Engineer",
+      "start_date": "2025-09-01",
+      "end_date": "2025-12-12",
+      "duration_months": 4,
+      "location": "Remote",
+      "employment_type": "Contract",
+      "company_stage": "Series B",
+      "company_funding": "$22.1M",
+      "company_industry": "Sales Engagement / Sales Tech",
+      "description": "Built complete GTM intelligence system from zero. Validated 402 customer accounts ($4.79M ARR) using bidirectional Volley Method. Discovered power law: 15% of accounts = 66% of revenue. Designed 9-agent Gutenberg Framework for autonomous sales execution. Built 50+ warmed inboxes across ScaledMail, Pager AI, SmartLead AI.",
+      "key_deliverables": [
+        "The Volley Method (ICP validation methodology)",
+        "Tacit Knowledge Extraction Framework",
+        "Golden Goose 100-point scoring model",
+        "9-agent Gutenberg Framework",
+        "50+ warmed domain infrastructure",
+        "30+ strategic documents with provenance tracking"
+      ],
+      "honest_assessment": "Built infrastructure and validated methodology but fell short on volume targets. 3,770 delivered vs 9,000 expected. Contract ended before full execution.",
+      "exit_reason": "Contract ended early",
+      "verification_status": "VERIFIED",
+      "verification_sources": ["Service agreements", "NOVEMBER 0742 documentation"],
+      "is_featured": true,
+      "display_order": 1
+    },
+    {
+      "id": "exp-002",
+      "candidate_id": "keegan-moody-001",
+      "company_name": "Mobb",
+      "company_url": "https://mobb.ai",
+      "role_title": "GTM | Business Development",
+      "start_date": "2025-05-01",
+      "end_date": "2025-07-31",
+      "duration_months": 3,
+      "location": "Remote",
+      "employment_type": "Contract",
+      "company_stage": "Seed",
+      "company_funding": "$5.4M",
+      "company_industry": "Application Security / DevSecOps",
+      "description": "Early GTM hire at seed-stage security startup. Focused on market research, go-to-market strategy development, and business development during company's early growth phase.",
+      "key_deliverables": [
+        "Call scripts",
+        "Product briefs",
+        "One-pager collateral",
+        "Market research"
+      ],
+      "honest_assessment": "Short tenure (3 months) limits documentation depth. Contract-based engagement.",
+      "exit_reason": "Contract completion",
+      "verification_status": "VERIFIED",
+      "verification_sources": ["LinkedIn", "Work product files"],
+      "is_featured": false,
+      "display_order": 2
+    },
+    {
+      "id": "exp-003",
+      "candidate_id": "keegan-moody-001",
+      "company_name": "TraceAir Technologies",
+      "company_url": "https://www.traceair.net",
+      "role_title": "Senior Sales Development Representative",
+      "start_date": "2024-07-01",
+      "end_date": "2025-01-31",
+      "duration_months": 7,
+      "location": "Seattle, Washington (Remote)",
+      "employment_type": "Full-time",
+      "company_stage": "Series B",
+      "company_funding": "$64M",
+      "company_industry": "Construction Tech / Drone Software",
+      "description": "SDR role during post-Series B growth phase. Prospected outbound, inbound, and nurtured accounts across 13 states. Achieved 147% quota attainment with 21% connection rate vs 4-6% team average.",
+      "key_deliverables": [
+        "22 demos in September 2024 (147% of 15/month quota)",
+        "$216,437.50 closed-won revenue",
+        "21% connection rate (vs 4-6% team average)",
+        "Prospected across 13 states"
+      ],
+      "metrics": {
+        "demos_booked": 22,
+        "quota": 15,
+        "quota_attainment_percent": 147,
+        "connection_rate_percent": 21,
+        "team_average_connection_rate_percent": 5,
+        "closed_won_revenue": 216437.50
+      },
+      "honest_assessment": "Strong performance metrics but terminated despite results. Fit mismatch with activity-metric culture.",
+      "exit_reason": "Terminated",
+      "verification_status": "VERIFIED",
+      "verification_sources": ["Offer letter", "Gmail records", "Apple Notes stats"],
+      "is_featured": true,
+      "display_order": 3
+    },
+    {
+      "id": "exp-004",
+      "candidate_id": "keegan-moody-001",
+      "company_name": "Bariatric Centers of America",
+      "company_url": "https://bcofa.com",
+      "role_title": "Senior Sales Consultant",
+      "start_date": "2024-01-01",
+      "end_date": "2024-06-30",
+      "duration_months": 6,
+      "location": "Atlanta, Georgia",
+      "employment_type": "Contract",
+      "company_stage": "Early-stage",
+      "company_funding": "Undisclosed",
+      "company_industry": "Healthcare Tech / Bariatric Surgery",
+      "description": "Collaborated on enterprise sales and BariNAV product development. Helped bring technology solutions to bariatric surgery programs.",
+      "key_deliverables": [
+        "Enterprise sales development",
+        "BariNAV product-market validation"
+      ],
+      "honest_assessment": "Consulting engagement bridging gap period. Limited documentation.",
+      "exit_reason": "Contract completion",
+      "verification_status": "MODERATE",
+      "verification_sources": ["LinkedIn"],
+      "is_featured": false,
+      "display_order": 4
+    },
+    {
+      "id": "exp-005",
+      "candidate_id": "keegan-moody-001",
+      "company_name": "Biofourmis",
+      "company_url": "https://biofourmis.com",
+      "role_title": "Sales Development Representative",
+      "start_date": "2021-08-01",
+      "end_date": "2023-01-31",
+      "duration_months": 17,
+      "location": "Atlanta, Georgia (Remote)",
+      "employment_type": "Full-time",
+      "company_stage": "Series C → Unicorn",
+      "company_funding": "$465M",
+      "company_industry": "Digital Health / Remote Patient Monitoring",
+      "description": "2nd SDR hired for Commercial Care vertical at company that achieved unicorn status during tenure. Prospecting sourced the Orlando Health deal—90-day close, fastest in company history. Employed during Series D ($1.3B valuation, April 2022).",
+      "key_deliverables": [
+        "Sourced Orlando Health deal (90-day close, fastest in company history)",
+        "Built compliance-driven prospecting methodology (CMS readmission penalties)",
+        "Contributed to Commercial Care vertical launch"
+      ],
+      "metrics": {
+        "deal_close_time_days": 90,
+        "company_milestone": "Unicorn status ($1.3B valuation)"
+      },
+      "honest_assessment": "Strong individual performance but terminated. Autonomy paradox—high output but friction with organizational structure. Critical: SDRs SOURCE deals, AEs CLOSE them. Tyler Cole (AE) closed the Orlando Health deal.",
+      "exit_reason": "Terminated",
+      "verification_status": "VERIFIED",
+      "verification_sources": ["LinkedIn", "Experience documentation", "Company funding records"],
+      "is_featured": true,
+      "display_order": 5
+    },
+    {
+      "id": "exp-006",
+      "candidate_id": "keegan-moody-001",
+      "company_name": "Barbour Orthopaedics & Spine",
+      "company_url": null,
+      "role_title": "Corporate Development Associate",
+      "start_date": "2020-06-01",
+      "end_date": "2021-07-31",
+      "duration_months": 13,
+      "location": "Atlanta, Georgia",
+      "employment_type": "Full-time",
+      "company_stage": "Established",
+      "company_funding": null,
+      "company_industry": "Healthcare / Orthopedics",
+      "description": "Corporate development role at orthopedic practice. Front desk operations and administrative support.",
+      "key_deliverables": [],
+      "honest_assessment": "Transitional role during career pivot from academic to professional track.",
+      "exit_reason": "Moved to new opportunity",
+      "verification_status": "VERIFIED",
+      "verification_sources": ["LinkedIn"],
+      "is_featured": false,
+      "display_order": 6
+    },
+    {
+      "id": "exp-007",
+      "candidate_id": "keegan-moody-001",
+      "company_name": "Dr. William Kiefer / Mercury Research",
+      "company_url": null,
+      "role_title": "Research Assistant",
+      "start_date": "2016-01-01",
+      "end_date": "2018-12-31",
+      "duration_months": 36,
+      "location": "South America / Macon, Georgia",
+      "employment_type": "Research Position",
+      "company_stage": "Academic",
+      "company_funding": null,
+      "company_industry": "Environmental Science / Mercury Research",
+      "description": "270 days of fieldwork studying mercury contamination in artisanal gold mining communities in South America. Published 4 peer-reviewed papers in Elsevier and MethodsX journals.",
+      "key_deliverables": [
+        "KMOODY_2020_ELSEVIER.pdf",
+        "KMOODY_2020_HGEMISSIONS.pdf",
+        "KMOODY.ASGM-HG 2020.pdf",
+        "KMOODY_METHODSX COVERPG 2020.pdf"
+      ],
+      "metrics": {
+        "fieldwork_days": 270,
+        "publications": 4
+      },
+      "honest_assessment": "Best-documented role in portfolio. Peer-reviewed publications are strong third-party verification.",
+      "exit_reason": "Research completion / graduation",
+      "verification_status": "VERIFIED",
+      "verification_sources": ["Peer-reviewed publications"],
+      "is_featured": true,
+      "display_order": 7
+    }
+  ],
+
+  "skills": [
+    {
+      "id": "skill-001",
+      "candidate_id": "keegan-moody-001",
+      "category": "GTM / Sales",
+      "skill_name": "Cold Outreach Strategy",
+      "proficiency_level": "STRONG",
+      "evidence": "Orlando Health deal (90-day close), 22 demos at TraceAir with 147% quota",
+      "years_experience": 4
+    },
+    {
+      "id": "skill-002",
+      "candidate_id": "keegan-moody-001",
+      "category": "GTM / Sales",
+      "skill_name": "Prospecting / Lead Sourcing",
+      "proficiency_level": "STRONG",
+      "evidence": "Built methodology at every role—hospital readmission research, land development project hunting, ICP validation",
+      "years_experience": 4
+    },
+    {
+      "id": "skill-003",
+      "candidate_id": "keegan-moody-001",
+      "category": "GTM / Sales",
+      "skill_name": "ICP Development",
+      "proficiency_level": "STRONG",
+      "evidence": "Defined personas at Biofourmis (QA Directors), TraceAir (land developers), Mixmax (sales leaders via Volley Method)",
+      "years_experience": 4
+    },
+    {
+      "id": "skill-004",
+      "candidate_id": "keegan-moody-001",
+      "category": "GTM / Sales",
+      "skill_name": "Territory Development",
+      "proficiency_level": "STRONG",
+      "evidence": "Built greenfield territory at TraceAir with 1/4 contacts of peers, still led in demos",
+      "years_experience": 3
+    },
+    {
+      "id": "skill-005",
+      "candidate_id": "keegan-moody-001",
+      "category": "Technical / Tools",
+      "skill_name": "Clay",
+      "proficiency_level": "STRONG",
+      "evidence": "Built full workflows at Mixmax, 12k+ row tables, automated enrichment pipelines",
+      "years_experience": 1
+    },
+    {
+      "id": "skill-006",
+      "candidate_id": "keegan-moody-001",
+      "category": "Technical / Tools",
+      "skill_name": "Smartlead",
+      "proficiency_level": "STRONG",
+      "evidence": "Set up campaigns, domain management, sequencing at Mixmax",
+      "years_experience": 1
+    },
+    {
+      "id": "skill-007",
+      "candidate_id": "keegan-moody-001",
+      "category": "Technical / Tools",
+      "skill_name": "HubSpot",
+      "proficiency_level": "STRONG",
+      "evidence": "Used extensively at Biofourmis for sequencing",
+      "years_experience": 2
+    },
+    {
+      "id": "skill-008",
+      "candidate_id": "keegan-moody-001",
+      "category": "Technical / Tools",
+      "skill_name": "Salesforce",
+      "proficiency_level": "STRONG",
+      "evidence": "Used at TraceAir and Biofourmis for pipeline management",
+      "years_experience": 3
+    },
+    {
+      "id": "skill-009",
+      "candidate_id": "keegan-moody-001",
+      "category": "Technical / Tools",
+      "skill_name": "LinkedIn Sales Navigator",
+      "proficiency_level": "STRONG",
+      "evidence": "Primary prospecting tool at TraceAir, power user",
+      "years_experience": 3
+    },
+    {
+      "id": "skill-010",
+      "candidate_id": "keegan-moody-001",
+      "category": "Technical / Tools",
+      "skill_name": "ZoomInfo / Apollo",
+      "proficiency_level": "STRONG",
+      "evidence": "Used at Biofourmis and Mixmax for data enrichment",
+      "years_experience": 2
+    },
+    {
+      "id": "skill-011",
+      "candidate_id": "keegan-moody-001",
+      "category": "Technical / Tools",
+      "skill_name": "ChatGPT / AI Tools",
+      "proficiency_level": "STRONG",
+      "evidence": "Built AI-powered workflows, prompt engineering for GTM, 9-agent Gutenberg Framework design",
+      "years_experience": 2
+    },
+    {
+      "id": "skill-012",
+      "candidate_id": "keegan-moody-001",
+      "category": "Research / Analysis",
+      "skill_name": "Primary Research",
+      "proficiency_level": "STRONG",
+      "evidence": "270 days fieldwork in South America, 4 published papers",
+      "years_experience": 3
+    },
+    {
+      "id": "skill-013",
+      "candidate_id": "keegan-moody-001",
+      "category": "Research / Analysis",
+      "skill_name": "Pattern Recognition",
+      "proficiency_level": "STRONG",
+      "evidence": "Finding angles in markets (hospital readmissions, land developments, power law revenue)",
+      "years_experience": 4
+    },
+    {
+      "id": "skill-014",
+      "candidate_id": "keegan-moody-001",
+      "category": "Research / Analysis",
+      "skill_name": "Framework Development",
+      "proficiency_level": "STRONG",
+      "evidence": "Volley Method, Tacit Knowledge Extraction, Golden Goose Model, Gutenberg Framework",
+      "years_experience": 2
+    },
+    {
+      "id": "skill-015",
+      "candidate_id": "keegan-moody-001",
+      "category": "GTM / Sales",
+      "skill_name": "Account Executive / Closing",
+      "proficiency_level": "MODERATE",
+      "evidence": "Have never closed deals—always originated for AEs",
+      "notes": "Would need training on negotiation, objection handling, contract mechanics",
+      "years_experience": 0
+    },
+    {
+      "id": "skill-016",
+      "candidate_id": "keegan-moody-001",
+      "category": "Soft Skills",
+      "skill_name": "Managing Up",
+      "proficiency_level": "GAP",
+      "evidence": "Two terminations partly due to political misalignment",
+      "notes": "Need mentorship on reading rooms and picking battles",
+      "years_experience": null
+    },
+    {
+      "id": "skill-017",
+      "candidate_id": "keegan-moody-001",
+      "category": "Leadership",
+      "skill_name": "People Management",
+      "proficiency_level": "GAP",
+      "evidence": "Have never managed direct reports. Led by influence, not authority.",
+      "notes": "Could develop with mentorship",
+      "years_experience": 0
+    }
+  ],
+
+  "achievements": [
+    {
+      "id": "ach-001",
+      "candidate_id": "keegan-moody-001",
+      "experience_id": "exp-001",
+      "achievement_type": "METHODOLOGY",
+      "title": "Built Complete GTM Intelligence System",
+      "description": "Created enterprise-grade GTM intelligence system including Volley Method for ICP validation, Tacit Knowledge Extraction framework, Golden Goose 100-point scoring model, and 9-agent Gutenberg Framework.",
+      "metric_value": null,
+      "metric_unit": null,
+      "verification_status": "VERIFIED",
+      "verification_source": "NOVEMBER 0742 documentation",
+      "is_featured": true
+    },
+    {
+      "id": "ach-002",
+      "candidate_id": "keegan-moody-001",
+      "experience_id": "exp-001",
+      "achievement_type": "DISCOVERY",
+      "title": "Discovered Power Law Revenue Distribution",
+      "description": "Through Volley Method analysis of 402 customer accounts ($4.79M ARR), discovered that 15% of accounts generate 66% of revenue. 51-200 employee segment produces 2x ARR with only 23% of customer base.",
+      "metric_value": 66,
+      "metric_unit": "percent_revenue_concentration",
+      "verification_status": "VERIFIED",
+      "verification_source": "ICP_VALIDATION_AUDIT_REPORT.md",
+      "is_featured": true
+    },
+    {
+      "id": "ach-003",
+      "candidate_id": "keegan-moody-001",
+      "experience_id": "exp-001",
+      "achievement_type": "INFRASTRUCTURE",
+      "title": "Built 50+ Warmed Domain Infrastructure",
+      "description": "Created email infrastructure with 50+ warmed inboxes across ScaledMail (33), Pager AI, and SmartLead AI for outbound campaign deployment.",
+      "metric_value": 50,
+      "metric_unit": "warmed_domains",
+      "verification_status": "VERIFIED",
+      "verification_source": "LINKEDIN_SUMMARY.md, service documentation",
+      "is_featured": true
+    },
+    {
+      "id": "ach-004",
+      "candidate_id": "keegan-moody-001",
+      "experience_id": "exp-003",
+      "achievement_type": "QUOTA",
+      "title": "147% Quota Attainment",
+      "description": "Booked 22 demos in September 2024 against a quota of 15, achieving 147% attainment with 21% connection rate vs 4-6% team average.",
+      "metric_value": 147,
+      "metric_unit": "percent_quota",
+      "verification_status": "VERIFIED",
+      "verification_source": "Apple_Notes/TRACEAIR_STATS.md, user verification",
+      "is_featured": true
+    },
+    {
+      "id": "ach-005",
+      "candidate_id": "keegan-moody-001",
+      "experience_id": "exp-003",
+      "achievement_type": "REVENUE",
+      "title": "$216K Closed-Won Revenue",
+      "description": "Generated $216,437.50 in closed-won revenue from prospecting efforts.",
+      "metric_value": 216437.50,
+      "metric_unit": "USD",
+      "verification_status": "VERIFIED",
+      "verification_source": "Gmail records",
+      "is_featured": true
+    },
+    {
+      "id": "ach-006",
+      "candidate_id": "keegan-moody-001",
+      "experience_id": "exp-005",
+      "achievement_type": "DEAL_VELOCITY",
+      "title": "Sourced Fastest Deal in Company History",
+      "description": "Prospecting sourced the Orlando Health deal which closed in 90 days—fastest in Biofourmis company history. AE Tyler Cole closed the deal.",
+      "metric_value": 90,
+      "metric_unit": "days_to_close",
+      "verification_status": "UNVERIFIED_WITH_HONEST_FRAMING",
+      "verification_source": "Experience documentation, user confirmation (no paper proof)",
+      "honest_framing": "My prospecting sourced the deal. AE Tyler Cole closed it. 90-day close—fastest in company history.",
+      "is_featured": true
+    },
+    {
+      "id": "ach-007",
+      "candidate_id": "keegan-moody-001",
+      "experience_id": "exp-005",
+      "achievement_type": "MILESTONE",
+      "title": "Present During Unicorn Milestone",
+      "description": "Employed at Biofourmis during company's Series D funding ($300M, $1.3B valuation) in April 2022, achieving unicorn status.",
+      "metric_value": 1.3,
+      "metric_unit": "billion_valuation",
+      "verification_status": "VERIFIED",
+      "verification_source": "MobiHealthNews, Crunchbase",
+      "is_featured": false
+    },
+    {
+      "id": "ach-008",
+      "candidate_id": "keegan-moody-001",
+      "experience_id": "exp-007",
+      "achievement_type": "PUBLICATION",
+      "title": "4 Peer-Reviewed Publications",
+      "description": "Published 4 peer-reviewed papers on mercury contamination research in Elsevier and MethodsX journals following 270 days of fieldwork in South America.",
+      "metric_value": 4,
+      "metric_unit": "publications",
+      "verification_status": "VERIFIED",
+      "verification_source": "PDF publication files",
+      "is_featured": true
+    }
+  ],
+
+  "ai_instructions": {
+    "id": "ai-001",
+    "candidate_id": "keegan-moody-001",
+    "version": "2.0",
+    "last_updated": "2026-01-19",
+
+    "voice_guidelines": {
+      "tone": "Confident but not arrogant. Honest about setbacks. Specific and concrete.",
+      "perspective_portfolio": "First person",
+      "perspective_bios": "Third person",
+      "do_say": [
+        "Builder, not optimizer",
+        "Builds GTM infrastructure, not just campaigns",
+        "Quality over quantity approach",
+        "Systems thinker—creates repeatable methodology",
+        "Healthcare tech expertise",
+        "Honest about setbacks",
+        "0→1 specialist"
+      ],
+      "dont_say": [
+        "Job hopper (reframe as startup volatility + fit mismatch)",
+        "Underperformer (metrics show opposite)",
+        "Laid off (he was fired—be honest)",
+        "Closed deals at Biofourmis (he sourced them—SDR role)",
+        "Contributed to unicorn (too vague)"
+      ]
+    },
+
+    "critical_distinctions": [
+      {
+        "context": "Biofourmis Orlando Health deal",
+        "incorrect": "Keegan closed the fastest deal in company history",
+        "correct": "Keegan's prospecting sourced what became the fastest close in company history",
+        "reason": "SDRs source deals, AEs close them. Tyler Cole (AE) closed this deal."
+      },
+      {
+        "context": "Biofourmis unicorn",
+        "incorrect": "Contributed to unicorn status",
+        "correct": "Employed during unicorn milestone (April 2022)",
+        "reason": "'Contributed to' is vague. Timeline fact is verifiable."
+      }
+    ],
+
+    "honest_framing": {
+      "terminations": {
+        "fact": "Fired twice while exceeding quota (Biofourmis, TraceAir)",
+        "framing": "Fit mismatch between autonomous work style and activity-metric culture. His method (fewer calls, better research) conflicts with call-volume cultures."
+      },
+      "mixmax_gap": {
+        "fact": "3,770 delivered vs 9,000 target (42%)",
+        "framing": "Built infrastructure and validated methodology but fell short on volume targets. Contract ended before full execution. Honest about that gap."
+      },
+      "gap_period": {
+        "fact": "Home Depot cart pusher, Kevin Rathbun's Steakhouse (2023)",
+        "framing": "Survival jobs during job search. What you build next matters more than how you survived."
+      }
+    },
+
+    "success_patterns": [
+      "Greenfield Builder: Excels at 0→1, building systems from scratch",
+      "Methodical Prospector: Quality over quantity (21% vs 4-6% connection rate)",
+      "Systems Thinker: Builds repeatable infrastructure, not one-off campaigns",
+      "Healthcare Expertise: Deep domain knowledge in digital health, hospital systems",
+      "Documentation Discipline: Everything traced to sources, methodology preserved"
+    ],
+
+    "failure_patterns": [
+      "Autonomy Paradox: High performance creates friction, not trust",
+      "Short Tenure Cycle: Roles end before 12 months",
+      "Delivery Under Constraints: Struggles when forced into different methodology",
+      "Political Misalignment: Results without relationship-building is a losing hand"
+    ],
+
+    "environment_fit": {
+      "thrives_in": [
+        "Seed to Series B startups",
+        "Building new verticals/territories from zero",
+        "Outcome-measured cultures (revenue, not activity)",
+        "Autonomous work environments",
+        "Healthcare/technical B2B SaaS",
+        "Roles where methodology matters"
+      ],
+      "struggles_in": [
+        "Activity-metric cultures (calls/day)",
+        "Highly structured sales processes",
+        "Micromanagement environments",
+        "Cultures where political alignment trumps results"
+      ]
+    },
+
+    "one_liners": {
+      "general": "I build GTM infrastructure from scratch at early-stage startups.",
+      "metrics": "147% quota. $216k closed. 90-day sourced deal. I care about the scoreboard.",
+      "methodology": "I built a 9-agent autonomous sales system and validated ICP across 402 accounts.",
+      "honesty": "I've been fired twice while hitting quota. Here's what that teaches you.",
+      "healthcare": "From mercury research to unicorn deals—I speak both science and sales."
+    },
+
+    "methodologies": [
+      {
+        "name": "The Volley Method",
+        "use_when": "You need to validate ICP assumptions",
+        "process": "Quantitative analysis (revenue, size, industry) ↔ Qualitative analysis (case studies, interviews)",
+        "output": "Reconciled ICP with revenue-weighted targeting parameters"
+      },
+      {
+        "name": "Tacit Knowledge Extraction",
+        "use_when": "Case studies exist but buying triggers are unclear",
+        "process": "Raw extraction → Pattern synthesis → Trigger identification",
+        "output": "Unstated buying motivations and failure conditions"
+      },
+      {
+        "name": "Golden Goose Scoring",
+        "use_when": "Customer base needs prioritization for targeting",
+        "process": "6-factor weighted scoring (100 points)",
+        "output": "4-tier segmentation (Platinum, Gold, Silver, Bronze)"
+      }
+    ]
+  }
+}

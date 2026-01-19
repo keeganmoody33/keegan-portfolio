@@ -1,0 +1,137 @@
+{
+  "audit_date": "2026-01-19",
+  "agent": "proof-curator",
+  "last_updated": "2026-01-19",
+
+  "claims_to_verify": [
+    {
+      "claim_id": "C001",
+      "claim": "Orlando Health deal: 90-day close (sourced, not closed)",
+      "role": "Biofourmis",
+      "proof_strength": "INSUFFICIENT",
+      "evidence_found": [],
+      "evidence_needed": ["No paper proof available - user confirmed"],
+      "status": "UNVERIFIED_BUT_CLAIMED",
+      "honest_framing": "My prospecting sourced the deal. AE Tyler Cole closed it. 90-day close—fastest in company history.",
+      "note": "User confirmed no documentation exists. Use honest qualifier in claims."
+    },
+    {
+      "claim_id": "C002",
+      "claim": "TraceAir: 22 demos in September 2024 (quota was 15)",
+      "role": "TraceAir",
+      "proof_strength": "MODERATE",
+      "evidence_found": ["Apple_Notes/TRACEAIR_STATS.md", "User verification 2026-01-19"],
+      "evidence_needed": [],
+      "status": "CONFIRMED",
+      "metric": "147% quota attainment"
+    },
+    {
+      "claim_id": "C003",
+      "claim": "TraceAir: $216,437.50 closed-won revenue",
+      "role": "TraceAir",
+      "proof_strength": "STRONG",
+      "evidence_found": ["Gmail verification", "User verification 2026-01-19"],
+      "evidence_needed": [],
+      "status": "CONFIRMED",
+      "note": "Verified via Gmail records"
+    },
+    {
+      "claim_id": "C004",
+      "claim": "Mixmax: Built 50+ warmed domains, 12,000+ prospect accounts",
+      "role": "Mixmax",
+      "proof_strength": "MODERATE",
+      "evidence_found": ["Gutenberg-Framework-Mixmax-Outbound-Playbook-2025.pdf", "MIXMAX_GTM_DOCUMENTATION.md"],
+      "evidence_needed": ["Domain list", "Account export from tool"],
+      "status": "DOCUMENTED"
+    },
+    {
+      "claim_id": "C005",
+      "claim": "Mixmax: 9000 target vs 3770 delivered (delivery gap)",
+      "role": "Mixmax",
+      "proof_strength": "STRONG",
+      "evidence_found": ["Documented in CLAUDE.md context"],
+      "status": "HONEST_SELF_REPORTED",
+      "note": "Honest framing of shortfall - this is a strength"
+    },
+    {
+      "claim_id": "C006",
+      "claim": "2nd SDR hired at Biofourmis",
+      "role": "Biofourmis",
+      "proof_strength": "MODERATE",
+      "evidence_found": ["LinkedIn Positions.csv description"],
+      "evidence_needed": ["Offer letter with date", "LinkedIn connection with first SDR"],
+      "status": "LINKEDIN_STATED"
+    },
+    {
+      "claim_id": "C007",
+      "claim": "Contributed to Biofourmis unicorn status",
+      "role": "Biofourmis",
+      "proof_strength": "WEAK",
+      "evidence_found": ["LinkedIn Positions.csv description"],
+      "evidence_needed": ["Funding announcement timeline", "Your contribution specifics"],
+      "status": "VAGUE_CLAIM",
+      "warning": "Weasel word detected: 'contributed to' - needs specifics"
+    },
+    {
+      "claim_id": "C008",
+      "claim": "270 days fieldwork with Dr. Kiefer",
+      "role": "Mercury Research",
+      "proof_strength": "STRONG",
+      "evidence_found": ["KMOODY_2020_ELSEVIER.pdf", "KMOODY_2020_HGEMISSIONS.pdf", "KMOODY.ASGM-HG 2020.pdf"],
+      "status": "PUBLICATION_VERIFIED",
+      "note": "Peer-reviewed publications are strong third-party verification"
+    }
+  ],
+
+  "proof_by_role": {
+    "Mixmax": {
+      "proof_count": 8,
+      "strength": "MODERATE",
+      "files": ["Gutenberg-Framework-Mixmax-Outbound-Playbook-2025.pdf", "ICP - Google Sheets.pdf", "ICP - Intro.pdf", "MIXMAX_GTM_DOCUMENTATION.md", "experiences/01-mixmax.md", "Apple_Notes/MIXMAX_CAMPAIGNS.md"],
+      "gaps": ["No offer letter/contract in portfolio"]
+    },
+    "Mobb": {
+      "proof_count": 4,
+      "strength": "MODERATE",
+      "files": ["Mobb Call Script.pdf", "Mobb Product Breif.pdf", "MOBB_AI_ONE_PAGER.pdf", "mobb-ai-work-summary.md"],
+      "gaps": ["Short tenure - need specific deliverables"]
+    },
+    "TraceAir": {
+      "proof_count": 2,
+      "strength": "WEAK",
+      "files": ["TraceAir Offer Letter & NDA - Keegan Moody.pdf", "Apple_Notes/TRACEAIR_STATS.md"],
+      "gaps": ["No work product samples", "No CRM/performance data"]
+    },
+    "Biofourmis": {
+      "proof_count": 2,
+      "strength": "WEAK",
+      "files": ["experiences/04-biofourmis.md", "Apple_Notes/BIOFOURMIS_CAREER_NARRATIVE.md"],
+      "gaps": ["No Orlando Health deal proof", "No offer letter", "No performance data"]
+    },
+    "Mercury Research": {
+      "proof_count": 4,
+      "strength": "STRONG",
+      "files": ["KMOODY_2020_ELSEVIER.pdf", "KMOODY_2020_HGEMISSIONS.pdf", "KMOODY_METHODSX COVERPG 2020.pdf", "KMOODY.ASGM-HG 2020.pdf"],
+      "gaps": []
+    },
+    "Certifications": {
+      "proof_count": 7,
+      "strength": "STRONG",
+      "files": ["Anthropic_AI_Fluency_Certificate.pdf", "Anthropic_Claude_Code_in_Action_Certificate.pdf", "Google_Prompting_Essentials_Certificate.pdf", "KMOODY.ZAPIER Certification.pdf", "CertificateOfCompletion_Learning Salesforce.pdf", "CertificateOfCompletion_Music Law Recording Management Rights and Performance Contracts.pdf", "Coursera NDNNRRS02JCS.pdf"],
+      "gaps": []
+    }
+  },
+
+  "honesty_assessment": {
+    "positives": [
+      "Mixmax delivery gap honestly documented (9000 vs 3770)",
+      "Two terminations acknowledged in CLAUDE.md",
+      "Gaps and weaknesses self-documented"
+    ],
+    "concerns": [
+      "Orlando Health $1M claim has no evidence",
+      "'Contributed to unicorn' is vague",
+      "TraceAir stats are self-reported only"
+    ]
+  }
+}

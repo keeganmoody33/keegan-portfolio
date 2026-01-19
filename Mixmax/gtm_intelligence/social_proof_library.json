@@ -1,0 +1,88 @@
+{
+  "reply_rate_improvements": [
+    {
+      "company": "Veraset",
+      "metric": "26% reply rate",
+      "raw_text": "Saved 45% on tech costs, exceeded revenue goal by 119%, 80% open rate on cold emails for important event, 26% reply rate on cold emails for important event"
+    },
+    {
+      "company": "Brex",
+      "metric": "40% reply rate",
+      "raw_text": "40% reply rate to cold sequences; 85% open rate of outbound sequences; cross-functional adoption from Sales to Recruiting"
+    },
+    {
+      "company": "Rainforest QA",
+      "metric": "50% reply rate",
+      "raw_text": "97% email open rate and 50% reply rate, which have gone up incrementally since starting with Mixmax"
+    }
+  ],
+  "time_savings": [],
+  "revenue_impact": [
+    {
+      "company": "Veraset",
+      "metric": "Exceeded revenue goal by 119%",
+      "raw_text": "Saved 45% on tech costs, exceeded revenue goal by 119%, 80% open rate on cold emails for important event, 26% reply rate on cold emails for important event"
+    }
+  ],
+  "meeting_booking": [
+    {
+      "company": "Bennie",
+      "metric": "1% meeting conversion",
+      "raw_text": "Cold outbound HR email reply rate increased from ~1% to ~2% (100% improvement); ~15 meetings per SDR per month; Implementation in <1 week"
+    },
+    {
+      "company": "Atrium (Acquired by Fullcast)",
+      "metric": "259% meeting conversion",
+      "raw_text": "259% increase in meetings booked, 74% email open rate, 348 hours/year saved (29 hours/month) via templates with variables"
+    },
+    {
+      "company": "Sophia Institute Press",
+      "metric": "10% meeting conversion",
+      "raw_text": "10% increase in cold email open rates, 54% open rates for targeted segments, 81% open rates for customer base during critical periods, 437% increase in customer orientation meetings, reduced hiring co"
+    }
+  ],
+  "cost_savings": [
+    {
+      "company": "Veraset",
+      "metric": "Saved 45% on tech costs",
+      "raw_text": "Saved 45% on tech costs, exceeded revenue goal by 119%, 80% open rate on cold emails for important event, 26% reply rate on cold emails for important event"
+    }
+  ],
+  "productivity_gains": [
+    {
+      "company": "Hostfully",
+      "metric": "576% increase",
+      "raw_text": "576% increase in pipeline generation year-over-year"
+    },
+    {
+      "company": "Atrium (Acquired by Fullcast)",
+      "metric": "259% increase",
+      "raw_text": "259% increase in meetings booked, 74% email open rate, 348 hours/year saved (29 hours/month) via templates with variables"
+    },
+    {
+      "company": "GIMO Global Interactive Marketing Online Ltd",
+      "metric": "30% increase",
+      "raw_text": "76% open rate, up to +30% increase in customer engagement in specific markets, +30% response rate increase attributed to Mixmax. Reduced manual workload, eliminated need for weekend work, improved tea"
+    },
+    {
+      "company": "Sophia Institute Press",
+      "metric": "10% increase",
+      "raw_text": "10% increase in cold email open rates, 54% open rates for targeted segments, 81% open rates for customer base during critical periods, 437% increase in customer orientation meetings, reduced hiring co"
+    },
+    {
+      "company": "Adwerx",
+      "metric": "100% increase",
+      "raw_text": "Almost 100% increase in account reviews booked on growth team; 25% of enterprise sales demos attributed to Mixmax sequences"
+    },
+    {
+      "company": "hireEZ",
+      "metric": "50% increase",
+      "raw_text": "25% improvement in response rates, 40% reduction in time per outreach, 50% increase in outreach volume"
+    },
+    {
+      "company": "nan",
+      "metric": "30% increase",
+      "raw_text": "76% email open rate, up to 30% increase in response rates on specific markets, decreased stress and workload, revenue increased as result of higher reply rates"
+    }
+  ]
+}

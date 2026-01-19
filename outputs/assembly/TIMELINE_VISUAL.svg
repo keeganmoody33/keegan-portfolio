@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#16213e;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#4a90a4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#50c878;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="600" fill="url(#bgGrad)"/>
+
+  <!-- Title -->
+  <text x="600" y="45" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="24" font-weight="bold">Keegan Moody — Career Timeline</text>
+  <text x="600" y="70" text-anchor="middle" fill="#8892b0" font-family="Arial, sans-serif" font-size="12">GTM Infrastructure Builder | 0→1 Specialist</text>
+
+  <!-- Timeline line -->
+  <line x1="100" y1="300" x2="1100" y2="300" stroke="url(#lineGrad)" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Year markers -->
+  <text x="100" y="330" fill="#8892b0" font-family="Arial, sans-serif" font-size="11">2016</text>
+  <text x="225" y="330" fill="#8892b0" font-family="Arial, sans-serif" font-size="11">2018</text>
+  <text x="350" y="330" fill="#8892b0" font-family="Arial, sans-serif" font-size="11">2020</text>
+  <text x="475" y="330" fill="#8892b0" font-family="Arial, sans-serif" font-size="11">2021</text>
+  <text x="625" y="330" fill="#8892b0" font-family="Arial, sans-serif" font-size="11">2023</text>
+  <text x="775" y="330" fill="#8892b0" font-family="Arial, sans-serif" font-size="11">2024</text>
+  <text x="950" y="330" fill="#8892b0" font-family="Arial, sans-serif" font-size="11">2025</text>
+  <text x="1075" y="330" fill="#8892b0" font-family="Arial, sans-serif" font-size="11">2026</text>
+
+  <!-- Role 1: Research (2016-2018) -->
+  <circle cx="162" cy="300" r="12" fill="#64ffda"/>
+  <line x1="162" y1="288" x2="162" y2="180" stroke="#64ffda" stroke-width="2" stroke-dasharray="4,4"/>
+  <rect x="80" y="120" width="165" height="60" rx="8" fill="#1f3044" stroke="#64ffda" stroke-width="1"/>
+  <text x="162" y="142" text-anchor="middle" fill="#64ffda" font-family="Arial, sans-serif" font-size="11" font-weight="bold">Mercury Research</text>
+  <text x="162" y="158" text-anchor="middle" fill="#ccd6f6" font-family="Arial, sans-serif" font-size="10">Research Assistant</text>
+  <text x="162" y="172" text-anchor="middle" fill="#8892b0" font-family="Arial, sans-serif" font-size="9">270 days | 4 publications</text>
+
+  <!-- Role 2: Barbour (2020-2021) -->
+  <circle cx="400" cy="300" r="10" fill="#8892b0"/>
+  <line x1="400" y1="312" x2="400" y2="380" stroke="#8892b0" stroke-width="2" stroke-dasharray="4,4"/>
+  <rect x="318" y="385" width="165" height="50" rx="8" fill="#1f3044" stroke="#8892b0" stroke-width="1"/>
+  <text x="400" y="405" text-anchor="middle" fill="#ccd6f6" font-family="Arial, sans-serif" font-size="11" font-weight="bold">Barbour Orthopaedics</text>
+  <text x="400" y="420" text-anchor="middle" fill="#8892b0" font-family="Arial, sans-serif" font-size="10">Corp Dev Associate</text>
+
+  <!-- Role 3: Biofourmis (2021-2023) - MAJOR -->
+  <circle cx="550" cy="300" r="16" fill="#50c878"/>
+  <line x1="550" y1="284" x2="550" y2="140" stroke="#50c878" stroke-width="2"/>
+  <rect x="445" y="85" width="210" height="75" rx="8" fill="#1f3044" stroke="#50c878" stroke-width="2"/>
+  <text x="550" y="107" text-anchor="middle" fill="#50c878" font-family="Arial, sans-serif" font-size="13" font-weight="bold">Biofourmis (Unicorn)</text>
+  <text x="550" y="124" text-anchor="middle" fill="#ccd6f6" font-family="Arial, sans-serif" font-size="11">SDR | Commercial Care</text>
+  <text x="550" y="140" text-anchor="middle" fill="#8892b0" font-family="Arial, sans-serif" font-size="10">90-day close (fastest ever)</text>
+  <text x="550" y="153" text-anchor="middle" fill="#64ffda" font-family="Arial, sans-serif" font-size="9">$1.3B Series D during tenure</text>
+
+  <!-- Gap indicator (2023) -->
+  <rect x="620" y="295" width="30" height="10" fill="#ff6b6b" opacity="0.5" rx="2"/>
+  <text x="635" y="360" text-anchor="middle" fill="#ff6b6b" font-family="Arial, sans-serif" font-size="9">Gap</text>
+
+  <!-- Role 4: BCOFA (2024) -->
+  <circle cx="725" cy="300" r="8" fill="#8892b0"/>
+  <line x1="725" y1="312" x2="725" y2="380" stroke="#8892b0" stroke-width="2" stroke-dasharray="4,4"/>
+  <rect x="650" y="385" width="150" height="45" rx="8" fill="#1f3044" stroke="#8892b0" stroke-width="1"/>
+  <text x="725" y="405" text-anchor="middle" fill="#ccd6f6" font-family="Arial, sans-serif" font-size="11" font-weight="bold">BCOFA / BariNAV</text>
+  <text x="725" y="420" text-anchor="middle" fill="#8892b0" font-family="Arial, sans-serif" font-size="10">Sales Consultant</text>
+
+  <!-- Role 5: TraceAir (2024-2025) - MAJOR -->
+  <circle cx="850" cy="300" r="14" fill="#ffd700"/>
+  <line x1="850" y1="284" x2="850" y2="165" stroke="#ffd700" stroke-width="2"/>
+  <rect x="755" y="100" width="190" height="70" rx="8" fill="#1f3044" stroke="#ffd700" stroke-width="2"/>
+  <text x="850" y="120" text-anchor="middle" fill="#ffd700" font-family="Arial, sans-serif" font-size="12" font-weight="bold">TraceAir (Series B)</text>
+  <text x="850" y="137" text-anchor="middle" fill="#ccd6f6" font-family="Arial, sans-serif" font-size="11">Senior SDR</text>
+  <text x="850" y="152" text-anchor="middle" fill="#8892b0" font-family="Arial, sans-serif" font-size="10">147% quota | 21% connect</text>
+  <text x="850" y="165" text-anchor="middle" fill="#64ffda" font-family="Arial, sans-serif" font-size="9">$216,437 revenue</text>
+
+  <!-- Role 6: Mobb (2025) -->
+  <circle cx="970" cy="300" r="8" fill="#8892b0"/>
+  <line x1="970" y1="312" x2="970" y2="380" stroke="#8892b0" stroke-width="2" stroke-dasharray="4,4"/>
+  <rect x="900" y="385" width="140" height="45" rx="8" fill="#1f3044" stroke="#8892b0" stroke-width="1"/>
+  <text x="970" y="405" text-anchor="middle" fill="#ccd6f6" font-family="Arial, sans-serif" font-size="11" font-weight="bold">Mobb (Seed)</text>
+  <text x="970" y="420" text-anchor="middle" fill="#8892b0" font-family="Arial, sans-serif" font-size="10">GTM / BizDev</text>
+
+  <!-- Role 7: Mixmax (2025) - MAJOR -->
+  <circle cx="1050" cy="300" r="14" fill="#00bfff"/>
+  <line x1="1050" y1="284" x2="1050" y2="175" stroke="#00bfff" stroke-width="2"/>
+  <rect x="960" y="110" width="180" height="65" rx="8" fill="#1f3044" stroke="#00bfff" stroke-width="2"/>
+  <text x="1050" y="130" text-anchor="middle" fill="#00bfff" font-family="Arial, sans-serif" font-size="12" font-weight="bold">Mixmax (AI Pivot)</text>
+  <text x="1050" y="147" text-anchor="middle" fill="#ccd6f6" font-family="Arial, sans-serif" font-size="11">Founding GTM Engineer</text>
+  <text x="1050" y="162" text-anchor="middle" fill="#8892b0" font-family="Arial, sans-serif" font-size="10">50+ warmed inboxes</text>
+
+  <!-- Legend -->
+  <rect x="50" y="470" width="300" height="100" rx="8" fill="#1f3044" stroke="#4a90a4" stroke-width="1"/>
+  <text x="70" y="495" fill="#ffffff" font-family="Arial, sans-serif" font-size="12" font-weight="bold">Legend</text>
+  <circle cx="80" cy="515" r="8" fill="#50c878"/>
+  <text x="95" y="519" fill="#ccd6f6" font-family="Arial, sans-serif" font-size="10">Major role (verified metrics)</text>
+  <circle cx="80" cy="535" r="6" fill="#8892b0"/>
+  <text x="95" y="539" fill="#ccd6f6" font-family="Arial, sans-serif" font-size="10">Supporting role</text>
+  <rect x="74" y="550" width="12" height="8" fill="#ff6b6b" opacity="0.5" rx="2"/>
+  <text x="95" y="557" fill="#ccd6f6" font-family="Arial, sans-serif" font-size="10">Gap period</text>
+
+  <!-- Key metrics box -->
+  <rect x="850" y="470" width="300" height="100" rx="8" fill="#1f3044" stroke="#50c878" stroke-width="1"/>
+  <text x="870" y="495" fill="#50c878" font-family="Arial, sans-serif" font-size="12" font-weight="bold">Verified Metrics</text>
+  <text x="870" y="515" fill="#ccd6f6" font-family="Arial, sans-serif" font-size="10">147% quota attainment (TraceAir)</text>
+  <text x="870" y="530" fill="#ccd6f6" font-family="Arial, sans-serif" font-size="10">$216,437 closed-won revenue</text>
+  <text x="870" y="545" fill="#ccd6f6" font-family="Arial, sans-serif" font-size="10">90-day close (fastest in company history)</text>
+  <text x="870" y="560" fill="#ccd6f6" font-family="Arial, sans-serif" font-size="10">50+ warmed inboxes built from scratch</text>
+
+  <!-- Footer -->
+  <text x="600" y="585" text-anchor="middle" fill="#4a90a4" font-family="Arial, sans-serif" font-size="10">All metrics verified via Portfolio Assembly Agent System | 2026-01-19</text>
+</svg>

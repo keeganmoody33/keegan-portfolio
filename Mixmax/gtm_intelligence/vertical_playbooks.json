@@ -1,0 +1,235 @@
+{
+  "software_saas": {
+    "count": 16,
+    "key_pains": [
+      "Pipeline leakage",
+      "Team coordination",
+      "Scaling without hiring"
+    ],
+    "companies": [
+      {
+        "name": "Hostfully",
+        "size": "51-200",
+        "real_problem": "Lead follow-up latency causing pipeline leakage across lean revenue team"
+      },
+      {
+        "name": "Bennie",
+        "size": "201-500",
+        "real_problem": "Inconsistent outreach and lack of visibility across growing team"
+      },
+      {
+        "name": "Atrium",
+        "size": "51-200",
+        "real_problem": "Manual tasks and lack of coaching accountability across revenue workflows"
+      },
+      {
+        "name": "Canva",
+        "size": "1001-5000",
+        "real_problem": "Global go-to-market coordination without sacrificing speed or consistency"
+      },
+      {
+        "name": "Insightly",
+        "size": "51-200",
+        "real_problem": "Under-monetized customers due to inconsistent upsell follow-up"
+      },
+      {
+        "name": "Braintrust",
+        "size": "11-50",
+        "real_problem": "Tool fragmentation and unreliable CRM sync causing visibility issues"
+      },
+      {
+        "name": "Gatewise",
+        "size": "11-50",
+        "real_problem": "Complex engagement stack causing slow adoption and fragmented workflows"
+      },
+      {
+        "name": "Dollar Flight Club",
+        "size": "11-50",
+        "real_problem": "Manual low-visibility outreach limiting partnership velocity in lean team"
+      },
+      {
+        "name": "Help Scout",
+        "size": "51-200",
+        "real_problem": "Manual fragmented email workflows causing latency and missed handoffs"
+      },
+      {
+        "name": "Hiretual (hireEZ)",
+        "size": "201-500",
+        "real_problem": "Scaling outbound recruiting without adding headcount or sacrificing quality"
+      },
+      {
+        "name": "Rainforest QA",
+        "size": "11-50",
+        "real_problem": "Small remote team needed scalable trackable outreach without headcount growth"
+      },
+      {
+        "name": "Alteia",
+        "size": "51-200",
+        "real_problem": "Scaling high-volume revenue outreach across roles without losing context"
+      },
+      {
+        "name": "Amplitude",
+        "size": "501-1000",
+        "real_problem": "High-volume cross-functional go-to-market coordination at speed"
+      },
+      {
+        "name": "Gong",
+        "size": "1001-5000",
+        "real_problem": "Large-scale revenue coordination without variability or blind spots"
+      },
+      {
+        "name": "Meltwater",
+        "size": "1001-5000",
+        "real_problem": "Enterprise-scale distributed team coordination across global customers"
+      },
+      {
+        "name": "Coaching.com",
+        "size": "51-200",
+        "real_problem": "Many-to-many stakeholder coordination for coaching programs at scale"
+      },
+      {
+        "name": "Tegus",
+        "size": "501-1000",
+        "real_problem": "High-volume insight-driven outreach to institutional buyers at speed"
+      },
+      {
+        "name": "The Knot Worldwide",
+        "size": "1001-5000",
+        "real_problem": "Global marketplace coordination across millions of couples and vendors"
+      }
+    ],
+    "common_patterns": [],
+    "messaging_angles": [
+      "Stop losing deals to slow follow-up",
+      "Scale your SDR team without adding headcount",
+      "See exactly what's working in your outbound motion"
+    ]
+  },
+  "professional_services": {
+    "count": 5,
+    "key_pains": [
+      "Client coordination",
+      "Time-sensitive deliverables",
+      "Capacity constraints"
+    ],
+    "companies": [
+      {
+        "name": "GIMO",
+        "size": "51-200",
+        "real_problem": "High-volume compliance-sensitive outreach across multiple geographies"
+      },
+      {
+        "name": "Oxylabs",
+        "size": "201-500",
+        "real_problem": "Fragmented manual sales outreach causing slow follow-up and inconsistency"
+      },
+      {
+        "name": "Adwerx",
+        "size": "51-200",
+        "real_problem": "High-volume outbound coordination across growing revenue team"
+      },
+      {
+        "name": "Brex",
+        "size": "1001-5000",
+        "real_problem": "Large-scale outbound coordination without losing speed or consistency"
+      },
+      {
+        "name": "Selffee",
+        "size": "2-10",
+        "real_problem": "High-velocity multi-stakeholder event coordination with tiny team"
+      },
+      {
+        "name": "Leverage",
+        "size": "51-200",
+        "real_problem": "High-volume consulting outreach and client coordination at scale"
+      },
+      {
+        "name": "Giampolo Law Group",
+        "size": "2-10",
+        "real_problem": "High-touch multi-matter client communications without adding cost"
+      }
+    ],
+    "common_patterns": [],
+    "messaging_angles": [
+      "Coordinate client touchpoints without adding overhead",
+      "Maintain premium relationships at scale",
+      "Reduce administrative burden on billable team"
+    ]
+  },
+  "marketplace_platforms": {
+    "count": 4,
+    "key_pains": [
+      "Multi-party coordination",
+      "High volume",
+      "Time-sensitive"
+    ],
+    "companies": [],
+    "common_patterns": [],
+    "messaging_angles": [
+      "Orchestrate multi-party coordination at high volume",
+      "Reduce time-to-close in time-sensitive deals",
+      "Scale marketplace liquidity without team bloat"
+    ]
+  },
+  "financial_services": {
+    "count": 3,
+    "key_pains": [
+      "Compliance",
+      "Speed",
+      "Institutional sales"
+    ],
+    "companies": [],
+    "common_patterns": [],
+    "messaging_angles": [
+      "Maintain compliance while scaling outreach",
+      "Accelerate institutional sales cycles",
+      "Track engagement without sacrificing security"
+    ]
+  },
+  "education": {
+    "count": 3,
+    "key_pains": [
+      "Seasonal cycles",
+      "Relationship-driven",
+      "Multi-stakeholder"
+    ],
+    "companies": [
+      {
+        "name": "Wayfinder",
+        "size": "51-200",
+        "real_problem": "Relationship-based outreach to K-12 with limited team capacity and long cycles"
+      },
+      {
+        "name": "Honorlock",
+        "size": "51-200",
+        "real_problem": "Scaling multi-stakeholder education outreach with consistent quality"
+      }
+    ],
+    "common_patterns": [],
+    "messaging_angles": [
+      "Navigate seasonal buying cycles effectively",
+      "Coordinate multi-stakeholder committee decisions",
+      "Scale relationship-driven sales with small teams"
+    ]
+  },
+  "healthcare": {
+    "count": 2,
+    "key_pains": [
+      "Compliance",
+      "Small teams",
+      "Care coordination"
+    ],
+    "companies": [],
+    "common_patterns": [],
+    "messaging_angles": []
+  },
+  "other": {
+    "count": 10,
+    "key_pains": [
+      "Varies by vertical"
+    ],
+    "companies": [],
+    "common_patterns": [],
+    "messaging_angles": []
+  }
+}

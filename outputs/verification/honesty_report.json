@@ -1,0 +1,118 @@
+{
+  "audit_date": "2026-01-19",
+  "agent": "@fact-checker",
+  "report_type": "honesty_assessment",
+
+  "exaggeration_detection": [
+    {
+      "location": "LinkedIn Positions - Biofourmis",
+      "text": "Contributed to company growth from Series B/C to unicorn valuation ($1B+)",
+      "issue": "VAGUE_CONTRIBUTION",
+      "status": "RESOLVED",
+      "explanation": "'Contributed to' doesn't specify what you actually did.",
+      "recommendation": "Use: 'Employed during Series D ($1.3B valuation, April 2022). Originated Orlando Health deal—90-day close, fastest in company history.'",
+      "resolved_date": "2026-01-19"
+    },
+    {
+      "location": "Various claims",
+      "text": "50+ warmed domains",
+      "issue": "VERIFIED_CORRECT",
+      "status": "CLEARED",
+      "explanation": "NOVEMBER 0742 deep dive confirmed: ScaledMail (33) + Pager AI + SmartLead = 50+ total infrastructure. Not inflation.",
+      "note": "33 was ONE provider. 50+ is total across all providers.",
+      "resolved_date": "2026-01-19"
+    },
+    {
+      "location": "TraceAir claims",
+      "text": "20 demos in one month",
+      "issue": "UNDERSTATEMENT_CORRECTED",
+      "status": "CLEARED",
+      "explanation": "Actual: 22 demos in September 2024. Original claim was LOWER than reality.",
+      "recommendation": "Use verified: '22 demos (147% of 15/month quota), 21% connection rate vs 4-6% team average'",
+      "resolved_date": "2026-01-19"
+    }
+  ],
+
+  "weasel_words_detected": [
+    {
+      "phrase": "contributed to",
+      "context": "Contributed to unicorn status",
+      "issue": "Vague, implies causation without proof",
+      "fix": "Be specific about YOUR actions and their direct outcomes"
+    },
+    {
+      "phrase": "helped",
+      "context": "Helping scale commercial operations",
+      "issue": "Passive, doesn't specify your role",
+      "fix": "Use active verbs: 'Built', 'Created', 'Originated', 'Developed'"
+    },
+    {
+      "phrase": "involved in",
+      "context": "Not found in current docs",
+      "issue": "N/A - good, this phrase is absent",
+      "status": "CLEAR"
+    }
+  ],
+
+  "honesty_strengths": [
+    {
+      "item": "Mixmax delivery gap disclosure",
+      "description": "Openly documented 9000 target vs 3770 delivered",
+      "impact": "Builds credibility through transparency"
+    },
+    {
+      "item": "Termination acknowledgment",
+      "description": "experiences/04-biofourmis.md honestly documents being fired",
+      "impact": "Shows self-awareness and accountability"
+    },
+    {
+      "item": "Gap period honesty",
+      "description": "Documented Home Depot cart pushing, Kevin Rathbun's steakhouse during unemployment",
+      "impact": "Humanizing, shows resilience"
+    },
+    {
+      "item": "Detailed private versions",
+      "description": "Created honest 'AI context' versions alongside public versions",
+      "impact": "Demonstrates commitment to truth over polish"
+    },
+    {
+      "item": "Autonomy paradox acknowledgment",
+      "description": "Recognizes pattern of high performance but organizational friction",
+      "impact": "Self-awareness about growth area"
+    }
+  ],
+
+  "framing_recommendations": {
+    "terminations": {
+      "current_framing": "Fired",
+      "recommended_framing": "Role ended due to fit mismatch between autonomous work style and activity-metric culture",
+      "rationale": "Honest but professional. Acknowledges the pattern without hiding it."
+    },
+    "orlando_health": {
+      "current_framing": "$1M+ lifetime value",
+      "recommended_framing": "Originated Orlando Health partnership — 90-day close (fastest in company history). Deal continues generating revenue.",
+      "rationale": "Focus on verifiable facts (90-day close, fastest deal) rather than unverified lifetime value estimate."
+    },
+    "unicorn_contribution": {
+      "current_framing": "Contributed to unicorn status",
+      "recommended_framing": "Employed at Biofourmis during Series D ($1.3B valuation, April 2022). Originated flagship healthcare deal during growth phase.",
+      "rationale": "Timeline fact is verifiable. Your contribution was the deal, not 'unicorn status'."
+    }
+  },
+
+  "overall_assessment": {
+    "honesty_score": "STRONG",
+    "last_updated": "2026-01-19",
+    "explanation": "Portfolio demonstrates unusual commitment to honest self-assessment. Private versions, gap acknowledgment, and delivery shortfall disclosure are rare. Original 'inflation' concerns were actually UNDERSTATEMENTS when verified.",
+    "key_fixes_resolved": [
+      {"fix": "50+ domains", "status": "CLEARED - verified across multiple providers"},
+      {"fix": "20 demos", "status": "UPGRADED to 22 (147% quota) - actual was higher"},
+      {"fix": "TraceAir $220k", "status": "VERIFIED at $216,437.50 via Gmail"},
+      {"fix": "'contributed to unicorn'", "status": "RESOLVED with specific framing"}
+    ],
+    "remaining_actions": [
+      "Apply honest framing to Orlando Health claim (sourced, not closed)",
+      "Update LinkedIn with specific contribution language"
+    ]
+  }
+}

@@ -1,0 +1,200 @@
+{
+  "analysis_date": "2026-01-19",
+  "agent": "@pattern-analyst",
+  "version": "1.0",
+  "subject": "Keegan Moody",
+
+  "success_patterns": [
+    {
+      "pattern_id": "SP-001",
+      "name": "Greenfield Builder",
+      "description": "Excels when building something from nothing - infrastructure, processes, territories",
+      "evidence": [
+        "Mixmax: Built 50+ warmed inboxes and prospect infrastructure from scratch",
+        "Biofourmis: First/2nd SDR for Commercial Care vertical",
+        "TraceAir: 22 demos in September (147% of quota) through self-sourced methodology"
+      ],
+      "environments_that_trigger": ["New vertical launches", "GTM infrastructure gaps", "Undefined territories"],
+      "implication": "Strongest value-add is in 0→1 situations, not optimizing existing motions"
+    },
+    {
+      "pattern_id": "SP-002",
+      "name": "Methodical Prospector",
+      "description": "Develops systematic, research-driven approaches that outperform activity-based peers",
+      "evidence": [
+        "TraceAir: 21% connection rate vs 4-6% team average",
+        "TraceAir: Made 1/3 of team calls but booked 147% of quota",
+        "Biofourmis: Targeted hospitals over federal ER readmission limits (compliance-driven prospecting)"
+      ],
+      "environments_that_trigger": ["Complex B2B sales", "Long sales cycles", "Technical buyers"],
+      "implication": "Quality over quantity approach conflicts with activity-metric cultures"
+    },
+    {
+      "pattern_id": "SP-003",
+      "name": "Revenue Generator",
+      "description": "Creates documented pipeline and closed revenue despite short tenures",
+      "evidence": [
+        "TraceAir: $216,437.50 closed-won revenue (verified via Gmail)",
+        "Biofourmis: Orlando Health deal - 90-day close, fastest in company history",
+        "Pattern: Generates results faster than typical ramp periods"
+      ],
+      "environments_that_trigger": ["Clear ICP", "Product-market fit", "Sales support available"],
+      "implication": "Impact comes quickly when given autonomy to execute"
+    },
+    {
+      "pattern_id": "SP-004",
+      "name": "Healthcare/Technical Vertical Expertise",
+      "description": "Deep domain knowledge in healthcare tech and technical B2B sales",
+      "evidence": [
+        "Biofourmis: Remote patient monitoring, hospital systems, CMS compliance",
+        "BCOFA/BariNAV: Bariatric surgery programs, patient navigation",
+        "Academic foundation: Mercury research, peer-reviewed publications"
+      ],
+      "environments_that_trigger": ["Healthcare SaaS", "Technical products", "Compliance-heavy industries"],
+      "implication": "Not a generalist SDR - specialized expertise is differentiator"
+    }
+  ],
+
+  "failure_patterns": [
+    {
+      "pattern_id": "FP-001",
+      "name": "Autonomy Paradox",
+      "description": "High performance creates friction with management expectations rather than trust",
+      "evidence": [
+        "Biofourmis: Fired while top performer",
+        "TraceAir: Fired while exceeding quota",
+        "Mixmax: Contract ended early despite infrastructure delivery"
+      ],
+      "root_causes": [
+        "Activity metrics prioritized over outcomes",
+        "Management style mismatch",
+        "Communication of unconventional methods"
+      ],
+      "implication": "Needs environments that measure results, not activities",
+      "growth_opportunity": "Learn to manage up - communicate WHY the approach works before results prove it"
+    },
+    {
+      "pattern_id": "FP-002",
+      "name": "Short Tenure Cycle",
+      "description": "Roles consistently end before 12 months",
+      "evidence": [
+        "Mixmax: ~3 months",
+        "Mobb: ~3 months",
+        "TraceAir: ~7 months",
+        "Biofourmis: 17 months (longest recent tenure)"
+      ],
+      "root_causes": [
+        "FP-001 autonomy paradox",
+        "Startup volatility",
+        "Possible pattern of deprioritizing relationship management"
+      ],
+      "implication": "Red flag for hiring managers - must address directly",
+      "growth_opportunity": "Find companies that explicitly value outcomes over process conformity"
+    },
+    {
+      "pattern_id": "FP-003",
+      "name": "Delivery Gap Under Constraints",
+      "description": "Can underdeliver when constraints prevent preferred methodology",
+      "evidence": [
+        "Mixmax: 9000 target vs 3770 delivered (42%)",
+        "Self-documented and honestly disclosed"
+      ],
+      "root_causes": [
+        "Method-dependent - struggles when forced into different approach",
+        "Possible overcommitment without full context"
+      ],
+      "implication": "Strong when given autonomy, weaker when constrained",
+      "growth_opportunity": "Better scope negotiation upfront"
+    }
+  ],
+
+  "growth_patterns": [
+    {
+      "pattern_id": "GP-001",
+      "name": "Increasing Technical Sophistication",
+      "description": "Each role involves more technical infrastructure building",
+      "trajectory": [
+        "Biofourmis: Basic SDR prospecting",
+        "TraceAir: Strategic territory development",
+        "Mixmax: Full GTM infrastructure (domains, playbooks, databases)"
+      ],
+      "implication": "Moving from SDR toward GTM Engineering / RevOps"
+    },
+    {
+      "pattern_id": "GP-002",
+      "name": "Honesty as Differentiator",
+      "description": "Developed practice of transparent self-assessment",
+      "evidence": [
+        "Documents failures alongside wins",
+        "Creates 'private' versions with full context",
+        "Delivery gap openly disclosed"
+      ],
+      "implication": "Builds trust through unusual transparency"
+    }
+  ],
+
+  "environment_fit_matrix": {
+    "thrives_in": [
+      "Early-stage startups (Seed to Series B)",
+      "Building new verticals or territories",
+      "Outcome-measured cultures",
+      "Complex B2B sales with technical buyers",
+      "Healthcare/regulated industries",
+      "Autonomous work environments"
+    ],
+    "struggles_in": [
+      "Activity-metric cultures (calls/day, meetings/week)",
+      "Highly structured sales processes",
+      "Large established sales orgs",
+      "Micromanagement environments",
+      "Roles requiring political navigation"
+    ],
+    "ideal_next_role": {
+      "title": "GTM Engineer, Founding SDR/AE, Sales Operations",
+      "company_stage": "Seed to Series B",
+      "environment": "High autonomy, outcome-measured, greenfield opportunity",
+      "industry": "Healthcare tech, Security, or technical B2B SaaS"
+    }
+  },
+
+  "narrative_themes": [
+    {
+      "theme": "Builder Not Optimizer",
+      "one_liner": "I build GTM infrastructure from scratch. Don't hire me to optimize an existing playbook."
+    },
+    {
+      "theme": "Quality Over Quantity",
+      "one_liner": "21% connection rate on 1/3 the calls. I find the 20% that matters."
+    },
+    {
+      "theme": "Honest About Tradeoffs",
+      "one_liner": "I've been fired twice while hitting quota. Here's what that teaches you."
+    },
+    {
+      "theme": "Healthcare Tech Specialist",
+      "one_liner": "From mercury research to unicorn deals - I speak both science and sales."
+    }
+  ],
+
+  "key_metrics_verified": {
+    "traceair": {
+      "demos_september": 22,
+      "quota": 15,
+      "attainment": "147%",
+      "connection_rate": "21%",
+      "team_average": "4-6%",
+      "revenue": "$216,437.50"
+    },
+    "biofourmis": {
+      "orlando_health_close": "90 days",
+      "company_record": "Fastest close in company history",
+      "unicorn_milestone": "Employed during $1.3B Series D (April 2022)"
+    },
+    "mixmax": {
+      "inboxes_warmed": "50+",
+      "providers": ["ScaledMail", "Pager AI", "SmartLead AI"],
+      "delivery_target": 9000,
+      "delivery_actual": 3770
+    }
+  }
+}

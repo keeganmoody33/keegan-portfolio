@@ -1,0 +1,151 @@
+{
+  "audit_date": "2026-01-19",
+  "agent": "gap-hunter",
+  "last_updated": "2026-01-19",
+
+  "critical_gaps": [
+    {
+      "gap_id": "G001",
+      "type": "METRIC_GAP",
+      "claim": "Orlando Health deal: 90-day close (sourced, not closed)",
+      "role": "Biofourmis",
+      "severity": "MEDIUM",
+      "status": "RESOLVED_WITH_FRAMING",
+      "what_we_have": "User verification, honest framing",
+      "what_we_need": "N/A - resolved with honest qualifier",
+      "resolution": "User confirmed no documentation exists. Using honest framing: 'My prospecting sourced the deal. AE Tyler Cole closed it. 90-day close—fastest in company history.'",
+      "resolved_date": "2026-01-19"
+    },
+    {
+      "gap_id": "G002",
+      "type": "EMPLOYMENT_GAP",
+      "period": "Jan 2023 - Jun 2024",
+      "duration": "18 months",
+      "severity": "MEDIUM",
+      "status": "RESOLVED_WITH_CONTEXT",
+      "what_we_have": "User explanation",
+      "what_we_need": "N/A - explained",
+      "resolution": "Home Depot + Kevin Rathbun's Steakhouse + interviewing. User confirmed 2026-01-19.",
+      "suggested_actions": [
+        "Document any consulting projects if they occurred",
+        "Write brief narrative for portfolio if needed"
+      ],
+      "resolved_date": "2026-01-19"
+    },
+    {
+      "gap_id": "G003",
+      "type": "EMPLOYMENT_GAP",
+      "period": "Feb 2018 - Aug 2019",
+      "duration": "18 months",
+      "severity": "LOW",
+      "status": "OPEN",
+      "what_we_have": "Nothing",
+      "what_we_need": "Explanation of gap between EMT and Douglas County",
+      "note": "This may include remaining time at Mercer. Not critical for sales portfolio focus."
+    }
+  ],
+
+  "role_completeness": {
+    "Mixmax": {
+      "completeness": "85%",
+      "period": "Sep 2025 - Dec 2025",
+      "has": ["Playbook PDF", "ICP docs", "GTM documentation", "Campaign notes", "50+ documents in NOVEMBER 0742 folder", "Service agreements", "Gutenberg Framework", "Strategic analysis", "CRO Package"],
+      "missing": [
+        {"item": "Domain list export", "priority": "LOW"},
+        {"item": "End-of-contract summary", "priority": "LOW"}
+      ],
+      "note": "Most documented role in portfolio. Extensive methodology, strategic analysis, and deliverables."
+    },
+    "Mobb": {
+      "completeness": "60%",
+      "period": "May 2025 - Jul 2025",
+      "has": ["Call script", "Product brief", "One-pager", "Work summary"],
+      "missing": [
+        {"item": "Offer letter or contract", "priority": "MEDIUM"},
+        {"item": "Specific deliverables with dates", "priority": "MEDIUM"}
+      ],
+      "note": "Short tenure (2 months) limits what's available"
+    },
+    "TraceAir": {
+      "completeness": "50%",
+      "has": ["Offer letter & NDA", "Stats notes", "Gmail verification of $216k revenue", "22 demos in Sept (147% quota) - verified"],
+      "missing": [
+        {"item": "Work product samples", "priority": "MEDIUM"},
+        {"item": "Demo recordings or decks", "priority": "LOW"},
+        {"item": "Email sequences created", "priority": "LOW"}
+      ],
+      "note": "Core metrics now verified. Revenue ($216,437.50) and demos (22) confirmed via Gmail and user 2026-01-19."
+    },
+    "Biofourmis": {
+      "completeness": "35%",
+      "has": ["Career narrative", "Experience doc", "Honest framing for Orlando Health (user verified)"],
+      "missing": [
+        {"item": "Offer letter", "priority": "MEDIUM"},
+        {"item": "Performance data", "priority": "MEDIUM"}
+      ],
+      "note": "Orlando Health claim resolved with honest framing: 'sourced' not 'closed'. No documentation exists. Termination framing documented."
+    },
+    "Bariatric Centers of America": {
+      "completeness": "10%",
+      "has": ["LinkedIn description only"],
+      "missing": [
+        {"item": "Any documentation of this role", "priority": "HIGH"},
+        {"item": "Work products", "priority": "MEDIUM"}
+      ]
+    },
+    "Mercury Research": {
+      "completeness": "90%",
+      "has": ["4 peer-reviewed publications"],
+      "missing": [
+        {"item": "Exact employment dates", "priority": "LOW"}
+      ],
+      "note": "Publications are strong proof - best documented role"
+    }
+  },
+
+  "missing_artifact_types": [
+    {
+      "type": "Reference letters",
+      "count_found": 0,
+      "suggested_action": "Request from Dr. Kiefer, Mixmax manager, or any positive contact"
+    },
+    {
+      "type": "Performance reviews",
+      "count_found": 0,
+      "suggested_action": "Check email for any formal reviews"
+    },
+    {
+      "type": "Deal/pipeline exports",
+      "count_found": 0,
+      "suggested_action": "Check if you have any Salesforce/HubSpot exports"
+    },
+    {
+      "type": "Email sequences/campaigns",
+      "count_found": 0,
+      "suggested_action": "Export best sequences from any accessible tools"
+    }
+  ],
+
+  "gap_filling_requests": [
+    {
+      "to": "Self",
+      "action": "Check email archives for Biofourmis, TraceAir, Mixmax threads",
+      "priority": "HIGH"
+    },
+    {
+      "to": "Self",
+      "action": "Write narrative for Jan 2023 - Jan 2024 gap period",
+      "priority": "HIGH"
+    },
+    {
+      "to": "Dr. Kiefer (if in contact)",
+      "action": "Request reference letter for research work",
+      "priority": "MEDIUM"
+    },
+    {
+      "to": "Self",
+      "action": "Export any accessible CRM/sales tool data",
+      "priority": "MEDIUM"
+    }
+  ]
+}

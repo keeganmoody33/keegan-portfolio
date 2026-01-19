@@ -1,0 +1,245 @@
+{
+  "audit_date": "2025-01-19",
+  "agent": "bloat-detector",
+  "last_updated": "2026-01-19",
+
+  "summary": {
+    "total_files": 168,
+    "bloat_identified": 42,
+    "safe_to_delete": 18,
+    "archive_recommended": 15,
+    "needs_review": 0
+  },
+
+  "execution_log": {
+    "executed_date": "2026-01-19",
+    "files_deleted": [
+      "LinkedIn_Export/Logins.csv",
+      "LinkedIn_Export/Security Challenges.csv",
+      "LinkedIn_Export/PhoneNumbers.csv",
+      "LinkedIn_Export/Email Addresses.csv",
+      "LinkedIn_Export/Whatsapp Phone Numbers.csv",
+      "LinkedIn_Export/Ad_Targeting.csv",
+      "LinkedIn_Export/Inferences_about_you.csv",
+      "LinkedIn_Export/Receipts.csv",
+      "LinkedIn_Export/Receipts_v2.csv",
+      "LinkedIn_Export/LAN Ads Engagement.csv",
+      "LinkedIn_Export/Votes.csv",
+      "LinkedIn_Export/InstantReposts.csv",
+      "LinkedIn_Export/LearningCoachMessages.csv",
+      "LinkedIn_Export/learning_coach_messages.csv",
+      "LinkedIn_Export/learning_role_play_messages.csv",
+      "How to Build an AI-Powered Portfolio Site.zip",
+      "Portfolio Assembly Agent System v2.1.md",
+      "KM 07072025.pdf.pdf",
+      "RAMP.docx",
+      "RevsUp - Jetson - SDR.docx"
+    ],
+    "total_deleted": 20,
+    "status": "COMPLETE"
+  },
+
+  "bloat_categories": {
+    "DUPLICATE": [
+      {
+        "file": "How to Build an AI-Powered Portfolio Site.zip",
+        "reason": "Archive of folder that exists unzipped",
+        "action": "DELETE",
+        "confidence": "HIGH"
+      },
+      {
+        "file": "KM 07072025.pdf.pdf",
+        "reason": "Double extension, likely duplicate of another resume",
+        "action": "VERIFY_THEN_DELETE",
+        "confidence": "MEDIUM"
+      },
+      {
+        "file": "Portfolio Assembly Agent System v2.1.md (root)",
+        "reason": "Duplicate of file in 'How to Build...' folder, also now CLAUDE.md",
+        "action": "DELETE",
+        "confidence": "HIGH"
+      }
+    ],
+
+    "SECURITY_SENSITIVE": [
+      {
+        "file": "LinkedIn_Export/Logins.csv",
+        "reason": "Login history - security risk, no portfolio value",
+        "action": "DELETE",
+        "confidence": "HIGH"
+      },
+      {
+        "file": "LinkedIn_Export/Security Challenges.csv",
+        "reason": "Security data - risk, no portfolio value",
+        "action": "DELETE",
+        "confidence": "HIGH"
+      },
+      {
+        "file": "LinkedIn_Export/PhoneNumbers.csv",
+        "reason": "Personal contact data",
+        "action": "DELETE",
+        "confidence": "HIGH"
+      },
+      {
+        "file": "LinkedIn_Export/Email Addresses.csv",
+        "reason": "Personal contact data",
+        "action": "DELETE",
+        "confidence": "HIGH"
+      },
+      {
+        "file": "LinkedIn_Export/Whatsapp Phone Numbers.csv",
+        "reason": "Personal contact data",
+        "action": "DELETE",
+        "confidence": "HIGH"
+      }
+    ],
+
+    "NO_PORTFOLIO_VALUE": [
+      {
+        "file": "LinkedIn_Export/Ad_Targeting.csv",
+        "reason": "LinkedIn ad targeting data - no value",
+        "action": "DELETE",
+        "confidence": "HIGH"
+      },
+      {
+        "file": "LinkedIn_Export/Inferences_about_you.csv",
+        "reason": "LinkedIn inference data - no value",
+        "action": "DELETE",
+        "confidence": "HIGH"
+      },
+      {
+        "file": "LinkedIn_Export/Receipts.csv",
+        "reason": "Payment receipts - no value",
+        "action": "DELETE",
+        "confidence": "HIGH"
+      },
+      {
+        "file": "LinkedIn_Export/Receipts_v2.csv",
+        "reason": "Payment receipts - no value",
+        "action": "DELETE",
+        "confidence": "HIGH"
+      },
+      {
+        "file": "LinkedIn_Export/LAN Ads Engagement.csv",
+        "reason": "Ad engagement - no value",
+        "action": "DELETE",
+        "confidence": "HIGH"
+      },
+      {
+        "file": "LinkedIn_Export/Votes.csv",
+        "reason": "Poll votes - no value",
+        "action": "DELETE",
+        "confidence": "HIGH"
+      },
+      {
+        "file": "LinkedIn_Export/InstantReposts.csv",
+        "reason": "Repost history - no value",
+        "action": "DELETE",
+        "confidence": "HIGH"
+      }
+    ],
+
+    "ARCHIVE_CANDIDATE": [
+      {
+        "file": "How to Build an AI-Powered Portfolio Site/*",
+        "reason": "Website build docs - not needed for portfolio audit, needed later",
+        "action": "MOVE_TO_ARCHIVE",
+        "confidence": "MEDIUM",
+        "note": "Keep for website build phase"
+      },
+      {
+        "file": "_reference_not_my_work/*",
+        "reason": "Reference materials - valuable but not Keegan's work",
+        "action": "KEEP_SEPARATE",
+        "confidence": "HIGH",
+        "note": "Already properly organized"
+      }
+    ],
+
+    "NEEDS_REVIEW": [],
+
+    "APPROVED_FOR_DELETION": [
+      {
+        "file": "RAMP.docx",
+        "reason": "User approved deletion",
+        "action": "DELETE",
+        "approved_date": "2026-01-19"
+      },
+      {
+        "file": "RevsUp - Jetson - SDR.docx",
+        "reason": "User approved deletion",
+        "action": "DELETE",
+        "approved_date": "2026-01-19"
+      }
+    ],
+
+    "RECLASSIFIED": [
+      {
+        "file": "Accolade/*.pdf",
+        "previous": "NEEDS_REVIEW",
+        "new": "CONTEXT",
+        "reason": "User confirmed: Accolade is a LecturesFrom side project",
+        "resolved_date": "2026-01-19"
+      },
+      {
+        "file": "LecturesFrom-Website-Architecture.docx",
+        "previous": "UNKNOWN",
+        "new": "CONTEXT",
+        "reason": "User confirmed: LecturesFrom is their company for side projects (Accolade, Punch to Pen, Demonstr8, Scuttlewutt, Angles, Alleged Feature Flip)",
+        "resolved_date": "2026-01-19"
+      },
+      {
+        "file": "Punch 2 PEN.docx",
+        "previous": "UNKNOWN",
+        "new": "CONTEXT",
+        "reason": "User confirmed: Punch to Pen is a LecturesFrom side project",
+        "resolved_date": "2026-01-19"
+      }
+    ]
+  },
+
+  "linkedin_export_cleanup": {
+    "keep": [
+      "Positions.csv",
+      "Certifications.csv",
+      "Publications.csv",
+      "Education.csv",
+      "Skills.csv",
+      "Profile.csv",
+      "Profile Summary.csv",
+      "Connections.csv",
+      "Recommendations_Given.csv"
+    ],
+    "delete": [
+      "Logins.csv",
+      "Security Challenges.csv",
+      "PhoneNumbers.csv",
+      "Email Addresses.csv",
+      "Whatsapp Phone Numbers.csv",
+      "Ad_Targeting.csv",
+      "Inferences_about_you.csv",
+      "Receipts.csv",
+      "Receipts_v2.csv",
+      "LAN Ads Engagement.csv",
+      "Votes.csv",
+      "InstantReposts.csv",
+      "LearningCoachMessages.csv",
+      "learning_coach_messages.csv",
+      "learning_role_play_messages.csv"
+    ],
+    "review": [
+      "Job Applicant Saved Screening Question Responses*.csv",
+      "Job Applicant Saved Answers.csv",
+      "Jobs/*.csv"
+    ]
+  },
+
+  "folder_signal_to_noise": {
+    "experiences/": {"signal": "HIGH", "noise": "LOW", "action": "KEEP"},
+    "gtm_intelligence/": {"signal": "HIGH", "noise": "LOW", "action": "KEEP"},
+    "Apple_Notes/": {"signal": "MEDIUM", "noise": "LOW", "action": "KEEP"},
+    "LinkedIn_Export/": {"signal": "MEDIUM", "noise": "HIGH", "action": "CLEANUP"},
+    "How to Build an AI-Powered Portfolio Site/": {"signal": "LOW_NOW", "noise": "MEDIUM", "action": "ARCHIVE_FOR_LATER"},
+    "_reference_not_my_work/": {"signal": "REFERENCE", "noise": "LOW", "action": "KEEP_SEPARATE"}
+  }
+}

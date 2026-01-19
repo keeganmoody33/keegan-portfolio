@@ -1,0 +1,274 @@
+{
+  "micro": {
+    "range": "2-10",
+    "count": 5,
+    "characteristics": [
+      "Cost-sensitive",
+      "Efficiency-critical",
+      "Simple workflows"
+    ],
+    "most_valued_features": [
+      {
+        "feature": "Templates",
+        "mentions": 5
+      },
+      {
+        "feature": "Tracking",
+        "mentions": 5
+      },
+      {
+        "feature": "Sequences",
+        "mentions": 4
+      },
+      {
+        "feature": "Scheduling",
+        "mentions": 3
+      },
+      {
+        "feature": "Automation",
+        "mentions": 1
+      }
+    ],
+    "messaging_focus": [
+      "Do more with your tiny team",
+      "Simple, affordable, no complexity",
+      "Get started in minutes, not weeks"
+    ],
+    "case_examples": [
+      {
+        "name": "Selffee",
+        "problem": "High-velocity multi-stakeholder event coordination with tiny team",
+        "features": [
+          "Sequences",
+          "Scheduling",
+          "Templates",
+          "Tracking"
+        ]
+      },
+      {
+        "name": "Amplitude",
+        "problem": "High-volume cross-functional go-to-market coordination at speed",
+        "features": [
+          "Sequences",
+          "Templates",
+          "Tracking",
+          "Automation"
+        ]
+      },
+      {
+        "name": "Giampolo Law Group",
+        "problem": "High-touch multi-matter client communications without adding cost",
+        "features": [
+          "Templates",
+          "Scheduling",
+          "Tracking",
+          "Matter coordination"
+        ]
+      }
+    ]
+  },
+  "small": {
+    "range": "11-50",
+    "count": 9,
+    "characteristics": [
+      "Scaling pressure",
+      "Resource-constrained",
+      "Fast adoption needed"
+    ],
+    "most_valued_features": [
+      {
+        "feature": "Templates",
+        "mentions": 8
+      },
+      {
+        "feature": "Sequences",
+        "mentions": 8
+      },
+      {
+        "feature": "Tracking",
+        "mentions": 5
+      },
+      {
+        "feature": "Scheduling",
+        "mentions": 3
+      },
+      {
+        "feature": "Compliance workflows",
+        "mentions": 1
+      }
+    ],
+    "messaging_focus": [
+      "Scale without hiring",
+      "Fast time-to-value (<1 week)",
+      "Punch above your weight"
+    ],
+    "case_examples": [
+      {
+        "name": "Veraset",
+        "problem": "Coordinating compliant, high-volume outbound across lean team selling complex data products",
+        "features": [
+          "Templates",
+          "Tracking",
+          "Compliance workflows",
+          "Sequences"
+        ]
+      },
+      {
+        "name": "Sophia Institute",
+        "problem": "Cost pressure and capacity limits in nonprofit publishing required tool consolidation",
+        "features": [
+          "Sequences",
+          "Templates",
+          "Scheduling",
+          "Cost efficiency"
+        ]
+      },
+      {
+        "name": "Braintrust",
+        "problem": "Tool fragmentation and unreliable CRM sync causing visibility issues",
+        "features": [
+          "Reliable sync",
+          "Templates",
+          "Sequences",
+          "Tracking"
+        ]
+      }
+    ]
+  },
+  "mid_market": {
+    "range": "51-500",
+    "count": 19,
+    "characteristics": [
+      "Growth-stage",
+      "Team coordination",
+      "Process standardization"
+    ],
+    "most_valued_features": [
+      {
+        "feature": "Templates",
+        "mentions": 15
+      },
+      {
+        "feature": "Sequences",
+        "mentions": 13
+      },
+      {
+        "feature": "Tracking",
+        "mentions": 12
+      },
+      {
+        "feature": "Scheduling",
+        "mentions": 3
+      },
+      {
+        "feature": "Gmail integration",
+        "mentions": 2
+      }
+    ],
+    "messaging_focus": [
+      "Standardize across your growing team",
+      "Visibility and coordination at scale",
+      "Maintain quality while growing"
+    ],
+    "case_examples": [
+      {
+        "name": "Hostfully",
+        "problem": "Lead follow-up latency causing pipeline leakage across lean revenue team",
+        "features": [
+          "Sequences",
+          "Templates",
+          "Gmail integration",
+          "CRM tracking"
+        ]
+      },
+      {
+        "name": "Bennie",
+        "problem": "Inconsistent outreach and lack of visibility across growing team",
+        "features": [
+          "Sequences",
+          "Templates",
+          "Salesforce integration",
+          "Team sharing"
+        ]
+      },
+      {
+        "name": "Atrium",
+        "problem": "Manual tasks and lack of coaching accountability across revenue workflows",
+        "features": [
+          "Automation",
+          "Analytics",
+          "Templates",
+          "Coaching insights"
+        ]
+      }
+    ]
+  },
+  "enterprise": {
+    "range": "500+",
+    "count": 10,
+    "characteristics": [
+      "Global scale",
+      "Multi-team",
+      "Brand consistency"
+    ],
+    "most_valued_features": [
+      {
+        "feature": "CRM integration",
+        "mentions": 4
+      },
+      {
+        "feature": "Sequences",
+        "mentions": 4
+      },
+      {
+        "feature": "Templates",
+        "mentions": 3
+      },
+      {
+        "feature": "Tracking",
+        "mentions": 2
+      },
+      {
+        "feature": "Global collaboration",
+        "mentions": 1
+      }
+    ],
+    "messaging_focus": [
+      "Global coordination without complexity",
+      "Enterprise scale, startup speed",
+      "Brand consistency across teams"
+    ],
+    "case_examples": [
+      {
+        "name": "Canva",
+        "problem": "Global go-to-market coordination without sacrificing speed or consistency",
+        "features": [
+          "Templates",
+          "CRM integration",
+          "Global collaboration",
+          "Tracking"
+        ]
+      },
+      {
+        "name": "Brex",
+        "problem": "Large-scale outbound coordination without losing speed or consistency",
+        "features": [
+          "Sequences",
+          "CRM integration",
+          "Team analytics",
+          "Automation"
+        ]
+      },
+      {
+        "name": "Gong",
+        "problem": "Large-scale revenue coordination without variability or blind spots",
+        "features": [
+          "Sequences",
+          "Analytics",
+          "CRM integration",
+          "Templates"
+        ]
+      }
+    ]
+  }
+}

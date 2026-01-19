@@ -1,0 +1,163 @@
+{
+  "audit_date": "2025-01-19",
+  "total_files": 168,
+  "classification_summary": {
+    "PROOF": 28,
+    "CONTEXT": 45,
+    "REFERENCE": 15,
+    "SYSTEM": 25,
+    "BLOAT_CANDIDATE": 12,
+    "UNKNOWN": 43
+  },
+  "artifacts": {
+    "PROOF": {
+      "description": "Direct evidence of work, outcomes, employment",
+      "files": [
+        {"path": "TraceAir Offer Letter & NDA - Keegan Moody.pdf", "role": "TraceAir", "type": "employment_proof"},
+        {"path": "Service Agreement - Keegan Moody - 9 4 25 (1).pdf", "role": "Contract", "type": "employment_proof"},
+        {"path": "Service Agreement Rev. October 2025 - Keegan Moody (1).pdf", "role": "Contract", "type": "employment_proof"},
+        {"path": "CERTIFICATE OF ORGANIZATION.pdf", "role": "LecturesFrom", "type": "business_proof"},
+        {"path": "Towner Productions_Keegan Moody_Weaving Wisdoms 2025.pdf", "role": "Creative", "type": "contract_proof"},
+        {"path": "KMOODY_2020_ELSEVIER.pdf", "role": "Research", "type": "publication_proof"},
+        {"path": "KMOODY_2020_HGEMISSIONS.pdf", "role": "Research", "type": "publication_proof"},
+        {"path": "KMOODY_METHODSX COVERPG 2020.pdf", "role": "Research", "type": "publication_proof"},
+        {"path": "KMOODY.ASGM-HG 2020.pdf", "role": "Research", "type": "publication_proof"},
+        {"path": "Anthropic_AI_Fluency_Certificate.pdf", "role": "Certification", "type": "cert_proof"},
+        {"path": "Anthropic_Claude_Code_in_Action_Certificate.pdf", "role": "Certification", "type": "cert_proof"},
+        {"path": "Google_Prompting_Essentials_Certificate.pdf", "role": "Certification", "type": "cert_proof"},
+        {"path": "KMOODY.ZAPIER Certification.pdf", "role": "Certification", "type": "cert_proof"},
+        {"path": "CertificateOfCompletion_Learning Salesforce.pdf", "role": "Certification", "type": "cert_proof"},
+        {"path": "CertificateOfCompletion_Music Law Recording Management Rights and Performance Contracts.pdf", "role": "Certification", "type": "cert_proof"},
+        {"path": "Coursera NDNNRRS02JCS.pdf", "role": "Certification", "type": "cert_proof"},
+        {"path": "Gutenberg-Framework-Mixmax-Outbound-Playbook-2025.pdf", "role": "Mixmax", "type": "work_product"},
+        {"path": "Mobb Call Script.pdf", "role": "Mobb", "type": "work_product"},
+        {"path": "Mobb Product Breif.pdf", "role": "Mobb", "type": "work_product"},
+        {"path": "MOBB_AI_ONE_PAGER.pdf", "role": "Mobb", "type": "work_product"},
+        {"path": "Pin.com 30:60:90 Day Sales  GTM Plan.pdf", "role": "Pin", "type": "work_product"},
+        {"path": "Pin_Interview_One_Pager_Keegan.docx", "role": "Pin", "type": "work_product"},
+        {"path": "ICP - Google Sheets.pdf", "role": "Mixmax", "type": "work_product"},
+        {"path": "ICP - Intro.pdf", "role": "Mixmax", "type": "work_product"},
+        {"path": "LinkedIn_Export/Positions.csv", "role": "Employment", "type": "employment_proof"},
+        {"path": "LinkedIn_Export/Certifications.csv", "role": "Certification", "type": "cert_proof"},
+        {"path": "LinkedIn_Export/Publications.csv", "role": "Research", "type": "publication_proof"},
+        {"path": "LinkedIn_Export/Education.csv", "role": "Education", "type": "education_proof"}
+      ]
+    },
+    "CONTEXT": {
+      "description": "Supports understanding, provides background",
+      "files": [
+        {"path": "career_interview_deep_dive.md", "purpose": "Career narrative source"},
+        {"path": "skills_inventory.md", "purpose": "Skills documentation"},
+        {"path": "gaps_weaknesses_antipatterns.md", "purpose": "Self-awareness documentation"},
+        {"path": "role_templates_public_private.md", "purpose": "Role descriptions"},
+        {"path": "portfolio_quick_reference.md", "purpose": "Quick reference"},
+        {"path": "PORTFOLIO_MASTER.md", "purpose": "Master portfolio doc"},
+        {"path": "CONTENT_INVENTORY.md", "purpose": "Content tracking"},
+        {"path": "CERTIFICATIONS_AND_EMPLOYMENT.md", "purpose": "Employment summary"},
+        {"path": "LINKEDIN_SUMMARY.md", "purpose": "LinkedIn content"},
+        {"path": "RESUME_BULLETS.md", "purpose": "Resume content"},
+        {"path": "MIXMAX_GTM_DOCUMENTATION.md", "purpose": "Role documentation"},
+        {"path": "GTM_INTELLIGENCE_SYSTEM.md", "purpose": "GTM methodology"},
+        {"path": "CAMPAIGN_B_IDEAL_PROFILE.md", "purpose": "Campaign docs"},
+        {"path": "campaign-debrief-prof-services-nov2025.md", "purpose": "Campaign docs"},
+        {"path": "mobb-ai-work-summary.md", "purpose": "Role summary"},
+        {"path": "writing-samples.md", "purpose": "Writing samples"},
+        {"path": "BARINAV_CONTEXT.md", "purpose": "Context doc"},
+        {"path": "CAREER_GOALS_AND_VALUES.pdf", "purpose": "Goals documentation"},
+        {"path": "Career Goals, non negotiables, and what I look for in a team I join.docx", "purpose": "Goals documentation"},
+        {"path": "experiences/01-mixmax.md", "purpose": "Role documentation"},
+        {"path": "experiences/02-mobb-ai.md", "purpose": "Role documentation"},
+        {"path": "experiences/03-traceair.md", "purpose": "Role documentation"},
+        {"path": "experiences/04-biofourmis.md", "purpose": "Role documentation"},
+        {"path": "experiences/05-gtm-consulting.md", "purpose": "Role documentation"},
+        {"path": "experiences/06-barbour-orthopedics.md", "purpose": "Role documentation"},
+        {"path": "experiences/07-mercury-research.md", "purpose": "Role documentation"},
+        {"path": "experiences/08-education-volunteer.md", "purpose": "Role documentation"},
+        {"path": "Apple_Notes/BIOFOURMIS_CAREER_NARRATIVE.md", "purpose": "Role narrative"},
+        {"path": "Apple_Notes/MIXMAX_CAMPAIGNS.md", "purpose": "Campaign docs"},
+        {"path": "Apple_Notes/TRACEAIR_STATS.md", "purpose": "Stats documentation"},
+        {"path": "Apple_Notes/NOTES_TIMELINE.md", "purpose": "Timeline notes"},
+        {"path": "profile/basic-info.md", "purpose": "Profile info"},
+        {"path": "values/values-and-preferences.md", "purpose": "Values documentation"},
+        {"path": "skills/skills-matrix.md", "purpose": "Skills matrix"},
+        {"path": "gaps/gaps-and-weaknesses.md", "purpose": "Gap documentation"},
+        {"path": "faq/common-questions.md", "purpose": "FAQ content"},
+        {"path": "gtm_intelligence/*.json", "purpose": "GTM intelligence data", "count": 9},
+        {"path": "Emily Carter Buyer Persona.pdf", "purpose": "Buyer persona"},
+        {"path": "👩🏽‍💼 Buyer Persona: Janelle Rivers.pdf", "purpose": "Buyer persona"},
+        {"path": "The Cognitive Offload Trap FINAL (3).pdf", "purpose": "Thought leadership"},
+        {"path": "Keegan Sheet Sales Playbook.docx", "purpose": "Sales methodology"},
+        {"path": "KEEGANMOODY01:07:2026.linkedin.pdf", "purpose": "LinkedIn profile snapshot"},
+        {"path": "KeeganMoody.resume2025.pdf", "purpose": "Resume"},
+        {"path": "Keegan Moody_Sales_2025.pdf", "purpose": "Resume variant"},
+        {"path": "KHM02_25 (1).pdf", "purpose": "Resume variant"}
+      ]
+    },
+    "REFERENCE": {
+      "description": "External materials, not Keegan's work",
+      "files": [
+        {"path": "_reference_not_my_work/a-practical-guide-to-building-agents.pdf", "source": "External"},
+        {"path": "_reference_not_my_work/the-ultimate-agentic-ai-guide.pdf", "source": "External"},
+        {"path": "_reference_not_my_work/the-llm-evaluation-guidebook.pdf", "source": "External"},
+        {"path": "_reference_not_my_work/How to hire a GTM Engineer.pages", "source": "External"},
+        {"path": "_reference_not_my_work/How to hire a GTM Engineer 2.pages", "source": "External"},
+        {"path": "_reference_not_my_work/CANNONBALL_GTM_PAIN_BASED_SEGMENTATION.pdf", "source": "External"},
+        {"path": "_reference_not_my_work/The Art of Simplicity_ How to Make Complex Data into Messages That Land.pdf", "source": "External"},
+        {"path": "_reference_not_my_work/Analysis of Sales Asset Tracking Tools for PMMs at B2B SaaS Startups (_100 Employees).pdf", "source": "External"},
+        {"path": "_reference_not_my_work/The Guide to Creating Permissionless Value Propositions That Prospects Would Pay to Receive.pdf", "source": "External"}
+      ]
+    },
+    "SYSTEM": {
+      "description": "Agent system files, website build files",
+      "files": [
+        {"path": "CLAUDE.md", "purpose": "Agent system orchestration"},
+        {"path": "Portfolio Assembly Agent System v2.1.md", "purpose": "Agent system source"},
+        {"path": "ai-config/system-prompts.md", "purpose": "AI configuration"},
+        {"path": "How to Build an AI-Powered Portfolio Site/*.md", "purpose": "Website build docs", "count": 25},
+        {"path": "How to Build an AI-Powered Portfolio Site/*.tsx", "purpose": "React components", "count": 6}
+      ]
+    },
+    "BLOAT_CANDIDATE": {
+      "description": "Files that may not serve the portfolio",
+      "files": [
+        {"path": "How to Build an AI-Powered Portfolio Site.zip", "reason": "Archive of folder that exists"},
+        {"path": "KM 07072025.pdf.pdf", "reason": "Double extension, likely duplicate resume"},
+        {"path": "LinkedIn_Export/Logins.csv", "reason": "Security data, not portfolio relevant"},
+        {"path": "LinkedIn_Export/Security Challenges.csv", "reason": "Security data, not portfolio relevant"},
+        {"path": "LinkedIn_Export/Ad_Targeting.csv", "reason": "Ad data, not portfolio relevant"},
+        {"path": "LinkedIn_Export/Inferences_about_you.csv", "reason": "LinkedIn inference data"},
+        {"path": "LinkedIn_Export/Receipts.csv", "reason": "Payment receipts"},
+        {"path": "LinkedIn_Export/Receipts_v2.csv", "reason": "Payment receipts"},
+        {"path": "LinkedIn_Export/Whatsapp Phone Numbers.csv", "reason": "Personal data"},
+        {"path": "LinkedIn_Export/PhoneNumbers.csv", "reason": "Personal data"},
+        {"path": "LinkedIn_Export/Email Addresses.csv", "reason": "Personal data"},
+        {"path": "RAMP.docx", "reason": "UNKNOWN - needs review"}
+      ]
+    },
+    "UNKNOWN": {
+      "description": "Cannot determine purpose without human input",
+      "files": [
+        {"path": "Accolade/Rough Pitch Deck | Accolade.pdf", "question": "Is Accolade your company or a role?"},
+        {"path": "Accolade/Accolade Business Plan – Cohesive Strategic Overview.pdf", "question": "Is this your work product?"},
+        {"path": "Accolade/Accolade Business Plan.pdf", "question": "Is this your work product?"},
+        {"path": "LecturesFrom-Website-Architecture.docx", "question": "Is LecturesFrom your company?"},
+        {"path": "Punch 2 PEN.docx", "question": "What is Punch 2 PEN?"},
+        {"path": "RevsUp - Jetson - SDR.docx", "question": "Is this a role application or work product?"},
+        {"path": "AssetMule Sales Success Kit (Steps to get your $190).pages", "question": "Is this your work or reference?"},
+        {"path": "Cannonball GTM Permissionless Value Prop.pages", "question": "Is this your work or reference?"},
+        {"path": "Clay to Smartlead Recovery & Sync Protocol —> GROUP ABC.pages", "question": "What project is this from?"},
+        {"path": "KMOODY2025.GTME.pdf", "question": "What is GTME?"}
+      ]
+    }
+  },
+  "roles_identified": [
+    {"name": "Mixmax", "period": "Sep 2025 - Dec 2025", "artifacts_found": 8},
+    {"name": "Mobb AI", "period": "May 2025 - Jun 2025", "artifacts_found": 4},
+    {"name": "TraceAir", "period": "Jul 2024 - Jan 2025", "artifacts_found": 2},
+    {"name": "Biofourmis", "period": "Aug 2021 - Jan 2023", "artifacts_found": 2},
+    {"name": "Pin.com", "period": "Interview/Application", "artifacts_found": 2},
+    {"name": "Mercury Research", "period": "~2016-2018", "artifacts_found": 4},
+    {"name": "LecturesFrom", "period": "Unknown", "artifacts_found": 2},
+    {"name": "Accolade", "period": "Unknown", "artifacts_found": 3}
+  ]
+}

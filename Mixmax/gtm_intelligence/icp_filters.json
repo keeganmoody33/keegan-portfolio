@@ -1,0 +1,79 @@
+{
+  "tech_stack_requirements": {
+    "crm_any": 64,
+    "gmail_google_workspace": 28,
+    "salesforce": 19,
+    "hubspot": 4,
+    "outlook_office365": 2
+  },
+  "organizational_maturity": {
+    "data_hygiene": 28,
+    "leadership_alignment": 56,
+    "defined_icp": 11,
+    "process_discipline": 26,
+    "template_ready": 66
+  },
+  "team_structure_signals": {},
+  "must_haves": [
+    {
+      "type": "tech_stack",
+      "requirement": "crm_any",
+      "frequency": 64
+    },
+    {
+      "type": "tech_stack",
+      "requirement": "gmail_google_workspace",
+      "frequency": 28
+    },
+    {
+      "type": "maturity",
+      "requirement": "data_hygiene",
+      "frequency": 28
+    },
+    {
+      "type": "maturity",
+      "requirement": "leadership_alignment",
+      "frequency": 56
+    },
+    {
+      "type": "maturity",
+      "requirement": "process_discipline",
+      "frequency": 26
+    },
+    {
+      "type": "maturity",
+      "requirement": "template_ready",
+      "frequency": 66
+    }
+  ],
+  "nice_to_haves": [
+    {
+      "type": "tech_stack",
+      "requirement": "salesforce",
+      "frequency": 19
+    },
+    {
+      "type": "maturity",
+      "requirement": "defined_icp",
+      "frequency": 11
+    }
+  ],
+  "disqualifiers": [
+    {
+      "condition": "no_crm_email_infrastructure",
+      "reason": "Cannot integrate without CRM/email system"
+    },
+    {
+      "condition": "bespoke_unstructured_process",
+      "reason": "Not template-ready, requires too much customization"
+    },
+    {
+      "condition": "stakeholder_resistance",
+      "reason": "Leadership not bought in to standardization"
+    },
+    {
+      "condition": "insufficient_volume",
+      "reason": "Too few prospects to justify automation"
+    }
+  ]
+}

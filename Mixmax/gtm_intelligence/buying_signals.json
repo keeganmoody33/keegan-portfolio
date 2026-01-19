@@ -1,0 +1,162 @@
+{
+  "pain_categories": {
+    "pipeline_leakage": {
+      "count": 34,
+      "examples": [
+        "poor implementation of outreach, high license fees, data syncing issues, and siloed instances",
+        "increase pipeline generation and streamline processes across revenue teams to boost productivity and engagement",
+        "data cleanliness and organization in salesforce; maintaining consistency across teams; rapid go-to-market strategies (sending as many emails as possible)"
+      ],
+      "keywords": [
+        "pipeline",
+        "leakage",
+        "lost deals",
+        "follow-up",
+        "response time"
+      ]
+    },
+    "tool_fragmentation": {
+      "count": 33,
+      "examples": [
+        "poor implementation of outreach, high license fees, data syncing issues, and siloed instances",
+        "increase pipeline generation and streamline processes across revenue teams to boost productivity and engagement",
+        "data cleanliness and organization in salesforce; maintaining consistency across teams; rapid go-to-market strategies (sending as many emails as possible)"
+      ],
+      "keywords": [
+        "fragmented",
+        "tool sprawl",
+        "multiple tools",
+        "integration",
+        "sync"
+      ]
+    },
+    "team_scaling": {
+      "count": 33,
+      "examples": [
+        "poor implementation of outreach, high license fees, data syncing issues, and siloed instances",
+        "increase pipeline generation and streamline processes across revenue teams to boost productivity and engagement",
+        "data cleanliness and organization in salesforce; maintaining consistency across teams; rapid go-to-market strategies (sending as many emails as possible)"
+      ],
+      "keywords": [
+        "scaling",
+        "headcount",
+        "capacity",
+        "bandwidth",
+        "hiring"
+      ]
+    },
+    "visibility_gaps": {
+      "count": 33,
+      "examples": [
+        "poor implementation of outreach, high license fees, data syncing issues, and siloed instances",
+        "increase pipeline generation and streamline processes across revenue teams to boost productivity and engagement",
+        "data cleanliness and organization in salesforce; maintaining consistency across teams; rapid go-to-market strategies (sending as many emails as possible)"
+      ],
+      "keywords": [
+        "visibility",
+        "blind spots",
+        "tracking",
+        "reporting",
+        "metrics"
+      ]
+    },
+    "manual_processes": {
+      "count": 32,
+      "examples": [
+        "poor implementation of outreach, high license fees, data syncing issues, and siloed instances",
+        "increase pipeline generation and streamline processes across revenue teams to boost productivity and engagement",
+        "data cleanliness and organization in salesforce; maintaining consistency across teams; rapid go-to-market strategies (sending as many emails as possible)"
+      ],
+      "keywords": [
+        "manual",
+        "repetitive",
+        "time-consuming",
+        "inefficient"
+      ]
+    },
+    "inconsistent_messaging": {
+      "count": 33,
+      "examples": [
+        "poor implementation of outreach, high license fees, data syncing issues, and siloed instances",
+        "increase pipeline generation and streamline processes across revenue teams to boost productivity and engagement",
+        "data cleanliness and organization in salesforce; maintaining consistency across teams; rapid go-to-market strategies (sending as many emails as possible)"
+      ],
+      "keywords": [
+        "inconsistent",
+        "standardize",
+        "template",
+        "brand"
+      ]
+    },
+    "compliance_risk": {
+      "count": 33,
+      "examples": [
+        "poor implementation of outreach, high license fees, data syncing issues, and siloed instances",
+        "increase pipeline generation and streamline processes across revenue teams to boost productivity and engagement",
+        "data cleanliness and organization in salesforce; maintaining consistency across teams; rapid go-to-market strategies (sending as many emails as possible)"
+      ],
+      "keywords": [
+        "compliance",
+        "privacy",
+        "GDPR",
+        "HIPAA",
+        "regulation"
+      ]
+    },
+    "coordination_latency": {
+      "count": 33,
+      "examples": [
+        "poor implementation of outreach, high license fees, data syncing issues, and siloed instances",
+        "increase pipeline generation and streamline processes across revenue teams to boost productivity and engagement",
+        "data cleanliness and organization in salesforce; maintaining consistency across teams; rapid go-to-market strategies (sending as many emails as possible)"
+      ],
+      "keywords": [
+        "latency",
+        "coordination",
+        "delays",
+        "slow",
+        "bottleneck"
+      ]
+    }
+  },
+  "trigger_events": {
+    "cost_pressure": {
+      "count": 12,
+      "examples": [
+        "poor implementation of outreach, high license fees, data syncing issues, and siloed instances",
+        "increase pipeline generation and streamline processes across revenue teams to boost productivity and engagement"
+      ]
+    },
+    "leadership_change": {
+      "count": 30,
+      "examples": [
+        "increase pipeline generation and streamline processes across revenue teams to boost productivity and engagement",
+        "data cleanliness and organization in salesforce; maintaining consistency across teams; rapid go-to-market strategies (sending as many emails as possib"
+      ]
+    },
+    "team_growth": {
+      "count": 16,
+      "examples": [
+        "increase pipeline generation and streamline processes across revenue teams to boost productivity and engagement",
+        "data cleanliness and organization in salesforce; maintaining consistency across teams; rapid go-to-market strategies (sending as many emails as possib"
+      ]
+    },
+    "product_launch": {
+      "count": 4,
+      "examples": [
+        "data cleanliness and organization in salesforce; maintaining consistency across teams; rapid go-to-market strategies (sending as many emails as possib",
+        "canva's recruitment team needed a solution to eliminate back-and-forth in interview scheduling, re-engage past applicants with insights, send internal"
+      ]
+    }
+  },
+  "urgency_signals": {
+    "time_sensitive": {
+      "count": 33,
+      "examples": []
+    },
+    "compliance_driven": {
+      "count": 33,
+      "examples": []
+    }
+  }
+}

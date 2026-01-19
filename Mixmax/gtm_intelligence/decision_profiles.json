@@ -1,0 +1,62 @@
+{
+  "pragmatic_speed_oriented": {
+    "count": 14,
+    "characteristics": [
+      "Fast implementation",
+      "Ease of use",
+      "Time to value",
+      "Low learning curve"
+    ],
+    "sales_approach": "Lead with speed to value, offer immediate pilot, minimize friction",
+    "offer_types": [
+      "Free 2-week trial",
+      "Setup in < 1 hour demo",
+      "No implementation fees"
+    ]
+  },
+  "data_driven_analytical": {
+    "count": 9,
+    "characteristics": [
+      "Metrics focus",
+      "ROI calculation",
+      "A/B testing",
+      "Performance tracking"
+    ],
+    "sales_approach": "Provide benchmarks, show analytics capabilities, offer measurement framework",
+    "offer_types": [
+      "Free ROI audit",
+      "Performance benchmark report",
+      "Analytics walkthrough"
+    ]
+  },
+  "relationship_trust_based": {
+    "count": 0,
+    "characteristics": [
+      "Peer references",
+      "Case studies",
+      "Community",
+      "Long-term partnership"
+    ],
+    "sales_approach": "Share similar customer stories, offer peer introductions, emphasize support",
+    "offer_types": [
+      "Reference call with similar customer",
+      "Join customer community",
+      "Dedicated CSM intro"
+    ]
+  },
+  "cost_conscious_roi_focused": {
+    "count": 2,
+    "characteristics": [
+      "Budget constraints",
+      "Cost comparison",
+      "Value justification",
+      "Efficiency gains"
+    ],
+    "sales_approach": "Show cost savings vs competitors, quantify time savings, highlight efficiency",
+    "offer_types": [
+      "Cost comparison calculator",
+      "Efficiency audit",
+      "Transparent pricing upfront"
+    ]
+  }
+}

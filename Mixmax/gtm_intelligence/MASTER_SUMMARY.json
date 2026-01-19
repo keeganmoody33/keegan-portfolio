@@ -1,0 +1,49 @@
+{
+  "generated_date": "2025-11-17",
+  "source_data": {
+    "raw_case_studies": 445,
+    "processed_case_studies": 33,
+    "customer_records": 402
+  },
+  "intelligence_outputs": {
+    "buying_signals": {
+      "pain_categories": 8,
+      "trigger_events": 4,
+      "urgency_signals": 2
+    },
+    "icp_filters": {
+      "must_haves": 6,
+      "nice_to_haves": 2,
+      "disqualifiers": 4
+    },
+    "competitor_intelligence": 3,
+    "vertical_playbooks": 7,
+    "size_segments": 4,
+    "social_proof_items": 15,
+    "decision_profiles": 4,
+    "risk_flags": 9
+  },
+  "gtm_agent_usage": {
+    "list_builder": [
+      "buying_signals.json",
+      "icp_filters.json"
+    ],
+    "data_quality_engineer": [
+      "icp_filters.json",
+      "disqualification_criteria.json"
+    ],
+    "offer_strategist": [
+      "vertical_playbooks.json",
+      "social_proof_library.json",
+      "competitor_intelligence.json"
+    ],
+    "campaign_orchestrator": [
+      "size_segment_features.json",
+      "decision_profiles.json"
+    ],
+    "analytics_optimizer": [
+      "buying_signals.json",
+      "size_segment_features.json"
+    ]
+  }
+}

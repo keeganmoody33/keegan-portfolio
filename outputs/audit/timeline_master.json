@@ -1,0 +1,175 @@
+{
+  "audit_date": "2026-01-19",
+  "timeline_source": "LinkedIn Positions.csv + file content analysis + human verification",
+  "note": "Timeline corrected per user input on 2026-01-19. Mixmax dates corrected to 2025.",
+
+  "career_timeline": [
+    {
+      "role": "Founding GTM Engineer",
+      "company": "Mixmax",
+      "start": "2025-09",
+      "end": "2025-12",
+      "duration_months": 4,
+      "location": "Remote",
+      "confidence": "HIGH",
+      "source": "User verification, Service Agreements",
+      "notes": "Built GTM intelligence system, 402 customers validated, $4.79M ARR analyzed"
+    },
+    {
+      "role": "GTM | Business Development",
+      "company": "Mobb",
+      "start": "2025-05",
+      "end": "2025-07",
+      "duration_months": 3,
+      "location": "Remote",
+      "confidence": "HIGH",
+      "source": "LinkedIn Positions.csv, user verification"
+    },
+    {
+      "role": "Senior Sales Development Representative",
+      "company": "TraceAir Technologies",
+      "start": "2024-07",
+      "end": "2025-01",
+      "duration_months": 7,
+      "location": "Seattle, Washington",
+      "confidence": "HIGH",
+      "source": "LinkedIn Positions.csv",
+      "notes": "Yielded $220k from Q4"
+    },
+    {
+      "role": "Senior Sales Consultant",
+      "company": "Bariatric Centers of America",
+      "start": "2024-01",
+      "end": "2024-06",
+      "duration_months": 6,
+      "location": "Atlanta, Georgia",
+      "confidence": "HIGH",
+      "source": "LinkedIn Positions.csv"
+    },
+    {
+      "role": "Sales Development Representative",
+      "company": "Biofourmis",
+      "start": "2021-08",
+      "end": "2023-01",
+      "duration_months": 17,
+      "location": "Atlanta, Georgia",
+      "confidence": "HIGH",
+      "source": "LinkedIn Positions.csv",
+      "notes": "2nd SDR hired, contributed to unicorn status"
+    },
+    {
+      "role": "Corporate Development Associate",
+      "company": "Barbour Orthopaedics & Spine",
+      "start": "2020-06",
+      "end": "2021-07",
+      "duration_months": 13,
+      "location": "Atlanta, Georgia",
+      "confidence": "HIGH",
+      "source": "LinkedIn Positions.csv"
+    },
+    {
+      "role": "Special Education Paraprofessional + Football Coach",
+      "company": "Douglas County School System",
+      "start": "2019-08",
+      "end": "2020-06",
+      "duration_months": 10,
+      "location": "Douglasville, Georgia",
+      "confidence": "HIGH",
+      "source": "LinkedIn Positions.csv"
+    },
+    {
+      "role": "Biochemistry II Senior Capstone TA",
+      "company": "Mercer University",
+      "start": "2019-01",
+      "end": "2019-05",
+      "duration_months": 5,
+      "location": "Macon, Georgia",
+      "confidence": "HIGH",
+      "source": "LinkedIn Positions.csv"
+    },
+    {
+      "role": "Supplementary Instruction Leader - Organic Chemistry",
+      "company": "Mercer University",
+      "start": "2017-08",
+      "end": "2019-05",
+      "duration_months": 21,
+      "location": "Macon, Georgia",
+      "confidence": "HIGH",
+      "source": "LinkedIn Positions.csv"
+    },
+    {
+      "role": "Emergency Medical Technician Basic",
+      "company": "Community Ambulance",
+      "start": "2017-06",
+      "end": "2018-02",
+      "duration_months": 8,
+      "location": "Macon, Georgia",
+      "confidence": "HIGH",
+      "source": "LinkedIn Positions.csv"
+    }
+  ],
+
+  "missing_from_linkedin": [
+    {
+      "role": "Mercury Research / Dr. Kiefer",
+      "start": "~2016",
+      "end": "~2018",
+      "confidence": "LOW",
+      "source": "CLAUDE.md, publication files dated 2020",
+      "question": "Exact dates for research assistant role?"
+    }
+  ],
+
+  "timeline_gaps": [
+    {
+      "period": "Feb 2018 - Aug 2019",
+      "duration_months": 18,
+      "context": "Between EMT role and Douglas County",
+      "status": "UNRESOLVED",
+      "notes": "Early career gap - may be university time"
+    },
+    {
+      "period": "Jan 2023 - Jan 2024",
+      "duration_months": 12,
+      "context": "Between Biofourmis and Bariatric Centers",
+      "status": "RESOLVED",
+      "explanation": "Home Depot (cart pusher), Kevin Rathbun's Steakhouse, extensive interviewing",
+      "honest_framing": "Survival jobs during job search. What you build next matters more than how you survived."
+    }
+  ],
+
+  "overlaps_to_verify": [
+    {
+      "roles": ["SI Leader Organic Chem", "Biochemistry TA"],
+      "period": "Jan 2019 - May 2019",
+      "status": "RESOLVED - concurrent university roles"
+    }
+  ],
+
+  "red_flags": [
+    {
+      "issue": "All file metadata shows 2025-01-18",
+      "meaning": "Files were recently copied/moved - cannot trust file dates",
+      "action": "Rely on content and LinkedIn for dating",
+      "status": "ACKNOWLEDGED"
+    }
+  ],
+
+  "resolved_issues": [
+    {
+      "issue": "Biofourmis end date conflict",
+      "resolution": "Confirmed Jan 2023 (17-month tenure)",
+      "resolved_date": "2026-01-19"
+    },
+    {
+      "issue": "TraceAir/Mixmax overlap",
+      "resolution": "NOT concurrent - TraceAir ended Jan 2025, Mixmax started Sep 2025",
+      "resolved_date": "2026-01-19"
+    },
+    {
+      "issue": "Gap period explanation",
+      "resolution": "Home Depot + Kevin Rathbun's Steakhouse + interviewing",
+      "resolved_date": "2026-01-19"
+    }
+  ]
+}

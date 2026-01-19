@@ -1,0 +1,104 @@
+{
+  "outreach": {
+    "mentions": 14,
+    "displacement_count": 0,
+    "complaints": [
+      {
+        "type": "cost",
+        "keywords": [
+          "expensive",
+          "cost",
+          "pricing",
+          "license fees"
+        ]
+      },
+      {
+        "type": "integration_issues",
+        "keywords": [
+          "integration",
+          "syncing",
+          "sync issues",
+          "data quality"
+        ]
+      },
+      {
+        "type": "performance",
+        "keywords": [
+          "slow",
+          "latency",
+          "performance issues",
+          "bugs"
+        ]
+      },
+      {
+        "type": "poor_support",
+        "keywords": [
+          "support",
+          "customer service",
+          "slow response"
+        ]
+      }
+    ],
+    "switching_triggers": [],
+    "win_themes": [
+      "Fast implementation (<1 week)",
+      "Gmail-native (no context switching)",
+      "Simple, intuitive UX",
+      "Lower cost, transparent pricing",
+      "Reliable CRM sync"
+    ]
+  },
+  "groove": {
+    "mentions": 1,
+    "displacement_count": 0,
+    "complaints": [
+      {
+        "type": "cost",
+        "keywords": [
+          "expensive",
+          "cost",
+          "pricing",
+          "license fees"
+        ]
+      },
+      {
+        "type": "poor_support",
+        "keywords": [
+          "support",
+          "customer service",
+          "slow response"
+        ]
+      },
+      {
+        "type": "performance",
+        "keywords": [
+          "slow",
+          "latency",
+          "performance issues",
+          "bugs"
+        ]
+      }
+    ],
+    "switching_triggers": [],
+    "win_themes": [
+      "Fast implementation (<1 week)",
+      "Gmail-native (no context switching)",
+      "Simple, intuitive UX",
+      "Lower cost, transparent pricing",
+      "Reliable CRM sync"
+    ]
+  },
+  "salesloft": {
+    "mentions": 1,
+    "displacement_count": 0,
+    "complaints": [],
+    "switching_triggers": [],
+    "win_themes": [
+      "Fast implementation (<1 week)",
+      "Gmail-native (no context switching)",
+      "Simple, intuitive UX",
+      "Lower cost, transparent pricing",
+      "Reliable CRM sync"
+    ]
+  }
+}

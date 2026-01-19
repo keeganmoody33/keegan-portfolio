@@ -1,0 +1,109 @@
+{
+  "technical_risks": [
+    {
+      "flag": "no_crm_or_email_infrastructure",
+      "severity": "HIGH",
+      "impact": "Cannot integrate, no data flow",
+      "qualification_question": "What CRM and email platform are you using?"
+    },
+    {
+      "flag": "poor_email_deliverability",
+      "severity": "HIGH",
+      "impact": "Cannot send emails, sender reputation issues",
+      "qualification_question": "What's your current inbox placement rate?"
+    },
+    {
+      "flag": "data_quality_issues",
+      "severity": "MEDIUM",
+      "impact": "Garbage in, garbage out - poor results",
+      "qualification_question": "How do you currently manage contact data quality?"
+    }
+  ],
+  "organizational_risks": [
+    {
+      "flag": "no_leadership_buy_in",
+      "severity": "HIGH",
+      "impact": "Low adoption, process resistance",
+      "qualification_question": "Does leadership support standardizing sales outreach?"
+    },
+    {
+      "flag": "stakeholder_resistance",
+      "severity": "MEDIUM",
+      "impact": "Change management failure, rollout stalls",
+      "qualification_question": "How does your team feel about adopting new tools?"
+    },
+    {
+      "flag": "insufficient_volume",
+      "severity": "MEDIUM",
+      "impact": "ROI doesn't justify automation",
+      "qualification_question": "How many outbound emails does your team send per week?"
+    }
+  ],
+  "process_risks": [
+    {
+      "flag": "bespoke_unstructured_process",
+      "severity": "HIGH",
+      "impact": "Cannot templatize, requires heavy customization",
+      "qualification_question": "Do you have repeatable outreach motions or is each prospect unique?"
+    },
+    {
+      "flag": "no_defined_icp",
+      "severity": "MEDIUM",
+      "impact": "Cannot segment effectively, wasted effort",
+      "qualification_question": "Can you describe your ideal customer profile?"
+    },
+    {
+      "flag": "complex_approval_workflows",
+      "severity": "LOW",
+      "impact": "Slow adoption, workflow friction",
+      "qualification_question": "Do outbound emails require approval before sending?"
+    }
+  ],
+  "qualification_questions": [
+    {
+      "question": "What CRM and email platform are you using?",
+      "flag": "no_crm_or_email_infrastructure",
+      "severity": "HIGH"
+    },
+    {
+      "question": "What's your current inbox placement rate?",
+      "flag": "poor_email_deliverability",
+      "severity": "HIGH"
+    },
+    {
+      "question": "How do you currently manage contact data quality?",
+      "flag": "data_quality_issues",
+      "severity": "MEDIUM"
+    },
+    {
+      "question": "Does leadership support standardizing sales outreach?",
+      "flag": "no_leadership_buy_in",
+      "severity": "HIGH"
+    },
+    {
+      "question": "How does your team feel about adopting new tools?",
+      "flag": "stakeholder_resistance",
+      "severity": "MEDIUM"
+    },
+    {
+      "question": "How many outbound emails does your team send per week?",
+      "flag": "insufficient_volume",
+      "severity": "MEDIUM"
+    },
+    {
+      "question": "Do you have repeatable outreach motions or is each prospect unique?",
+      "flag": "bespoke_unstructured_process",
+      "severity": "HIGH"
+    },
+    {
+      "question": "Can you describe your ideal customer profile?",
+      "flag": "no_defined_icp",
+      "severity": "MEDIUM"
+    },
+    {
+      "question": "Do outbound emails require approval before sending?",
+      "flag": "complex_approval_workflows",
+      "severity": "LOW"
+    }
+  ]
+}

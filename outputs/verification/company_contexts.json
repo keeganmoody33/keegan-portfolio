@@ -1,0 +1,254 @@
+{
+  "metadata": {
+    "research_date": "2026-01-19",
+    "agent": "@company-historian",
+    "version": "2.0",
+    "last_updated": "2026-01-19",
+    "update_notes": "Added 2025 company developments from web research"
+  },
+  "companies": [
+    {
+      "company_id": "COMP-001",
+      "name": "Mixmax",
+      "url": "https://www.mixmax.com",
+      "overview": {
+        "founded": "2014",
+        "founders": ["Olof Mathe", "Brad Vogel"],
+        "headquarters": "San Francisco, CA",
+        "industry": "Sales Engagement / Sales Tech",
+        "status": "Active",
+        "description": "AI-native Sales Execution Platform with Inbox, Meeting, and Engagement Copilots. Integrates directly into Gmail and Outlook."
+      },
+      "funding": {
+        "total_raised": "$22.1M",
+        "rounds": [
+          {"round": "Seed", "date": "2014", "amount": "Undisclosed"},
+          {"round": "Series A", "date": "2016", "amount": "$10M"},
+          {"round": "Series B", "date": "2018-02-07", "amount": "$10.3M"}
+        ],
+        "investors": ["Harrison Metal", "Creandum", "Floodgate", "Jason Lemkin"],
+        "last_round": "Series B (Feb 2018)"
+      },
+      "tenure_context": {
+        "keegan_role": "Founding GTM Engineer",
+        "start": "2025-09",
+        "end": "2025-12-12",
+        "company_stage": "Series B, ~7 years post-last-raise",
+        "headcount_estimate": "50-100",
+        "key_events": [
+          "AI rebrand/pivot to 'AI-native Sales Execution Platform'",
+          "Launched Microsoft Outlook integration (April 2024)",
+          "Added SMS functionality (January 2024)",
+          "Launched AI-powered sales engagement (October 2023)",
+          "2025: Introduced three AI Meeting Copilots for sales execution"
+        ],
+        "market_conditions": "Competitive sales engagement market dominated by Outreach, Salesloft. AI differentiation becoming critical. No new funding since 2018 Series B - operating lean."
+      },
+      "2025_update": {
+        "status": "Active, AI pivot continuing",
+        "product_evolution": "Now positioned as AI Sales Execution Platform with three AI Meeting Copilots",
+        "no_new_funding": "7+ years since last raise - capital efficient operation"
+      },
+      "significance": "Hired to build outbound GTM infrastructure during AI pivot phase. Responsible for domain warming, prospect database building, and playbook creation.",
+      "sources": [
+        "https://www.mixmax.com",
+        "https://www.crunchbase.com/organization/mixmax",
+        "https://tracxn.com/d/companies/mixmax"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "company_id": "COMP-002",
+      "name": "Mobb",
+      "url": "https://mobb.ai",
+      "overview": {
+        "founded": "2021",
+        "founders": ["Eitan Worcel (CEO)", "Jonathan Afek"],
+        "headquarters": "Boston, MA",
+        "industry": "Application Security / DevSecOps",
+        "status": "Active",
+        "description": "AI-powered automatic vulnerability fixing tool. Uses Hybrid-AI technology to detect and remediate security vulnerabilities in code, generating ready-to-merge pull requests."
+      },
+      "funding": {
+        "total_raised": "$5.4M",
+        "rounds": [
+          {"round": "Seed", "date": "2023-04", "amount": "$5.4M", "lead": "Ariel Maislos (Angel)"}
+        ],
+        "investors": ["Cyber Club London", "MizMaa Ventures", "Arbelon Holdings"],
+        "last_round": "Seed (April 2023)"
+      },
+      "tenure_context": {
+        "keegan_role": "GTM | Business Development",
+        "start": "2025-05",
+        "end": "2025-07",
+        "company_stage": "Seed, early-stage startup",
+        "headcount_estimate": "10-25",
+        "key_events": [
+          "Joined Opengrep consortium (January 2025)",
+          "Product integration with Snyk, Checkmarx, GitHub Advanced Security"
+        ],
+        "market_conditions": "AppSec market growing rapidly with AI code generation creating new vulnerability risks. Shift-left security gaining traction."
+      },
+      "significance": "Early GTM hire at seed-stage security startup. Short tenure (3 months) focused on market research and go-to-market strategy development.",
+      "sources": [
+        "https://mobb.ai",
+        "https://www.crunchbase.com/organization/mobb-7477",
+        "https://www.securityweek.com/mobb-raises-5-4-million-in-seed-funding-for-automatic-vulnerability-fixing-tool/"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "company_id": "COMP-003",
+      "name": "TraceAir Technologies",
+      "url": "https://www.traceair.net",
+      "overview": {
+        "founded": "2015",
+        "founders": "Not publicly disclosed",
+        "headquarters": "Seattle, WA",
+        "industry": "Construction Tech / Drone Software",
+        "status": "Active",
+        "description": "Drone-powered site intelligence platform providing 3D scans, aerial imagery, and data analysis for construction and homebuilding. Covers land acquisition, development, vertical construction, and portfolio oversight."
+      },
+      "funding": {
+        "total_raised": "$64M",
+        "rounds": [
+          {"round": "Seed", "date": "2017", "amount": "$3.5M"},
+          {"round": "Series A", "date": "2020", "amount": "Undisclosed"},
+          {"round": "Series B", "date": "2024-05-29", "amount": "$25M"}
+        ],
+        "investors": ["Flashpoint Venture Capital", "XTX Ventures", "PeakSpan Capital", "Prospective Technologies Ventures"],
+        "last_round": "Series B (May 2024)"
+      },
+      "tenure_context": {
+        "keegan_role": "Senior Sales Development Representative",
+        "start": "2024-06",
+        "end": "2025-01",
+        "company_stage": "Series B, growth phase",
+        "headcount_estimate": "75-150",
+        "key_events": [
+          "Closed $25M Series B (May 2024)",
+          "Won NAHB Best Software Solution 2024",
+          "17 of top 20 US builders using platform"
+        ],
+        "market_conditions": "Construction tech adoption accelerating. Drone data becoming standard for large builders. Housing market volatile but builder tech investment steady."
+      },
+      "2025_update": {
+        "leadership_change": "Sept 2025: Ivan Lvov appointed CEO (joined 2016 as CSO). Co-founder Maria Khokhlova moved to advisory role.",
+        "growth_metrics": "Nearly 300 active customers across North America. Global team of 170+ spanning US, Armenia, Spain.",
+        "product_innovation": "Layout Generator, TraceWalk interior documentation, advanced analytics, executive dashboards"
+      },
+      "significance": "SDR role during post-Series B growth phase. Prospected across 13 states, yielded $216,437.50 closed-won revenue. 22 demos in September (147% quota). Collaborated with senior AEs on stagnant accounts.",
+      "sources": [
+        "https://www.traceair.net",
+        "https://www.crunchbase.com/organization/traceair",
+        "https://www.geekwire.com/2024/traceair-a-construction-software-startup-targeting-land-development-projects-raises-25m/"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "company_id": "COMP-004",
+      "name": "Biofourmis",
+      "url": "https://biofourmis.com",
+      "overview": {
+        "founded": "2015",
+        "founders": ["Kuldeep Singh Rajput"],
+        "headquarters": "Boston, MA (originally Singapore)",
+        "industry": "Digital Health / Remote Patient Monitoring",
+        "status": "Active (Unicorn)",
+        "description": "Technology-enabled care delivery platform. Products include Hospital at Home, Timely Discharge, SNF at Home, and Remote Patient Monitoring. Partners with 50+ global health systems and payers across 25 US states."
+      },
+      "funding": {
+        "total_raised": "$465M",
+        "rounds": [
+          {"round": "Series A", "date": "2018-04", "amount": "$5M"},
+          {"round": "Series B", "date": "2019-09", "amount": "$35M"},
+          {"round": "Series C", "date": "2020-09", "amount": "$100M"},
+          {"round": "Series D", "date": "2022-04-26", "amount": "$300M", "lead": "General Atlantic", "valuation": "$1.3B"},
+          {"round": "Series D Extension", "date": "2022-08", "amount": "$20M", "investor": "Intel Capital"}
+        ],
+        "investors": ["General Atlantic", "CVS Health", "SoftBank Vision Fund 2", "Sequoia Capital", "Intel Capital", "MassMutual Ventures"],
+        "last_round": "Series D Extension (August 2022)"
+      },
+      "tenure_context": {
+        "keegan_role": "Sales Development Representative",
+        "start": "2021-08",
+        "end": "2023-01",
+        "company_stage": "Post-Series C, pre-unicorn → achieved unicorn during tenure",
+        "headcount_estimate": "200-400",
+        "key_events": [
+          "Series D closed April 2022 - unicorn status at $1.3B",
+          "Intel Capital extension August 2022",
+          "Rapid commercial expansion in US market",
+          "Omar Ishrak (former Medtronic CEO) joined board as Chairman"
+        ],
+        "market_conditions": "COVID drove massive digital health adoption. RPM reimbursement expanding. Hospital systems seeking readmission reduction tools. Digital health funding peaked then contracted in 2022."
+      },
+      "outcomes": {
+        "reported": "70% reduction in 30-day readmissions for clients",
+        "cost_reduction": "Up to 38%"
+      },
+      "2024_2025_update": {
+        "major_changes": [
+          "Oct 2024: Merged with CoPilotIQ to create end-to-end AI-driven in-home care platform",
+          "2024: Founder Kuldeep Singh Rajput stepped down as CEO after layoffs (120 employees)",
+          "Jan 2025: ActiGraph acquired Biofourmis Connect (life sciences division)",
+          "Jan 2025: AdventHealth partnership on RPM program",
+          "2025: Lee Health launching Hospital at Home program"
+        ],
+        "founder_update": "Kuldeep Singh Rajput launched new health tech company OutcomesAI focused on generative AI",
+        "current_status": "Active unicorn, but significant restructuring post-2022 peak"
+      },
+      "significance": "2nd SDR hired for Commercial Care vertical at company that achieved unicorn status during tenure. Ground floor opportunity in hypergrowth digital health. Orlando Health deal (90-day close, fastest in company history) was proof of US hospital market viability.",
+      "sources": [
+        "https://biofourmis.com",
+        "https://www.mobihealthnews.com/news/biofourmis-reaches-unicorn-status-300m-series-d",
+        "https://www.crunchbase.com/organization/biofourmis",
+        "https://www.mobihealthnews.com/tag/biofourmis"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "company_id": "COMP-005",
+      "name": "Bariatric Centers of America",
+      "url": "https://bcofa.com",
+      "overview": {
+        "founded": "Unknown (founded by Dr. Mike Blaney)",
+        "founders": ["Dr. Mike Blaney (Army veteran, West Point graduate, board-certified bariatric surgeon)"],
+        "headquarters": "Augusta, GA",
+        "industry": "Healthcare Tech / Bariatric Surgery",
+        "status": "Active",
+        "description": "Program management platform digitizing the bariatric care journey. Products include BariTotalCare Package, BariLead, BariNav, and BariSuccess."
+      },
+      "products": {
+        "BariNav": "Bariatric patient navigation and pipeline management system. HIPAA compliant messaging across phone, email, social, SMS. Custom workflows and automated patient follow-up.",
+        "BariLead": "Lead generation and patient acquisition",
+        "BariSuccess": "Post-operative patient success tracking"
+      },
+      "funding": {
+        "total_raised": "Not publicly disclosed",
+        "rounds": [],
+        "investors": [],
+        "last_round": "Unknown - appears bootstrapped or privately funded"
+      },
+      "tenure_context": {
+        "keegan_role": "Senior Sales Consultant",
+        "start": "2024-01",
+        "end": "2024-06",
+        "company_stage": "Early-stage / growth",
+        "headcount_estimate": "10-30",
+        "key_events": [
+          "BariNAV product development and market validation",
+          "Enterprise sales motion building"
+        ],
+        "market_conditions": "Bariatric surgery market growing with obesity epidemic. Patient navigation becoming critical for surgical programs to improve conversion rates."
+      },
+      "significance": "Collaborated on enterprise sales and BariNAV product development. Helped bring technology solutions to bariatric surgery programs.",
+      "sources": [
+        "https://bcofa.com",
+        "https://www.baritotalcare.com/barinav/",
+        "https://asmbs.org/corporate-council/corporate-council-members/bariatric-centers-of-america/"
+      ],
+      "confidence": "MEDIUM"
+    }
+  ]
+}

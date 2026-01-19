@@ -1,0 +1,32 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor directories
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.local
+
+# Credentials
+*.pem
+*.key
+credentials.json
+
+# Node (if any JS tooling added later)
+node_modules/
+npm-debug.log*
+
+# Python (if any Python tooling added later)
+__pycache__/
+*.pyc
+.venv/
+.vercel
+.env*.local
