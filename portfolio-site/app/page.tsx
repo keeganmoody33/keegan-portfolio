@@ -34,7 +34,7 @@ export default function Home() {
         <div className="border-t border-gray-200 dark:border-gray-800 my-12" />
 
         {/* JD Analyzer Section */}
-        <div className="mb-8">
+        <div className="mb-12">
           <JDAnalyzer />
         </div>
 

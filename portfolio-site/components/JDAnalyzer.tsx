@@ -1,88 +1,92 @@
 'use client'
 
-import React, { useState } from 'react';
+import { useState } from 'react'
 
-const JDAnalyzer: React.FC = () => {
-  const [input, setInput] = useState('');
-  const [analysis, setAnalysis] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export default function JDAnalyzer() {
+  const [input, setInput] = useState('')
+  const [analysis, setAnalysis] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const handleAnalyze = async () => {
     if (!input.trim()) {
-      setError('Please paste a job description or URL.');
-      return;
+      setError('Please enter a job description or URL')
+      return
     }
 
-    setIsLoading(true);
-    setError(null);
-    setAnalysis(null);
+    setLoading(true)
+    setError('')
+    setAnalysis('')
 
     try {
-      const response = await fetch('https://cvkcwvmlnghwwvdqudod.supabase.co/functions/v1/jd-analyzer', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ input }),
-      });
+      const response = await fetch(
+        'https://cvkcwvmlnghwwvdqudod.supabase.co/functions/v1/jd-analyzer',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ input: input.trim() }),
+        }
+      )
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get analysis.');
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
 
-      const data = await response.json();
-      setAnalysis(data.analysis);
-
-    } catch (err: any) {
-      setError(err.message);
+      const data = await response.json()
+      setAnalysis(data.analysis || 'No analysis returned')
+    } catch (err) {
+      console.error('Analysis error:', err)
+      setError(err instanceof Error ? err.message : 'Failed to get analysis.')
     } finally {
-      setIsLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '2rem auto', padding: '1rem' }}>
-      <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+    <div style={{ marginBottom: '3rem' }}>
+      <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem', textAlign: 'center' }}>
         JD Fit Analyzer
       </h2>
-      <p style={{ marginBottom: '1rem', color: '#666' }}>
+      <p style={{ color: '#6b7280', textAlign: 'center', marginBottom: '2rem' }}>
         Paste a job description or URL below to get an honest fit assessment.
       </p>
 
       <textarea
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        placeholder="Paste the full job description or a URL..."
-        rows={15}
-        disabled={isLoading}
+        placeholder="Paste job description text or URL here..."
         style={{
           width: '100%',
+          minHeight: '200px',
           padding: '1rem',
+          border: '1px solid #d1d5db',
+          borderRadius: '0.5rem',
+          fontSize: '0.875rem',
           fontFamily: 'monospace',
-          border: '1px solid #333',
-          background: '#1a1a1a',
-          color: '#fff',
-          borderRadius: '4px',
           marginBottom: '1rem',
+          backgroundColor: '#1f2937',
+          color: '#f9fafb',
         }}
       />
 
       <button
         onClick={handleAnalyze}
-        disabled={isLoading}
+        disabled={loading}
         style={{
           padding: '0.75rem 1.5rem',
-          background: isLoading ? '#666' : '#4ade80',
-          color: '#000',
+          backgroundColor: loading ? '#6b7280' : '#10b981',
+          color: 'white',
           border: 'none',
-          borderRadius: '4px',
-          cursor: isLoading ? 'not-allowed' : 'pointer',
-          fontWeight: 'bold',
+          borderRadius: '0.5rem',
+          fontSize: '1rem',
+          fontWeight: '600',
+          cursor: loading ? 'not-allowed' : 'pointer',
+          marginBottom: '1rem',
         }}
       >
-        {isLoading ? 'Analyzing...' : 'Analyze Fit'}
+        {loading ? 'Analyzing...' : 'Analyze Fit'}
       </button>
 
       {error && (
@@ -92,21 +96,24 @@ const JDAnalyzer: React.FC = () => {
       )}
 
       {analysis && (
-        <div style={{
-          marginTop: '2rem',
-          padding: '1rem',
-          background: '#1a1a1a',
-          border: '1px solid #333',
-          borderRadius: '4px',
-        }}>
-          <h3 style={{ marginBottom: '1rem' }}>Analysis Result:</h3>
-          <pre style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', color: '#fff' }}>
+        <div
+          style={{
+            marginTop: '2rem',
+            padding: '1.5rem',
+            backgroundColor: '#1f2937',
+            borderRadius: '0.5rem',
+            border: '1px solid #374151',
+          }}
+        >
+          <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>
+            Fit Assessment
+          </h3>
+          <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', color: '#d1d5db' }}>
             {analysis}
-          </pre>
+          </div>
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default JDAnalyzer;
