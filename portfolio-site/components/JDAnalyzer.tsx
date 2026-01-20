@@ -19,7 +19,8 @@ const JDAnalyzer: React.FC = () => {
     setAnalysis(null);
 
     try {
-      const response = await fetch('https://cvkcwvmlnghwwvdqudod.supabase.co/functions/v1/jd-analyzer', {
+      // Use the Next.js API route which handles authorization securely
+      const response = await fetch('/api/jd-analyzer', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
