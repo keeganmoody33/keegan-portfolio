@@ -50,7 +50,14 @@ serve(async (req) => {
 
         let jd_text: string;
 
-        if (input.startsWith("http")) {
+        let isUrl = false;
+        try {
+            const parsed = new URL(input);
+            isUrl = parsed.protocol === "http:" || parsed.protocol === "https:";
+        } catch {
+            isUrl = false;
+        }
+        if (isUrl) {
             // It's a URL, scrape it with Firecrawl
             const firecrawlApiKey = Deno.env.get("FIRECRAWL_API_KEY");
             if (!firecrawlApiKey) {
@@ -66,8 +73,14 @@ serve(async (req) => {
         }
 
         // Initialize Supabase client
-        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const supabaseUrl = Deno.env.get("SUPABASE_URL");
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+        if (!supabaseUrl || !supabaseKey) {
+            return new Response(
+                JSON.stringify({ error: "Supabase configuration missing" }),
+                { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+        }
         const supabase = createClient(supabaseUrl, supabaseKey);
 
         // Fetch portfolio data
@@ -97,31 +110,56 @@ serve(async (req) => {
         );
 
     } catch (error) {
-        console.error("Error:", error);
+        console.error(error);
         return new Response(
-            JSON.stringify({ error: "Internal server error", details: error.message }),
+            JSON.stringify({ error: "Internal server error" }),
             { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
     }
 });
 
 async function scrapeWithFirecrawl(url: string, apiKey: string): Promise<string> {
-    const response = await fetch("https://api.firecrawl.dev/v0/scrape", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({ url }),
-    });
+    const TIMEOUT_MS = 30000; // 30 seconds timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-    if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Firecrawl API error: ${response.status} - ${error}`);
+    try {
+        const response = await fetch("https://api.firecrawl.dev/v0/scrape", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({ url }),
+            signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`Firecrawl API error: ${response.status} - ${error}`);
+        }
+
+        let data: any;
+        try {
+            data = await response.json();
+        } catch (jsonError) {
+            throw new Error(`Firecrawl API returned invalid JSON: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}`);
+        }
+
+        if (!data || !data.data || typeof data.data.content !== "string") {
+            throw new Error(`Firecrawl API returned unexpected response structure: missing or invalid data.data.content field`);
+        }
+
+        return data.data.content;
+    } catch (error) {
+        clearTimeout(timeoutId);
+        if (error instanceof Error && error.name === "AbortError") {
+            throw new Error(`Firecrawl API request timed out after ${TIMEOUT_MS}ms`);
+        }
+        throw error;
     }
-
-    const data = await response.json();
-    return data.data.content;
 }
 
 async function fetchPortfolioContext(supabase: any): Promise<PortfolioContext> {
@@ -136,6 +174,10 @@ async function fetchPortfolioContext(supabase: any): Promise<PortfolioContext> {
         supabase.from("faq_responses").select("*").eq("candidate_id", candidateId),
         supabase.from("ai_instructions").select("*").eq("id", "ai-instructions-001").single(),
     ]);
+
+    if (profileRes.error) {
+        throw new Error(`Failed to fetch candidate profile: ${profileRes.error.message}`);
+    }
 
     return {
         profile: profileRes.data,
@@ -249,6 +291,9 @@ async function callClaude(
     portfolioContext: string,
     jd_text: string
 ): Promise<string> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
+
     const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -267,7 +312,9 @@ async function callClaude(
                 },
             ],
         }),
+        signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
         const error = await response.text();
@@ -275,5 +322,8 @@ async function callClaude(
     }
 
     const data = await response.json();
+    if (!data?.content?.[0]?.text) {
+        throw new Error("Claude API returned unexpected response structure");
+    }
     return data.content[0].text;
 }

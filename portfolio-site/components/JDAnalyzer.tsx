@@ -41,8 +41,14 @@ const JDAnalyzer: React.FC = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get analysis.');
+        let errorMessage = `Request failed with status ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          // Response body is not JSON, use status-based message
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -59,7 +65,7 @@ const JDAnalyzer: React.FC = () => {
     <div className="jd-analyzer-container">
       <h2>JD Fit Analyzer</h2>
       <p>Paste a job description or URL below to get an honest fit assessment.</p>
-      
+
       <textarea
         value={input}
         onChange={(e) => setInput(e.target.value)}

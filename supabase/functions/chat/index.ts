@@ -31,6 +31,12 @@ interface PortfolioContext {
   ai_instructions: any;
 }
 
+interface PortfolioContextError {
+  error: true;
+  message: string;
+  details: string;
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -55,6 +61,17 @@ serve(async (req) => {
     // Fetch portfolio data
     const context = await fetchPortfolioContext(supabase);
 
+    // Check for structured error from Supabase queries
+    if ("error" in context && context.error) {
+      return new Response(
+        JSON.stringify({ error: context.message, details: context.details }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Type narrowing: context is now PortfolioContext
+    const portfolioData = context as PortfolioContext;
+
     // Get Anthropic API key
     const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!anthropicKey) {
@@ -65,10 +82,10 @@ serve(async (req) => {
     }
 
     // Build system prompt from AI instructions
-    const systemPrompt = buildSystemPrompt(context);
+    const systemPrompt = buildSystemPrompt(portfolioData);
 
     // Build user context from portfolio data
-    const portfolioContext = buildPortfolioContext(context);
+    const portfolioContext = buildPortfolioContext(portfolioData);
 
     // Call Claude API
     const response = await callClaude(anthropicKey, systemPrompt, portfolioContext, question);
@@ -87,7 +104,7 @@ serve(async (req) => {
   }
 });
 
-async function fetchPortfolioContext(supabase: any): Promise<PortfolioContext> {
+async function fetchPortfolioContext(supabase: any): Promise<PortfolioContext | PortfolioContextError> {
   const candidateId = "keegan-moody-001";
 
   const [profileRes, experiencesRes, skillsRes, gapsRes, valuesRes, faqRes, aiRes] = await Promise.all([
@@ -99,6 +116,43 @@ async function fetchPortfolioContext(supabase: any): Promise<PortfolioContext> {
     supabase.from("faq_responses").select("*").eq("candidate_id", candidateId),
     supabase.from("ai_instructions").select("*").eq("id", "ai-instructions-001").single(),
   ]);
+
+  // Check for errors in all responses
+  const errors: string[] = [];
+
+  // Profile is critical - must exist
+  if (profileRes.error) {
+    return {
+      error: true,
+      message: "Failed to fetch candidate profile",
+      details: `profileRes.error: ${profileRes.error.message || JSON.stringify(profileRes.error)}`,
+    };
+  }
+
+  // Check other responses and collect errors
+  if (experiencesRes.error) {
+    errors.push(`experiencesRes.error: ${experiencesRes.error.message || JSON.stringify(experiencesRes.error)}`);
+  }
+  if (skillsRes.error) {
+    errors.push(`skillsRes.error: ${skillsRes.error.message || JSON.stringify(skillsRes.error)}`);
+  }
+  if (gapsRes.error) {
+    errors.push(`gapsRes.error: ${gapsRes.error.message || JSON.stringify(gapsRes.error)}`);
+  }
+  if (valuesRes.error) {
+    errors.push(`valuesRes.error: ${valuesRes.error.message || JSON.stringify(valuesRes.error)}`);
+  }
+  if (faqRes.error) {
+    errors.push(`faqRes.error: ${faqRes.error.message || JSON.stringify(faqRes.error)}`);
+  }
+  if (aiRes.error) {
+    errors.push(`aiRes.error: ${aiRes.error.message || JSON.stringify(aiRes.error)}`);
+  }
+
+  // Log non-critical errors but proceed with available data
+  if (errors.length > 0) {
+    console.warn("Some portfolio data failed to load:", errors);
+  }
 
   return {
     profile: profileRes.data,
@@ -133,13 +187,13 @@ function buildPortfolioContext(context: PortfolioContext): string {
   for (const exp of experiences) {
     portfolioText += `
 ### ${exp.role_title} at ${exp.company_name} (${exp.start_date} to ${exp.end_date || "Present"})
-- Public Bullets: ${exp.public_bullets.join(", ")}
-- Why Joined: ${exp.private_context_why_joined}
-- Why Left: ${exp.private_context_why_left}
-- What I Did: ${exp.private_context_what_i_did}
-- Proudest Achievement: ${exp.private_context_proudest_achievement}
-- What I'd Do Differently: ${exp.private_context_what_id_do_differently}
-- What Manager Would Say: ${exp.private_context_manager_would_say}
+- Public Bullets: ${(exp.public_bullets || []).join(", ")}
+- Why Joined: ${exp.private_context_why_joined || "N/A"}
+- Why Left: ${exp.private_context_why_left || "N/A"}
+- What I Did: ${exp.private_context_what_i_did || "N/A"}
+- Proudest Achievement: ${exp.private_context_proudest_achievement || "N/A"}
+- What I'd Do Differently: ${exp.private_context_what_id_do_differently || "N/A"}
+- What Manager Would Say: ${exp.private_context_manager_would_say || "N/A"}
 `;
   }
 
@@ -201,5 +255,9 @@ async function callClaude(
   }
 
   const data = await response.json();
-  return data.content[0].text;
+  const text = data?.content?.[0]?.text;
+  if (!text) {
+    throw new Error("Unexpected response format from Claude API");
+  }
+  return text;
 }

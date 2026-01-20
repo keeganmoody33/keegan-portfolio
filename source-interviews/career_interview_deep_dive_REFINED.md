@@ -21,6 +21,7 @@ You've also been fired twice. You've struggled with shipping, with optics, with 
 ## Part 1: Education & Background
 
 ### Mercer University (Graduated May 2019)
+
 - **Location:** Macon, Georgia
 - **Honors:** Summa Cum Laude (highest honors attainable at graduation)
 - **GPA:** 3.83
@@ -38,6 +39,7 @@ You've also been fired twice. You've struggled with shipping, with optics, with 
 **The real version:** You got into medical school — University of Miami, late acceptance — but by then you had already made up your mind to go elsewhere. It wasn't that you turned it down; the timing was too late. You'd already mentally moved on.
 
 **What actually happened:**
+
 - Took the MCAT twice
 - 99th percentile on biochemistry and science sections
 - Applied to 30+ schools, many late
@@ -51,6 +53,7 @@ You've also been fired twice. You've struggled with shipping, with optics, with 
 **Context:** This was planned as your gap year before medical school.
 
 #### Chapel Hill Middle School — Special Education Paraprofessional
+
 - 6th, 7th, and 8th grade
 - High-functioning autistic boys
 - Classroom of approximately 8 students
@@ -59,6 +62,7 @@ You've also been fired twice. You've struggled with shipping, with optics, with 
 - **Key takeaway:** "You could have a terrible job. And if you're with great people, that job's pretty great as well."
 
 #### Chapel Hill High School — Defensive Football Coach (Simultaneous)
+
 - Defensive coach for varsity
 - Handled the majority of JV games — rode the bus, chaperoned, oversaw things while head coaches prepared for Friday night varsity
 - Also on varsity sidelines with headset
@@ -70,6 +74,7 @@ You've also been fired twice. You've struggled with shipping, with optics, with 
 ---
 
 ### COVID Hit (March/April 2020)
+
 - Went home from school
 - Gap year extended
 
@@ -79,13 +84,15 @@ You've also been fired twice. You've struggled with shipping, with optics, with 
 
 **Type:** Private orthopedic practice specializing in surgery
 
-**Context:** 
+**Context:**
+
 - 5 offices in Metro Atlanta
 - Eventually ran the front desk at Forest Park location
 - Had a key
 - Trained people
 
 **What you actually did:**
+
 - Processed all paperwork on the front end
 - Handled patient intake
 - Understanding how treatments impacted recoveries
@@ -94,6 +101,7 @@ You've also been fired twice. You've struggled with shipping, with optics, with 
 - Going above and beyond
 
 **What you learned:**
+
 - Showed you the business side of healthcare you were unaware of
 - The attention to detail you were paying to things — how the business operated, how decisions were made
 - This experience turned you sour on the healthcare business side
@@ -107,6 +115,7 @@ You've also been fired twice. You've struggled with shipping, with optics, with 
 **IMPORTANT FRAMING:** From day one, frame Biofourmis Inc. as an **artificial intelligence and machine learning healthcare tech company/startup.** This is crucial for positioning your AI/ML exposure early.
 
 **What Biofourmis does:**
+
 - Extends the four walls of hospitals
 - Predicts patient deterioration proactively
 - Patient interfaces — means to communicate baseline vitals
@@ -114,11 +123,13 @@ You've also been fired twice. You've struggled with shipping, with optics, with 
 - Clinician interfaces for care teams
 
 **How you got there:**
+
 - Brought in by the **Chief Commercial Officer (Shiza Hussein)**
 - Connected remotely with the CTO in Singapore — him technically walking you through how things are working
 - Being hungry to learn
 
 **Your role:**
+
 - Second SDR brought on
 - **Claim: Co-founding SDR** — the first SDR (Ryan) wasn't doing much before you got there
 - You and Ryan developed the methodology, the plan, the playbook together
@@ -127,18 +138,21 @@ You've also been fired twice. You've struggled with shipping, with optics, with 
 
 **Mentor:** Josh Poppas — Director of Digital Health at the time, one of the most tenured, resided under the CCO
 
-**Milestone:** 
+**Milestone:**
+
 - Around 8 months in (on your birthday, April 26), town hall declared **unicorn status**
 - Big deals, big money
 
 #### The Value Prop: ER Readmissions
 
 **How the federal readmission system works:**
+
 - The federal/country's average determines who gets fined
 - If you're above the average, you get fined
 - The fines get larger the larger the difference between your readmission rate and the average
 
 **Your approach:**
+
 - Public information: You can see that Hospital X got fined $8.3 million last year because of their readmission rate
 - You call the person in charge of that metric
 - You ask them: "What are you doing about this? What's your plan?"
@@ -148,15 +162,18 @@ You've also been fired twice. You've struggled with shipping, with optics, with 
 **Philosophy:** "Being hospitable, being genuine, adding real value, and consistency."
 
 #### Orlando Health Deal
+
 - Tyler Cole (still at Biofourmis today) involved
 - Orlando Health still publicly leveraging Biofourmis
 - **Very fast close** — might have been less than 90 days
 - Estimated $1M+ lifetime value
 
 #### The Lesson (Still Fall Short On)
+>
 > "Optics are everything."
 
 **What this means:**
+
 - Not "learn to avoid friction at all costs" — you have to stand up for what you believe in
 - But: Document everything
 - Provide data-driven reasoning behind what you're doing
@@ -166,6 +183,7 @@ You've also been fired twice. You've struggled with shipping, with optics, with 
 ---
 
 ### Gap Period (January–June/July, Post-Biofourmis)
+
 - Did a lot of things
 - Pushed carts at Home Depot to pay rent
 - Did consulting work with Josh Poppas
@@ -173,11 +191,12 @@ You've also been fired twice. You've struggled with shipping, with optics, with 
 
 ---
 
-### Job 4: Trace Air (traceair.net)
+### Job 4: Trace Air (traceair.net) — July 2024 – January 2025
 
 **Type:** Software-as-a-Service for land development
 
 **What Trace Air does:**
+
 - Flies your project at a set cadence with drones
 - Very new, innovative technology in a very old market
 - Old ideas and old notions — very hard to overcome
@@ -185,11 +204,13 @@ You've also been fired twice. You've struggled with shipping, with optics, with 
 **Your performance:** "I killed it."
 
 **What helped:**
+
 - Blue collar roots — dad is a heating and air man
 - Being on the phone, talking to guys, playing accent
 - "Huge switch up from the technical aspects and the healthcare politics"
 
 **Key milestones:**
+
 - **This is when you began to use tools like Clay** on your own terms — no tools provided, you were finding solutions, discovering stuff
 - **First time leveraging video messaging** — via text message, via LinkedIn
 - Found success there; this trend continues to grow and become more impactful
@@ -200,10 +221,12 @@ You've also been fired twice. You've struggled with shipping, with optics, with 
 **Pattern:** Another company on the forefront of markets, selling to early adopters (1–3% of TAM) — same as Biofourmis
 
 #### Connection to Independent Research
+
 - The overlay heat maps you created (like Weather Channel visuals) during your ASGM fieldwork were reminiscent of LIDAR and QGIS imaging at Trace Air
 - Cool connection between your scientific past and GTM present
 
 **Results:**
+
 - 20 demos in a month
 - 18 from contacts you sourced yourself
 - Greenfield territory with 1/4 the contacts of peers
@@ -223,12 +246,14 @@ You've also been fired twice. You've struggled with shipping, with optics, with 
 **Major event:** Complete overhaul rebranding on **November 11** — changed domain from **MixMax.com to MixMax.ai**
 
 **Your role:**
+
 - Tasked with contributing to and supporting the newly established outbound system
 - **Owned everything completely** — responsibility, budget
 - Worked alongside RevOps
 - Under the Chief Revenue Officer
 
 **What you learned:**
+
 - Had full autonomy and drowned in it
 - Built frameworks instead of shipping campaigns
 - Different from other situations — at Biofourmis and Trace Air, fired for politics despite top performance
@@ -254,14 +279,17 @@ Simultaneously: Build the swing that elevates multiple teams internally. Bring g
 ### The 1987 Camaro IROC-Z
 
 **Why IROC-Z:**
+
 - Grandfather worked at General Motors — that's why the IROC-Z happened
 
 **The Story:**
+
 - Bought for ~$5,000, shipped from Indiana
 - Inspiration: Watching the opening scene of "Hell or High Water" — the Texas bank robbers were driving an IROC-Z
 - Had just sold your vehicle, ready to buy something
 
 **What you actually did (full teardown and rebuild):**
+
 - Blew the transmission within first month or two — had it rebuilt at AAMCO
 - Replaced the fuel pump
 - Replaced the alternator
@@ -288,11 +316,13 @@ This is how you approach everything — GTM systems, music production, problems.
 **This is super important.** You're passionate about music — people should know that. But it's personal, not professional.
 
 **Equipment:**
+
 - Technics turntables (one signed by Slick Rick)
 - MPC 2000 XL (from an Uber driver who just shipped it to you)
 - Old school **Casio** synth
 
 **Record collection includes:**
+
 - Sly and the Family Stone
 - Janis Joplin
 - Goodie Mob
@@ -309,6 +339,7 @@ This is how you approach everything — GTM systems, music production, problems.
 > "Just listening, man, is a huge influence. Being able to be a good listener is huge."
 
 **Future project (not up next):**
+
 - Discogs API integration
 - Set up a query/connection so people can ask about your collection, records you have, suggestions
 
@@ -325,11 +356,13 @@ This is how you approach everything — GTM systems, music production, problems.
 **Focus:** Research on **Artisanal and Small-Scale Gold Mining (ASGM)**
 
 **Context:**
-- Tasked by the **EPA** for a comprehensive analysis for the **Mercury Minamata Convention**
+
+- Tasked by the **EPA** for a comprehensive analysis for the **Minamata Convention on Mercury**
 - Focus: Elemental mercury vapors in the atmosphere of South American mining towns
 - Political context: Elemental mercury was deemed illegal in these countries — very hectic political environment
 
 **Technical work:**
+
 - **45,000+ data points** in Excel
 - Each point = longitude, latitude, concentration — one per second
 - "Think about if I walk for eight hours, how many points in Excel that is?"
@@ -337,6 +370,7 @@ This is how you approach everything — GTM systems, music production, problems.
 - Cooked all this up in Excel
 
 **Deliverables:**
+
 - Overlay heat maps (like Weather Channel visuals)
 - Comprehensive mapping of elemental mercury vapor concentrations
 
@@ -345,14 +379,17 @@ This is how you approach everything — GTM systems, music production, problems.
 ## Part 6: Formative Experiences
 
 ### Dr. Kiefer
+
 - Key mentor lessons: "Nobody cares, stop complaining"
 
 ### Camp Horizon
+
 - 4 years with the same foster child
 - 1:1 ratio
 - Most influential male figure in that child's life
 
 ### Teaching & Coaching
+
 - Special education paraprofessional
 - High school football coach
 - The experience of working with great people making any job great
@@ -362,6 +399,7 @@ This is how you approach everything — GTM systems, music production, problems.
 ## Part 7: Lectures From
 
 **Inspiration:** *Lectures on Gas Theory* by Ludwig Boltzmann
+
 - The book's cover is the logo for lecturesfrom.com
 
 **Origin of the name:**
@@ -370,6 +408,7 @@ This is how you approach everything — GTM systems, music production, problems.
 **IMPORTANT:** Don't try to connect everything to Boltzmann — keep it light. The connection is the name and the logo, not a deep philosophical alignment across all projects.
 
 **What Lectures From is:**
+
 - A vehicle to generate and create software AND analog/physical products you love
 - Can do GTM work under this if needed
 - Can publish a book for someone, help with design
@@ -377,6 +416,7 @@ This is how you approach everything — GTM systems, music production, problems.
 - Building products that matter, adding actual value to people in their creative process and day-to-day
 
 **Known projects under Lectures From:**
+
 - punch2pen
 - Scuttle What
 - Demonstrate
@@ -388,6 +428,7 @@ This is how you approach everything — GTM systems, music production, problems.
 - And more developing
 
 **What's NOT part of Lectures From:**
+
 - GTM frameworks and utilities (like Gutenberg) — that's professional work, separate
 - Music (for now) — personal, stays in the lab
 
@@ -396,6 +437,7 @@ This is how you approach everything — GTM systems, music production, problems.
 ## Part 8: What I Actually Need in an Environment
 
 **The Right Fit:**
+
 - Autonomy with guardrails — not "do whatever" and not "hit 80 calls or else"
 - Engaged leadership with bandwidth — someone who can give feedback and check-ins, but not micromanage
 - Clear, time-bound deliverables — so I don't disappear into framework-building
@@ -405,6 +447,7 @@ This is how you approach everything — GTM systems, music production, problems.
 - Long-term potential — I want to level up, get promoted, prove growth within one company (I've never done this before)
 
 **What I Don't Need:**
+
 - Pure metrics-driven culture that doesn't value quality
 - Complete autonomy with no check-ins
 - Managers who feel threatened by capable ICs
@@ -416,26 +459,31 @@ This is how you approach everything — GTM systems, music production, problems.
 ## Part 9: The Patterns
 
 ### Top Performer Who Gets Fired
+
 - Results at Biofourmis (originated Orlando Health deal)
 - Results at Trace Air (20 demos, 18 self-sourced, record month)
 - Still let go at both
 - "Being right but still losing"
 
 ### People Invest Before Proof
+
 - Turntables, MPCs, contracts, opportunities
 - People see something and bet on it
 - "That's a gift, but it's also a responsibility"
 
 ### Rebuilding the Engine When They Need You to Drive
+
 - IROC-Z rebuild mentality applied to work
 - Deep understanding vs. quick delivery tension
 - Strength and weakness in the same trait
 
 ### The Optics Problem
+
 - Results without documentation don't survive
 - "Optics are everything"
 
 ### The Communication Gap
+
 - Ideas come out complex
 - Need someone to translate when riffing
 - Struggle with concise communication
@@ -444,7 +492,7 @@ This is how you approach everything — GTM systems, music production, problems.
 
 ## Part 10: The Differentiator
 
-> "An operator, creative force at the inseam of science, tech, and art."
+> "An operator, creative force at the intersection of science, tech, and art."
 
 Scientific rigor. GTM execution. Creative authenticity. Builder mentality.
 
