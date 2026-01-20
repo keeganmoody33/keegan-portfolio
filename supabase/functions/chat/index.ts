@@ -1,6 +1,13 @@
-// Supabase Edge Function: Portfolio AI Chat
-// Uses Claude API to answer questions about Keegan Moody's portfolio
-// Deployed to: https://cvkcwvmlnghwwvdqudod.supabase.co/functions/v1/chat
+/*
+-- ====================================================================
+-- Supabase Edge Function: Portfolio AI Chat (V2)
+-- Source: Reconciled from Cursor project and Nate B. Jones spec
+-- Changes:
+--   - Queries all 7 tables (including gaps, values, faq)
+--   - Builds a comprehensive system prompt with full context
+--   - Aligned with the definitive SQL package
+-- ====================================================================
+*/
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -18,7 +25,9 @@ interface PortfolioContext {
   profile: any;
   experiences: any[];
   skills: any[];
-  achievements: any[];
+  gaps_weaknesses: any[];
+  values_culture: any[];
+  faq_responses: any[];
   ai_instructions: any;
 }
 
@@ -81,19 +90,23 @@ serve(async (req) => {
 async function fetchPortfolioContext(supabase: any): Promise<PortfolioContext> {
   const candidateId = "keegan-moody-001";
 
-  const [profileRes, experiencesRes, skillsRes, achievementsRes, aiRes] = await Promise.all([
-    supabase.from("candidate_profiles").select("*").eq("id", candidateId).single(),
+  const [profileRes, experiencesRes, skillsRes, gapsRes, valuesRes, faqRes, aiRes] = await Promise.all([
+    supabase.from("candidate_profile").select("*").eq("id", candidateId).single(),
     supabase.from("experiences").select("*").eq("candidate_id", candidateId).order("display_order"),
     supabase.from("skills").select("*").eq("candidate_id", candidateId),
-    supabase.from("achievements").select("*").eq("candidate_id", candidateId).eq("is_featured", true),
-    supabase.from("ai_instructions").select("*").eq("candidate_id", candidateId).single(),
+    supabase.from("gaps_weaknesses").select("*").eq("candidate_id", candidateId),
+    supabase.from("values_culture").select("*").eq("candidate_id", candidateId),
+    supabase.from("faq_responses").select("*").eq("candidate_id", candidateId),
+    supabase.from("ai_instructions").select("*").eq("id", "ai-instructions-001").single(),
   ]);
 
   return {
     profile: profileRes.data,
     experiences: experiencesRes.data || [],
     skills: skillsRes.data || [],
-    achievements: achievementsRes.data || [],
+    gaps_weaknesses: gapsRes.data || [],
+    values_culture: valuesRes.data || [],
+    faq_responses: faqRes.data || [],
     ai_instructions: aiRes.data,
   };
 }
@@ -101,116 +114,56 @@ async function fetchPortfolioContext(supabase: any): Promise<PortfolioContext> {
 function buildSystemPrompt(context: PortfolioContext): string {
   const ai = context.ai_instructions;
   if (!ai) {
-    return "You are an AI assistant representing Keegan Moody's professional portfolio. Be honest, specific, and concrete.";
+    return "You are an AI assistant representing Keegan Moody. Be honest and specific.";
   }
-
-  const voice = ai.voice_guidelines || {};
-  const honest = ai.honest_framing || {};
-  const distinctions = ai.critical_distinctions || [];
-
-  return `You are an AI assistant representing Keegan Moody's professional portfolio.
-
-## Voice Guidelines
-Tone: ${voice.tone || "Confident but not arrogant. Honest about setbacks."}
-Perspective: ${voice.perspective_portfolio || "First person"} for portfolio content.
-
-## Things to SAY:
-${(voice.do_say || []).map((s: string) => `- ${s}`).join("\n")}
-
-## Things to AVOID saying:
-${(voice.dont_say || []).map((s: string) => `- ${s}`).join("\n")}
-
-## Critical Distinctions (Must Get Right):
-${distinctions.map((d: any) => `- Context: ${d.context}
-  WRONG: "${d.incorrect}"
-  RIGHT: "${d.correct}"
-  Why: ${d.reason}`).join("\n\n")}
-
-## Honest Framing of Setbacks:
-
-### Terminations
-Fact: ${honest.terminations?.fact || "Fired twice while exceeding quota"}
-Frame as: ${honest.terminations?.framing || "Fit mismatch with activity-metric cultures"}
-
-### Mixmax Delivery Gap
-Fact: ${honest.mixmax_gap?.fact || "3,770 delivered vs 9,000 target"}
-Frame as: ${honest.mixmax_gap?.framing || "Built infrastructure but fell short on volume"}
-
-### Gap Period
-Fact: ${honest.gap_period?.fact || "Survival jobs during job search"}
-Frame as: ${honest.gap_period?.framing || "What you build next matters more"}
-
-## Success Patterns:
-${(ai.success_patterns || []).map((p: string) => `- ${p}`).join("\n")}
-
-## Failure Patterns (Be Honest):
-${(ai.failure_patterns || []).map((p: string) => `- ${p}`).join("\n")}
-
-## Environment Fit:
-Thrives in: ${(ai.environment_fit?.thrives_in || []).join(", ")}
-Struggles in: ${(ai.environment_fit?.struggles_in || []).join(", ")}
-
-## One-Liners (Use When Appropriate):
-${Object.entries(ai.one_liners || {}).map(([k, v]) => `- ${k}: "${v}"`).join("\n")}
-
-IMPORTANT: Be truthful. If you don't have information, say so. Never exaggerate or fabricate. When discussing setbacks, frame them honestly—Keegan owns his failures.`;
+  return ai.system_prompt;
 }
 
 function buildPortfolioContext(context: PortfolioContext): string {
-  const { profile, experiences, skills, achievements } = context;
+  const { profile, experiences, skills, gaps_weaknesses, values_culture, faq_responses } = context;
 
-  let portfolioText = "## Profile\n";
+  let portfolioText = "## Candidate Profile\n";
   if (profile) {
-    portfolioText += `Name: ${profile.first_name} ${profile.last_name}
-Location: ${profile.location}
-Headline: ${profile.headline}
-Summary: ${profile.summary}
-Work Style: ${profile.work_style}
-Ideal Company Stage: ${(profile.ideal_company_stage || []).join(", ")}
-Ideal Environment: ${(profile.ideal_environment || []).join(", ")}
-`;
+    portfolioText += `Name: ${profile.first_name} ${profile.last_name}\n`;
+    portfolioText += `Headline: ${profile.headline}\n`;
+    portfolioText += `Summary: ${profile.summary}\n`;
   }
 
-  portfolioText += "\n## Work Experience\n";
+  portfolioText += "\n## Work Experience (Private Context for AI Only)\n";
   for (const exp of experiences) {
     portfolioText += `
-### ${exp.role_title} at ${exp.company_name}
-Period: ${exp.start_date} to ${exp.end_date || "Present"} (${exp.duration_months} months)
-Type: ${exp.employment_type} | Stage: ${exp.company_stage} | Industry: ${exp.company_industry}
-Description: ${exp.description}
-Key Deliverables: ${(exp.key_deliverables || []).join(", ")}
-${exp.metrics ? `Metrics: ${JSON.stringify(exp.metrics)}` : ""}
-Honest Assessment: ${exp.honest_assessment || "N/A"}
-Exit: ${exp.exit_reason}
-Verification: ${exp.verification_status}
+### ${exp.role_title} at ${exp.company_name} (${exp.start_date} to ${exp.end_date || "Present"})
+- Public Bullets: ${exp.public_bullets.join(", ")}
+- Why Joined: ${exp.private_context_why_joined}
+- Why Left: ${exp.private_context_why_left}
+- What I Did: ${exp.private_context_what_i_did}
+- Proudest Achievement: ${exp.private_context_proudest_achievement}
+- What I'd Do Differently: ${exp.private_context_what_id_do_differently}
+- What Manager Would Say: ${exp.private_context_manager_would_say}
 `;
   }
 
-  portfolioText += "\n## Skills\n";
-  const skillsByCategory: Record<string, any[]> = {};
+  portfolioText += "\n## Skills Matrix\n";
   for (const skill of skills) {
-    if (!skillsByCategory[skill.category]) {
-      skillsByCategory[skill.category] = [];
-    }
-    skillsByCategory[skill.category].push(skill);
-  }
-  for (const [category, categorySkills] of Object.entries(skillsByCategory)) {
-    portfolioText += `\n### ${category}\n`;
-    for (const skill of categorySkills) {
-      portfolioText += `- ${skill.skill_name} (${skill.proficiency_level}): ${skill.evidence}\n`;
-    }
+    portfolioText += `- ${skill.skill_name} (${skill.category}): ${skill.proficiency_level} - Evidence: ${skill.evidence}\n`;
   }
 
-  portfolioText += "\n## Featured Achievements\n";
-  for (const ach of achievements) {
-    portfolioText += `- ${ach.title}: ${ach.description}`;
-    if (ach.metric_value) {
-      portfolioText += ` [${ach.metric_value} ${ach.metric_unit}]`;
-    }
-    if (ach.honest_framing) {
-      portfolioText += ` (Honest framing: ${ach.honest_framing})`;
-    }
-    portfolioText += ` [${ach.verification_status}]\n`;
+  portfolioText += "\n## Gaps & Weaknesses\n";
+  for (const gap of gaps_weaknesses) {
+    portfolioText += `- ${gap.item} (${gap.type}): ${gap.context}\n`;
+  }
+
+  portfolioText += "\n## Values & Culture Fit\n";
+  for (const value of values_culture) {
+    portfolioText += `- ${value.item} (${value.type}): ${value.why}\n`;
+  }
+
+  portfolioText += "\n## FAQ Responses\n";
+  for (const faq of faq_responses) {
+    portfolioText += `
+### Q: ${faq.question}
+- A: ${faq.long_answer}
+`;
   }
 
   return portfolioText;
