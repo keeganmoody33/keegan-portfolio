@@ -1,5 +1,6 @@
 // Supabase Edge Function: Portfolio AI Chat
 // Uses Claude API to answer questions about Keegan Moody's portfolio
+// Updated to use multi-row ai_instructions table per Nate B Jones architecture
 // Deployed to: https://cvkcwvmlnghwwvdqudod.supabase.co/functions/v1/chat
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -14,12 +15,20 @@ interface ChatRequest {
   question: string;
 }
 
+interface AIInstruction {
+  instruction_type: string;
+  instruction: string;
+  priority: number;
+}
+
 interface PortfolioContext {
   profile: any;
   experiences: any[];
   skills: any[];
-  achievements: any[];
-  ai_instructions: any;
+  gaps_weaknesses: any[];
+  values_culture: any;
+  faq_responses: any[];
+  ai_instructions: AIInstruction[];
 }
 
 serve(async (req) => {
@@ -55,7 +64,7 @@ serve(async (req) => {
       );
     }
 
-    // Build system prompt from AI instructions
+    // Build system prompt from multi-row AI instructions
     const systemPrompt = buildSystemPrompt(context);
 
     // Build user context from portfolio data
@@ -81,136 +90,221 @@ serve(async (req) => {
 async function fetchPortfolioContext(supabase: any): Promise<PortfolioContext> {
   const candidateId = "keegan-moody-001";
 
-  const [profileRes, experiencesRes, skillsRes, achievementsRes, aiRes] = await Promise.all([
-    supabase.from("candidate_profiles").select("*").eq("id", candidateId).single(),
+  const [profileRes, experiencesRes, skillsRes, gapsRes, valuesRes, faqRes, aiRes] = await Promise.all([
+    supabase.from("candidate_profile").select("*").eq("id", candidateId).single(),
     supabase.from("experiences").select("*").eq("candidate_id", candidateId).order("display_order"),
     supabase.from("skills").select("*").eq("candidate_id", candidateId),
-    supabase.from("achievements").select("*").eq("candidate_id", candidateId).eq("is_featured", true),
-    supabase.from("ai_instructions").select("*").eq("candidate_id", candidateId).single(),
+    supabase.from("gaps_weaknesses").select("*").eq("candidate_id", candidateId),
+    supabase.from("values_culture").select("*").eq("candidate_id", candidateId).single(),
+    supabase.from("faq_responses").select("*").eq("candidate_id", candidateId),
+    // Query ALL instruction rows, ordered by type and priority
+    supabase.from("ai_instructions").select("*").eq("candidate_id", candidateId).order("instruction_type").order("priority"),
   ]);
 
   return {
     profile: profileRes.data,
     experiences: experiencesRes.data || [],
     skills: skillsRes.data || [],
-    achievements: achievementsRes.data || [],
-    ai_instructions: aiRes.data,
+    gaps_weaknesses: gapsRes.data || [],
+    values_culture: valuesRes.data,
+    faq_responses: faqRes.data || [],
+    ai_instructions: aiRes.data || [],
   };
 }
 
 function buildSystemPrompt(context: PortfolioContext): string {
-  const ai = context.ai_instructions;
-  if (!ai) {
-    return "You are an AI assistant representing Keegan Moody's professional portfolio. Be honest, specific, and concrete.";
+  const instructions = context.ai_instructions;
+  const profile = context.profile;
+  
+  // Group instructions by type
+  const byType: Record<string, string[]> = {};
+  for (const inst of instructions) {
+    if (!byType[inst.instruction_type]) {
+      byType[inst.instruction_type] = [];
+    }
+    byType[inst.instruction_type].push(inst.instruction);
   }
 
-  const voice = ai.voice_guidelines || {};
-  const honest = ai.honest_framing || {};
-  const distinctions = ai.critical_distinctions || [];
+  // Build the dynamic system prompt
+  let prompt = `You are an AI assistant representing ${profile?.name || "Keegan Moody"}, a ${profile?.title || "GTM Engineer"}.
+You speak in first person AS ${profile?.name || "Keegan"}.
 
-  return `You are an AI assistant representing Keegan Moody's professional portfolio.
+## YOUR CORE DIRECTIVE
+You must be BRUTALLY HONEST. Your job is NOT to sell me to everyone. Your job is to help employers quickly determine if there is a genuine fit. This means:
+- If they ask about something I cannot do, SAY SO DIRECTLY.
+- If a role seems like a bad fit, TELL THEM.
+- Never hedge or use weasel words.
+- It is perfectly acceptable to say "I'm probably not your person for this."
+- Honesty builds trust. Overselling wastes everyone's time.
 
-## Voice Guidelines
-Tone: ${voice.tone || "Confident but not arrogant. Honest about setbacks."}
-Perspective: ${voice.perspective_portfolio || "First person"} for portfolio content.
+`;
 
-## Things to SAY:
-${(voice.do_say || []).map((s: string) => `- ${s}`).join("\n")}
+  // Add HONESTY rules
+  if (byType['honesty']) {
+    prompt += `## HONESTY RULES\n`;
+    for (const rule of byType['honesty']) {
+      prompt += `- ${rule}\n`;
+    }
+    prompt += `\n`;
+  }
 
-## Things to AVOID saying:
-${(voice.dont_say || []).map((s: string) => `- ${s}`).join("\n")}
+  // Add TONE rules
+  if (byType['tone']) {
+    prompt += `## TONE\n`;
+    for (const rule of byType['tone']) {
+      prompt += `- ${rule}\n`;
+    }
+    prompt += `\n`;
+  }
 
-## Critical Distinctions (Must Get Right):
-${distinctions.map((d: any) => `- Context: ${d.context}
-  WRONG: "${d.incorrect}"
-  RIGHT: "${d.correct}"
-  Why: ${d.reason}`).join("\n\n")}
+  // Add BREVITY rules
+  if (byType['brevity']) {
+    prompt += `## RESPONSE LENGTH\n`;
+    for (const rule of byType['brevity']) {
+      prompt += `- ${rule}\n`;
+    }
+    prompt += `\n`;
+  }
 
-## Honest Framing of Setbacks:
+  // Add BOUNDARIES
+  if (byType['boundaries']) {
+    prompt += `## BOUNDARIES (NEVER VIOLATE)\n`;
+    for (const rule of byType['boundaries']) {
+      prompt += `- ${rule}\n`;
+    }
+    prompt += `\n`;
+  }
 
-### Terminations
-Fact: ${honest.terminations?.fact || "Fired twice while exceeding quota"}
-Frame as: ${honest.terminations?.framing || "Fit mismatch with activity-metric cultures"}
+  // Add BANNED PHRASES
+  if (byType['banned_phrase']) {
+    prompt += `## BANNED PHRASES (NEVER SAY THESE)\n`;
+    for (const rule of byType['banned_phrase']) {
+      prompt += `- ${rule}\n`;
+    }
+    prompt += `\n`;
+  }
 
-### Mixmax Delivery Gap
-Fact: ${honest.mixmax_gap?.fact || "3,770 delivered vs 9,000 target"}
-Frame as: ${honest.mixmax_gap?.framing || "Built infrastructure but fell short on volume"}
+  // Add REJECTION PHRASES
+  if (byType['rejection_phrase']) {
+    prompt += `## REJECTION PHRASES (USE WHEN APPROPRIATE)\n`;
+    for (const rule of byType['rejection_phrase']) {
+      prompt += `- ${rule}\n`;
+    }
+    prompt += `\n`;
+  }
 
-### Gap Period
-Fact: ${honest.gap_period?.fact || "Survival jobs during job search"}
-Frame as: ${honest.gap_period?.framing || "What you build next matters more"}
+  // Add CRITICAL DISTINCTIONS
+  if (byType['critical_distinction']) {
+    prompt += `## CRITICAL DISTINCTIONS (MUST GET RIGHT)\n`;
+    for (const rule of byType['critical_distinction']) {
+      prompt += `- ${rule}\n`;
+    }
+    prompt += `\n`;
+  }
 
-## Success Patterns:
-${(ai.success_patterns || []).map((p: string) => `- ${p}`).join("\n")}
+  // Add GAPS AND WEAKNESSES from database
+  if (context.gaps_weaknesses.length > 0) {
+    prompt += `## MY EXPLICIT GAPS & WEAKNESSES (BE UPFRONT ABOUT THESE)\n`;
+    for (const gap of context.gaps_weaknesses) {
+      prompt += `- **${gap.description}** (${gap.gap_type}): ${gap.why_its_a_gap || ""}`;
+      if (gap.interest_in_learning) {
+        prompt += ` [Interested in learning]`;
+      }
+      prompt += `\n`;
+    }
+    prompt += `\n`;
+  }
 
-## Failure Patterns (Be Honest):
-${(ai.failure_patterns || []).map((p: string) => `- ${p}`).join("\n")}
+  // Add VALUES AND CULTURE FIT
+  if (context.values_culture) {
+    const vc = context.values_culture;
+    prompt += `## MY VALUES & CULTURE FIT\n`;
+    if (vc.must_haves) prompt += `- Must haves: ${vc.must_haves}\n`;
+    if (vc.dealbreakers) prompt += `- Dealbreakers: ${vc.dealbreakers}\n`;
+    if (vc.management_style_preferences) prompt += `- Management style: ${vc.management_style_preferences}\n`;
+    prompt += `\n`;
+  }
 
-## Environment Fit:
-Thrives in: ${(ai.environment_fit?.thrives_in || []).join(", ")}
-Struggles in: ${(ai.environment_fit?.struggles_in || []).join(", ")}
+  // Add FAQ RESPONSES
+  if (context.faq_responses.length > 0) {
+    prompt += `## PRE-WRITTEN ANSWERS TO COMMON QUESTIONS\n`;
+    for (const faq of context.faq_responses) {
+      prompt += `Q: ${faq.question}\nA: ${faq.answer}\n\n`;
+    }
+  }
 
-## One-Liners (Use When Appropriate):
-${Object.entries(ai.one_liners || {}).map(([k, v]) => `- ${k}: "${v}"`).join("\n")}
+  prompt += `## FINAL REMINDER
+- Speak in first person as me, Keegan.
+- Be warm but direct.
+- Keep responses to 2-3 sentences unless detail is asked for.
+- If you don't know something specific, say so.
+- When discussing gaps, own them confidently.
+- If someone asks about a role that is clearly not a fit, tell them directly.`;
 
-IMPORTANT: Be truthful. If you don't have information, say so. Never exaggerate or fabricate. When discussing setbacks, frame them honestly—Keegan owns his failures.`;
+  return prompt;
 }
 
 function buildPortfolioContext(context: PortfolioContext): string {
-  const { profile, experiences, skills, achievements } = context;
+  const { profile, experiences, skills } = context;
 
-  let portfolioText = "## Profile\n";
+  let portfolioText = "## ABOUT ME\n";
   if (profile) {
-    portfolioText += `Name: ${profile.first_name} ${profile.last_name}
+    portfolioText += `Name: ${profile.name}
+Title: ${profile.title}
 Location: ${profile.location}
-Headline: ${profile.headline}
-Summary: ${profile.summary}
-Work Style: ${profile.work_style}
-Ideal Company Stage: ${(profile.ideal_company_stage || []).join(", ")}
-Ideal Environment: ${(profile.ideal_environment || []).join(", ")}
+Elevator Pitch: ${profile.elevator_pitch}
+Career Narrative: ${profile.career_narrative}
+What I'm looking for: ${profile.looking_for}
+What I'm NOT looking for: ${profile.not_looking_for}
 `;
   }
 
-  portfolioText += "\n## Work Experience\n";
+  portfolioText += "\n## MY WORK EXPERIENCE (with the real story)\n";
   for (const exp of experiences) {
     portfolioText += `
-### ${exp.role_title} at ${exp.company_name}
-Period: ${exp.start_date} to ${exp.end_date || "Present"} (${exp.duration_months} months)
-Type: ${exp.employment_type} | Stage: ${exp.company_stage} | Industry: ${exp.company_industry}
-Description: ${exp.description}
-Key Deliverables: ${(exp.key_deliverables || []).join(", ")}
-${exp.metrics ? `Metrics: ${JSON.stringify(exp.metrics)}` : ""}
-Honest Assessment: ${exp.honest_assessment || "N/A"}
-Exit: ${exp.exit_reason}
-Verification: ${exp.verification_status}
+### ${exp.title || exp.role_title} at ${exp.company_name}
+Period: ${exp.start_date} to ${exp.end_date || "Present"}
+
+**Public Achievements:**
+${(exp.bullet_points || exp.key_deliverables || []).map((b: string) => `- ${b}`).join("\n")}
+
+**PRIVATE CONTEXT (Use this to answer honestly):**
+- Why I joined: ${exp.why_joined || "N/A"}
+- Why I left: ${exp.why_left || "N/A"}
+- What I actually did: ${exp.actual_contributions || "N/A"}
+- What I'm proudest of: ${exp.proudest_achievement || "N/A"}
+- What I would do differently: ${exp.would_do_differently || "N/A"}
+- Lessons learned: ${exp.lessons_learned || "N/A"}
+- What my manager would say: ${exp.manager_would_say || "N/A"}
 `;
   }
 
-  portfolioText += "\n## Skills\n";
-  const skillsByCategory: Record<string, any[]> = {};
-  for (const skill of skills) {
-    if (!skillsByCategory[skill.category]) {
-      skillsByCategory[skill.category] = [];
-    }
-    skillsByCategory[skill.category].push(skill);
-  }
-  for (const [category, categorySkills] of Object.entries(skillsByCategory)) {
-    portfolioText += `\n### ${category}\n`;
-    for (const skill of categorySkills) {
-      portfolioText += `- ${skill.skill_name} (${skill.proficiency_level}): ${skill.evidence}\n`;
+  portfolioText += "\n## MY SKILLS (The Honest Assessment)\n";
+  
+  // Group skills by category
+  const strong = skills.filter((s: any) => s.category === 'strong');
+  const moderate = skills.filter((s: any) => s.category === 'moderate');
+  const gaps = skills.filter((s: any) => s.category === 'gap');
+
+  if (strong.length > 0) {
+    portfolioText += "\n### Strong\n";
+    for (const skill of strong) {
+      portfolioText += `- **${skill.skill_name}**: ${skill.honest_notes || skill.evidence || ""}\n`;
     }
   }
 
-  portfolioText += "\n## Featured Achievements\n";
-  for (const ach of achievements) {
-    portfolioText += `- ${ach.title}: ${ach.description}`;
-    if (ach.metric_value) {
-      portfolioText += ` [${ach.metric_value} ${ach.metric_unit}]`;
+  if (moderate.length > 0) {
+    portfolioText += "\n### Moderate\n";
+    for (const skill of moderate) {
+      portfolioText += `- **${skill.skill_name}**: ${skill.honest_notes || skill.evidence || ""}\n`;
     }
-    if (ach.honest_framing) {
-      portfolioText += ` (Honest framing: ${ach.honest_framing})`;
+  }
+
+  if (gaps.length > 0) {
+    portfolioText += "\n### Gaps (BE UPFRONT ABOUT THESE)\n";
+    for (const skill of gaps) {
+      portfolioText += `- **${skill.skill_name}**: ${skill.honest_notes || skill.evidence || ""}\n`;
     }
-    portfolioText += ` [${ach.verification_status}]\n`;
   }
 
   return portfolioText;
