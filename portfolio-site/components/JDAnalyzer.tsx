@@ -1,17 +1,5 @@
 'use client'
 
-/*
--- ====================================================================
--- React Component: JD Analyzer (V2 - URL Support)
--- Source: Reconciled from Cursor project and Nate B. Jones spec
--- Description:
---   - A single textarea accepts either a URL or pasted text
---   - Calls the jd-analyzer Edge Function on submit
---   - Displays the structured analysis from the AI
---   - Includes loading and error states
--- ====================================================================
-*/
-
 import React, { useState } from 'react';
 
 const JDAnalyzer: React.FC = () => {
@@ -35,20 +23,13 @@ const JDAnalyzer: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({ input }),
       });
 
       if (!response.ok) {
-        let errorMessage = `Request failed with status ${response.status}`;
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
-        } catch {
-          // Response body is not JSON, use status-based message
-        }
-        throw new Error(errorMessage);
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to get analysis.');
       }
 
       const data = await response.json();
@@ -62,9 +43,13 @@ const JDAnalyzer: React.FC = () => {
   };
 
   return (
-    <div className="jd-analyzer-container">
-      <h2>JD Fit Analyzer</h2>
-      <p>Paste a job description or URL below to get an honest fit assessment.</p>
+    <div style={{ maxWidth: '800px', margin: '2rem auto', padding: '1rem' }}>
+      <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+        JD Fit Analyzer
+      </h2>
+      <p style={{ marginBottom: '1rem', color: '#666' }}>
+        Paste a job description or URL below to get an honest fit assessment.
+      </p>
 
       <textarea
         value={input}
@@ -72,18 +57,52 @@ const JDAnalyzer: React.FC = () => {
         placeholder="Paste the full job description or a URL..."
         rows={15}
         disabled={isLoading}
+        style={{
+          width: '100%',
+          padding: '1rem',
+          fontFamily: 'monospace',
+          border: '1px solid #333',
+          background: '#1a1a1a',
+          color: '#fff',
+          borderRadius: '4px',
+          marginBottom: '1rem',
+        }}
       />
 
-      <button onClick={handleAnalyze} disabled={isLoading}>
+      <button
+        onClick={handleAnalyze}
+        disabled={isLoading}
+        style={{
+          padding: '0.75rem 1.5rem',
+          background: isLoading ? '#666' : '#4ade80',
+          color: '#000',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: isLoading ? 'not-allowed' : 'pointer',
+          fontWeight: 'bold',
+        }}
+      >
         {isLoading ? 'Analyzing...' : 'Analyze Fit'}
       </button>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div style={{ color: '#ef4444', marginTop: '1rem' }}>
+          {error}
+        </div>
+      )}
 
       {analysis && (
-        <div className="analysis-result">
-          <h3>Analysis Result:</h3>
-          <pre>{analysis}</pre>
+        <div style={{
+          marginTop: '2rem',
+          padding: '1rem',
+          background: '#1a1a1a',
+          border: '1px solid #333',
+          borderRadius: '4px',
+        }}>
+          <h3 style={{ marginBottom: '1rem' }}>Analysis Result:</h3>
+          <pre style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', color: '#fff' }}>
+            {analysis}
+          </pre>
         </div>
       )}
     </div>
