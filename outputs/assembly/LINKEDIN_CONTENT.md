@@ -156,7 +156,7 @@ keeganmoody@gmail.com
 
 ### TraceAir Technologies — Senior Sales Development Representative (Jun 2024 - Jan 2025)
 
-- Booked 22 demos in September 2024 against 15/month quota (**147% attainment**)
+- Booked 20 demos in September 2024 (company record, 18 self-sourced) against 15/month quota
 - Achieved 21% connection rate vs. 4-6% team average while making 1/3 of team calls
 - Generated **$216,437.50 in closed-won pipeline revenue** (verified via Gmail)
 - Prospected across 13-state territory following $25M Series B

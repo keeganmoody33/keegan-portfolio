@@ -28,7 +28,7 @@ GTM infrastructure builder specializing in early-stage startups. Track record of
 ### Senior Sales Development Representative
 **TraceAir Technologies** | Seattle, WA (Remote) | Jun 2024 - Jan 2025
 
-- Booked 22 demos in September 2024 against 15/month quota (147% attainment)
+- Booked 20 demos in September 2024 (company record, 18 self-sourced) against 15/month quota
 - Achieved 21% connection rate vs. 4-6% team average
 - Generated $216,437.50 in closed-won pipeline revenue (verified)
 - Prospected across 13-state territory following $25M Series B
@@ -64,7 +64,7 @@ GTM infrastructure builder specializing in early-stage startups. Track record of
 
 | Metric | Value | Source |
 |--------|-------|--------|
-| TraceAir quota attainment | 147% | Apple Notes |
+| TraceAir demos (Sept record) | 20 (18 self-sourced) | source-interviews |
 | TraceAir connection rate | 21% vs 4-6% avg | Apple Notes |
 | TraceAir revenue generated | $216,437.50 | Gmail verification |
 | Biofourmis deal velocity | 90-day close | Internal docs |

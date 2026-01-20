@@ -230,7 +230,7 @@
 - **Location:** Macon, GA
 - **Notable:**
   - Published research in environmental science (mercury emissions)
-  - 200 days field research in South America
+  - 270 days field research in South America
   - One of first to pair spectrophotometer + Garmin GPS simultaneously
   - Teaching Assistant and SI Leader roles during studies
 
@@ -248,7 +248,7 @@
    - Focus: Environmental impact and regulatory compliance
 
 ### Research Details
-- **Duration:** 200 days in South America (Peru)
+- **Duration:** 270 days in South America (Peru)
 - **Innovation:** Pioneer in pairing spectrophotometer with Garmin GPS for spatial data collection
 - **Impact:** Papers still cited by researchers in the field
 - **Skills:** Scientific method, quantitative analysis, field research, technical documentation
@@ -298,7 +298,7 @@
 - GTME (Go-To-Market Engineer) - "tinkering 24/7"
 - Scientist background - "scientific method is 2nd nature"
 - Ground-up problem solver - asks questions until understanding is complete
-- South America research - 200 days, spectrophotometer + Garmin pioneer
+- South America research - 270 days, spectrophotometer + Garmin pioneer
 - Postgrad teaching - Special Ed for 7 autistic middle school boys
 - Community/team values - "winning/losing as a team is close to my heart"
 - Startup DNA - co-founding SDR at Biofourmis, unicorn in 8 months

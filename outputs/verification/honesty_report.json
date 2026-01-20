@@ -25,10 +25,10 @@
     {
       "location": "TraceAir claims",
       "text": "20 demos in one month",
-      "issue": "UNDERSTATEMENT_CORRECTED",
+      "issue": "VERIFIED_CORRECT",
       "status": "CLEARED",
-      "explanation": "Actual: 22 demos in September 2024. Original claim was LOWER than reality.",
-      "recommendation": "Use verified: '22 demos (147% of 15/month quota), 21% connection rate vs 4-6% team average'",
+      "explanation": "Source-interviews (Jan 2026) confirms: 20 demos in September 2024 (company record, 18 self-sourced).",
+      "recommendation": "Use verified: '20 demos (company record, 18 self-sourced), 21% connection rate vs 4-6% team average'",
       "resolved_date": "2026-01-19"
     }
   ],

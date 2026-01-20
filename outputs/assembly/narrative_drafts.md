@@ -15,7 +15,7 @@ I build go-to-market infrastructure from scratch. I've done it at a digital heal
 
 At **Biofourmis**, I was the second SDR hired for the Commercial Care vertical. The company was post-Series C, racing to prove that US hospital systems would buy remote patient monitoring. I developed a compliance-driven prospecting method—targeting hospitals exceeding federal ER readmission thresholds, where the regulatory pain was already quantified. That approach landed Orlando Health: a 90-day close that became the fastest deal in company history. I was there when the Series D closed at $1.3B in April 2022.
 
-At **TraceAir**, I took over outbound for a 13-state territory after their Series B. In September, I booked 22 demos against a quota of 15—147% attainment—with a 21% connection rate while the team averaged 4-6%. I made a third of the calls and still led the board. By the time I left, my pipeline had generated $216,437.50 in closed-won revenue, verified through email records.
+At **TraceAir**, I took over outbound for a 13-state territory after their Series B. In September, I booked 20 demos against a quota of 15—147% attainment—with a 21% connection rate while the team averaged 4-6%. I made a third of the calls and still led the board. By the time I left, my pipeline had generated $216,437.50 in closed-won revenue, verified through email records.
 
 At **Mixmax**, I was hired as the Founding GTM Engineer during their AI pivot. My job was infrastructure: warm 50+ email inboxes across ScaledMail, Pager AI, and SmartLead; build the prospect database; create the outbound playbook. I delivered the infrastructure. The contract ended early, and I fell short on volume targets—9,000 expected, 3,770 delivered. I'm honest about that gap.
 
@@ -29,7 +29,7 @@ I'm looking for early-stage teams that need someone to build the motion, not fol
 
 I build GTM infrastructure from scratch at early-stage startups.
 
-At Biofourmis, I originated the Orlando Health deal—90-day close, fastest in company history—while the company grew to unicorn status ($1.3B). At TraceAir, I booked 22 demos in September against a quota of 15, with a 21% connection rate vs. 4-6% team average. My pipeline generated $216k in closed-won revenue. At Mixmax, I built 50+ warmed inboxes and outbound infrastructure during their AI pivot.
+At Biofourmis, I originated the Orlando Health deal—90-day close, fastest in company history—while the company grew to unicorn status ($1.3B). At TraceAir, I booked 20 demos in September against a quota of 15, with a 21% connection rate vs. 4-6% team average. My pipeline generated $216k in closed-won revenue. At Mixmax, I built 50+ warmed inboxes and outbound infrastructure during their AI pivot.
 
 The pattern: I outperform on outcomes but struggle in activity-metric cultures. I've been fired twice while exceeding quota. That taught me to find companies that measure results, not keystrokes.
 
@@ -70,10 +70,10 @@ Hired to build outbound infrastructure for AI-native sales execution platform. D
 **Title**: Senior Sales Development Representative
 
 **Public Version**:
-Led outbound prospecting across 13-state territory following Series B ($25M, May 2024). Booked 22 demos in September 2024 (147% of 15/month quota) with 21% connection rate vs. 4-6% team average. Pipeline generated $216,437.50 in closed-won revenue.
+Led outbound prospecting across 13-state territory following Series B ($25M, May 2024). Booked 20 demos in September 2024 (147% of 15/month quota) with 21% connection rate vs. 4-6% team average. Pipeline generated $216,437.50 in closed-won revenue.
 
 **Private/AI Context Version**:
-Drone data platform for construction/homebuilding. Joined one month after Series B. Prospected land developers, homebuilders across 13 states. My method: fewer calls, better research. Made a third of team calls but led in demos. September: 22 demos, 15 quota, 147% attainment. Connection rate 21% vs team average 4-6%. Closed-won revenue from my pipeline: $216,437.50 (verified via Gmail). Fired January 2025 despite performance—autonomy paradox pattern.
+Drone data platform for construction/homebuilding. Joined one month after Series B. Prospected land developers, homebuilders across 13 states. My method: fewer calls, better research. Made a third of team calls but led in demos. September: 20 demos, 15 quota, 147% attainment. Connection rate 21% vs team average 4-6%. Closed-won revenue from my pipeline: $216,437.50 (verified via Gmail). Fired January 2025 despite performance—autonomy paradox pattern.
 
 ---
 

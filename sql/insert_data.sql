@@ -114,9 +114,9 @@ INSERT INTO experiences (
   'Series B',
   '$64M',
   'Construction Tech / Drone Software',
-  'SDR role during post-Series B growth phase. Prospected outbound, inbound, and nurtured accounts across 13 states. Achieved 147% quota attainment with 21% connection rate vs 4-6% team average.',
-  ARRAY['22 demos in September 2024 (147% of 15/month quota)', '$216,437.50 closed-won revenue', '21% connection rate (vs 4-6% team average)', 'Prospected across 13 states'],
-  '{"demos_booked": 22, "quota": 15, "quota_attainment_percent": 147, "connection_rate_percent": 21, "team_average_connection_rate_percent": 5, "closed_won_revenue": 216437.50}'::JSONB,
+  'SDR role during post-Series B growth phase. Prospected outbound, inbound, and nurtured accounts across 13 states. Achieved company record month with 21% connection rate vs 4-6% team average.',
+  ARRAY['20 demos in September 2024 (company record, 18 self-sourced)', '$216,437.50 closed-won revenue', '21% connection rate (vs 4-6% team average)', 'Prospected across 13 states'],
+  '{"demos_booked": 20, "quota": 15, "demos_self_sourced": 18, "connection_rate_percent": 21, "team_average_connection_rate_percent": 5, "closed_won_revenue": 216437.50}'::JSONB,
   'Strong performance metrics but terminated despite results. Fit mismatch with activity-metric culture.',
   'Terminated',
   'VERIFIED',
@@ -256,7 +256,7 @@ INSERT INTO experiences (
 -- ============================================
 
 INSERT INTO skills (id, candidate_id, category, skill_name, proficiency_level, evidence, years_experience) VALUES
-('skill-001', 'keegan-moody-001', 'GTM / Sales', 'Cold Outreach Strategy', 'STRONG', 'Orlando Health deal (90-day close), 22 demos at TraceAir with 147% quota', 4),
+('skill-001', 'keegan-moody-001', 'GTM / Sales', 'Cold Outreach Strategy', 'STRONG', 'Orlando Health deal (90-day close), 20 demos at TraceAir (company record, 18 self-sourced)', 4),
 ('skill-002', 'keegan-moody-001', 'GTM / Sales', 'Prospecting / Lead Sourcing', 'STRONG', 'Built methodology at every role—hospital readmission research, land development project hunting, ICP validation', 4),
 ('skill-003', 'keegan-moody-001', 'GTM / Sales', 'ICP Development', 'STRONG', 'Defined personas at Biofourmis (QA Directors), TraceAir (land developers), Mixmax (sales leaders via Volley Method)', 4),
 ('skill-004', 'keegan-moody-001', 'GTM / Sales', 'Territory Development', 'STRONG', 'Built greenfield territory at TraceAir with 1/4 contacts of peers, still led in demos', 3),
@@ -282,7 +282,7 @@ INSERT INTO achievements (id, candidate_id, experience_id, achievement_type, tit
 ('ach-001', 'keegan-moody-001', 'exp-001', 'METHODOLOGY', 'Built Complete GTM Intelligence System', 'Created enterprise-grade GTM intelligence system including Volley Method for ICP validation, Tacit Knowledge Extraction framework, Golden Goose 100-point scoring model, and 9-agent Gutenberg Framework.', NULL, NULL, 'VERIFIED', 'NOVEMBER 0742 documentation', NULL, TRUE),
 ('ach-002', 'keegan-moody-001', 'exp-001', 'DISCOVERY', 'Discovered Power Law Revenue Distribution', 'Through Volley Method analysis of 402 customer accounts ($4.79M ARR), discovered that 15% of accounts generate 66% of revenue. 51-200 employee segment produces 2x ARR with only 23% of customer base.', 66, 'percent_revenue_concentration', 'VERIFIED', 'ICP_VALIDATION_AUDIT_REPORT.md', NULL, TRUE),
 ('ach-003', 'keegan-moody-001', 'exp-001', 'INFRASTRUCTURE', 'Built 50+ Warmed Domain Infrastructure', 'Created email infrastructure with 50+ warmed inboxes across ScaledMail (33), Pager AI, and SmartLead AI for outbound campaign deployment.', 50, 'warmed_domains', 'VERIFIED', 'LINKEDIN_SUMMARY.md, service documentation', NULL, TRUE),
-('ach-004', 'keegan-moody-001', 'exp-003', 'QUOTA', '147% Quota Attainment', 'Booked 22 demos in September 2024 against a quota of 15, achieving 147% attainment with 21% connection rate vs 4-6% team average.', 147, 'percent_quota', 'VERIFIED', 'Apple_Notes/TRACEAIR_STATS.md, user verification', NULL, TRUE),
+('ach-004', 'keegan-moody-001', 'exp-003', 'QUOTA', 'Company Record Month', 'Booked 20 demos in September 2024 (company record, 18 self-sourced) against quota of 15, with 21% connection rate vs 4-6% team average.', 20, 'demos_booked', 'VERIFIED', 'source-interviews/01_CAREER_ROLES_TEMPLATE.md', NULL, TRUE),
 ('ach-005', 'keegan-moody-001', 'exp-003', 'REVENUE', '$216K Closed-Won Revenue', 'Generated $216,437.50 in closed-won revenue from prospecting efforts.', 216437.50, 'USD', 'VERIFIED', 'Gmail records', NULL, TRUE),
 ('ach-006', 'keegan-moody-001', 'exp-005', 'DEAL_VELOCITY', 'Sourced Fastest Deal in Company History', 'Prospecting sourced the Orlando Health deal which closed in 90 days—fastest in Biofourmis company history. AE Tyler Cole closed the deal.', 90, 'days_to_close', 'UNVERIFIED_WITH_HONEST_FRAMING', 'Experience documentation, user confirmation (no paper proof)', 'My prospecting sourced the deal. AE Tyler Cole closed it. 90-day close—fastest in company history.', TRUE),
 ('ach-007', 'keegan-moody-001', 'exp-005', 'MILESTONE', 'Present During Unicorn Milestone', 'Employed at Biofourmis during company''s Series D funding ($300M, $1.3B valuation) in April 2022, achieving unicorn status.', 1.3, 'billion_valuation', 'VERIFIED', 'MobiHealthNews, Crunchbase', NULL, FALSE),

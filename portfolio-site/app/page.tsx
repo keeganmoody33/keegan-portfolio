@@ -23,7 +23,7 @@ export default function Home() {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">
-          <StatCard label="TraceAir Quota" value="147%" />
+          <StatCard label="TraceAir Record" value="20 demos" sublabel="18 self-sourced" />
           <StatCard label="Connection Rate" value="21%" sublabel="vs 4-6% avg" />
           <StatCard label="Closed Revenue" value="$216K" />
           <StatCard label="Orlando Health" value="90 days" sublabel="fastest close" />

@@ -20,7 +20,7 @@ Keegan Moody is a GTM professional with a scientific background who builds sales
 
 | Metric | Value | Proof |
 |--------|-------|-------|
-| TraceAir demos (Sep 2024) | **23** in one month | `experiences/03-traceair.md` |
+| TraceAir demos (Sep 2024) | **20** in one month (18 self-sourced) | `experiences/03-traceair.md` |
 | TraceAir connection rate | **21%** vs 4-6% team avg | `experiences/03-traceair.md` |
 | TraceAir revenue | $216,437.50 closed-won | Gmail verified |
 | Biofourmis Orlando Health | 90-day close, fastest ever | `experiences/04-biofourmis.md` |
@@ -34,7 +34,7 @@ Keegan Moody is a GTM professional with a scientific background who builds sales
 |--------|------|---------|---------|
 | Sep-Dec 2025 | Founding GTM Engineer | Mixmax (Series B) | Contract ended early — delivered 42% of target |
 | May-Jun 2025 | GTM/Business Development | Mobb AI | Short engagement |
-| Jul 2024 - Jan 2025 | Senior SDR | TraceAir | Fired while 147% of quota |
+| Jul 2024 - Jan 2025 | Senior SDR | TraceAir | Fired after company record month (20 demos) |
 | Aug 2021 - Jan 2023 | Co-Founding SDR | Biofourmis | Fired while top performer |
 | 2020-2021 | Corporate Development | Barbour Orthopedics | Front desk/ops |
 | 2016-2018 | Research Assistant | University (Dr. Kiefer) | 270 days fieldwork |
@@ -101,7 +101,7 @@ Keegan Moody is a GTM professional with a scientific background who builds sales
 
 **Two terminations while top performer:**
 - Biofourmis: Led team in results, fired over activity metrics mismatch
-- TraceAir: 147% of quota, fired after advocating for team resources
+- TraceAir: Company record month (20 demos, 18 self-sourced), fired after advocating for team resources
 
 **Mixmax delivery gap:**
 - Target: 9,000 contacts across 3 campaigns

@@ -15,7 +15,7 @@
 SDR responsible for greenfield territory development in construction and land development vertical, consistently exceeding targets through creative prospecting and self-sourced lead generation.
 
 **Bullets:**
-- Achieved record month of 23 demos booked and completed, with majority from self-sourced contacts outside existing CRM database
+- Achieved record month of 20 demos booked and completed, with 18 from self-sourced contacts outside existing CRM database
 - Developed custom prospecting methodology using ChatGPT to identify upcoming major land developments and decision-makers
 - Built territory from scratch with limited resources — 2,200 contacts vs. 8,800 in comparable territories
 - Created personalized video outreach strategy via LinkedIn achieving higher engagement than templated sequences
@@ -70,7 +70,7 @@ SDR responsible for greenfield territory development in construction and land de
 
 **Despite:**
 - Being top performer
-- 23 demos in one month (record)
+- 20 demos in one month (company record, 18 self-sourced)
 - Majority self-sourced (not in their Salesforce)
 - $216,437.50 closed-won revenue
 
@@ -95,6 +95,6 @@ This is the second time I was top performer and got fired for not playing the ga
 - 21% connection rate (vs 4-6% team average)
 - 3.5-5x higher connection rate than team average
 - Made a third of the calls, booked majority of demos
-- 23 demos booked and completed in first month
+- 20 demos booked and completed in record month
 
 *Cross-analyzed: 2026-01-19*

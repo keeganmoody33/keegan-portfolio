@@ -137,8 +137,8 @@ This document maps all Apple Notes by date. After cross-analysis is complete:
 - Apple Notes (Jan 2025): "Booked 22 meetings"
 - Other documents: "20 demos"
 
-**Resolution:** User clarified: "23 booked and completed"
-- [x] Updated experiences/03-traceair.md to "23 demos booked and completed"
+**Resolution:** Source-interviews (Jan 2026) confirms: "20 demos" (company record), 18 self-sourced
+- [x] Updated experiences/03-traceair.md to "20 demos booked and completed"
 
 ---
 

@@ -124,7 +124,7 @@ Did he take it from 0 to 100? No. But he built the foundation—validated ICP, p
 - **Delivery gap**: 3,770 delivered vs 9,000 target (honestly disclosed)
 
 ### TraceAir
-- **22 demos in September 2024** (quota was 15) = **147% attainment**
+- **20 demos in September 2024** (company record, 18 self-sourced) against quota of 15
 - **21% connection rate** vs 4-6% team average
 - **$216,437.50 closed-won revenue** (verified via Gmail)
 - Made 1/3 of team calls, led in demos

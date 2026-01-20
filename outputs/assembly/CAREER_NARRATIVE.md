@@ -79,7 +79,7 @@ Did I take it from 0 to 100? No. But I built the foundation—validated ICP, pro
 
 My method: fewer calls, better research. I made a third of the team's calls but led in demos.
 
-**September 2024**: 22 demos booked against 15/month quota—**147% attainment**—with a 21% connection rate while the team averaged 4-6%.
+**September 2024**: 20 demos booked (company record, 18 self-sourced) against 15/month quota, with a 21% connection rate while the team averaged 4-6%.
 
 By the time I left, my pipeline had generated **$216,437.50 in closed-won revenue** (verified via Gmail).
 
