@@ -1,6 +1,7 @@
 'use client'
 
 import Chat from '@/components/Chat'
+import JDAnalyzer from '@/components/JDAnalyzer'
 
 export default function Home() {
   return (
@@ -27,6 +28,14 @@ export default function Home() {
           <StatCard label="Connection Rate" value="21%" sublabel="vs 4-6% avg" />
           <StatCard label="Closed Revenue" value="$216K" />
           <StatCard label="Orlando Health" value="90 days" sublabel="fastest close" />
+        </div>
+
+        {/* Divider */}
+        <div className="border-t border-gray-200 dark:border-gray-800 my-12" />
+
+        {/* JD Analyzer Section */}
+        <div className="mb-12">
+          <JDAnalyzer />
         </div>
 
         {/* Divider */}
