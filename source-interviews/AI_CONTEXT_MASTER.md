@@ -27,10 +27,10 @@
 - **Availability:** Immediately available
 - **Actively Searching:** Yes
 
-## Compensation Expectations (2026)
+## Compensation Expectations (2025-2026)
 
-- **Base Salary:** ~$120,000
-- **OTE:** ~$150,000+
+- **Base Salary:*$120,*
+- **OTE:** ~$120,000
 - **Commission:** Uncapped preferred
 - **Equity:** Strongly preferred at early-stage companies
 - **Flexibility:** Will consider lower base for higher equity at seed/Series A
