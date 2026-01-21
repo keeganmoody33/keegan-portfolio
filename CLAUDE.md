@@ -77,8 +77,8 @@ Supporting files:
 - Remote work (unless Atlanta-based)
 
 ### Compensation (2025)
-- Base: ~$65,000
-- OTE: ~$120,000
+- Base: ~$120,000
+- OTE: ~$150,000+
 - Equity preferred if early-stage
 
 ---

@@ -137,9 +137,9 @@
 - Impactful work environment
 - Engaged leadership who invests in my growth
 
-### Compensation Expectations (2025)
-- Base: ~$65,000
-- OTE: ~$120,000
+### Compensation Expectations (2026)
+- Base: ~$120,000
+- OTE: ~$150,000+
 - Uncapped commissions preferred
 - Equity if early-stage
 
