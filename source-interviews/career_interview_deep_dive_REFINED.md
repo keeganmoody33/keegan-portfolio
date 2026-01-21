@@ -136,7 +136,7 @@ You've also been fired twice. You've struggled with shipping, with optics, with 
 - Using HubSpot, sending 500 emails a day (that's how it used to be)
 - "Acting like sharks on Zoom Info, because we could" — Zoom Info was new and revolutionary at the time
 
-**Mentor:** Josh Poppas — Director of Digital Health at the time, one of the most tenured, resided under the CCO
+**Mentor:** Josh Pappas — Director of Digital Health at the time, one of the most tenured, resided under the CCO
 
 **Milestone:**
 
@@ -186,7 +186,7 @@ You've also been fired twice. You've struggled with shipping, with optics, with 
 
 - Did a lot of things
 - Pushed carts at Home Depot to pay rent
-- Did consulting work with Josh Poppas
+- Did consulting work with Josh Pappas
 - Knew you wanted to get back into the startup game
 
 ---

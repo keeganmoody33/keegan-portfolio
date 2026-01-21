@@ -232,7 +232,7 @@ Music is personal, stays in the lab. It's not part of Lectures From (for now). D
 1. **Marketplace turntable guy**: Fronted me Technics SL-1200 MK2s (one signed by Slick Rick) on a payment plan contract
 2. **Uber driver**: Shipped me a $1,000 MPC 2000 XL without me asking
 3. **Heath at MixMax**: Gave me the "opportunity of a lifetime" after meeting me in a course
-4. **Josh Poppas**: Brought me into consulting work during my gap period
+4. **Josh Pappas**: Brought me into consulting work during my gap period
 5. **Dr. Kiefer**: Invited me on 270 total days of fieldwork in South America
 
 ## What This Means

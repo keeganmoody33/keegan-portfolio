@@ -1,7 +1,7 @@
 # Mixmax — Founding GTM Engineer
 
 **Company:** Mixmax (Sales Engagement Platform)
-**Duration:** September 2025 – December 2025 (Contract)
+**Duration:** September 2025 (trial) → October 1 – December 12, 2025 (3-month contract)
 **Location:** Remote
 **Reporting To:** Heath Barnett, CRO
 

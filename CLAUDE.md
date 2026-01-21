@@ -28,19 +28,6 @@ Keegan Moody is a GTM professional with a scientific background who builds sales
 
 ---
 
-## Career Timeline
-
-| Period | Role | Company | Outcome |
-|--------|------|---------|---------|
-| Sep-Dec 2025 | Founding GTM Engineer | Mixmax (Series B) | Contract ended early — delivered 42% of target |
-| May-Jun 2025 | GTM/Business Development | Mobb AI | Short engagement |
-| Jul 2024 - Jan 2025 | Senior SDR | TraceAir | Fired after company record month (20 demos) |
-| Aug 2021 - Jan 2023 | Co-Founding SDR | Biofourmis | Fired while top performer |
-| 2020-2021 | Corporate Development | Barbour Orthopedics | Front desk/ops |
-| 2016-2018 | Research Assistant | University (Dr. Kiefer) | 270 days fieldwork |
-
----
-
 ## Folder Guide
 
 | Folder | Contents |
@@ -59,14 +46,13 @@ Keegan Moody is a GTM professional with a scientific background who builds sales
 
 ---
 
-## Canonical Sources (Trust These)
+## Source of Truth
 
-| File | Purpose |
-|------|---------|
-| `CERTIFICATIONS_AND_EMPLOYMENT.md` | Verified timeline, all certs with URLs |
-| `experiences/*.md` | Role-by-role truth (public + private versions) |
-| `values/values-and-preferences.md` | Values, work preferences, career goals |
-| `outputs/assembly/patterns.json` | Career patterns (success + failure) |
+**`experiences/`** — Each role has consistent structure: PUBLIC (LinkedIn) + PRIVATE (honest AI context). Numbered by impact/recency (01 = most recent). Contains dates, outcomes, what actually happened, lessons learned.
+
+Supporting files:
+- `CERTIFICATIONS_AND_EMPLOYMENT.md` — Verified dates, cert URLs
+- `values/values-and-preferences.md` — What he's looking for
 
 ---
 

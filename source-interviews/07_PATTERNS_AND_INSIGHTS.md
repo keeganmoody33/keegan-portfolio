@@ -32,7 +32,7 @@ Not that optics should replace substance — but that ignoring optics means subs
 1. **Marketplace seller**: Fronted Technics turntables on a payment plan contract
 2. **Uber driver**: Shipped a $1,000 MPC 2000 XL as a gift
 3. **Heath at MixMax**: Gave "the opportunity of a lifetime" after meeting in a course
-4. **Josh Poppas**: Brought into consulting work during the gap period
+4. **Josh Pappas**: Brought into consulting work during the gap period
 5. **Dr. Kiefer**: Invited on 270 total days of South American fieldwork
 
 ### The Diagnosis

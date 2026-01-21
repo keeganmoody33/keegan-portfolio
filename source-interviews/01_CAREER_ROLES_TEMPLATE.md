@@ -171,7 +171,7 @@ Let go in January despite leading the team in results, despite originating a mil
 
 - Provided go-to-market strategy consulting for early-stage healthcare technology startups
 - Developed outbound sales processes and hospital engagement strategies for BariNav (bariatric surgery software)
-- Collaborated with Dr. Mike Blaney (bariatric surgeon, Augusta) and Josh Poppas (former Biofourmis director) on GTM framework development
+- Collaborated with Dr. Mike Blaney (bariatric surgeon, Augusta) and Josh Pappas (former Biofourmis director) on GTM framework development
 - Maintained expertise and industry connections while selectively pursuing aligned opportunities
 
 ## PRIVATE VERSION (Honest AI Context)
@@ -181,7 +181,7 @@ I got fired from Biofourmis and didn't land another real opportunity for roughly
 
 ### How I Survived
 - Pushed carts at Home Depot to pay rent
-- Did consulting work with Josh Poppas (former Biofourmis mentor)
+- Did consulting work with Josh Pappas (former Biofourmis mentor)
 - Helped Dr. Mike Blaney with Bariatric Centers of America / BariNav
 - Built GTM funnel and outbound process for hospital outreach
 - $299 contract work — about experience, relationships, potential upside
