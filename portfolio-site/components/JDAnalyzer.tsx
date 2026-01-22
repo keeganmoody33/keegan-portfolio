@@ -6,109 +6,76 @@ export default function JDAnalyzer() {
   const [input, setInput] = useState('')
   const [analysis, setAnalysis] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
   const handleAnalyze = async () => {
     if (!input.trim()) {
-      setError('Please enter a job description or URL')
+      setError('Please paste a job description or URL.')
       return
     }
 
     setLoading(true)
-    setError('')
+    setError(null)
     setAnalysis('')
 
     try {
-      const response = await fetch(
-        'https://cvkcwvmlnghwwvdqudod.supabase.co/functions/v1/jd-analyzer',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ input: input.trim() }),
-        }
-      )
+      const response = await fetch('https://cvkcwvmlnghwwvdqudod.supabase.co/functions/v1/jd-analyzer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ input }),
+      })
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to analyze job description')
       }
 
       const data = await response.json()
-      setAnalysis(data.analysis || 'No analysis returned')
-    } catch (err) {
-      console.error('Analysis error:', err)
-      setError(err instanceof Error ? err.message : 'Failed to get analysis.')
+      setAnalysis(data.analysis)
+    } catch (err: any) {
+      setError(err.message)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div style={{ marginBottom: '3rem' }}>
-      <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem', textAlign: 'center' }}>
-        JD Fit Analyzer
-      </h2>
-      <p style={{ color: '#6b7280', textAlign: 'center', marginBottom: '2rem' }}>
-        Paste a job description or URL below to get an honest fit assessment.
-      </p>
-
+    <div className="experience-card p-6 rounded-lg">
       <textarea
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        placeholder="Paste job description text or URL here..."
-        style={{
-          width: '100%',
-          minHeight: '200px',
-          padding: '1rem',
-          border: '1px solid #d1d5db',
-          borderRadius: '0.5rem',
-          fontSize: '0.875rem',
-          fontFamily: 'monospace',
-          marginBottom: '1rem',
-          backgroundColor: '#1f2937',
-          color: '#f9fafb',
-        }}
+        placeholder="Paste a job description or URL here..."
+        className="w-full h-40 bg-[var(--bg-body)] border border-[var(--border-dim)] rounded-lg p-4 
+                   text-[var(--text-main)] font-mono text-sm resize-none
+                   focus:outline-none focus:border-[var(--accent-lime)]
+                   placeholder:text-[var(--text-muted)]"
       />
-
+      
       <button
         onClick={handleAnalyze}
         disabled={loading}
-        style={{
-          padding: '0.75rem 1.5rem',
-          backgroundColor: loading ? '#6b7280' : '#10b981',
-          color: 'white',
-          border: 'none',
-          borderRadius: '0.5rem',
-          fontSize: '1rem',
-          fontWeight: '600',
-          cursor: loading ? 'not-allowed' : 'pointer',
-          marginBottom: '1rem',
-        }}
+        className={`mt-4 px-6 py-3 font-mono text-sm border border-[var(--border-dim)] 
+                   text-[var(--text-bright)] rounded transition-all
+                   ${loading 
+                     ? 'opacity-50 cursor-not-allowed' 
+                     : 'sketch-btn hover:border-[var(--accent-lime)]'
+                   }`}
       >
         {loading ? 'Analyzing...' : 'Analyze Fit'}
       </button>
 
       {error && (
-        <div style={{ color: '#ef4444', marginTop: '1rem' }}>
-          {error}
+        <div className="mt-4 p-4 bg-[var(--accent-red)]/10 border border-[var(--accent-red)] rounded-lg">
+          <span className="text-[var(--accent-red)] font-mono text-sm">{error}</span>
         </div>
       )}
 
       {analysis && (
-        <div
-          style={{
-            marginTop: '2rem',
-            padding: '1.5rem',
-            backgroundColor: '#1f2937',
-            borderRadius: '0.5rem',
-            border: '1px solid #374151',
-          }}
-        >
-          <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>
-            Fit Assessment
-          </h3>
-          <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', color: '#d1d5db' }}>
+        <div className="mt-6 p-6 bg-[var(--bg-body)] border border-[var(--border-dim)] rounded-lg">
+          <h4 className="text-[var(--accent-lime)] font-mono text-sm mb-4">// Analysis Result</h4>
+          <div className="text-[var(--text-main)] whitespace-pre-wrap leading-relaxed">
             {analysis}
           </div>
         </div>
@@ -116,4 +83,3 @@ export default function JDAnalyzer() {
     </div>
   )
 }
-
