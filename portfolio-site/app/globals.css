@@ -1,39 +1,156 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500&family=Roboto+Slab:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --foreground: #171717;
-  --background: #ffffff;
+  --bg-body: #121212;
+  --bg-surface: #1E1E1E;
+  --bg-glass: rgba(30, 30, 30, 0.95);
+  --border-dim: #333333;
+  --border-highlight: #CCFF00;
+  --text-bright: #FFFFFF;
+  --text-main: #C9C9C9;
+  --text-muted: #8B8B8B;
+  --accent-lime: #CCFF00;
+  --accent-lime-dim: rgba(204, 255, 0, 0.15);
+  --accent-orange: #FF5F1F;
+  --accent-red: #FF3131;
+  --grid-line: #1E1E1E;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground: #ededed;
-    --background: #0a0a0a;
-  }
+[data-theme="light"] {
+  --bg-body: #E8E2D2;
+  --bg-surface: #DCD5C3;
+  --bg-glass: rgba(220, 213, 195, 0.95);
+  --border-dim: #C5BCAE;
+  --border-highlight: #4A5D23;
+  --text-bright: #2B241D;
+  --text-main: #42382F;
+  --text-muted: #857A6E;
+  --accent-lime: #556B2F;
+  --accent-lime-dim: rgba(85, 107, 47, 0.15);
+  --accent-orange: #CC4E18;
+  --accent-red: #D32F2F;
+  --grid-line: #DCD5C3;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-body);
+  background-image:
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: gridShift 8s linear infinite;
+  color: var(--text-main);
+  font-family: 'Space Grotesk', sans-serif;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
+@keyframes gridShift {
+  0% { background-position: 0px 0px, 0px 0px; }
+  100% { background-position: 60px 0px, 0px 60px; }
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-body); }
 ::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 3px;
+  background: var(--bg-surface);
+  border: 1px solid var(--accent-lime);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--accent-lime); }
+
+/* Sketch Button Style */
+.sketch-btn {
+  box-shadow: 5px 5px 0px 0px var(--accent-lime);
+  transform: translateZ(0);
+  transition: all 0.2s ease;
+}
+.sketch-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0px 0px var(--accent-lime);
+  color: var(--accent-lime);
+  border-color: var(--accent-lime);
+}
+.sketch-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px 0px var(--accent-lime);
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
+/* Ask AI Button */
+.ask-ai-btn {
+  border: 2px dashed var(--accent-orange);
+  background: transparent;
+  color: var(--text-bright);
+  transition: all 0.2s ease;
 }
+.ask-ai-btn:hover {
+  background: var(--accent-orange);
+  border-style: solid;
+}
+
+/* Timeline Styles */
+.timeline-line {
+  background: linear-gradient(to bottom, var(--border-dim) 0%, var(--border-dim) 50%, rgba(51,51,51,0) 100%);
+}
+.timeline-node {
+  box-shadow: 0 0 0 4px var(--bg-body);
+}
+
+/* Spray Paint Text Animation */
+.spray-char {
+  display: inline-block;
+  opacity: 0;
+  animation: sprayStroke 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+@keyframes sprayStroke {
+  0% { opacity: 0; transform: scale(1.5); filter: blur(8px); }
+  60% { opacity: 0.8; transform: scale(0.95); filter: blur(2px); }
+  100% { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+
+/* Marquee */
+.marquee-container {
+  display: flex;
+  width: max-content;
+  animation: marquee 40s linear infinite;
+}
+.marquee-container:hover {
+  animation-play-state: paused;
+}
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Card Styles */
+.experience-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-dim);
+  transition: all 0.3s ease;
+}
+.experience-card:hover {
+  border-color: var(--accent-lime);
+}
+
+/* Tech Pills */
+.tech-pill {
+  background: transparent;
+  border: 1px solid var(--border-dim);
+  color: var(--text-muted);
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 2px;
+}
+
+/* Activity Stream */
+.activity-stream {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-dim);
+  font-family: 'Roboto Mono', monospace;
+}
+.log-success { color: #4ADE80; }
+.log-warn { color: var(--accent-orange); }
+.log-info { color: var(--text-muted); }
