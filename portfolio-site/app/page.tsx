@@ -1,77 +1,235 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
 import Chat from '@/components/Chat'
 import JDAnalyzer from '@/components/JDAnalyzer'
+import SprayText from '@/components/SprayText'
+import Timeline from '@/components/Timeline'
+import ActivityStream from '@/components/ActivityStream'
+import Marquee from '@/components/Marquee'
 
-export default function Home() {
-  return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900">
-      {/* Hero Section */}
-      <div className="max-w-4xl mx-auto px-4 py-16 sm:py-24">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-            Keegan Moody
-          </h1>
-          <p className="text-xl sm:text-2xl text-gray-600 dark:text-gray-300 mb-6">
-            GTM Engineer
-          </p>
-          <p className="text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
-            I build go-to-market infrastructure from scratch at early-stage startups.
-            Not campaigns—systems. The methodology, automation, and intelligence layer
-            that makes outbound repeatable.
-          </p>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">
-          <StatCard label="TraceAir Record" value="20 demos" sublabel="18 self-sourced" />
-          <StatCard label="Connection Rate" value="21%" sublabel="vs 4-6% avg" />
-          <StatCard label="Closed Revenue" value="$216K" />
-          <StatCard label="Orlando Health" value="90 days" sublabel="fastest close" />
-        </div>
-
-        {/* Divider */}
-        <div className="border-t border-gray-200 dark:border-gray-800 my-12" />
-
-        {/* JD Analyzer Section */}
-        <div className="mb-8">
-          <JDAnalyzer />
-        </div>
-
-        {/* Divider */}
-        <div className="border-t border-gray-200 dark:border-gray-800 my-12" />
-
-        {/* Chat Section */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2 text-center">
-            Ask me anything
-          </h2>
-          <p className="text-gray-500 dark:text-gray-400 text-center mb-8">
-            Powered by AI with my verified portfolio data. Ask about my experience,
-            skills, or work history.
-          </p>
-          <Chat />
-        </div>
-
-        {/* Honest Framing Note */}
-        <div className="mt-12 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-          <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-            <strong>Note:</strong> This AI is trained to be honest about my career,
-            including setbacks. I&apos;ve been fired twice while hitting quota.
-            I own that, and the AI will tell you about it if you ask.
-          </p>
-        </div>
-      </div>
-    </main>
-  )
+interface Profile {
+  id: string
+  first_name: string
+  last_name: string
+  headline: string
+  summary: string
+  linkedin_url: string
+  github_url: string
 }
 
-function StatCard({ label, value, sublabel }: { label: string; value: string; sublabel?: string }) {
+interface Experience {
+  id: number
+  company_name: string
+  role_title: string
+  start_date: string
+  end_date: string | null
+  duration_months: number
+  public_bullets: string[]
+  display_order: number
+}
+
+export default function Home() {
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [experiences, setExperiences] = useState<Experience[]>([])
+  const [showChat, setShowChat] = useState(false)
+  const [showJD, setShowJD] = useState(false)
+
+  useEffect(() => {
+    async function fetchData() {
+      // Fetch profile
+      const { data: profileData } = await supabase
+        .from('candidate_profile')
+        .select('*')
+        .eq('id', 'keegan-moody-001')
+        .single()
+      
+      if (profileData) setProfile(profileData)
+
+      // Fetch experiences
+      const { data: expData } = await supabase
+        .from('experiences')
+        .select('*')
+        .eq('candidate_id', 'keegan-moody-001')
+        .order('display_order', { ascending: true })
+      
+      if (expData) setExperiences(expData)
+    }
+
+    fetchData()
+  }, [])
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-      <div className="text-2xl font-bold text-gray-900 dark:text-white">{value}</div>
-      <div className="text-sm text-gray-500 dark:text-gray-400">{label}</div>
-      {sublabel && <div className="text-xs text-gray-400 dark:text-gray-500">{sublabel}</div>}
+    <div className="min-h-screen">
+      {/* Marquee Ticker */}
+      <Marquee />
+
+      {/* Main Layout */}
+      <div className="flex">
+        {/* Main Content */}
+        <main className="flex-1 px-8 lg:px-16 py-8 lg:pr-[400px]">
+          {/* Navigation */}
+          <nav className="flex items-center justify-between mb-16">
+            <div className="flex items-center gap-2">
+              <span className="text-[var(--text-muted)] font-mono text-sm">⌘</span>
+              <span className="text-[var(--text-bright)] font-space">lecturesfrom</span>
+            </div>
+            <div className="flex items-center gap-8">
+              <a href="#experience" className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
+                XP
+              </a>
+              <a href="#projects" className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
+                Projects <span className="text-[var(--text-muted)]">[P]</span>
+              </a>
+              <a href="#contact" className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
+                Contact <span className="text-[var(--text-muted)]">[C]</span>
+              </a>
+              <button 
+                onClick={() => setShowChat(true)}
+                className="ask-ai-btn px-4 py-2 font-mono text-sm"
+              >
+                Ask AI
+              </button>
+            </div>
+          </nav>
+
+          {/* Hero Section */}
+          <section className="mb-24">
+            {/* Taglines */}
+            <div className="space-y-2 mb-8">
+              <div className="flex items-center gap-3 text-[var(--text-muted)]">
+                <span className="text-[var(--accent-orange)]">⚠</span>
+                <span className="font-mono text-sm">Is your current infrastructure crumbling?</span>
+              </div>
+              <div className="flex items-center gap-3 text-[var(--text-muted)]">
+                <span className="text-[var(--accent-lime)]">◉</span>
+                <span className="font-mono text-sm">Do you need scale that actually works?</span>
+              </div>
+              <div className="flex items-center gap-3 text-[var(--text-muted)]">
+                <span className="text-[var(--accent-red)]">⊗</span>
+                <span className="font-mono text-sm">Looking for the architect behind the chaos?</span>
+              </div>
+            </div>
+
+            {/* Name */}
+            <h1 className="text-7xl lg:text-9xl font-bold tracking-tight mb-8">
+              <SprayText 
+                text={profile?.first_name?.toUpperCase() || 'KEEGAN'} 
+                className="text-[var(--accent-lime)]"
+              />
+              <br />
+              <SprayText 
+                text={profile?.last_name?.toUpperCase() || 'MOODY'} 
+                className="text-[var(--accent-orange)]"
+                delay={500}
+              />
+            </h1>
+
+            {/* CTA */}
+            <div className="flex items-start gap-4">
+              <div className="w-1 h-16 bg-[var(--accent-lime)]" />
+              <div>
+                <p className="text-[var(--text-muted)] font-mono text-sm mb-4">
+                  Don't guess. Query the system directly.<br />
+                  The answer is in the data.
+                </p>
+                <button 
+                  onClick={() => setShowChat(true)}
+                  className="ask-ai-btn px-6 py-3 font-mono"
+                >
+                  Ask AI
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Career Timeline */}
+          <section id="experience" className="mb-24">
+            <h2 className="text-[var(--accent-orange)] font-mono text-sm mb-8">
+              // Chronological Execution Log
+            </h2>
+            <h3 className="text-3xl font-bold text-[var(--text-bright)] mb-12">
+              Career Timeline
+            </h3>
+            <Timeline experiences={experiences} />
+          </section>
+
+          {/* JD Analyzer */}
+          <section id="projects" className="mb-24">
+            <h2 className="text-[var(--accent-orange)] font-mono text-sm mb-8">
+              // Fit Analysis Tool
+            </h2>
+            <h3 className="text-3xl font-bold text-[var(--text-bright)] mb-8">
+              JD Fit Analyzer
+            </h3>
+            <p className="text-[var(--text-muted)] mb-8 max-w-xl">
+              Paste a job description. I'll give you an honest assessment of fit—including where I fall short.
+            </p>
+            <JDAnalyzer />
+          </section>
+
+          {/* Footer */}
+          <footer id="contact" className="border-t border-[var(--border-dim)] pt-8">
+            <div className="flex items-center justify-between">
+              <span className="text-[var(--text-muted)] font-mono text-sm">
+                © 2024 LECTURES_FROM
+              </span>
+              <div className="flex gap-6">
+                <a 
+                  href={profile?.linkedin_url || '#'} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+                >
+                  LINKEDIN
+                </a>
+                <a 
+                  href="https://twitter.com/keeganmoody33" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+                >
+                  TWITTER
+                </a>
+                <a 
+                  href={profile?.github_url || '#'} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+                >
+                  GITHUB
+                </a>
+              </div>
+            </div>
+          </footer>
+        </main>
+
+        {/* Right Sidebar - Activity Stream */}
+        <aside className="hidden lg:block fixed right-0 top-0 w-[380px] h-screen border-l border-[var(--border-dim)] bg-[var(--bg-glass)] p-6 overflow-y-auto">
+          <ActivityStream />
+        </aside>
+      </div>
+
+      {/* Chat Modal */}
+      {showChat && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-[var(--bg-surface)] border border-[var(--border-dim)] rounded-lg w-full max-w-2xl max-h-[80vh] overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-[var(--border-dim)]">
+              <h3 className="text-[var(--text-bright)] font-mono">Ask AI</h3>
+              <button 
+                onClick={() => setShowChat(false)}
+                className="text-[var(--text-muted)] hover:text-[var(--text-bright)]"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto max-h-[calc(80vh-60px)]">
+              <Chat />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

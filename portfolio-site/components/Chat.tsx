@@ -8,11 +8,11 @@ interface Message {
 }
 
 const SUGGESTED_QUESTIONS = [
-  "What did Keegan do at Mixmax?",
-  "Has Keegan ever been fired?",
-  "What are Keegan's top skills?",
-  "What's Keegan's ideal work environment?",
-  "Tell me about the Orlando Health deal",
+  "What are you working on right now?",
+  "What's your background?",
+  "What kind of roles are you looking for?",
+  "Tell me about a time you failed",
+  "What are your actual skill gaps?",
 ]
 
 export default function Chat() {
@@ -38,7 +38,7 @@ export default function Chat() {
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch('https://cvkcwvmlnghwwvdqudod.supabase.co/functions/v1/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question }),
@@ -70,17 +70,19 @@ export default function Chat() {
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="w-full">
       {/* Suggested Questions (show when no messages) */}
       {messages.length === 0 && (
         <div className="mb-6">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Try asking:</p>
+          <p className="text-[var(--text-muted)] font-mono text-sm mb-3">Try asking:</p>
           <div className="flex flex-wrap gap-2">
             {SUGGESTED_QUESTIONS.map((q, i) => (
               <button
                 key={i}
                 onClick={() => sendMessage(q)}
-                className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                className="px-3 py-1.5 text-sm bg-[var(--bg-body)] border border-[var(--border-dim)] 
+                         text-[var(--text-muted)] rounded hover:border-[var(--accent-lime)] 
+                         hover:text-[var(--accent-lime)] transition-colors font-mono"
               >
                 {q}
               </button>
@@ -91,7 +93,7 @@ export default function Chat() {
 
       {/* Messages */}
       {messages.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-4 max-h-96 overflow-y-auto">
+        <div className="experience-card rounded-lg mb-4 max-h-96 overflow-y-auto">
           <div className="p-4 space-y-4">
             {messages.map((message, index) => (
               <div
@@ -101,8 +103,8 @@ export default function Chat() {
                 <div
                   className={`max-w-[80%] px-4 py-2 rounded-lg ${
                     message.role === 'user'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                      ? 'bg-[var(--accent-lime)] text-[var(--bg-body)]'
+                      : 'bg-[var(--bg-body)] border border-[var(--border-dim)] text-[var(--text-main)]'
                   }`}
                 >
                   <p className="whitespace-pre-wrap text-sm">{message.content}</p>
@@ -111,11 +113,11 @@ export default function Chat() {
             ))}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-lg">
+                <div className="bg-[var(--bg-body)] border border-[var(--border-dim)] px-4 py-2 rounded-lg">
                   <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+                    <div className="w-2 h-2 bg-[var(--accent-lime)] rounded-full animate-bounce" />
+                    <div className="w-2 h-2 bg-[var(--accent-lime)] rounded-full animate-bounce" style={{ animationDelay: '100ms' }} />
+                    <div className="w-2 h-2 bg-[var(--accent-lime)] rounded-full animate-bounce" style={{ animationDelay: '200ms' }} />
                   </div>
                 </div>
               </div>
@@ -132,13 +134,18 @@ export default function Chat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about my experience, skills, or work history..."
-          className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 px-4 py-3 border border-[var(--border-dim)] rounded-lg 
+                   bg-[var(--bg-body)] text-[var(--text-main)] font-mono text-sm
+                   placeholder:text-[var(--text-muted)]
+                   focus:outline-none focus:border-[var(--accent-lime)]"
           disabled={isLoading}
         />
         <button
           type="submit"
           disabled={isLoading || !input.trim()}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-6 py-3 bg-[var(--accent-lime)] text-[var(--bg-body)] font-mono text-sm
+                   rounded-lg hover:bg-[var(--accent-orange)] 
+                   disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Send
         </button>
@@ -148,7 +155,7 @@ export default function Chat() {
       {messages.length > 0 && (
         <button
           onClick={() => setMessages([])}
-          className="mt-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+          className="mt-2 text-sm text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono"
         >
           Clear chat
         </button>
