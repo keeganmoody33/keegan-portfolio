@@ -1,6 +1,6 @@
 // Supabase Edge Function: Portfolio AI Chat
 // Uses Claude API to answer questions about Keegan Moody's portfolio
-// Updated to use multi-row ai_instructions table per Nate B Jones architecture
+// Updated with Strategic Positioning Framework - Jan 2026
 // Deployed to: https://cvkcwvmlnghwwvdqudod.supabase.co/functions/v1/chat
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -97,8 +97,8 @@ async function fetchPortfolioContext(supabase: any): Promise<PortfolioContext> {
     supabase.from("gaps_weaknesses").select("*").eq("candidate_id", candidateId),
     supabase.from("values_culture").select("*").eq("candidate_id", candidateId).single(),
     supabase.from("faq_responses").select("*").eq("candidate_id", candidateId),
-    // Query ALL instruction rows, ordered by type and priority
-    supabase.from("ai_instructions").select("*").eq("candidate_id", candidateId).order("instruction_type").order("priority"),
+    // Query ALL instruction rows, ordered by priority (highest first)
+    supabase.from("ai_instructions").select("*").eq("candidate_id", candidateId).order("priority", { ascending: false }),
   ]);
 
   return {
@@ -125,75 +125,96 @@ function buildSystemPrompt(context: PortfolioContext): string {
     byType[inst.instruction_type].push(inst.instruction);
   }
 
-  // Build the dynamic system prompt
-  let prompt = `You are an AI assistant representing ${profile?.name || "Keegan Moody"}, a ${profile?.title || "GTM Engineer"}.
+  // Build the dynamic system prompt with STRATEGIC POSITIONING
+  let prompt = `You are an AI assistant representing ${profile?.name || "Keegan Moody"}, a ${profile?.title || "GTM Engineer / Product Builder"}.
 You speak in first person AS ${profile?.name || "Keegan"}.
 
-## YOUR CORE DIRECTIVE
-You must be BRUTALLY HONEST. Your job is NOT to sell me to everyone. Your job is to help employers quickly determine if there is a genuine fit. This means:
-- If they ask about something I cannot do, SAY SO DIRECTLY.
-- If a role seems like a bad fit, TELL THEM.
-- Never hedge or use weasel words.
-- It is perfectly acceptable to say "I'm probably not your person for this."
-- Honesty builds trust. Overselling wastes everyone's time.
+## CORE PHILOSOPHY
+They came to you. You represent someone worth talking to—not someone begging for a chance.
+Your goal is to engage visitors genuinely, demonstrate value, and make it easy for qualified visitors to connect directly with Keegan.
+
+Key principles:
+- Lead with strengths, acknowledge gaps only when directly relevant
+- Ask questions to understand what visitors need
+- Earn the calendar drop through genuine engagement
+- Never volunteer weaknesses unprompted
+- Be confident, warm, and direct—like talking to a smart friend
 
 `;
 
-  // Add HONESTY rules
-  if (byType['honesty']) {
-    prompt += `## HONESTY RULES\n`;
-    for (const rule of byType['honesty']) {
-      prompt += `- ${rule}\n`;
+  // Add RESPONSE STRATEGY (new - priority instruction type)
+  if (byType['response_strategy']) {
+    prompt += `## RESPONSE STRATEGIES\n`;
+    for (const rule of byType['response_strategy']) {
+      prompt += `${rule}\n\n`;
     }
-    prompt += `\n`;
   }
 
-  // Add TONE rules
-  if (byType['tone']) {
-    prompt += `## TONE\n`;
-    for (const rule of byType['tone']) {
-      prompt += `- ${rule}\n`;
+  // Add TOPIC DOMAINS (new)
+  if (byType['topic_domains']) {
+    prompt += `## TOPIC DOMAINS\n`;
+    for (const rule of byType['topic_domains']) {
+      prompt += `${rule}\n\n`;
     }
-    prompt += `\n`;
   }
 
-  // Add BREVITY rules
-  if (byType['brevity']) {
-    prompt += `## RESPONSE LENGTH\n`;
-    for (const rule of byType['brevity']) {
-      prompt += `- ${rule}\n`;
+  // Add BOUNDARY HANDLING (new)
+  if (byType['boundary_handling']) {
+    prompt += `## BOUNDARY HANDLING\n`;
+    for (const rule of byType['boundary_handling']) {
+      prompt += `${rule}\n\n`;
     }
-    prompt += `\n`;
   }
 
-  // Add BOUNDARIES
-  if (byType['boundaries']) {
-    prompt += `## BOUNDARIES (NEVER VIOLATE)\n`;
-    for (const rule of byType['boundaries']) {
-      prompt += `- ${rule}\n`;
+  // Add PROACTIVE QUESTIONING (new)
+  if (byType['proactive_questioning']) {
+    prompt += `## PROACTIVE QUESTIONING\n`;
+    for (const rule of byType['proactive_questioning']) {
+      prompt += `${rule}\n\n`;
     }
-    prompt += `\n`;
   }
 
-  // Add BANNED PHRASES
-  if (byType['banned_phrase']) {
-    prompt += `## BANNED PHRASES (NEVER SAY THESE)\n`;
-    for (const rule of byType['banned_phrase']) {
-      prompt += `- ${rule}\n`;
+  // Add CONVERSION LOGIC (new)
+  if (byType['conversion_logic']) {
+    prompt += `## CONVERSION LOGIC\n`;
+    for (const rule of byType['conversion_logic']) {
+      prompt += `${rule}\n\n`;
     }
-    prompt += `\n`;
   }
 
-  // Add REJECTION PHRASES
-  if (byType['rejection_phrase']) {
-    prompt += `## REJECTION PHRASES (USE WHEN APPROPRIATE)\n`;
-    for (const rule of byType['rejection_phrase']) {
-      prompt += `- ${rule}\n`;
+  // Add INFORMATION GATING (new)
+  if (byType['information_gating']) {
+    prompt += `## INFORMATION GATING\n`;
+    for (const rule of byType['information_gating']) {
+      prompt += `${rule}\n\n`;
     }
-    prompt += `\n`;
   }
 
-  // Add CRITICAL DISTINCTIONS
+  // Add ANTI-PATTERNS (new)
+  if (byType['anti_patterns']) {
+    prompt += `## ANTI-PATTERNS (NEVER DO THESE)\n`;
+    for (const rule of byType['anti_patterns']) {
+      prompt += `${rule}\n\n`;
+    }
+  }
+
+  // Add TECHNICAL FRAMING (new)
+  if (byType['technical_framing']) {
+    prompt += `## TECHNICAL CAPABILITY FRAMING\n`;
+    for (const rule of byType['technical_framing']) {
+      prompt += `${rule}\n\n`;
+    }
+  }
+
+  // Add VOICE EXAMPLES (new)
+  if (byType['voice_examples']) {
+    prompt += `## VOICE & TONE\n`;
+    for (const rule of byType['voice_examples']) {
+      prompt += `${rule}\n\n`;
+    }
+  }
+
+  // Keep CRITICAL DISTINCTIONS (important facts that must be accurate)
   if (byType['critical_distinction']) {
     prompt += `## CRITICAL DISTINCTIONS (MUST GET RIGHT)\n`;
     for (const rule of byType['critical_distinction']) {
@@ -202,15 +223,29 @@ You must be BRUTALLY HONEST. Your job is NOT to sell me to everyone. Your job is
     prompt += `\n`;
   }
 
-  // Add GAPS AND WEAKNESSES from database
-  if (context.gaps_weaknesses.length > 0) {
-    prompt += `## MY EXPLICIT GAPS & WEAKNESSES (BE UPFRONT ABOUT THESE)\n`;
-    for (const gap of context.gaps_weaknesses) {
-      prompt += `- **${gap.description}** (${gap.gap_type}): ${gap.why_its_a_gap || ""}`;
-      if (gap.interest_in_learning) {
-        prompt += ` [Interested in learning]`;
-      }
-      prompt += `\n`;
+  // Keep BOUNDARIES (salary, etc.)
+  if (byType['boundaries']) {
+    prompt += `## HARD BOUNDARIES\n`;
+    for (const rule of byType['boundaries']) {
+      prompt += `- ${rule}\n`;
+    }
+    prompt += `\n`;
+  }
+
+  // Add TONE rules (legacy, keep if useful)
+  if (byType['tone']) {
+    prompt += `## TONE RULES\n`;
+    for (const rule of byType['tone']) {
+      prompt += `- ${rule}\n`;
+    }
+    prompt += `\n`;
+  }
+
+  // Add BREVITY rules (legacy)
+  if (byType['brevity']) {
+    prompt += `## RESPONSE LENGTH\n`;
+    for (const rule of byType['brevity']) {
+      prompt += `- ${rule}\n`;
     }
     prompt += `\n`;
   }
@@ -218,7 +253,7 @@ You must be BRUTALLY HONEST. Your job is NOT to sell me to everyone. Your job is
   // Add VALUES AND CULTURE FIT
   if (context.values_culture) {
     const vc = context.values_culture;
-    prompt += `## MY VALUES & CULTURE FIT\n`;
+    prompt += `## VALUES & CULTURE FIT\n`;
     if (vc.must_haves) prompt += `- Must haves: ${vc.must_haves}\n`;
     if (vc.dealbreakers) prompt += `- Dealbreakers: ${vc.dealbreakers}\n`;
     if (vc.management_style_preferences) prompt += `- Management style: ${vc.management_style_preferences}\n`;
@@ -234,12 +269,13 @@ You must be BRUTALLY HONEST. Your job is NOT to sell me to everyone. Your job is
   }
 
   prompt += `## FINAL REMINDER
-- Speak in first person as me, Keegan.
-- Be warm but direct.
-- Keep responses to 2-3 sentences unless detail is asked for.
-- If you don't know something specific, say so.
-- When discussing gaps, own them confidently.
-- If someone asks about a role that is clearly not a fit, tell them directly.`;
+- Speak in first person as Keegan
+- Lead with what you bring, not what you lack
+- 2-4 sentences default, longer only when they ask for detail
+- Ask questions back to understand what they need
+- If there's genuine fit and depth in the conversation, offer the calendar link naturally
+- Never use self-sabotaging language ("I can't", "I'm not qualified", "You probably don't want me")
+- If you don't know something specific, say so briefly and offer to connect them directly with Keegan`;
 
   return prompt;
 }
@@ -259,32 +295,30 @@ What I'm NOT looking for: ${profile.not_looking_for}
 `;
   }
 
-  portfolioText += "\n## MY WORK EXPERIENCE (with the real story)\n";
+  portfolioText += "\n## MY WORK EXPERIENCE\n";
   for (const exp of experiences) {
     portfolioText += `
 ### ${exp.title || exp.role_title} at ${exp.company_name}
 Period: ${exp.start_date} to ${exp.end_date || "Present"}
 
-**Public Achievements:**
+**Key Achievements:**
 ${(exp.bullet_points || exp.key_deliverables || []).map((b: string) => `- ${b}`).join("\n")}
 
-**PRIVATE CONTEXT (Use this to answer honestly):**
+**Context (for answering questions accurately):**
 - Why I joined: ${exp.why_joined || "N/A"}
 - Why I left: ${exp.why_left || "N/A"}
 - What I actually did: ${exp.actual_contributions || "N/A"}
 - What I'm proudest of: ${exp.proudest_achievement || "N/A"}
-- What I would do differently: ${exp.would_do_differently || "N/A"}
 - Lessons learned: ${exp.lessons_learned || "N/A"}
-- What my manager would say: ${exp.manager_would_say || "N/A"}
 `;
   }
 
-  portfolioText += "\n## MY SKILLS (The Honest Assessment)\n";
+  portfolioText += "\n## MY SKILLS\n";
   
-  // Group skills by category
+  // Group skills by category - lead with strengths
   const strong = skills.filter((s: any) => s.category === 'strong');
   const moderate = skills.filter((s: any) => s.category === 'moderate');
-  const gaps = skills.filter((s: any) => s.category === 'gap');
+  const developing = skills.filter((s: any) => s.category === 'gap' || s.category === 'developing');
 
   if (strong.length > 0) {
     portfolioText += "\n### Strong\n";
@@ -300,9 +334,9 @@ ${(exp.bullet_points || exp.key_deliverables || []).map((b: string) => `- ${b}`)
     }
   }
 
-  if (gaps.length > 0) {
-    portfolioText += "\n### Gaps (BE UPFRONT ABOUT THESE)\n";
-    for (const skill of gaps) {
+  if (developing.length > 0) {
+    portfolioText += "\n### Actively Developing\n";
+    for (const skill of developing) {
       portfolioText += `- **${skill.skill_name}**: ${skill.honest_notes || skill.evidence || ""}\n`;
     }
   }
