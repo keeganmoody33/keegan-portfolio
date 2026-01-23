@@ -19,17 +19,21 @@ export default function JDAnalyzer() {
     setAnalysis('')
 
     try {
+      // Get the anon key from environment
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
       const response = await fetch('https://cvkcwvmlnghwwvdqudod.supabase.co/functions/v1/jd-analyzer', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseAnonKey}`,
         },
         body: JSON.stringify({ input }),
       })
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to analyze job description')
+        throw new Error(errorData.error || errorData.details || 'Failed to analyze job description')
       }
 
       const data = await response.json()
