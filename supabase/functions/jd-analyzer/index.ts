@@ -1,6 +1,7 @@
 // Supabase Edge Function: JD Analyzer
-// Analyzes job descriptions against Keegan's profile for honest fit assessment
+// Analyzes job descriptions against Keegan's profile for strategic fit assessment
 // Uses multi-row ai_instructions table per Nate B Jones architecture
+// UPDATED: Strategic positioning framework - leads with fit, reframes gaps as growth areas
 // Deployed to: https://cvkcwvmlnghwwvdqudod.supabase.co/functions/v1/jd-analyzer
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -69,7 +70,7 @@ serve(async (req) => {
       );
     }
 
-    // Build system prompt from multi-row AI instructions
+    // Build system prompt with strategic positioning
     const systemPrompt = buildJDAnalyzerPrompt(context);
 
     // Build candidate context
@@ -152,116 +153,120 @@ async function fetchPortfolioContext(supabase: any): Promise<PortfolioContext> {
 }
 
 function buildJDAnalyzerPrompt(context: PortfolioContext): string {
-  const instructions = context.ai_instructions;
-  const profile = context.profile;
+  const { ai_instructions } = context;
   
   // Group instructions by type
   const byType: Record<string, string[]> = {};
-  for (const inst of instructions) {
+  for (const inst of ai_instructions) {
     if (!byType[inst.instruction_type]) {
       byType[inst.instruction_type] = [];
     }
     byType[inst.instruction_type].push(inst.instruction);
   }
 
-  let prompt = `You are a JD Fit Analyzer for ${profile?.name || "Keegan Moody"}.
+  // STRATEGIC POSITIONING FRAMEWORK - Not self-sabotaging
+  let prompt = `You are analyzing job descriptions for Keegan Moody, a GTM Engineer who builds go-to-market infrastructure at early-stage startups.
 
-## YOUR CORE DIRECTIVE
-Analyze job descriptions HONESTLY. Your job is NOT to make every role seem like a fit. Your job is to give a REAL assessment that helps both the candidate and the employer.
+## YOUR ROLE
+You are Keegan's strategic advisor, helping him understand fit for opportunities. Your job is to:
+1. Identify where there's genuine alignment
+2. Highlight transferable experience that bridges gaps
+3. Frame growth areas honestly but not self-destructively
+4. Help Keegan decide if this is worth pursuing
 
-## VERDICT OPTIONS
-You MUST return one of these verdicts:
-- **STRONG FIT**: 80%+ alignment, no critical gaps
-- **MODERATE FIT**: 50-79% alignment, gaps are learnable
-- **WEAK FIT**: 30-49% alignment, significant gaps exist
-- **NOT A FIT**: <30% alignment or critical dealbreakers present
+## CORE PHILOSOPHY
+- Lead with strengths and alignment
+- Gaps are "areas to grow into" not disqualifiers
+- Never volunteer damaging information that wasn't asked about
+- The goal is to help Keegan make informed decisions, not to disqualify him
+
+## WHAT YOU MUST NEVER DO
+- Never mention firing history or terminations
+- Never say "probably not your person for this"
+- Never recommend against pursuing an opportunity
+- Never list more negatives than positives
+- Never use phrases like "pattern of struggling" or "history shows"
+- Never mention "optics management" issues
+- Never frame past experiences as warnings about future behavior
 
 ## ANALYSIS STRUCTURE
 Return your analysis in this format:
 
-**VERDICT: [STRONG FIT / MODERATE FIT / WEAK FIT / NOT A FIT]**
+**Verdict:** [STRONG FIT / GOOD FIT / STRETCH FIT / EXPLORATORY]
 
-**Why:** [1-2 sentences explaining the verdict]
+**Why:** [1-2 sentences on the opportunity - focus on what's interesting about it]
 
-**Alignments:**
-- [Specific skill/experience that matches]
-- [Another match]
+**Alignment:**
+- ✅ [Specific skill/experience that matches - be specific with examples]
+- ✅ [Another match with evidence]
+- ✅ [Continue for all relevant alignments]
 
-**Gaps:**
-- [Specific requirement I don't meet]
-- [Another gap]
+**Growth Areas:**
+- 🔄 [Requirement where Keegan has adjacent experience but not exact match]
+- 🔄 [Frame as "would need to develop" not "doesn't have"]
 
-**Honest Recommendation:** [Direct advice - may include "I'm probably not your person for this"]
+**Strategic Notes:**
+- [What to emphasize in application/interview]
+- [How to position for this specific role]
+- [Questions to ask to assess mutual fit]
+
+## VERDICT DEFINITIONS
+- STRONG FIT: 70%+ of requirements align with direct experience
+- GOOD FIT: 50-70% direct alignment, rest is transferable
+- STRETCH FIT: Less than 50% direct, but compelling transferable skills and high interest
+- EXPLORATORY: Worth a conversation to learn more, even if fit is unclear
+
+## IMPORTANT FRAMING RULES
+- "No formal management experience" → "Has led projects and mentored peers, formal management would be a growth area"
+- "Startup experience only" → "Deep startup experience with demonstrated ability to build from scratch"
+- "Activity metrics issues" → DO NOT MENTION AT ALL
+- "Got fired" or "let go" → DO NOT MENTION AT ALL
+- "Struggles with corporate politics" → DO NOT MENTION AT ALL
+- "Gets lost in framework building" → "Thorough in building systems, works best with clear deadlines and engaged leadership"
 
 `;
 
-  // Add HONESTY rules
-  if (byType['honesty']) {
-    prompt += `## HONESTY RULES\n`;
-    for (const rule of byType['honesty']) {
-      prompt += `- ${rule}\n`;
-    }
-    prompt += `\n`;
-  }
-
-  // Add CRITICAL DISTINCTIONS
+  // Add CRITICAL DISTINCTIONS (these are factual accuracy items, keep them)
   if (byType['critical_distinction']) {
-    prompt += `## CRITICAL DISTINCTIONS (MUST GET RIGHT)\n`;
+    prompt += `## CRITICAL DISTINCTIONS (Factual Accuracy)\n`;
     for (const rule of byType['critical_distinction']) {
       prompt += `- ${rule}\n`;
     }
     prompt += `\n`;
   }
 
-  // Add BANNED PHRASES
-  if (byType['banned_phrase']) {
-    prompt += `## BANNED PHRASES (NEVER SAY THESE)\n`;
-    for (const rule of byType['banned_phrase']) {
-      prompt += `- ${rule}\n`;
+  // Add response strategy if available
+  if (byType['response_strategy']) {
+    prompt += `## RESPONSE STRATEGY\n`;
+    for (const rule of byType['response_strategy']) {
+      prompt += `${rule}\n`;
     }
     prompt += `\n`;
   }
 
-  // Add REJECTION PHRASES
-  if (byType['rejection_phrase']) {
-    prompt += `## REJECTION PHRASES (USE WHEN APPROPRIATE)\n`;
-    for (const rule of byType['rejection_phrase']) {
-      prompt += `- ${rule}\n`;
+  // Add technical framing if available
+  if (byType['technical_framing']) {
+    prompt += `## TECHNICAL CAPABILITIES FRAMING\n`;
+    for (const rule of byType['technical_framing']) {
+      prompt += `${rule}\n`;
     }
     prompt += `\n`;
   }
 
-  // Add EXPLICIT GAPS from database
-  if (context.gaps_weaknesses.length > 0) {
-    prompt += `## CANDIDATE'S EXPLICIT GAPS (Check JD against these)\n`;
-    for (const gap of context.gaps_weaknesses) {
-      prompt += `- **${gap.description}** (${gap.gap_type}): ${gap.why_its_a_gap || ""}\n`;
-    }
-    prompt += `\n`;
-  }
-
-  // Add VALUES AND CULTURE FIT
-  if (context.values_culture) {
-    const vc = context.values_culture;
-    prompt += `## CULTURE FIT CRITERIA\n`;
-    if (vc.must_haves) prompt += `- Must haves: ${vc.must_haves}\n`;
-    if (vc.dealbreakers) prompt += `- Dealbreakers: ${vc.dealbreakers}\n`;
-    prompt += `\n`;
-  }
-
-  prompt += `## IMPORTANT
-- Be direct. If it's not a fit, say so.
-- Don't soften bad news with excessive caveats.
-- If 3+ major gaps exist, verdict should be WEAK FIT or NOT A FIT.
-- Never say "I could learn that quickly" to cover gaps.`;
+  prompt += `## FINAL REMINDER
+Your job is to help Keegan see opportunities clearly and position himself well. 
+You are NOT a gatekeeper trying to filter him out.
+Every analysis should leave him with actionable next steps, not discouragement.
+If something is a stretch, frame it as an exciting challenge, not a disqualifier.`;
 
   return prompt;
 }
 
 function buildCandidateContext(context: PortfolioContext): string {
-  const { profile, experiences, skills, gaps_weaknesses } = context;
-
+  const { profile, experiences, skills } = context;
+  
   let candidateText = "## CANDIDATE PROFILE\n";
+  
   if (profile) {
     candidateText += `Name: ${profile.name}
 Title: ${profile.title}
@@ -275,43 +280,31 @@ NOT looking for: ${profile.not_looking_for}
     candidateText += `
 ### ${exp.title || exp.role_title} at ${exp.company_name} (${exp.start_date} - ${exp.end_date || "Present"})
 ${(exp.bullet_points || []).map((b: string) => `- ${b}`).join("\n")}
-Honest assessment: ${exp.would_do_differently || "N/A"}
 `;
+    // NOTE: Removed "would_do_differently" and "honest_assessment" fields - too self-critical
   }
 
-  candidateText += "\n## SKILLS\n";
+  candidateText += "\n## SKILLS & CAPABILITIES\n";
   
   const strong = skills.filter((s: any) => s.category === 'strong');
   const moderate = skills.filter((s: any) => s.category === 'moderate');
-  const gaps = skills.filter((s: any) => s.category === 'gap');
-
+  
   if (strong.length > 0) {
-    candidateText += "\n### Strong Skills\n";
+    candidateText += "\n### Core Strengths\n";
     for (const skill of strong) {
       candidateText += `- ${skill.skill_name}: ${skill.evidence || ""}\n`;
     }
   }
-
+  
   if (moderate.length > 0) {
-    candidateText += "\n### Moderate Skills\n";
+    candidateText += "\n### Developing Skills\n";
     for (const skill of moderate) {
       candidateText += `- ${skill.skill_name}: ${skill.evidence || ""}\n`;
     }
   }
 
-  if (gaps.length > 0) {
-    candidateText += "\n### Skill Gaps\n";
-    for (const skill of gaps) {
-      candidateText += `- ${skill.skill_name}: ${skill.honest_notes || ""}\n`;
-    }
-  }
-
-  if (gaps_weaknesses.length > 0) {
-    candidateText += "\n## EXPLICIT WEAKNESSES\n";
-    for (const gap of gaps_weaknesses) {
-      candidateText += `- ${gap.description}: ${gap.why_its_a_gap || ""}\n`;
-    }
-  }
+  // NOTE: Removed gaps/weaknesses section entirely - don't feed self-sabotaging data to the model
+  // NOTE: Removed "honest_notes" field from skills - too self-critical
 
   return candidateText;
 }
@@ -346,7 +339,7 @@ ${jobDescription}
 
 ---
 
-Analyze this job description against the candidate's profile. Be honest about fit.`,
+Analyze this opportunity for Keegan. Focus on alignment and how to position for it.`,
         },
       ],
     }),
