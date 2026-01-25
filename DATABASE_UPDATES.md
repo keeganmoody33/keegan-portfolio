@@ -24,10 +24,12 @@
 ## 1. AI Tone
 
 ### Current State
+
 - **Problem:** Responses too long, sometimes roast-y
 - **Goal:** 2-3 sentences max, matter-of-fact honest, calm
 
 ### Target Behavior
+
 | Attribute | Before | After |
 |-----------|--------|-------|
 | Length | Paragraphs | 2-3 sentences |
@@ -38,6 +40,7 @@
 | On bad fit | Soft | Direct: "This probably isn't a fit because..." |
 
 ### SQL Update
+
 ```sql
 UPDATE ai_instructions 
 SET content = 'You are Keegan''s portfolio AI. Be direct and brief.
@@ -56,6 +59,7 @@ WHERE instruction_type = 'system_prompt';
 ```
 
 ### Suggested Chat Questions (Replace Current)
+
 - "What are you working on right now?"
 - "What's your background?"
 - "What kind of roles are you looking for?"
@@ -63,6 +67,7 @@ WHERE instruction_type = 'system_prompt';
 - "What are your actual skill gaps?"
 
 ### Status
+
 - [ ] SQL executed in Supabase
 - [ ] Tested in production
 - [ ] Questions updated in UI
@@ -72,6 +77,7 @@ WHERE instruction_type = 'system_prompt';
 ## 2. Mixmax Data
 
 ### Role Summary
+
 | Field | Value |
 |-------|-------|
 | Company | Mixmax |
@@ -80,6 +86,7 @@ WHERE instruction_type = 'system_prompt';
 | Duration | 5 months |
 
 ### Key Accomplishments
+
 1. **Built GTM infrastructure from zero** — 53 inboxes, multi-provider strategy
 2. **Validated ICP** — 280 customers, $4.79M ARR analyzed
 3. **Created "The Volley Method"** — Dual-source validation (quant + qual)
@@ -88,6 +95,7 @@ WHERE instruction_type = 'system_prompt';
 6. **Packaged for handoff** — CRO memo, onboarding guide, portable methodology
 
 ### Validated Statistics (from [[CORRECTED_STATISTICS_QUICK_REFERENCE]])
+
 | Stat | Value | Source |
 |------|-------|--------|
 | Customers analyzed | 280 | Salesforce + Clay enrichment |
@@ -97,6 +105,7 @@ WHERE instruction_type = 'system_prompt';
 | Revenue concentration | 15% of accounts = 66% of revenue | Power law distribution |
 
 ### Key Files (The Essential 5)
+
 | File | Purpose | Link |
 |------|---------|------|
 | [[October_2025_GTM_Monthly_Report]] | Shows the build | Infrastructure month |
@@ -106,9 +115,11 @@ WHERE instruction_type = 'system_prompt';
 | [[CLAUDE]] | AI agent system | 9 specialists |
 
 ### Honest Context
+>
 > Short engagement (5 months). Built systems and methodology but didn't stay to see full execution results. The work is solid and documented, but I can't claim revenue outcomes from campaigns I didn't run.
 
 ### SQL Update
+
 ```sql
 INSERT INTO experiences (company, role, start_date, end_date, description, honest_context)
 VALUES (
@@ -122,6 +133,7 @@ VALUES (
 ```
 
 ### Status
+
 - [ ] SQL executed in Supabase
 - [ ] Files uploaded to repo
 - [ ] AI can reference Mixmax work
@@ -149,6 +161,7 @@ VALUES (
 | System design | Intermediate | Mixmax GTM Intelligence System |
 
 ### SQL Updates
+
 ```sql
 -- Update coding gap
 UPDATE gaps_weaknesses 
@@ -169,6 +182,7 @@ VALUES
 ```
 
 ### Status
+
 - [ ] SQL executed in Supabase
 - [ ] AI reflects updated gaps
 
@@ -216,6 +230,7 @@ VALUES
 ## 5. Workflow
 
 ### Update Process
+
 1. Make changes in this file
 2. Run SQL in Supabase SQL Editor
 3. Test in production
@@ -223,6 +238,7 @@ VALUES
 5. Commit to GitHub
 
 ### File Locations
+
 ```
 keegan-portfolio/
 ├── DATABASE_UPDATES.md    ← This file
@@ -236,6 +252,7 @@ keegan-portfolio/
 ```
 
 ### Supabase Tables
+
 | Table | Purpose |
 |-------|---------|
 | `candidate_profiles` | Basic profile info |

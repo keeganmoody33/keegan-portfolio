@@ -1,0 +1,9 @@
+{
+    "redirects": [
+        {
+            "source": "/",
+            "destination": "/KeeganMoody33",
+            "permanent": true
+        }
+    ]
+}
