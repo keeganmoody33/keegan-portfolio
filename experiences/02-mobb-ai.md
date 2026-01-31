@@ -12,12 +12,12 @@
 **Title:** GTM Strategy & Market Intelligence
 
 **Summary:**
-Developed pain-based segmentation framework targeting pre-IPO companies facing SEC cybersecurity compliance gaps. Pioneered early adoption of Claude's Model Context Protocol (MCP) architecture for automated regulatory filing analysis.
+Developed pain-based segmentation framework targeting pre-IPO companies facing SEC cybersecurity compliance gaps. Adopted Claude's Model Context Protocol (MCP) architecture within the first week—learning the full stack and immediately applying SEC EDGAR integration to automate regulatory filing analysis for go-to-market targeting.
 
 **Bullets:**
 - Developed pain-based segmentation framework targeting pre-IPO companies facing SEC cybersecurity compliance gaps, identifying $202M total addressable market across four urgency tiers
 - Created proprietary "Existential Data Point" formula (Days to IPO ÷ Days to Clear Compliance) to score and prioritize prospects by conversion likelihood
-- Pioneered early adoption of Claude's Model Context Protocol (MCP) architecture—specifically SEC EDGAR integration—to automate regulatory filing analysis and detect compliance crisis signals in real-time
+- Adopted Claude's Model Context Protocol (MCP) architecture within the first week of engagement—learned the full stack and immediately applied SEC EDGAR integration to automate regulatory filing analysis and detect compliance crisis signals for go-to-market targeting
 - Built detection methodology combining SEC comment letters, material weakness disclosures, and 2023 cybersecurity rule gaps to identify companies where IPO timelines were mathematically blocked
 - Contributed to Product Hunt launch strategy for Mobb Vibe Shield, positioning the product within the emerging MCP ecosystem for CI/CD security tooling
 
