@@ -25,11 +25,19 @@
 
 ### What happened at Mixmax?
 
-**Honest answer:** I had everything I wanted — full autonomy, full budget, CRO in my corner. And I didn't deliver.
+**Short answer:** Complete GTM intelligence system and outbound infrastructure from zero. 4+ campaigns executed. Zero revenue because GTM infrastructure from scratch takes 30+ days before campaigns even start.
 
-I was asked to deliver 9,000 contacts across 3 campaigns by December 12. I delivered ~3,770. I got lost building "perfect" frameworks instead of shipping campaigns.
+**What I built:**
+- 53-inbox email infrastructure across multiple providers
+- 9-agent AI orchestration system for autonomous GTM execution
+- ICP validation on 280 customers ($4.79M ARR analyzed)
+- 43 structured case study profiles using tacit knowledge extraction
+- 30+ methodology documents and GTM onboarding system
+- Campaign framework with kill/scale thresholds
 
-**What I learned:** Full autonomy without check-ins doesn't work for me. I need someone engaged enough to redirect when I'm going too deep. "Ship first. Buzzer-beater second" is now my operating principle.
+**What happened:** Mixmax was running on PLG with no outbound for over a year. I came in to build it from scratch—worked directly with the CRO daily, RevOps was my counterpart. The C-Suite expected immediate revenue. First month was pure infrastructure. By the time campaigns could launch, the company's priorities had shifted. I left them with all the technology and the production-ready system. Trained their head of RevOps on how to run it internally—they have everything they need to execute.
+
+**What I learned:** Communicate timeline expectations upfront. "Infrastructure takes a month. Results take 60-90 days. Are you committed to that?" Ship minimum viable campaigns first, then build the comprehensive system.
 
 ---
 

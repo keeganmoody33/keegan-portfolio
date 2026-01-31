@@ -21,14 +21,30 @@ These are skills I can execute immediately with confidence. No ramp-up needed.
 
 | Skill | Evidence | Context |
 |-------|----------|---------|
+| **Claude Code / Cursor** | Built 9-agent autonomous GTM system, terminal-native workflows | "Vibe coding" - AI-assisted development in production contexts |
+| **Python / Pandas** | 17 production scripts at Mixmax for data pipelines, ICP scoring | Not deep engineering, but can script analysis workflows |
+| **Multi-Agent AI Systems** | 9 specialized agents with handoff protocols at Mixmax | Designed agent architecture, orchestration flows, feedback loops |
+| **Claude API / Prompt Engineering** | Tacit knowledge extraction, case study analysis prompts | Systematic prompt design for repeatable outputs |
 | **Clay** | Built full workflows at Mixmax, 12k+ row tables, automated enrichment pipelines | Comfortable with complex Clay tables, views, integrations |
-| **Smartlead** | Set up campaigns, domain management, sequencing at Mixmax | Know the platform well |
+| **SmartLead / ScaledMail** | 53-inbox infrastructure, multi-provider diversification | Domain warming, deliverability optimization, campaign deployment |
 | **HubSpot** | Used extensively at Biofourmis for sequencing | Solid foundation |
 | **Salesforce** | Used at Trace Air and Biofourmis | Can navigate, create reports, manage pipeline |
 | **LinkedIn Sales Navigator** | Primary prospecting tool at Trace Air | Power user |
-| **ZoomInfo / Apollo** | Used at Biofourmis and Mixmax | Know how to pull and enrich data |
+| **ZoomInfo** | Used at Biofourmis and Mixmax | Know how to pull and enrich data |
 | **Excel / Data Manipulation** | Built methodology pairing spectrophotometer data with GPS coordinates | VLOOKUPs, concatenations, data cleaning — this is where my science background shows |
-| **ChatGPT / AI Tools** | Used for prospecting research at Trace Air, prompt engineering for GTM | I think in terms of AI-assisted workflows |
+| **Jupyter Notebooks** | Data analysis, customer cohort analysis at Mixmax | Reproducible analysis workflows |
+
+### GTM Engineering Specific
+
+| Skill | Evidence | Context |
+|-------|----------|---------|
+| **Outbound Infrastructure Design** | 53 inboxes, multi-provider architecture, deliverability safeguards | Built from scratch with no existing playbook |
+| **ICP Validation Methodology** | Analyzed 280 customers ($4.79M ARR) to identify patterns | Dual-source validation between quantitative and qualitative data |
+| **Tacit Knowledge Extraction** | Built 43 structured profiles from case studies using 3-phase framework | Identifying the Unsaid -> Universal Mechanism -> Cross-Vertical Mapping |
+| **Customer Scoring Models** | Multi-factor scoring combining firmographics with behavioral signals | 60/40 behavioral/firmographic weighting |
+| **Campaign Testing Frameworks** | Kill/scale thresholds (>4% = scale, <1% = kill), A/B/C variance testing | Systematic approach to finding winning combinations |
+| **Tech Stack Integration** | Clay -> Octave -> SmartLead -> HeyReach end-to-end workflow | Multi-tool orchestration for repeatable execution |
+| **GTM Documentation** | 30+ strategic documents, GTM onboarding system, methodology compendium | Academic-quality documentation for knowledge transfer |
 
 ### Soft Skills
 
@@ -129,9 +145,14 @@ These are skills I genuinely lack. Would need significant training or should avo
 - **Gap:** Closing, negotiation, contract management, quota carrying as AE
 
 ### Tools & Technology
-- **Strong:** Clay, Smartlead, HubSpot, Salesforce (user), LinkedIn Sales Navigator, ZoomInfo, Apollo, Excel, ChatGPT/AI
+- **Strong:** Claude Code, Cursor, Python/Pandas, Clay, SmartLead/ScaledMail, HubSpot, Salesforce (user), LinkedIn Sales Navigator, ZoomInfo, Excel, Jupyter
 - **Moderate:** SalesLoft/Outreach, Gong, Trigify, basic SQL
-- **Gap:** CRM administration, RevOps, marketing automation (Marketo, Pardot), coding
+- **Gap:** CRM administration, RevOps, marketing automation (Marketo, Pardot), deep engineering
+
+### GTM Engineering
+- **Strong:** Outbound infrastructure design, ICP validation methodology, tacit knowledge extraction, customer scoring models, campaign testing frameworks, tech stack integration, GTM documentation
+- **Moderate:** AI agent orchestration (learning by doing), prompt engineering
+- **Gap:** Deep technical engineering, production code from scratch
 
 ### Communication
 - **Strong:** Written outreach, authentic conversation, relationship building
