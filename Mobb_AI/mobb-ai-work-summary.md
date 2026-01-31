@@ -212,7 +212,7 @@ This work applied the **Cannonball GTM Methodology**:
 
 ## Summary
 
-This engagement demonstrated the application of the Cannonball GTM methodology (Jordan Crawford / Doug Bell) to a real B2B SaaS challenge. By combining pain-based segmentation, regulatory data analysis via SEC EDGAR, and first-week adoption of MCP + local Claude infrastructure, created a permissionless value proposition (PVP) framework that prioritized prospects by genuine urgency rather than surface-level firmographics. Early adoption enabled rapid experimentation and positioned the initiative at the forefront of leveraging cutting-edge AI infrastructure for go-to-market targeting.
+This engagement demonstrated the application of the Cannonball GTM methodology (Jordan Crawford / Doug Bell) to a real B2B SaaS challenge. Created a permissionless value proposition (PVP) framework that prioritized prospects by genuine urgency rather than surface-level firmographics by combining pain-based segmentation, regulatory data analysis via SEC EDGAR, and first-week adoption of MCP + local Claude infrastructure. Early adoption enabled rapid experimentation and positioned the initiative at the forefront of leveraging cutting-edge AI infrastructure for go-to-market targeting.
 
 **Core Contribution:** A repeatable methodology for identifying companies in compliance crisis, with quantified market sizing and prioritization based on the Existential Data Point formula.
 
