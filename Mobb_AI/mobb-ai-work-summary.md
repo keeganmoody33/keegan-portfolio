@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-Developed a pain-based segmentation framework targeting pre-IPO companies facing SEC cybersecurity compliance gaps. Pioneered early adoption of Claude's Model Context Protocol (MCP) architecture for automated regulatory filing analysis. Created proprietary scoring methodology to identify and prioritize prospects by compliance urgency and conversion likelihood.
+Developed a pain-based segmentation framework targeting pre-IPO companies facing SEC cybersecurity compliance gaps. Adopted Claude's Model Context Protocol (MCP) architecture within the first week of release—learning the full stack and immediately applying SEC EDGAR integration to automate regulatory filing analysis, enabling permissionless value proposition (PVP) development for go-to-market targeting. Created proprietary scoring methodology (Existential Data Point) to identify and prioritize prospects by compliance urgency and conversion likelihood.
 
 ---
 
@@ -19,11 +19,23 @@ Developed a pain-based segmentation framework targeting pre-IPO companies facing
 
 - Developed pain-based segmentation framework targeting pre-IPO companies facing SEC cybersecurity compliance gaps, identifying $202M total addressable market across four urgency tiers
 - Created proprietary "Existential Data Point" formula (Days to IPO ÷ Days to Clear Compliance) to score and prioritize prospects by conversion likelihood
-- Pioneered early adoption of Claude's Model Context Protocol (MCP) architecture—specifically SEC EDGAR integration—to automate regulatory filing analysis and detect compliance crisis signals in real-time
+- Adopted Claude's Model Context Protocol (MCP) architecture within the first week of release—integrating SEC EDGAR with a local Claude setup for automated regulatory filing analysis and real-time compliance crisis detection, accelerating PVP development and segmentation hypothesis testing
 - Built detection methodology combining SEC comment letters, material weakness disclosures, and 2023 cybersecurity rule gaps to identify companies where IPO timelines were mathematically blocked
 - Contributed to Product Hunt launch strategy for Mobb Vibe Shield, positioning the product within the emerging MCP ecosystem for CI/CD security tooling
 
 **Key Outcome:** Segmentation model projected 85% of revenue potential concentrated in top two crisis segments (EDP < 0.7), enabling focused outbound targeting with premium pricing justification.
+
+---
+
+## Website Version (Portfolio Copy)
+
+I quickly adopted Anthropic's Model Context Protocol (MCP) the week it launched, unlocking expanded capabilities through its public API integrations. By connecting MCP to SEC EDGAR, I was able to analyze S-1 filings and extract key insights, particularly focused on the SEC's security-related comments. These insights highlighted urgent needs and actionable solutions for prospective companies, effectively shaping what I consider a PVP (Permissionless Value Proposition)—a strategy popularized by Cannonball GTM.
+
+**Key Points:**
+- Early adoption of Anthropic's MCP (the week it launched)
+- Integration with SEC EDGAR for real-time insights
+- Focused on security-related SEC comments
+- Developed messaging prospective companies would pay to receive
 
 ---
 
@@ -112,19 +124,19 @@ This single metric segments the entire market by urgency and predicts conversion
 
 ---
 
-#### 4. MCP Integration (Early Adopter)
+#### 4. MCP Integration (First-Week Adoption)
 
 **Technical Innovation:**
-- Used SEC EDGAR MCP server while still in beta (one of the earliest adopters)
-- Automated regulatory filing analysis within Claude's local environment
-- Built workflow to detect compliance crisis signals programmatically
-- Demonstrated how emerging AI architecture could transform GTM intelligence
+- Adopted SEC EDGAR MCP server within the first week of release—learned the full stack and immediately applied it to GTM workflow
+- Set up local Claude environment for rapid data processing and segmentation hypothesis testing
+- Built workflow to detect compliance crisis signals programmatically, enabling permissionless value proposition (PVP) development
+- Applied Cannonball GTM methodology (Jordan Crawford / Doug Bell) with AI-accelerated signal detection
 
 **Why This Matters:**
-- MCP (Model Context Protocol) was brand new—this was cutting-edge adoption
-- Showed how agentic AI workflows could automate market signal detection
-- Combined traditional GTM strategy with technical implementation
-- Positioned as forward-thinking in the evolving martech landscape
+- First-week adoption enabled rapid experimentation rather than waiting for mature tooling
+- Showed how agentic AI workflows could automate market signal detection at velocity
+- Combined traditional GTM strategy with cutting-edge AI infrastructure
+- Positioned the initiative at the forefront of leveraging AI for PVP development and pain-based targeting
 
 ---
 
@@ -169,9 +181,9 @@ This work applied the **Cannonball GTM Methodology**:
    - SEC filings, comment letters, and material weakness disclosures are all public
    - Most competitors aren't mining regulatory data for sales signals
 
-3. **Early adoption of AI tooling creates differentiation**
-   - Being among the first to use MCP for regulatory analysis provided unique capability
-   - Technical sophistication + strategic thinking = competitive advantage
+3. **First-week adoption of AI tooling (MCP + local Claude) enables rapid experimentation**
+   - Learning the full stack immediately and applying it to GTM workflow created velocity advantage
+   - Technical sophistication + strategic thinking = competitive differentiation for PVP development
 
 4. **Pain intensity predicts conversion better than company size**
    - A company with EDP < 0.3 will convert at 85% regardless of size
@@ -200,7 +212,7 @@ This work applied the **Cannonball GTM Methodology**:
 
 ## Summary
 
-This engagement demonstrated the application of modern GTM methodology to a real B2B SaaS challenge. By combining pain-based segmentation, regulatory data analysis, and early adoption of emerging AI architecture, created a targeting framework that prioritized prospects by genuine urgency rather than surface-level firmographics.
+This engagement demonstrated the application of the Cannonball GTM methodology (Jordan Crawford / Doug Bell) to a real B2B SaaS challenge. Created a permissionless value proposition (PVP) framework that prioritized prospects by genuine urgency rather than surface-level firmographics by combining pain-based segmentation, regulatory data analysis via SEC EDGAR, and first-week adoption of MCP + local Claude infrastructure. Early adoption enabled rapid experimentation and positioned the initiative at the forefront of leveraging cutting-edge AI infrastructure for go-to-market targeting.
 
 **Core Contribution:** A repeatable methodology for identifying companies in compliance crisis, with quantified market sizing and prioritization based on the Existential Data Point formula.
 
