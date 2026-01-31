@@ -27,6 +27,18 @@ Developed a pain-based segmentation framework targeting pre-IPO companies facing
 
 ---
 
+## Website Version (Portfolio Copy)
+
+I quickly adopted Anthropic's Model Context Protocol (MCP) the week it launched, unlocking expanded capabilities through its public API integrations. By connecting MCP to SEC EDGAR, I was able to analyze S-1 filings and extract key insights, particularly focused on the SEC's security-related comments. These insights highlighted urgent needs and actionable solutions for prospective companies, effectively shaping what I consider a PVP (Permissionless Value Proposition)—a strategy popularized by Cannonball GTM.
+
+**Key Points:**
+- Early adoption of Anthropic's MCP (the week it launched)
+- Integration with SEC EDGAR for real-time insights
+- Focused on security-related SEC comments
+- Developed messaging prospective companies would pay to receive
+
+---
+
 ## Private Portfolio Deep-Dive
 
 ### Project: IPO Security Compliance Crisis — Pain-Based Segmentation
