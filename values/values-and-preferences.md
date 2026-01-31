@@ -1,77 +1,105 @@
 # Values & Preferences
 
+What I'm building toward and what I need to thrive.
+
+---
+
+## The Setup Where I Thrive
+
+### Autonomy + Engagement
+Not full isolation. Not micromanagement. The middle.
+
+I need room to think, build, and find my own angles. But I also need someone engaged — weekly syncs, feedback, someone who'll redirect me when I'm going too deep. Left completely alone, I'll build forever. With the right co-pilot, I ship.
+
+### Elite Teammates
+I want to be sharpened by people better than me. Teammates who take their work seriously, who are passionate about winning, who collaborate because they want the whole team to succeed.
+
+I don't thrive alone. It takes more than me to create.
+
+### Product-Adjacent Work
+I want to be at the seam of product and GTM. Not just pushing pipeline — influencing what gets built. Sitting in on product meetings, bringing customer feedback, helping shape the roadmap, scoping features.
+
+That's where I feel like I add the most value.
+
+### Building, Not Just Executing
+I'm a maker. I want to build process, applications, solutions — not just run someone else's playbook. Give me the whiteboard and let me engineer the pieces that feed the flywheel.
+
+### Learning Environment
+I need to be learning. New challenges, new tools, people to learn from. The monotony of doing the same thing every day wears on me. Dynamic environments where I'm constantly growing — that's where I light up.
+
+---
+
+## What I'm Looking For
+
+| Priority | What I Want |
+|----------|-------------|
+| **Role** | Founding GTM Engineer, Growth, Early Team Member |
+| **Company** | Elite or building toward elite. Innovative. Doing something real. |
+| **Location** | Remote or Atlanta-based. Open to travel 2 days/week if not in Atlanta. |
+| **Product** | Has to solve a real problem. I can't fake enthusiasm. |
+| **Team** | People who want to win. Collaborative. Passionate about their craft. |
+| **Leadership** | Secure, engaged, has bandwidth for mentorship. |
+| **Path** | Opportunity to level up. I've never been promoted — I want to change that. |
+
+---
+
+## Comp Expectations
+
+| Level | Amount |
+|-------|--------|
+| **Floor** | $120K base |
+| **Target** | $150-180K total comp |
+| **Upside** | Open to equity in the right situation |
+
+---
+
+## The Journey I Want
+
+### 3-Year Vision
+- **Employed consistently** — part of a journey, not hopping
+- **Promoted or publicly leveled up** — proof I can grow inside a company
+- **Built meaningful things** — features shipped, ideas brought to life, impact I can point to
+- **Deeper network** — real relationships, not just LinkedIn connections
+- **More technical** — continuing to build skills, layer in creativity
+- **Leadership path emerging** — maybe starting to manage, definitely influencing
+
+### What Success Looks Like
+Being able to say: "I was the reason this shipped. I was part of this team from A to X. I grew here."
+
+---
+
+## How I Work Best
+
+### Communication
+I'm better when I write it down first. When I'm riffing verbally, ideas can get lost. Give me a minute to organize, and I'll lead with the bottom line.
+
+### Collaboration
+I want to bring something and have someone say "whoa, this is sick" — then build on it together. I want people to come to me with problems and ideas. I want to be a resource, not just a lone operator.
+
+### Creativity
+My best work has my fingerprints on it. The sampling mentality — finding diamonds in dirt, doing more with less, making something great from constraints. That's when I'm most engaged.
+
+### Focus
+I go deep, not wide. I need time to sit with problems, not get pulled in 10 directions. Like music — nothing sits with you quite like something that's been in rotation for a while.
+
 ---
 
 ## Core Values
 
-### Authenticity Over Veneer
-- "Being personal on the phone. Being genuine. Having a real reason for the call."
-- I don't fake enthusiasm. I need to believe in what I'm selling.
-- Substance over polish. Real over performed.
+### Authenticity
+I'm not trying to be someone I'm not. I'm a builder from blue-collar roots with a scientist's mind and a producer's creativity. That's what I bring.
+
+### Craftsmanship
+I care about doing things right. Sometimes too much — but I'd rather build something I'm proud of than ship something I'm not.
+
+### Collaboration
+I want to win with people, not despite them. The best work happens when you're pushing against someone good.
+
+### Growth
+Every role, every project, every setback — I come back with new skills and clearer understanding. That's the pattern I want to keep.
 
 ### Impact Over Activity
-- 20 focused calls beats 80 spray-and-pray dials
-- Results should speak, but I've learned optics matter too
-- Quality prospecting > volume metrics
-
-### Ownership
-- I don't blame others when I fall short
-- At Mixmax, I owned my shortcomings in final message
-- Asked for feedback, sent thorough handoff docs
-
-### Community Impact
-- "A lot of people complain about the community. Very few are actually out there trying to impact change."
-- Camp Horizon volunteer — 4 years with same camper
-- Teaching, coaching, EMT work before sales
-
-### Creative Problem Solving
-- "Diamonds from dirt. Finding what's hidden in plain sight."
-- Hospital readmission methodology, self-sourced contacts
-- Sampling philosophy from music applied to prospecting
-
----
-
-## Work Preferences
-
-### Environment I Thrive In
-
-| Preference | Why |
-|------------|-----|
-| **Autonomy with guardrails** | Freedom to build my way, but with clear outcomes and check-ins |
-| **Engaged leadership** | Weekly syncs minimum. Someone who has time to redirect me. |
-| **Clear deadlines** | Without them, I'll build forever. Time-bound deliverables work for me. |
-| **Creative team** | People to push against. Someone elite to learn from. |
-| **Product with real value** | I can't fake enthusiasm for something that doesn't help people. |
-| **Path to growth** | I've never been promoted. I want to prove I can grow within a company. |
-
-### Environment I Struggle In
-
-| Type | Why |
-|------|-----|
-| **Metrics theater** | Activity for activity's sake kills my motivation |
-| **Full autonomy with no check-ins** | I'll disappear into framework-building |
-| **Heavy micromanagement** | Scripted calls and mandatory talk tracks suffocate me |
-| **Solo operator role** | I need collaboration. It takes more than me to create. |
-
----
-
-## Communication Style
-
-### Strengths
-- Written outreach — intentional, personalized, thoughtful
-- Authentic conversation — people can tell I'm genuine
-- Relationship building — people invest in me before I've proven anything
-
-### Growth Areas
-- Concise verbal communication — I go too long when riffing
-- Managing up — learning to advocate without creating friction
-- Political navigation — picking battles more carefully
-
-### What I'm Working On
-- Write it down before I say it
-- Lead with the bottom line, then explain
-- Ask "Is this landing?" and adjust
-- Leave room for others
+20 focused calls beats 80 spray-and-pray dials. Quality prospecting over volume metrics. Results should speak.
 
 ---
 
@@ -83,13 +111,10 @@
 ### On Approach
 > "Give me the ability to hunt, cook, and clean my own food — I'll produce more than any SDR."
 
-### On Music
-> "I want to release a project that can be put on wax and be here forever."
+### On Creativity
+> "Diamonds from dirt. Finding what's hidden in plain sight."
 
-### On Impact
-> "A lot of people complain about the community. Very few are actually out there trying to impact change."
-
-### On the Commitment
+### On The Commitment
 > "Ship first. Buzzer-beater second."
 
 ---
@@ -101,10 +126,10 @@
 - "You're not gonna make a difference in the world. You can try, you can attempt — it's our job to try."
 - First to show me there are things I've done to be proud of
 
-### Musical Influences
+### Musical Philosophy
 - Organized Noize / The Dungeon — Atlanta lineage
 - Goodie Mob, Mobb Deep, Gang Starr, MF DOOM, Freddie Gibbs & Madlib
-- "Substance over polish. Authenticity over veneer."
+- Substance over polish. Authenticity over veneer.
 
 ### The IROC-Z Philosophy
 - Full teardown and rebuild — frame off, body work, rust repair
@@ -113,34 +138,14 @@
 
 ---
 
-## Career Goals
+## What Doesn't Work For Me
 
-### 5-Year Vision
-- 2-3 years of full-cycle selling (AE experience)
-- Move beyond SDR into closing roles
-- Integrate SDR learnings into AE process
+> **Context for fit assessment, not complaints.**
 
-### 10-Year Vision
-- VP of Sales or similar leadership role
-- Sales team under me
-- Company that's mine or within deep network
-
-### Ideal Role
-- Early-stage startup (seed/Series A-B)
-- Strategic pipeline building, not just execution
-- Clear path from SDR → AE → Leadership
-- High upside with equity opportunity
-
-### Non-Negotiables
-- Remote work (unless Atlanta-based)
-- NOT a 30-person SDR army doing monotonous tasks
-- Impactful work environment
-- Engaged leadership who invests in my growth
-
-### Compensation Expectations (2025)
-- Base: ~$65,000
-- OTE: ~$120,000
-- Uncapped commissions preferred
-- Equity if early-stage
-
-*Source: Career Goals document, consolidated 2026-01-19*
+| Situation | Why |
+|-----------|-----|
+| Pure activity metrics (80 calls/day) | I produce through quality, not volume |
+| Complete isolation | I need engagement and collaboration to ship |
+| Scripted/rigid execution | I suffocate without room to think and build |
+| No path to growth | I want to prove I can level up, not just hop |
+| Product I can't believe in | I can't fake enthusiasm |

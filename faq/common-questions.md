@@ -2,147 +2,180 @@
 
 ---
 
-## Career Questions
+## What You Do
 
-### Why did you leave medicine?
+### What do you actually do?
 
-**Short answer:** I got accepted to medical school (Miami) and turned it down after seeing the business side of healthcare up close.
+I'm a GTM Engineer — I build the infrastructure that makes revenue machines work. Prospecting systems, outbound automation, ICP frameworks, campaign architecture. I'm the person in the lab with the whiteboard, engineering the pieces that feed the flywheel.
 
-**Real answer:** Working at Barbour Orthopedics showed me what happens behind the scenes — inflated treatments, backroom deals with lawyers, patients as revenue sources. I was turned off by the business aspect. I realized I could impact the community in ways beyond delivery of care.
+Think of it like building a car: I design the transmission, the headers, the exhaust — the systems that make the engine run. Then I hand it to the people who drive it.
 
 ---
+
+### What are you building right now?
+
+A few things. I've been deep in the technical side lately — building tools with Claude, experimenting with APIs, vibe-coding some ideas I've had for a while. Some are half-baked, some are getting close to real.
+
+On the portfolio side, this whole system — the AI, the JD analyzer, the infrastructure — is something I built from scratch while learning Next.js and Supabase. First time doing any of it.
+
+---
+
+### How do you find leads and opportunities?
+
+Digging. That's the word. I dig for the right signal — whether it's leads, public APIs, or information hiding in opposite corners that I blend together for pain-based segmentation.
+
+At Trace Air, I sourced 18 of 23 demos from outside the CRM in my first full month. LinkedIn, videos, giving out my phone number — whatever it took. At Biofourmis, I was feeding 6 AEs across North America as a co-founding SDR with enterprise healthcare accounts.
+
+I don't spray and pray. I find the diamonds in the dirt.
+
+---
+
+## Your Background
+
+### What's your background?
+
+Scientist-trained, blue-collar roots. First-gen college student. Worked with my hands before I worked with my head.
+
+Fell in love with organic chemistry in college — not the grades, the learning. Understood that once you get the foundational concepts, you can spin them however you want. That's how I approach everything now.
+
+After college, I got into hip-hop production — sampling, MPC, making something great from two mediocre records. That constraint-driven creativity carried into startups. Building GTM systems isn't that different from building a beat.
+
+---
+
+### Tell me about the Mixmax project
+
+First time building GTM infrastructure from zero. No playbook, no predecessor — just me and a whiteboard.
+
+What I built:
+- 53-inbox email infrastructure across multiple providers
+- ICP validation across 280 customers ($4.79M ARR analyzed)
+- 9-agent AI orchestration system for outbound
+- Full methodology documentation for handoff
+
+The company had been running on PLG with no outbound for over a year. I came in to build it from scratch — worked directly with the CRO daily. By the time the infrastructure was production-ready, the company's priorities had shifted. But the system works. They have everything they need to execute.
+
+---
+
+### What are your biggest wins?
+
+**Trace Air:** $220K generated in 90 days. 23 demos in my first fully onboarded month — 18 self-sourced from outside the CRM. Built a greenfield territory from nothing for a new AE.
+
+**Biofourmis:** Co-founding SDR feeding 6 AEs across all of North America. Enterprise healthcare — hospitals, academic medical centers. Orlando Health deal closed in 90 days, $1M+ lifetime value, still active today.
+
+**Mixmax:** Built complete GTM infrastructure from zero. First time doing any of it. Documented everything for the next person.
+
+---
+
+## What You're Looking For
+
+### What kind of role are you looking for?
+
+Founding GTM Engineer. Growth. Early team member at a company that's elite or building toward elite.
+
+I want to be at the seam of product — not just pushing pipeline, but influencing what gets built. Sitting in on product meetings, bringing customer feedback, helping shape the roadmap.
+
+I need elite teammates who want to win. I don't thrive alone. Collaboration, someone to push back on my ideas, people to learn from.
+
+---
+
+### What do you need to succeed?
+
+Autonomy with engagement. Not isolation, not micromanagement — the middle.
+
+Specifically:
+- Weekly syncs at minimum
+- Someone who'll redirect me when I'm going too deep
+- Clear, time-bound deliverables
+- Collaboration — I want to bring something and have someone say "whoa, this is sick" and build on it
+
+I want to be a resource for people. Not just left alone to figure it out.
+
+---
+
+### What are your non-negotiables?
+
+- **Remote or Atlanta-based** — might travel 2 days/week if it's not in Atlanta, but that's the flexibility
+- **Not a BDR/SDR role** — I'm a GTM Engineer, Growth, early team member. The exception would be a truly elite company that would level up my skills significantly
+- **Elite teammates** — I don't want to be around people who don't take their work seriously
+
+---
+
+### What are your comp expectations?
+
+- Floor: $120K base
+- Target: $150-180K total comp
+- Open to equity upside in the right situation
+
+---
+
+## Harder Questions
 
 ### Why have you had multiple short stints?
 
-**Honest answer:** I've been fired twice while being the top performer. Both times, I produced elite results but didn't play the game well enough.
+I've had some short stints. Learned that producing results isn't enough — optics, politics, and communication matter too.
 
-- **Biofourmis:** Led team in results quarter over quarter, but didn't hit activity metrics (80 calls/day). They kept the "follow the rules" person.
-- **Trace Air:** 20 demos in one month, 18 self-sourced. Got fired after standing up for the team on a call.
+I came up as a producer. Led teams in results, originated enterprise deals, built territories from nothing. But I wasn't always great at managing how that looked or navigating the politics around it.
 
-**What I learned:** Optics matter. I'm committing to proving things with numbers THEY care about, not just results. Same message, different delivery.
-
----
-
-### What happened at Mixmax?
-
-**Short answer:** Complete GTM intelligence system and outbound infrastructure from zero. 4+ campaigns executed. Zero revenue because GTM infrastructure from scratch takes 30+ days before campaigns even start.
-
-**What I built:**
-- 53-inbox email infrastructure across multiple providers
-- 9-agent AI orchestration system for autonomous GTM execution
-- ICP validation on 280 customers ($4.79M ARR analyzed)
-- 43 structured case study profiles using tacit knowledge extraction
-- 30+ methodology documents and GTM onboarding system
-- Campaign framework with kill/scale thresholds
-
-**What happened:** Mixmax was running on PLG with no outbound for over a year. I came in to build it from scratch—worked directly with the CRO daily, RevOps was my counterpart. The C-Suite expected immediate revenue. First month was pure infrastructure. By the time campaigns could launch, the company's priorities had shifted. I left them with all the technology and the production-ready system. Trained their head of RevOps on how to run it internally—they have everything they need to execute.
-
-**What I learned:** Communicate timeline expectations upfront. "Infrastructure takes a month. Results take 60-90 days. Are you committed to that?" Ship minimum viable campaigns first, then build the comprehensive system.
+Each role I've come back sharper. Clearer about what I need. More intentional about how I communicate. Looking for the right long-term fit where I can grow — I've never been promoted and I want to change that.
 
 ---
 
-### What's the gap period about?
+### What's a weakness you're working on?
 
-After Biofourmis, I couldn't find the right opportunity for 6+ months. I refused to take a "smile and dial" job just for a paycheck. I was pushing carts at Home Depot while doing consulting work on the side (Josh Pappas projects, BariNav). I stayed in the game while waiting for something real.
+Shipping speed. I tend to build frameworks when the job is to ship campaigns. I'll look for the perfect sample when the job is to press play.
+
+What I've learned: I need someone engaged enough to say "ship it ugly and iterate." Autonomy without check-ins doesn't work for me. I thrive when there's a deadline and someone to push back.
+
+I'm operating on "ship first, buzzer-beater second" now.
 
 ---
-
-## Skills Questions
 
 ### Can you close deals?
 
-**Honest answer:** No, not yet. I've originated deals — including Orlando Health ($1M+ lifetime value, 90-day close). But I've never carried a quota as an AE or closed deals myself. I would need training and mentorship on negotiation, objection handling, and contract mechanics.
+Not yet — that's not where my experience is. I've originated deals, including Orlando Health ($1M+ LTV, 90-day close). But I've never carried a quota as an AE or owned the close myself.
 
----
-
-### Do you have formal sales training?
-
-No. I've never had MEDDIC, Sandler, Challenger, or any structured sales methodology training. I learned by doing. This means I might have bad habits I don't know about, but it also means I built my own prospecting methodologies from scratch.
+My strength is top-of-funnel: prospecting, ICP development, pipeline generation, GTM infrastructure. I'd need training and mentorship to move into closing.
 
 ---
 
 ### Can you manage people?
 
-Not yet. I've never had direct reports. I've led by influence — advocating for peers, mentoring, building processes. But I don't have people management experience. I'd need to start with 1-2 direct reports and mentorship.
+Not yet. I've led by influence — advocated for teammates, mentored, built processes that others used. But I've never had direct reports.
+
+It's something I want to grow into. Would need to start small and learn.
 
 ---
 
-### Can you write code?
-
-No. I'm not an engineer. I can work with technical teams, understand architecture, talk about Kafka buses and APIs — but I don't write production code. Don't put me in a role where coding is required.
-
----
-
-## Fit Questions
-
-### What kind of manager do you work best with?
-
-Someone secure who wants me to win. I need:
-- Weekly syncs at minimum
-- Willingness to redirect me when I'm going too deep
-- Clear, time-bound deliverables
-- Feedback on both what's working and what's not
-
-**Red flag:** Managers who feel threatened by me. It's happened twice. They find reasons to push me out even when I'm the top performer.
-
----
-
-### What environment do you struggle in?
-
-1. **Metrics theater:** Activity for activity's sake. 80 calls/day when 20 focused calls produces better outcomes.
-2. **Full autonomy with no check-ins:** I'll disappear into framework-building.
-3. **Heavy micromanagement:** Scripted calls and mandatory talk tracks suffocate me.
-4. **Solo operator roles:** I need collaboration. It takes more than me to create.
-
----
-
-### Why should we hire you despite the short stints?
-
-Because I produce results. Orlando Health ($1M+ LTV). 20 demos in one month with 18 self-sourced. Greenfield territory built with 1/4 the contacts of peers.
-
-The short stints weren't about capability — they were about fit and optics. I've learned those lessons. I'm committing to:
-- Ship first, buzzer-beater second
-- Prove things with numbers THEY care about
-- Pick battles more carefully
-- Request check-ins even when they don't offer them
-
-I'm not looking to hop again. I want to prove I can grow within a company.
-
----
-
-## Personal Questions
+## Personal
 
 ### What's the music stuff about?
 
-Sample-based hip-hop production. Technics SL-1200 MK2 turntables (one signed by Slick Rick), MPC 2000 XL.
+Sample-based hip-hop production. Technics SL-1200 MK2 turntables — one signed by Slick Rick. MPC 2000 XL.
 
-Philosophy: "Diamonds from dirt. Finding what's hidden in plain sight." The same sampling mindset applies to prospecting — digging for what others miss.
+The philosophy: diamonds from dirt. Finding what's hidden in plain sight. Making something great from two mediocre records and a lot of digging.
 
-I won't release until it's a cohesive project worth putting on wax.
+Same mindset applies to prospecting. Same mindset applies to building GTM systems. Constraint-driven creativity.
 
 ---
 
 ### What's the IROC-Z?
 
-1987 Camaro IROC-Z. Bought for $5k from Indiana. Full teardown and rebuild — frame off, body work, rust repair.
+1987 Camaro IROC-Z. Bought it for $5K from Indiana. Full teardown and rebuild — frame off, body work, rust repair.
 
-"You learn by taking things apart." Same approach I take to GTM systems.
+You learn by taking things apart. Same approach I take to understanding GTM systems, products, markets.
 
 ---
 
 ### What's Camp Horizon?
 
-Annual volunteer program for foster children (ages 8-12) in Fulton and DeKalb County, Georgia. Only 1:1 camper-to-counselor ratio program in the Southeast.
+Annual volunteer program for foster children ages 8-12 in Fulton and DeKalb County, Georgia. Only 1:1 camper-to-counselor ratio program in the Southeast.
 
-4 consecutive years with the same camper. Sleep in the same bunk for a full week. "I could be the most influential male in this kid's life."
+4 consecutive years with the same camper. Sleep in the same bunk for a full week. I could be the most influential male in this kid's life.
 
 ---
 
-### Who's Dr. Kiefer?
+### What have you been learning lately?
 
-My mentor from Mercer. Organic chemistry professor who took me to South America for 270 days of field research.
+Getting up to speed in the computer science realm. Building tools, experimenting with APIs, teaching myself Next.js and Supabase by building this portfolio.
 
-What he taught me:
-- "Nobody cares. Your complaints, your lack of responsibility — nobody cares. So stop."
-- "You're not gonna make a difference in the world. You can try, you can attempt — it's our job to try."
-- There are things I've done to be proud of (I still struggle with this)
+It's been no small task, but I'm feeling good about where I'm at. It's amplified my creativity — now I can actually build the ideas I've been thinking about.

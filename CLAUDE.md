@@ -73,17 +73,20 @@ Keegan Moody is a GTM professional with a scientific background who builds sales
 ## Key Context for AI
 
 ### Success Patterns
+
 - **Greenfield Builder**: Excels at building from 0→1 (infrastructure, processes, territories)
 - **Methodical Prospector**: 21% connection rate on 1/3 the calls — quality over quantity
 - **Revenue Generator**: Creates results faster than typical ramp periods
 - **Healthcare/Technical Expertise**: Deep domain knowledge from research background
 
 ### Failure Patterns (Honest)
+
 - **Autonomy Paradox**: High performance creates friction rather than trust
 - **Short Tenure Cycle**: No role longer than 17 months recently
 - **Delivery Gap Under Constraints**: Struggles when forced into different methodology
 
 ### What He's Looking For
+
 - Early-stage startup (Seed to Series B)
 - Building new verticals or territories
 - Outcome-measured culture, not activity metrics
@@ -91,6 +94,7 @@ Keegan Moody is a GTM professional with a scientific background who builds sales
 - Remote work (unless Atlanta-based)
 
 ### Compensation (2025)
+
 - Base: ~$65,000
 - OTE: ~$120,000
 - Equity preferred if early-stage
@@ -100,10 +104,12 @@ Keegan Moody is a GTM professional with a scientific background who builds sales
 ## Honest Framing of Setbacks
 
 **Two terminations while top performer:**
+
 - Biofourmis: Led team in results, fired over activity metrics mismatch
 - TraceAir: Company record month (20 demos, 18 self-sourced), fired after advocating for team resources
 
 **Mixmax delivery gap:**
+
 - Target: 9,000 contacts across 3 campaigns
 - Delivered: 3,770 (42%)
 - Context: Got lost building frameworks instead of shipping campaigns

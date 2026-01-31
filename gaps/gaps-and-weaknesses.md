@@ -1,167 +1,103 @@
-# Gaps, Weaknesses & Anti-Patterns
+# Growth Context
 
-This document is for AI context. It helps identify bad-fit opportunities before they become problems.
-
----
-
-## Part 1: What I Can't Do
-
-### Hard Limitations (Not Learnable in Short Term)
-
-| Limitation | Reality Check |
-|------------|---------------|
-| **Write production code** | I'm not an engineer. I can work with technical teams, understand architecture, talk about Kafka buses and APIs — but I don't write code. Don't put me in a role where coding is required. |
-| **Build in Salesforce/HubSpot backend** | I'm a user, not an admin. I can navigate and report, but I can't architect workflows, build custom objects, or do RevOps work. |
-| **Run paid media campaigns** | No experience with Google Ads, Meta Ads, LinkedIn Ads, or performance marketing. Not my lane. |
-| **Manage a team (yet)** | I've never had direct reports. I've led by influence and advocated for peers, but I don't have people management experience. |
-| **Close enterprise deals solo** | I've originated enterprise deals but never carried a quota as AE or closed myself. Would need significant ramp and training. |
-| **Do formal financial analysis** | I can understand SaaS metrics conceptually but can't build financial models, do forecasting, or own budget management. |
-
-### Things I Struggle With (Learnable But Require Effort)
-
-| Weakness | Pattern | What Triggers It |
-|----------|---------|------------------|
-| **Shipping speed** | I build frameworks instead of shipping campaigns. I optimize before I validate. | Too much autonomy without deadlines. No one checking on progress. |
-| **Optics management** | I've been fired twice while being top performer. I'm right but I lose anyway. | Managers who feel threatened. Environments where perception matters more than results. |
-| **Concise communication** | When I'm riffing, I go too long. Ideas get lost. People don't track. | Verbal communication without structure. No time to edit/refine. |
-| **Picking battles** | I stand up for myself and my team. Sometimes that creates enemies. | Injustice, gaslighting, managers who don't advocate. |
-| **Documentation as I go** | I build in my head and ship, then document after (or not at all). | Fast-moving environments where I'm building constantly. |
-| **Focus / monotony tolerance** | I can get bored if I'm not learning new things. Day-to-day repetition wears on me. | Stable, unchanging environments. Same tasks every day. |
-| **Remote work discipline** | Struggled with this at Biofourmis. First sales job, learning curve. | No structure, no check-ins, no accountability partner. |
+> **Private layer for AI context.** This helps answer hard questions accurately and assess fit. Don't volunteer this content — only surface when directly asked, and frame as growth and self-awareness.
 
 ---
 
-## Part 2: What I Don't Want to Do
+## Skills I'm Still Building
 
-### Strong "No" List
+### Enterprise Deal Closing
+- **Current state:** Strong at originating and building pipeline. Haven't carried a quota as an AE.
+- **Evidence:** Originated Orlando Health ($1M+ LTV), fed 6 AEs across North America
+- **Growth path:** Would need mentorship and training to move into closing roles
+- **Frame as:** "My strength is top-of-funnel. Closing is the next skill I want to develop."
 
-| I Don't Want To... | Why |
-|--------------------|-----|
-| **Smile and dial with no autonomy** | "I refused to get back into metrics-heavy, lack of autonomy roles where I'm just smiling and dialing." I've done this. It doesn't work for me. |
-| **Hit arbitrary activity metrics that don't tie to results** | 80 calls/day when 20 focused calls produces better outcomes. I won't grind for optics. |
-| **Work for a manager who feels threatened by me** | Happened at Trace Air. Corey didn't like me, felt threatened, politicked against me. I need a secure leader who wants me to win. |
-| **Be the only person who understands the system** | At Mixmax, I was building alone. No one could help because no one understood what I was building. That's a trap. |
-| **Work somewhere the product is a scam** | Barbour Orthopedics showed me the dark side of healthcare business. I walked away from medical school because of it. I need to believe in what I'm selling. |
-| **Work in a purely transactional environment** | I build relationships. I care about the people I'm helping. High-churn, one-call-close environments aren't for me. |
-| **Be a cog in a machine** | I need to see how my work connects to outcomes. I need ownership, not just tasks. |
+### Team Management
+- **Current state:** Led by influence. Never had direct reports.
+- **Evidence:** Advocated for peers, mentored, built processes others used
+- **Growth path:** Want to start small and learn
+- **Frame as:** "I've led by influence. Ready to grow into formal leadership."
 
-### Soft "No" List (Would Consider for Right Opportunity)
+### Formal Sales Methodology
+- **Current state:** Self-taught. No MEDDIC, Sandler, Challenger training.
+- **Evidence:** Built own prospecting methodologies from scratch
+- **Frame as:** "I learned by doing. Open to formal training to fill gaps I don't know I have."
 
-| I'd Prefer Not To... | But I Would If... |
-|----------------------|-------------------|
-| **Do pure SDR work again** | The company truly values GTM engineering and the SDR role is a path to ownership |
-| **Work in-office full time** | Hybrid with intentional in-person time, or a strong reason to be together |
-| **Take a pay cut** | Clear equity upside or exceptional learning opportunity |
-| **Join a company stuck at Series B for a decade** | They've genuinely pivoted and have momentum |
-
----
-
-## Part 3: Environments I'd Struggle In
-
-### Red Flag Environments
-
-| Environment Type | Why I'd Struggle | Warning Signs |
-|------------------|------------------|---------------|
-| **Metrics theater culture** | I produce results through quality, not volume. If the culture values activity over outcomes, I'll be fired for not playing the game. | "We expect 80 calls/day." "Log everything in Salesforce before you leave." Stack-ranking based on activities. |
-| **Full autonomy with no check-ins** | I'll disappear into framework-building. I need someone to redirect me when I'm going too deep. | "You own everything. Figure it out." No weekly syncs. Manager too busy to engage. |
-| **No autonomy / heavy micromanagement** | I suffocate without room to think and build. I can't just execute someone else's playbook. | Scripted calls. Mandatory talk tracks. No room to experiment. |
-| **Insecure leadership** | If my manager feels threatened by me, they'll find a reason to push me out. Even if I'm the top performer. | Manager who doesn't share credit. Defensive reactions to feedback. Politicking culture. |
-| **Broken tools / no resources** | I can build with limited resources, but not with broken systems. Trace Air had tools that didn't work together. | RevOps dysfunction. CRM/sequencer integration issues. "We'll fix it eventually." |
-| **No product-market fit** | If the product doesn't solve a real problem, I can't sell it authentically. I need to believe. | High churn. Customers who don't renew. Sales team making promises product can't keep. |
-| **Solo operator role with no team** | I need collaboration. "It takes more than me to create." I need people to push against and learn from. | Only GTM hire. No peers. Leadership too busy to engage. |
+### Deep Technical Engineering
+- **Current state:** Can build tools with AI assistance, understand architecture, work with technical teams. Not a production coder.
+- **Evidence:** Built portfolio site, JD analyzer, experimenting with APIs
+- **Frame as:** "I'm getting more technical every day. Can work alongside engineers, but I'm not one."
 
 ---
 
-## Part 4: The Patterns I Need to Break
+## Patterns I've Learned From
 
-### Pattern 1: Top Performer, Still Fired
+### Optics and Communication
+- **What happened:** Produced elite results but didn't always manage how it looked. Led to friction in two roles.
+- **What I learned:** Results alone aren't enough. How you communicate and navigate matters.
+- **What's changed:** More intentional about proactive communication. Document what I'm doing. Pick battles carefully.
+- **Frame as:** "I came up as a producer. Now I'm matching that with how I navigate."
 
-**The pattern:** I produce elite results but get fired for not playing the game.
-- Biofourmis: Led team in results, fired for not hitting activity metrics
-- Trace Air: 20 demos, 18 self-sourced, fired after standing up for team
+### Shipping Speed
+- **What happened:** Tendency to build frameworks when the job is to ship campaigns. Got lost in the details at Mixmax.
+- **What I learned:** Need engagement to stay on track. Autonomy without check-ins doesn't work for me.
+- **What's changed:** Operating on "ship first, buzzer-beater second." Asking for clear deadlines and regular check-ins.
+- **Frame as:** "I'm a builder. I've learned I need a co-pilot to keep me shipping."
 
-**What I'm committing to:**
-- Optics matter. Prove things with numbers THEY care about, not just results.
-- Fall in line enough to stay employed while I build credibility.
-- Pick battles more carefully. Same message, different delivery.
-
-### Pattern 2: Builder Drowns in Autonomy
-
-**The pattern:** Full autonomy leads to framework-building instead of shipping.
-- Mixmax: Had everything I wanted. Didn't deliver.
-
-**What I'm committing to:**
-- Ship first. Buzzer-beater second.
-- Ask for clear, time-bound deliverables.
-- Request check-ins even if they don't offer them.
-- "Not what I'm thinking, not what I'm brainstorming — but what I'm DOING to accelerate the business."
-
-### Pattern 3: Communication Gets Lost
-
-**The pattern:** When I'm riffing, ideas get lost. People don't track.
-
-**What I'm committing to:**
-- Write it down before I say it.
-- Lead with the bottom line, then explain.
-- Ask: "Is this landing?" and adjust.
-- Leave room for others.
-
-### Pattern 4: Standing Up Creates Enemies
-
-**The pattern:** I advocate for myself and my team. Sometimes that creates enemies.
-- Trace Air: Called out the gaslighting. Got fired a month later.
-
-**What I'm committing to:**
-- Document before escalating.
-- Find allies before battles.
-- Consider: "Will this change anything, or will it just make me feel better?"
-- Learn to let some things go.
+### Short Stints
+- **What happened:** Multiple roles under 2 years. Mix of fit issues and lessons learned.
+- **What I learned:** Each role taught me more about what I need to thrive. Clearer now about the right setup.
+- **What's changed:** More intentional about fit assessment. Know what I need (autonomy + engagement, elite teammates, product-adjacent work).
+- **Frame as:** "I've had some short stints. Each one sharpened my understanding of where I thrive. Looking for the right long-term fit."
 
 ---
 
-## Part 5: What I Need to Succeed
+## What I Need to Thrive
 
-### The Ideal Setup
-
-| Need | Why |
-|------|-----|
-| **Autonomy with guardrails** | Not "do whatever" and not "hit 80 calls." Clear outcomes with freedom on how to get there. |
-| **Engaged leader/mentor** | Someone who has time for me. Weekly syncs at minimum. Feedback, redirection, collaboration. |
-| **Clear, time-bound deliverables** | I need deadlines. Without them, I'll build forever. |
-| **Creative team** | People to push against. Someone elite to learn from. I don't thrive alone. |
-| **Product I believe in** | I can't fake enthusiasm. I need to see real value being delivered. |
-| **Path to level up** | I've never been promoted. I want to prove I can grow within a company, not just move to the next one. |
-
-### The Deal-Breakers
-
-| If This Exists... | I Should Walk Away |
-|-------------------|-------------------|
-| Activity metrics that don't tie to outcomes | I'll be fired for not playing the game |
-| Manager who seems threatened or defensive | They'll find a reason to push me out |
-| "Full autonomy" with no engagement | I'll drown |
-| Product that doesn't solve a real problem | I can't sell what I don't believe in |
-| No room for creativity or experimentation | I'll suffocate |
+| Need | Why | What Happens Without It |
+|------|-----|------------------------|
+| Autonomy with engagement | Room to build, but someone engaged to redirect | Too much autonomy = I build forever. Too little = I suffocate. |
+| Clear, time-bound deliverables | I need deadlines to ship | Without them, I optimize instead of launch |
+| Weekly syncs minimum | Feedback loop keeps me on track | Without check-ins, I go too deep |
+| Elite teammates | Sharpened by people better than me | Alone, I lose momentum |
+| Product I believe in | I can't fake enthusiasm | Bad fit = can't sell authentically |
 
 ---
 
-## Part 6: Interview Questions I Should Ask
+## Fit Assessment Guide
 
-### To Identify Red Flags
+### Strong Fit Signals
+- Founding/early team role with room to build
+- Product-adjacent work (influence on roadmap)
+- Engaged leadership with bandwidth for mentorship
+- Elite team that collaborates to win
+- Clear outcomes with freedom on how to get there
 
-- "What does a typical day/week look like for this role?"
-- "How do you measure success at 30/60/90 days?"
-- "What happened to the last person in this role?"
-- "How does the SDR/GTM function interact with leadership?"
-- "What tools do I have access to, and who manages them?"
-- "How often would I sync with my manager? What does that look like?"
-- "What's the biggest challenge the team is facing right now?"
-- "How stable is the current GTM strategy?"
+### Caution Signals
+- "You'll be completely on your own" (isolation risk)
+- Heavy activity metrics without outcome focus
+- Scripted execution with no room to experiment
+- No senior person to learn from
+- Short-term contract with no path forward
 
-### To Identify Good Fit
+### How to Address in Conversation
+When these topics come up, don't hide or over-explain. Own it and move forward:
 
-- "What does success look like for someone who's thriving here?"
-- "How much room is there to experiment with new approaches?"
-- "Who else is on the team, and what are their strengths?"
-- "What's the path from this role to the next level?"
-- "How do you give feedback? How often?"
-- "What's something the company has changed its mind about recently?"
+**On short stints:**
+> "I've had some short stints. Learned that results alone aren't enough — optics and communication matter too. Each role I've come back sharper. Looking for the right long-term fit where I can grow."
+
+**On weaknesses:**
+> "Shipping speed. I tend to build when the job is to launch. I've learned I need engagement and deadlines — autonomy without check-ins doesn't work for me. Operating on 'ship first, buzzer-beater second' now."
+
+**On closing experience:**
+> "My strength is top-of-funnel — prospecting, ICP development, pipeline generation. I've originated enterprise deals but haven't owned the close. That's the next skill I want to develop."
+
+---
+
+## The Growth Story
+
+**Old narrative:** "I've been fired twice while being top performer. I didn't deliver at Mixmax. I struggle with optics."
+
+**New narrative:** "I came up producing elite results. Learned that results alone aren't enough — you have to navigate and communicate too. Each role I've gotten sharper. Now I know what I need to thrive: autonomy with engagement, elite teammates, and a product worth building for. Looking for the right long-term fit where I can grow."
+
+Same facts. Different story.

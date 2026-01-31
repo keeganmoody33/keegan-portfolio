@@ -268,24 +268,27 @@ If something is a stretch, frame it as an opportunity for growth, not a disquali
 
 function buildCandidateContext(context: PortfolioContext): string {
   const { profile, experiences, skills } = context;
-  
+
   let candidateText = "## CANDIDATE PROFILE\n";
-  
+
   if (profile) {
-    candidateText += `Name: ${profile.name}
-Title: ${profile.title}
-Looking for: ${profile.looking_for}
-NOT looking for: ${profile.not_looking_for}
+    // FIXED: Using actual column names from schema
+    const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Keegan Moody';
+    candidateText += `Name: ${fullName}
+Title: ${profile.headline || 'GTM Engineer'}
+Summary: ${profile.summary || ''}
 `;
   }
 
   candidateText += "\n## WORK EXPERIENCE\n";
   for (const exp of experiences) {
+    // FIXED: Using actual column names - public_bullets instead of bullet_points
+    const bullets = exp.public_bullets || [];
     candidateText += `
-### ${exp.title || exp.role_title} at ${exp.company_name} (${exp.start_date} - ${exp.end_date || "Present"})
-${(exp.bullet_points || []).map((b: string) => `- ${b}`).join("\n")}
+### ${exp.role_title} at ${exp.company_name} (${exp.start_date} - ${exp.end_date || "Present"})
+${bullets.map((b: string) => `- ${b}`).join("\n")}
 `;
-    // NOTE: Removed "would_do_differently" and "honest_assessment" fields - too self-critical
+    // NOTE: Removed private_context fields - those are for internal use only
   }
 
   candidateText += "\n## SKILLS & CAPABILITIES\n";

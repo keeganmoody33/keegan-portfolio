@@ -11,10 +11,26 @@
 
 ## Professional Identity
 
-**Current Focus:** Go-To-Market Engineering / Sales Development
-**Operating Under:** Lectures From (named after "Lectures on Gas Theory" by Ludwig Boltzmann)
+**What I Do:** GTM Engineer — I build the infrastructure that makes revenue machines work.
 
-**One-Line:** An operator and creative force at the intersection of science, tech, and art.
+**The Headline:** Builder. Hunter. Finds diamonds in dirt.
+
+**One-Line:** Scientist-trained, blue-collar roots, sampling mentality. I build GTM systems that produce results.
+
+---
+
+## The Positioning
+
+I'm a GTM Engineer — the person in the lab with the whiteboard, engineering the pieces that feed the flywheel. Prospecting systems, outbound automation, ICP frameworks, campaign architecture.
+
+Think of it like building a car: I design the transmission, the headers, the exhaust — the systems that make the engine run. Then I hand it to the people who drive it.
+
+**What makes me different:**
+- Scientist-trained (organic chemistry, published research, 270 days fieldwork)
+- Blue-collar roots (first-gen college student, worked with my hands)
+- Sampling mentality from hip-hop production (diamonds from dirt, constraint-driven creativity)
+
+I see patterns others miss because I learned to work with limitations and find the signal in the noise.
 
 ---
 
@@ -30,13 +46,25 @@ BS Biochemistry and Molecular Biology (2019)
 
 ## The Story Arc
 
-1. **Scientist** → Trained in biochemistry/organic chemistry, 270 days fieldwork, published research
-2. **Medical school pivot** → Got accepted (Miami), turned it down after seeing healthcare business corruption
-3. **First startup** → Biofourmis, originated million-dollar deal, fired for not playing metrics game
-4. **The gap** → Home Depot carts + consulting to pay rent while waiting for right opportunity
-5. **Comeback** → Trace Air, top performer, greenfield territory, fired after standing up for team
-6. **Opportunity of a lifetime** → Mixmax, full autonomy, learned its limits, committed to change
-7. **The commitment** → "Ship first. Buzzer-beater second."
+1. **Scientist** → Trained in organic chemistry, 270 days fieldwork in Peru, 2 published papers
+2. **Medical school pivot** → Got accepted (Miami), walked away after seeing healthcare business up close
+3. **Startup grind** → Biofourmis (co-founding SDR, North America, Orlando Health deal) → Trace Air ($220K in 90 days, 23 demos first month)
+4. **GTM infrastructure** → Mixmax (built complete outbound system from zero, first time doing any of it)
+5. **The builder** → Portfolio site, JD analyzer, tools — teaching myself to build what I imagine
+6. **What's next** → Founding GTM role. Product-adjacent. Elite teammates. Long-term growth.
+
+---
+
+## Key Wins
+
+| Achievement | Context |
+|-------------|---------|
+| $220K generated in 90 days | Trace Air — greenfield territory, self-sourced pipeline |
+| 23 demos in first full month | 18 (78%) from contacts outside the CRM |
+| Co-founding SDR for North America | Biofourmis — fed 6 AEs, enterprise healthcare |
+| Orlando Health deal | $1M+ lifetime value, 90-day close, still active |
+| Built GTM infrastructure from zero | Mixmax — 53 inboxes, ICP validation, full documentation |
+| 270 days field research | Mercury research in Peru, 2 Elsevier publications |
 
 ---
 
@@ -48,10 +76,10 @@ BS Biochemistry and Molecular Biology (2019)
 ### On Approach
 > "Give me the ability to hunt, cook, and clean my own food — I'll produce more than any SDR."
 
-### On Impact
-> "A lot of people complain about the community. Very few are actually out there trying to impact change."
+### On Creativity
+> "Diamonds from dirt. Finding what's hidden in plain sight."
 
-### On the Commitment
+### On The Commitment
 > "Ship first. Buzzer-beater second."
 
 ---

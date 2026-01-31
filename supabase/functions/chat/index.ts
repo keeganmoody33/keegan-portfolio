@@ -126,8 +126,12 @@ function buildSystemPrompt(context: PortfolioContext): string {
   }
 
   // Build the dynamic system prompt with STRATEGIC POSITIONING
-  let prompt = `You are an AI assistant representing ${profile?.name || "Keegan Moody"}, a ${profile?.title || "GTM Engineer / Product Builder"}.
-You speak in first person AS ${profile?.name || "Keegan"}.
+  // FIXED: Using actual column names from schema (first_name, last_name, headline)
+  const fullName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || "Keegan Moody";
+  const title = profile?.headline || "GTM Engineer";
+
+  let prompt = `You are an AI assistant representing ${fullName}, a ${title}.
+You speak in first person AS ${profile?.first_name || "Keegan"}.
 
 ## CORE PHILOSOPHY
 They came to you. You represent someone worth talking to—not someone begging for a chance.
@@ -285,32 +289,27 @@ function buildPortfolioContext(context: PortfolioContext): string {
 
   let portfolioText = "## ABOUT ME\n";
   if (profile) {
-    portfolioText += `Name: ${profile.name}
-Title: ${profile.title}
-Location: ${profile.location}
-Elevator Pitch: ${profile.elevator_pitch}
-Career Narrative: ${profile.career_narrative}
-What I'm looking for: ${profile.looking_for}
-What I'm NOT looking for: ${profile.not_looking_for}
+    // FIXED: Using actual column names from schema
+    const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Keegan Moody';
+    portfolioText += `Name: ${fullName}
+Title: ${profile.headline || 'GTM Engineer'}
+Location: ${profile.location || ''}
+Summary: ${profile.summary || ''}
 `;
   }
 
   portfolioText += "\n## MY WORK EXPERIENCE\n";
   for (const exp of experiences) {
+    // FIXED: Using actual column names - public_bullets instead of bullet_points
+    const bullets = exp.public_bullets || [];
     portfolioText += `
-### ${exp.title || exp.role_title} at ${exp.company_name}
+### ${exp.role_title} at ${exp.company_name}
 Period: ${exp.start_date} to ${exp.end_date || "Present"}
 
 **Key Achievements:**
-${(exp.bullet_points || exp.key_deliverables || []).map((b: string) => `- ${b}`).join("\n")}
-
-**Context (for answering questions accurately):**
-- Why I joined: ${exp.why_joined || "N/A"}
-- Why I left: ${exp.why_left || "N/A"}
-- What I actually did: ${exp.actual_contributions || "N/A"}
-- What I'm proudest of: ${exp.proudest_achievement || "N/A"}
-- Lessons learned: ${exp.lessons_learned || "N/A"}
+${bullets.map((b: string) => `- ${b}`).join("\n")}
 `;
+    // NOTE: Removed private_context fields from public-facing chat context
   }
 
   portfolioText += "\n## MY SKILLS\n";
@@ -320,26 +319,22 @@ ${(exp.bullet_points || exp.key_deliverables || []).map((b: string) => `- ${b}`)
   const moderate = skills.filter((s: any) => s.category === 'moderate');
   const developing = skills.filter((s: any) => s.category === 'gap' || s.category === 'developing');
 
+  // FIXED: Removed honest_notes (too self-critical) - just use evidence
   if (strong.length > 0) {
-    portfolioText += "\n### Strong\n";
+    portfolioText += "\n### Core Strengths\n";
     for (const skill of strong) {
-      portfolioText += `- **${skill.skill_name}**: ${skill.honest_notes || skill.evidence || ""}\n`;
+      portfolioText += `- **${skill.skill_name}**: ${skill.evidence || ""}\n`;
     }
   }
 
   if (moderate.length > 0) {
-    portfolioText += "\n### Moderate\n";
+    portfolioText += "\n### Developing Skills\n";
     for (const skill of moderate) {
-      portfolioText += `- **${skill.skill_name}**: ${skill.honest_notes || skill.evidence || ""}\n`;
+      portfolioText += `- **${skill.skill_name}**: ${skill.evidence || ""}\n`;
     }
   }
 
-  if (developing.length > 0) {
-    portfolioText += "\n### Actively Developing\n";
-    for (const skill of developing) {
-      portfolioText += `- **${skill.skill_name}**: ${skill.honest_notes || skill.evidence || ""}\n`;
-    }
-  }
+  // NOTE: Removed "gap" category display - don't volunteer weaknesses
 
   return portfolioText;
 }
