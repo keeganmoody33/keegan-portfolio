@@ -163,10 +163,10 @@ This is the second time I was top performer and got fired for not playing the ga
 
 ### PUBLIC VERSION (LinkedIn-Appropriate)
 
-**Title:** Co-Founding Sales Development Representative, Commercial Care
+**Title:** Co-Founding Sales Development Representative, Commercial Care Vertical
 
 **Summary:**
-First SDR hire for Commercial Care vertical at Series B digital health company, helping scale commercial operations through unicorn valuation within 8 months.
+First SDR hire for Commercial Care Vertical at Series B digital health company, helping scale commercial operations through unicorn valuation within 8 months.
 
 **Bullets:**
 - Originated Orlando Health partnership generating $1M+ in lifetime revenue — fastest deal close in company history (90 days)

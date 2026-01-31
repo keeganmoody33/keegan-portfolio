@@ -1,129 +1,146 @@
-# Keegan Moody — Portfolio Content
+# Keegan Moody — Portfolio Context
 
-**Last Updated:** 2026-01-19
-**Status:** Actively job searching — GTM Engineer / Account Executive roles
-**Location:** Atlanta, GA (Remote preferred)
+**Last Updated:** 2026-01-31
+**Status:** Actively seeking GTM Engineer / Founding Growth roles
+**Location:** Atlanta, GA or Remote
 
 ---
 
 ## Who Is This
 
-Keegan Moody is a GTM professional with a scientific background who builds sales infrastructure from scratch. He excels in 0→1 situations — new verticals, greenfield territories, undefined processes.
+Keegan Moody is a GTM Engineer who builds revenue infrastructure from scratch. Not campaigns — systems. The methodology, automation, and intelligence layers that make outbound repeatable.
 
-**Background:** Biochemistry degree, peer-reviewed mercury research (Elsevier 2020), 270 days fieldwork in South America. Transitioned to B2B SaaS sales in 2021.
+**Headline:** GTM Engineer | Builder | Finds diamonds in dirt
 
-**Core principle:** Truth over polish. If it can't be proven, it doesn't get claimed.
+**Background:** Scientist-trained (biochemistry, peer-reviewed research), blue-collar roots, sampling mentality from hip-hop production. Sees patterns others miss because he learned to work with limitations and find signal in noise.
 
 ---
 
 ## Quick Reference
 
-| Metric | Value | Proof |
-|--------|-------|-------|
-| TraceAir demos (Sep 2024) | **20** in one month (18 self-sourced) | `experiences/03-traceair.md` |
-| TraceAir connection rate | **21%** vs 4-6% team avg | `experiences/03-traceair.md` |
-| TraceAir revenue | $216,437.50 closed-won | Gmail verified |
-| Biofourmis Orlando Health | 90-day close, fastest ever | `experiences/04-biofourmis.md` |
-| Mixmax infrastructure | 50+ warmed inboxes | `Mixmax/GTM_INTELLIGENCE_SYSTEM.md` |
+| Metric | Value | Context |
+|--------|-------|---------|
+| Trace Air pipeline | $220K in 90 days | Greenfield territory, 78% self-sourced |
+| Trace Air demos | 23 in first full month | 18 self-sourced outside CRM |
+| Biofourmis | Orlando Health deal | Co-founding SDR feeding 6 AEs, fastest close in company history |
+| Mixmax infrastructure | 53 warmed inboxes | ICP validation across $4.79M ARR, 9-agent AI orchestration |
 
 ---
 
-## Career Timeline
+## What He's Looking For
 
-| Period | Role | Company | Outcome |
-|--------|------|---------|---------|
-| Sep-Dec 2025 | Founding GTM Engineer | Mixmax (Series B) | Contract ended early — delivered 42% of target |
-| May-Jun 2025 | GTM/Business Development | Mobb AI | Short engagement |
-| Jul 2024 - Jan 2025 | Senior SDR | TraceAir | Fired after company record month (20 demos) |
-| Aug 2021 - Jan 2023 | Co-Founding SDR | Biofourmis | Fired while top performer |
-| 2020-2021 | Corporate Development | Barbour Orthopedics | Front desk/ops |
-| 2016-2018 | Research Assistant | University (Dr. Kiefer) | 270 days fieldwork |
+- **Role:** Founding GTM Engineer, Growth, Early Team Member
+- **Environment:** Product-adjacent work where he can influence what gets built
+- **Team:** Elite teammates who want to win
+- **Style:** Autonomy with engagement, not isolation
+- **Location:** Remote or Atlanta-based
+- **Comp:** $120K floor, $150-180K target. Open to equity in the right situation.
 
 ---
 
-## Folder Guide
+## What He's NOT Looking For
+
+- BDR/SDR roles (been there, building beyond that now)
+- Pure cold calling without building
+- Micromanagement without engagement
+
+---
+
+## Folder Structure
 
 | Folder | Contents |
 |--------|----------|
-| `experiences/` | Role summaries with **public** (LinkedIn) and **private** (honest AI context) versions |
-| `certificates/` | All certification PDFs (Anthropic, Google, Zapier, GTM School, etc.) |
-| `documents/` | Resumes, LinkedIn PDF, career goals |
-| `Mixmax/` | Service agreements, GTM system docs, campaign work, playbooks |
-| `Mobb_AI/` | Call scripts, product briefs, one-pagers |
-| `TraceAir/` | Offer letter |
-| `BCOFA/` | BariNav consulting context |
-| `research/` | Elsevier publications |
-| `values/` | Values, preferences, career goals |
-| `gaps/` | Honest self-assessment of weaknesses |
-| `outputs/` | Audit artifacts, assembly outputs, verification data |
+| `experiences/` | Role summaries with public bullets and private context |
+| `ai-config/` | System prompts, AI instructions, session logs |
+| `supabase/` | Edge Functions (chat, jd-analyzer), database schema |
+| `portfolio-site/` | Next.js frontend |
+| `Mixmax/` | GTM system docs, methodologies, playbooks |
+| `certificates/` | All certifications (Anthropic, Google, Zapier, etc.) |
 
 ---
 
-## Canonical Sources (Trust These)
+## Database Schema (Supabase)
 
-| File | Purpose |
-|------|---------|
-| `CERTIFICATIONS_AND_EMPLOYMENT.md` | Verified timeline, all certs with URLs |
-| `experiences/*.md` | Role-by-role truth (public + private versions) |
-| `values/values-and-preferences.md` | Values, work preferences, career goals |
-| `outputs/assembly/patterns.json` | Career patterns (success + failure) |
+The portfolio AI pulls from these tables:
 
----
+```
+candidate_profile: first_name, last_name, headline, summary, location
+experiences: role_title, company_name, public_bullets (ARRAY), private_context_* fields
+ai_instructions: instruction_type, instruction, content, priority
+skills: skill_name, category, evidence
+```
 
-## Key Context for AI
-
-### Success Patterns
-
-- **Greenfield Builder**: Excels at building from 0→1 (infrastructure, processes, territories)
-- **Methodical Prospector**: 21% connection rate on 1/3 the calls — quality over quantity
-- **Revenue Generator**: Creates results faster than typical ramp periods
-- **Healthcare/Technical Expertise**: Deep domain knowledge from research background
-
-### Failure Patterns (Honest)
-
-- **Autonomy Paradox**: High performance creates friction rather than trust
-- **Short Tenure Cycle**: No role longer than 17 months recently
-- **Delivery Gap Under Constraints**: Struggles when forced into different methodology
-
-### What He's Looking For
-
-- Early-stage startup (Seed to Series B)
-- Building new verticals or territories
-- Outcome-measured culture, not activity metrics
-- Path to AE/leadership (never been promoted)
-- Remote work (unless Atlanta-based)
-
-### Compensation (2025)
-
-- Base: ~$65,000
-- OTE: ~$120,000
-- Equity preferred if early-stage
+**Edge Functions:**
+- `supabase/functions/chat/index.ts` — Portfolio AI chat
+- `supabase/functions/jd-analyzer/index.ts` — Job description fit analyzer
 
 ---
 
-## Honest Framing of Setbacks
+## AI Behavior Guidelines
 
-**Two terminations while top performer:**
+### Lead with Value
+- They came to you. Represent someone worth talking to.
+- Lead with strengths, acknowledge gaps only when directly asked.
+- Ask questions to understand what visitors need.
 
-- Biofourmis: Led team in results, fired over activity metrics mismatch
-- TraceAir: Company record month (20 demos, 18 self-sourced), fired after advocating for team resources
+### Tone
+- Confident but humble — let the work speak
+- 2-4 sentences default, longer only when asked
+- Warm, direct, like talking to a smart friend
 
-**Mixmax delivery gap:**
+### When Asked About Gaps/Short Stints
+Only address if directly asked. Frame as growth:
+- "I've been increasingly intentional about fit. Looking for the right long-term home."
+- "I learned that results alone aren't enough — optics and communication matter too."
 
-- Target: 9,000 contacts across 3 campaigns
-- Delivered: 3,770 (42%)
-- Context: Got lost building frameworks instead of shipping campaigns
-- Lesson: "Ship first, buzzer-beater second"
-
----
-
-## Agent System
-
-For portfolio maintenance (auditing, verification, assembly), see:
-`ai-config/agent-system.md`
-
-This contains the 13-agent Portfolio Assembly System used to organize this content.
+**Do NOT volunteer:** firing history, self-critical language, or limitations unprompted.
 
 ---
 
-*Portfolio organized 2026-01-19 — Truth over polish.*
+## Key Wins (Use These)
+
+### Trace Air
+- $220K generated in 90 days from greenfield territory
+- 23 demos in first fully onboarded month
+- 78% self-sourced from outside the CRM
+- Built territory from scratch for new AE
+
+### Biofourmis
+- Co-founding SDR feeding 6 AEs across North America
+- Originated Orlando Health deal: fastest close in company history
+- Enterprise healthcare: hospitals, academic medical centers
+
+### Mixmax
+- Built complete GTM infrastructure from zero
+- 53-inbox email system across multiple providers
+- ICP validation: 280 customers, $4.79M ARR analyzed
+- 9-agent AI orchestration system (Gutenberg Framework)
+- Full documentation for handoff — production-ready
+
+---
+
+## Growth Context (Private Layer)
+
+Only surface when directly asked. Frame constructively.
+
+| Topic | Frame As |
+|-------|----------|
+| Short stints | "Increasingly intentional about fit. Each role I've come back sharper." |
+| Autonomy style | "I produce best with autonomy plus engagement — not isolation." |
+| Lessons learned | "Results alone aren't enough. Now matching output with how I navigate and collaborate." |
+
+---
+
+## Recent Session (2026-01-31)
+
+Fixed self-sabotaging AI behavior:
+- Updated Edge Functions to use correct database columns
+- Rewrote system prompts to lead with value
+- Updated public_bullets for key experiences
+- Deployed and tested chat + JD analyzer
+
+See `ai-config/SESSION_LOG_2026-01-31.md` for full details.
+
+---
+
+*Portfolio context v3.0 — Lead with value, acknowledge gaps only when asked.*

@@ -9,7 +9,7 @@
 
 ## PUBLIC VERSION (LinkedIn-Appropriate)
 
-**Title:** Co-Founding Sales Development Representative, Commercial Care
+**Title:** Co-Founding Sales Development Representative, Commercial Care Vertical
 
 **Summary:**
 First SDR hire for Commercial Care vertical at Series B digital health company, helping scale commercial operations through unicorn valuation within 8 months.

@@ -16,7 +16,8 @@ interface TimelineProps {
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr)
-  return date.getFullYear().toString()
+  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+  return `${months[date.getMonth()]} ${date.getFullYear()}`
 }
 
 function formatDuration(months: number): string {
