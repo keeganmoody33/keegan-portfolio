@@ -22,7 +22,7 @@ export default function JDAnalyzer() {
       // Get the anon key from environment
       const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-      const response = await fetch('https://cvkcwvmlnghwwvdqudod.supabase.co/functions/v1/jd-analyzer', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/jd-analyzer`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

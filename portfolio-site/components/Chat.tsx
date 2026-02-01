@@ -38,7 +38,7 @@ export default function Chat() {
     setIsLoading(true)
 
     try {
-      const response = await fetch('https://cvkcwvmlnghwwvdqudod.supabase.co/functions/v1/chat', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
