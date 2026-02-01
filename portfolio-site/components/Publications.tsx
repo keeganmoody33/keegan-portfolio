@@ -10,6 +10,7 @@ interface Paper {
   doi: string
   doiShort: string
   pubmedId?: string
+  citationsUrl: string
   abstract: string
   citations: number
   impactFactor: number
@@ -25,10 +26,11 @@ const PAPERS: Paper[] = [
     doi: "https://doi.org/10.1016/j.envres.2019.109042",
     doiShort: "10.1016/j.envres.2019.109042",
     pubmedId: "32069769",
+    citationsUrl: "https://www.sciencedirect.com/science/article/abs/pii/S0013935119308394",
     abstract: "Three communities in Madre de Dios, Peru were mapped to determine Hg vapor concentrations. ASGM communities exhibited concentrations exceeding 2,000,000 ng/m³ surrounding active gold shops — life-threatening levels according to EPA guidelines. This work highlights the difficulties of measuring mercury in ASGM communities and contributed to the development of Peruvian air quality protocols.",
     citations: 47,
     impactFactor: 8.3,
-    fieldwork: "270+ days across Peru"
+    fieldwork: "120+ days across South America"
   },
   {
     title: "Method for mapping Hg0 emissions from gold shops in artisanal and small-scale gold mining communities",
@@ -38,6 +40,7 @@ const PAPERS: Paper[] = [
     doi: "https://doi.org/10.1016/j.mex.2020.101060",
     doiShort: "10.1016/j.mex.2020.101060",
     pubmedId: "32953428",
+    citationsUrl: "https://www.sciencedirect.com/science/article/pii/S2215016120302806",
     abstract: "A detailed method for obtaining and analyzing mercury concentration data collected near gold shops using portable atomic absorbance spectrometers with Zeeman correction, correlated to GPS position and mapped using GIS. Maps generated identify point sources of Hg contamination and assist local governments in urban planning.",
     citations: 12,
     impactFactor: 1.6
@@ -73,9 +76,15 @@ export default function Publications() {
 
               {/* Citation Stats */}
               <div className="flex items-center gap-3 text-xs font-mono">
-                <span className="text-[var(--accent-orange)]" title="Citations">
+                <a
+                  href={paper.citationsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--accent-orange)] hover:underline"
+                  title="View citations on ScienceDirect"
+                >
                   {paper.citations} cited
-                </span>
+                </a>
                 <span className="text-[var(--text-muted)]" title="Impact Factor">
                   IF: {paper.impactFactor}
                 </span>
