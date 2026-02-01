@@ -55,11 +55,7 @@ export default function Timeline({ experiences }: TimelineProps) {
               <div className="text-[var(--text-muted)] font-mono text-xs">
                 {formatDuration(exp.duration_months)}
               </div>
-              {index === 0 && (
-                <span className="inline-block mt-2 px-2 py-0.5 bg-[var(--accent-lime-dim)] text-[var(--accent-lime)] font-mono text-xs border border-[var(--accent-lime)]">
-                  Current
-                </span>
-              )}
+{/* Removed "Current" label - Keegan is actively job seeking */}
             </div>
 
             {/* Timeline Node */}
@@ -72,13 +68,12 @@ export default function Timeline({ experiences }: TimelineProps) {
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h4 className="text-xl font-bold text-[var(--text-bright)]">
-                    {exp.company_name}
+                    <CompanyLink company={exp.company_name} />
                   </h4>
                   <p className="text-[var(--accent-orange)] font-mono text-sm uppercase tracking-wider">
                     {exp.role_title}
                   </p>
                 </div>
-                <CompanyIcon company={exp.company_name} />
               </div>
 
               {/* Bullets */}
@@ -104,38 +99,52 @@ export default function Timeline({ experiences }: TimelineProps) {
   )
 }
 
-function CompanyIcon({ company }: { company: string }) {
-  // Simple icon mapping based on company
-  const iconMap: Record<string, string> = {
-    'Mixmax': '📧',
-    'TraceAir': '✈️',
-    'Trace Air': '✈️',
-    'Biofourmis': '💊',
-    'Home Depot': '🏠',
-    'BariNav': '🧭',
-    'Barbour Orthopedics': '🦴',
-    'Chapel Hill': '🏈',
+function CompanyLink({ company }: { company: string }) {
+  // Company URL mapping
+  const urlMap: Record<string, string> = {
+    'Mixmax': 'https://mixmax.ai',
+    'Mobb': 'https://mobb.ai',
+    'TraceAir': 'https://traceair.net',
+    'Trace Air': 'https://traceair.net',
+    'Biofourmis': 'https://biofourmis.com',
+    'Bariatric': 'https://bcofa.com',
+    'BARINAV': 'https://bcofa.com',
+    'Barbour': 'https://barbourortho.com',
+    'Camp Horizon': 'https://camphorizon.net',
   }
 
-  const icon = Object.entries(iconMap).find(([key]) => 
+  const url = Object.entries(urlMap).find(([key]) =>
     company.toLowerCase().includes(key.toLowerCase())
-  )?.[1] || '💼'
+  )?.[1]
 
-  return (
-    <span className="text-2xl opacity-50">{icon}</span>
-  )
+  if (url) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hover:text-[var(--accent-lime)] transition-colors"
+      >
+        {company}
+      </a>
+    )
+  }
+
+  return <span>{company}</span>
 }
 
 function getTechStack(company: string): string[] {
   // Tech stack mapping - ideally this would come from database
   const techMap: Record<string, string[]> = {
-    'Mixmax': ['Clay', 'SmartLead', 'HeyReach', 'Octave'],
-    'TraceAir': ['Outreach', 'Salesforce', 'LinkedIn Sales Nav'],
-    'Trace Air': ['Outreach', 'Salesforce', 'LinkedIn Sales Nav'],
-    'Biofourmis': ['Salesforce', 'Outreach', 'ZoomInfo'],
+    'Mixmax': ['Clay', 'SmartLead', 'HeyReach', 'Scalemail', 'Disco', 'Notion', 'LinkedIn Sales Nav'],
+    'Mobb': ['Koncert', 'Apollo.io', 'HubSpot', 'LinkedIn Sales Nav'],
+    'TraceAir': ['SalesLoft', 'Salesforce', 'HubSpot', 'Play', 'LinkedIn Sales Nav'],
+    'Trace Air': ['SalesLoft', 'Salesforce', 'HubSpot', 'Play', 'LinkedIn Sales Nav'],
+    'Biofourmis': ['Salesforce', 'HubSpot', 'ZoomInfo', 'LinkedIn Sales Nav'],
+    'Bariatric': ['HubSpot', 'LinkedIn Sales Nav'],
   }
 
-  return Object.entries(techMap).find(([key]) => 
+  return Object.entries(techMap).find(([key]) =>
     company.toLowerCase().includes(key.toLowerCase())
   )?.[1] || []
 }

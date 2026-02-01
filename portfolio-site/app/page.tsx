@@ -35,6 +35,7 @@ export default function Home() {
   const [experiences, setExperiences] = useState<Experience[]>([])
   const [showChat, setShowChat] = useState(false)
   const [showJD, setShowJD] = useState(false)
+  const [showSidebar, setShowSidebar] = useState(false)
 
   useEffect(() => {
     async function fetchData() {
@@ -68,7 +69,7 @@ export default function Home() {
       {/* Main Layout */}
       <div className="flex">
         {/* Main Content */}
-        <main className="flex-1 px-8 lg:px-16 py-8 lg:pr-[400px]">
+        <main className={`flex-1 px-8 lg:px-16 py-8 ${showSidebar ? 'lg:pr-[400px]' : ''}`}>
           {/* Navigation */}
           <nav className="flex items-center justify-between mb-16">
             <div className="flex items-center gap-2">
@@ -99,16 +100,16 @@ export default function Home() {
             {/* Taglines */}
             <div className="space-y-2 mb-8">
               <div className="flex items-center gap-3 text-[var(--text-muted)]">
-                <span className="text-[var(--accent-orange)]">⚠</span>
-                <span className="font-mono text-sm">Is your current infrastructure crumbling?</span>
+                <span className="text-[var(--accent-orange)]">//</span>
+                <span className="font-mono text-sm">GTM systems that actually ship</span>
               </div>
               <div className="flex items-center gap-3 text-[var(--text-muted)]">
-                <span className="text-[var(--accent-lime)]">◉</span>
-                <span className="font-mono text-sm">Do you need scale that actually works?</span>
+                <span className="text-[var(--accent-lime)]">//</span>
+                <span className="font-mono text-sm">Science background, startup mindset</span>
               </div>
               <div className="flex items-center gap-3 text-[var(--text-muted)]">
-                <span className="text-[var(--accent-red)]">⊗</span>
-                <span className="font-mono text-sm">Looking for the architect behind the chaos?</span>
+                <span className="text-[var(--accent-red)]">//</span>
+                <span className="font-mono text-sm">Building at the intersection of sales and code</span>
               </div>
             </div>
 
@@ -205,10 +206,20 @@ export default function Home() {
           </footer>
         </main>
 
-        {/* Right Sidebar - Activity Stream */}
-        <aside className="hidden lg:block fixed right-0 top-0 w-[380px] h-screen border-l border-[var(--border-dim)] bg-[var(--bg-glass)] p-6 overflow-y-auto">
-          <ActivityStream />
-        </aside>
+        {/* Sidebar Toggle Button */}
+        <button
+          onClick={() => setShowSidebar(!showSidebar)}
+          className="hidden lg:flex fixed right-4 bottom-4 z-40 items-center gap-2 px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-dim)] rounded text-[var(--text-muted)] hover:text-[var(--accent-lime)] hover:border-[var(--accent-lime)] font-mono text-xs transition-colors"
+        >
+          {showSidebar ? 'Hide' : 'Show'} Activity
+        </button>
+
+        {/* Right Sidebar - Activity Stream (toggleable) */}
+        {showSidebar && (
+          <aside className="hidden lg:block fixed right-0 top-0 w-[380px] h-screen border-l border-[var(--border-dim)] bg-[var(--bg-glass)] p-6 overflow-y-auto">
+            <ActivityStream />
+          </aside>
+        )}
       </div>
 
       {/* Chat Modal */}

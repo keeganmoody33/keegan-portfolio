@@ -8,11 +8,9 @@ interface Message {
 }
 
 const SUGGESTED_QUESTIONS = [
-  "What are you working on right now?",
-  "What's your background?",
-  "What kind of roles are you looking for?",
-  "Tell me about a time you failed",
-  "What are your actual skill gaps?",
+  "What does a GTM Engineer actually do?",
+  "How did you go from science to sales?",
+  "What are you building right now?",
 ]
 
 export default function Chat() {
