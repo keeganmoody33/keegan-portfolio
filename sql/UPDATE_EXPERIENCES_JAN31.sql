@@ -57,7 +57,40 @@ SET
 WHERE (company_name ILIKE '%chapel hill%' OR company_name ILIKE '%education%' OR company_name ILIKE '%football%')
 AND candidate_id = 'keegan-moody-001';
 
--- 6. Verify the updates
+-- 6. INSERT Camp Horizon as separate volunteer entry (if not exists)
+INSERT INTO experiences (
+  id,
+  candidate_id,
+  company_name,
+  role_title,
+  start_date,
+  end_date,
+  duration_months,
+  public_bullets,
+  display_order
+)
+VALUES (
+  'exp-09',
+  'keegan-moody-001',
+  'Camp Horizon',
+  'Volunteer Counselor (10+ Years)',
+  '2015-06-01',
+  NULL,
+  120,
+  ARRAY[
+    'Annual volunteer serving foster children (ages 8-12) in Fulton and DeKalb County, Georgia',
+    'Only 1:1 camper-to-counselor ratio program in the Southeast',
+    '4 consecutive years with same camper — most consistent male presence in their life'
+  ],
+  99
+)
+ON CONFLICT (id) DO UPDATE SET
+  company_name = EXCLUDED.company_name,
+  role_title = EXCLUDED.role_title,
+  public_bullets = EXCLUDED.public_bullets,
+  display_order = EXCLUDED.display_order;
+
+-- 7. Verify the updates
 SELECT display_order, company_name, role_title, start_date
 FROM experiences
 WHERE candidate_id = 'keegan-moody-001'
