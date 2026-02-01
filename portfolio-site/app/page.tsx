@@ -177,25 +177,33 @@ export default function Home() {
                 © 2026 lecturesfrom
               </span>
               <div className="flex gap-6">
-                <a 
-                  href={profile?.linkedin_url || '#'} 
-                  target="_blank" 
+                <a
+                  href={profile?.linkedin_url || 'https://linkedin.com/in/keeganmoody33'}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
                 >
                   LINKEDIN
                 </a>
-                <a 
-                  href="https://twitter.com/keeganmoody33" 
-                  target="_blank" 
+                <a
+                  href="https://x.com/keeganmoody33"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
                 >
-                  TWITTER
+                  X
                 </a>
-                <a 
-                  href={profile?.github_url || '#'} 
-                  target="_blank" 
+                <a
+                  href="https://substack.com/@keeganmoody33"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+                >
+                  SUBSTACK
+                </a>
+                <a
+                  href={profile?.github_url || 'https://github.com/keeganmoody33'}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
                 >

@@ -113,9 +113,11 @@ export default function Timeline({ experiences }: TimelineProps) {
 
 function CompanyLink({ company }: { company: string }) {
   // Company URL mapping - all AI-domain companies linked
+  // AI trajectory: Biofourmis.com → Mobb.AI → Mixmax.ai + Traceair.net (drone tech)
   const urlMap: Record<string, string> = {
     'Mixmax': 'https://mixmax.ai',
     'Mobb': 'https://mobb.ai',
+    'Traceair': 'https://traceair.net',
     'TraceAir': 'https://traceair.net',
     'Trace Air': 'https://traceair.net',
     'Biofourmis': 'https://biofourmis.com',
@@ -151,6 +153,7 @@ function getTechStack(company: string): string[] {
   const techMap: Record<string, string[]> = {
     'Mixmax': ['Clay', 'SmartLead', 'HeyReach', 'Scalemail', 'Disco', 'Notion', 'LinkedIn Sales Nav'],
     'Mobb': ['Koncert', 'Apollo.io', 'HubSpot', 'LinkedIn Sales Nav'],
+    'Traceair': ['SalesLoft', 'Salesforce', 'HubSpot', 'Clay', 'LinkedIn Sales Nav'],
     'TraceAir': ['SalesLoft', 'Salesforce', 'HubSpot', 'Clay', 'LinkedIn Sales Nav'],
     'Trace Air': ['SalesLoft', 'Salesforce', 'HubSpot', 'Clay', 'LinkedIn Sales Nav'],
     'Biofourmis': ['Salesforce', 'HubSpot', 'ZoomInfo', 'Outreach', 'LinkedIn Sales Nav'],
