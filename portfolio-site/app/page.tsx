@@ -174,7 +174,7 @@ export default function Home() {
           <footer id="contact" className="border-t border-[var(--border-dim)] pt-8">
             <div className="flex items-center justify-between">
               <span className="text-[var(--text-muted)] font-mono text-sm">
-                © 2024 LECTURES_FROM
+                © 2026 lecturesfrom
               </span>
               <div className="flex gap-6">
                 <a 

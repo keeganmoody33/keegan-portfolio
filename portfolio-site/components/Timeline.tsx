@@ -1,5 +1,7 @@
 'use client'
 
+import Publications from './Publications'
+
 interface Experience {
   id: number
   company_name: string
@@ -91,6 +93,16 @@ export default function Timeline({ experiences }: TimelineProps) {
                   </span>
                 ))}
               </div>
+
+              {/* Publications Section - for ASGM Research */}
+              {isASGMResearch(exp.company_name) && (
+                <div className="mt-6 pt-4 border-t border-[var(--border-dim)]">
+                  <h5 className="text-[var(--accent-lime)] font-mono text-xs mb-3 uppercase tracking-wider">
+                    Peer-Reviewed Publications
+                  </h5>
+                  <Publications />
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -100,7 +112,7 @@ export default function Timeline({ experiences }: TimelineProps) {
 }
 
 function CompanyLink({ company }: { company: string }) {
-  // Company URL mapping
+  // Company URL mapping - all AI-domain companies linked
   const urlMap: Record<string, string> = {
     'Mixmax': 'https://mixmax.ai',
     'Mobb': 'https://mobb.ai',
@@ -111,6 +123,7 @@ function CompanyLink({ company }: { company: string }) {
     'BARINAV': 'https://bcofa.com',
     'Barbour': 'https://barbourortho.com',
     'Camp Horizon': 'https://camphorizon.net',
+    'Chapel Hill': 'https://www.fultonschools.org',
   }
 
   const url = Object.entries(urlMap).find(([key]) =>
@@ -138,13 +151,18 @@ function getTechStack(company: string): string[] {
   const techMap: Record<string, string[]> = {
     'Mixmax': ['Clay', 'SmartLead', 'HeyReach', 'Scalemail', 'Disco', 'Notion', 'LinkedIn Sales Nav'],
     'Mobb': ['Koncert', 'Apollo.io', 'HubSpot', 'LinkedIn Sales Nav'],
-    'TraceAir': ['SalesLoft', 'Salesforce', 'HubSpot', 'Play', 'LinkedIn Sales Nav'],
-    'Trace Air': ['SalesLoft', 'Salesforce', 'HubSpot', 'Play', 'LinkedIn Sales Nav'],
-    'Biofourmis': ['Salesforce', 'HubSpot', 'ZoomInfo', 'LinkedIn Sales Nav'],
+    'TraceAir': ['SalesLoft', 'Salesforce', 'HubSpot', 'Clay', 'LinkedIn Sales Nav'],
+    'Trace Air': ['SalesLoft', 'Salesforce', 'HubSpot', 'Clay', 'LinkedIn Sales Nav'],
+    'Biofourmis': ['Salesforce', 'HubSpot', 'ZoomInfo', 'Outreach', 'LinkedIn Sales Nav'],
     'Bariatric': ['HubSpot', 'LinkedIn Sales Nav'],
   }
 
   return Object.entries(techMap).find(([key]) =>
     company.toLowerCase().includes(key.toLowerCase())
   )?.[1] || []
+}
+
+function isASGMResearch(company: string): boolean {
+  const keywords = ['asgm', 'mercury', 'epa', 'research']
+  return keywords.some(keyword => company.toLowerCase().includes(keyword))
 }
