@@ -33,7 +33,7 @@ Not that optics should replace substance — but that ignoring optics means subs
 2. **Uber driver**: Shipped a $1,000 MPC 2000 XL as a gift
 3. **Heath at MixMax**: Gave "the opportunity of a lifetime" after meeting in a course
 4. **Josh Poppas**: Brought into consulting work during the gap period
-5. **Dr. Kiefer**: Invited on 270 total days of South American fieldwork
+5. **Dr. Kiefer**: Invited on 120 total days of South American fieldwork
 
 ### The Diagnosis
 "That's not luck. That's something about you that makes people want to bet on you."
@@ -76,7 +76,7 @@ The creative solve, the system rebuild, the elegant solution has to come after t
 
 ### The Evidence
 - **Trace Air**: 2,200 contacts vs. peer's 8,800 — still hit 20 demos (record month), 18 self-sourced
-- **Independent research**: 270 total days in challenging field conditions with handheld equipment
+- **Independent research**: 120 total days in challenging field conditions with handheld equipment
 - **Music**: Budget digging ($1 records), MPC 2000 XL as primary tool
 
 ### The Diagnosis

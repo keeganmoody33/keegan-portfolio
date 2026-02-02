@@ -341,7 +341,7 @@ Front desk operations for orthopedic medical practice, managing patient intake, 
 ## Role 6: Mercury Research — Research Assistant
 
 **Institution:** University (with Dr. Adam Kiefer)  
-**Duration:** ~270 days total fieldwork in South America  
+**Duration:** ~120 days total fieldwork in South America  
 **Location:** Peru, South America  
 **Type:** Academic Research
 
@@ -353,7 +353,7 @@ Front desk operations for orthopedic medical practice, managing patient intake, 
 Field researcher studying mercury vapor exposure from artisanal gold mining operations in South America, developing novel data collection methodologies and publishing peer-reviewed findings.
 
 **Bullets:**
-- Conducted 270+ days of fieldwork across South American mining communities measuring elemental mercury vapor concentrations
+- Conducted 120+ days of fieldwork across South American mining communities measuring elemental mercury vapor concentrations
 - Developed methodology pairing portable spectrophotometry (Ohio Lumex) with GPS tracking for geographic concentration mapping
 - Created heat maps identifying high-risk exposure areas to inform community health interventions
 - Published peer-reviewed research on ASGM (Artisanal and Small-Scale Gold Mining) environmental health impacts
@@ -376,7 +376,7 @@ Field researcher studying mercury vapor exposure from artisanal gold mining oper
 - There are things I've done to be proud of (I still struggle with this)
 
 **What we actually did:**
-- 270 days total in South America
+- 120 days total in South America
 - Portable spectrophotometer (Ohio Lumex) measuring mercury vapor
 - ASGM process: miners dump liquid mercury on ore, forms amalgam, burn it off with aerosolized gasoline
 - Mercury vaporizes, people inhale it, creates Mercury Minamata disease ("mad as a hatter")

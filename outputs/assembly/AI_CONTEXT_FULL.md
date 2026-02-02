@@ -33,7 +33,7 @@ His track record includes work at a digital health unicorn (Biofourmis), a Serie
 | Sales Consultant | BCOFA | Jan-Jun 2024 | BariNAV product development |
 | SDR | Biofourmis | Aug 2021-Jan 2023 | Sourced fastest deal in company history |
 | Corp Dev Associate | Barbour Ortho | Jun 2020-Jul 2021 | — |
-| Research Assistant | Dr. Kiefer | ~2016-2018 | 4 publications, 270 days fieldwork |
+| Research Assistant | Dr. Kiefer | ~2016-2018 | 4 publications, 120 days fieldwork |
 
 ---
 
@@ -139,7 +139,7 @@ Did he take it from 0 to 100? No. But he built the foundation—validated ICP, p
 
 ### Academic
 - **4 peer-reviewed publications** (Elsevier, MethodsX)
-- **270 days fieldwork** with Dr. Kiefer
+- **120 days fieldwork** with Dr. Kiefer
 
 ---
 

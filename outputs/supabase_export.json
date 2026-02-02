@@ -214,7 +214,7 @@
       "company_stage": "Academic",
       "company_funding": null,
       "company_industry": "Environmental Science / Mercury Research",
-      "description": "270 days of fieldwork studying mercury contamination in artisanal gold mining communities in South America. Published 4 peer-reviewed papers in Elsevier and MethodsX journals.",
+      "description": "120 days of fieldwork studying mercury contamination in artisanal gold mining communities in South America. Published 4 peer-reviewed papers in Elsevier and MethodsX journals.",
       "key_deliverables": [
         "KMOODY_2020_ELSEVIER.pdf",
         "KMOODY_2020_HGEMISSIONS.pdf",
@@ -222,7 +222,7 @@
         "KMOODY_METHODSX COVERPG 2020.pdf"
       ],
       "metrics": {
-        "fieldwork_days": 270,
+        "fieldwork_days": 120,
         "publications": 4
       },
       "honest_assessment": "Best-documented role in portfolio. Peer-reviewed publications are strong third-party verification.",
@@ -340,7 +340,7 @@
       "category": "Research / Analysis",
       "skill_name": "Primary Research",
       "proficiency_level": "STRONG",
-      "evidence": "270 days fieldwork in South America, 4 published papers",
+      "evidence": "120 days fieldwork in South America, 4 published papers",
       "years_experience": 3
     },
     {
@@ -492,7 +492,7 @@
       "experience_id": "exp-007",
       "achievement_type": "PUBLICATION",
       "title": "4 Peer-Reviewed Publications",
-      "description": "Published 4 peer-reviewed papers on mercury contamination research in Elsevier and MethodsX journals following 270 days of fieldwork in South America.",
+      "description": "Published 4 peer-reviewed papers on mercury contamination research in Elsevier and MethodsX journals following 120 days of fieldwork in South America.",
       "metric_value": 4,
       "metric_unit": "publications",
       "verification_status": "VERIFIED",

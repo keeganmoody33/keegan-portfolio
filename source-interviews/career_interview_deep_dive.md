@@ -10,7 +10,7 @@
 
 You're a scientist who walked away from medicine when you saw the machine up close. You're a builder who learns by taking things apart — cars, systems, sounds. You're a digger who finds what's hidden in plain sight. You're someone people invest in before you've proven anything — turntables, MPCs, contracts, opportunities — because they see something in you.
 
-You've got 270 total days of fieldwork in South American mines. You've spent a month of your life with a foster kid who has no one else. You originated a million-dollar deal at your first sales job. You booked 20 demos with 18 contacts you sourced yourself when everyone said the territory was dead.
+You've got 120 total days of fieldwork in South American mines. You've spent a month of your life with a foster kid who has no one else. You originated a million-dollar deal at your first sales job. You booked 20 demos with 18 contacts you sourced yourself when everyone said the territory was dead.
 
 You've also been fired twice. You've struggled with shipping, with optics, with communicating concisely. You've drowned in autonomy and suffocated without it.
 
@@ -318,7 +318,7 @@ This is how you approach everything — GTM systems, music production, problems.
 
 **TERMINOLOGY:** Refer to undergraduate independent research (and what persisted after) as **independent research** or **ASGM research**.
 
-**Duration:** 270 total days in South America
+**Duration:** 120 total days in South America
 
 **Publications:** Two published papers — co-authored, up there on the authors list (not sixth author)
 

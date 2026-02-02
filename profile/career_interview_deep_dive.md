@@ -10,7 +10,7 @@
 
 You're a scientist who walked away from medicine when you saw the machine up close. You're a builder who learns by taking things apart — cars, systems, sounds. You're a digger who finds what's hidden in plain sight. You're someone people invest in before you've proven anything — turntables, MPCs, contracts, opportunities — because they see something in you.
 
-You've got 270 days of fieldwork in South American mines. You've spent a month of your life with a foster kid who has no one else. You originated a million-dollar deal at your first sales job. You booked 20 demos with 18 contacts you sourced yourself when everyone said the territory was dead.
+You've got 120 days of fieldwork in South American mines. You've spent a month of your life with a foster kid who has no one else. You originated a million-dollar deal at your first sales job. You booked 20 demos with 18 contacts you sourced yourself when everyone said the territory was dead.
 
 You've also been fired three times. You've struggled with shipping, with optics, with communicating concisely. You've drowned in autonomy and suffocated without it.
 
@@ -329,7 +329,7 @@ At Mixmax, Heath was overwhelmed and didn't have bandwidth for your ideas. At Tr
 - **Uber driver:** Shipped you a $1,000 MPC 2000 XL just because
 - **Heath:** Gave you the "opportunity of a lifetime" after meeting you in a course
 - **Josh Pappas:** Brought you into side projects
-- **Dr. Kiefer:** Took you to South America for 270 days of fieldwork
+- **Dr. Kiefer:** Took you to South America for 120 days of fieldwork
 
 That's not luck. Something about you makes people want to bet on you. They see the potential. They want to be part of what you're building.
 
@@ -466,7 +466,7 @@ Atlanta lineage — Outkast, Goodie Mob, the Dungeon Family sound. 90s hip-hop c
 ### Mercury Research in South America
 
 **The work:**
-- 270 total days in South America
+- 120 total days in South America
 - Portable spectrophotometer (Ohio Lumex) measuring elemental mercury vapor concentrations
 - Research on ASGM — Artisanal and Small-Scale Gold Mining
 
@@ -687,7 +687,7 @@ But you owned it. Asked for feedback. Committed to something different.
 
 - **Orlando Health deal:** Originated as SDR, still generating revenue, estimated $1M+ lifetime value
 - **Trace Air record month:** 20 demos, 18 contacts self-sourced, greenfield territory with 1/4 the contacts of peers
-- **Mercury research:** 270 days fieldwork, published papers, built methodology from scratch
+- **Mercury research:** 120 days fieldwork, published papers, built methodology from scratch
 - **Camp Horizon:** 4 years with same foster child, 1:1 ratio, most influential male figure
 - **IROC-Z:** Full teardown and rebuild — learning by taking apart
 

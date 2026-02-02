@@ -87,7 +87,7 @@
 ### Excel / Spreadsheet Mastery
 - **Evidence**: Independent research fieldwork — paired GPS coordinates with concentration data
 - **Specifics**: VLOOKUPs, concatenations, data cleaning, manual dataset merging
-- **Experience**: 270 days of fieldwork data processing, 45,000+ data points, late nights fixing one-space errors
+- **Experience**: 120 days of fieldwork data processing, 45,000+ data points, late nights fixing one-space errors
 - **Can deploy**: Immediately for any data manipulation task
 
 ### Scientific Research Methodology

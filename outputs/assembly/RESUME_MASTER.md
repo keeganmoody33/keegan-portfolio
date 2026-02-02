@@ -55,7 +55,7 @@ GTM infrastructure builder specializing in early-stage startups. Track record of
 ### Research Assistant
 **Mercury Research / Dr. Kiefer** | ~2016 - 2018
 
-- 270 days fieldwork across multiple research sites
+- 120 days fieldwork across multiple research sites
 - Co-authored 4 peer-reviewed publications (Elsevier, MethodsX)
 
 ---

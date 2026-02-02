@@ -143,7 +143,7 @@ I want to build the motion, not follow it.
 
 **Barbour Orthopaedics** (Jun 2020 - Jul 2021): Corporate Development Associate
 
-**Mercury Research / Dr. Kiefer** (~2016-2018): Research Assistant, 270 days fieldwork, 4 peer-reviewed publications
+**Mercury Research / Dr. Kiefer** (~2016-2018): Research Assistant, 120 days fieldwork, 4 peer-reviewed publications
 
 ---
 

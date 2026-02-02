@@ -26,7 +26,7 @@ I'm a GTM Engineer — the person in the lab with the whiteboard, engineering th
 Think of it like building a car: I design the transmission, the headers, the exhaust — the systems that make the engine run. Then I hand it to the people who drive it.
 
 **What makes me different:**
-- Scientist-trained (organic chemistry, published research, 270 days fieldwork)
+- Scientist-trained (organic chemistry, published research, 120 days fieldwork)
 - Blue-collar roots (first-gen college student, worked with my hands)
 - Sampling mentality from hip-hop production (diamonds from dirt, constraint-driven creativity)
 
@@ -40,13 +40,13 @@ I see patterns others miss because I learned to work with limitations and find t
 BS Biochemistry and Molecular Biology (2019)
 - Organic Chemistry SI Leader & Teaching Assistant
 - Published researcher (2 Elsevier papers on mercury emissions)
-- 270 days fieldwork in Peru
+- 120 days fieldwork in Peru
 
 ---
 
 ## The Story Arc
 
-1. **Scientist** → Trained in organic chemistry, 270 days fieldwork in Peru, 2 published papers
+1. **Scientist** → Trained in organic chemistry, 120 days fieldwork in Peru, 2 published papers
 2. **Medical school pivot** → Got accepted (Miami), walked away after seeing healthcare business up close
 3. **Startup grind** → Biofourmis (co-founding SDR, North America, Orlando Health deal) → Trace Air ($220K in 90 days, 23 demos first month)
 4. **GTM infrastructure** → Mixmax (built complete outbound system from zero, first time doing any of it)
@@ -64,7 +64,7 @@ BS Biochemistry and Molecular Biology (2019)
 | Co-founding SDR for North America | Biofourmis — fed 6 AEs, enterprise healthcare |
 | Orlando Health deal | $1M+ lifetime value, 90-day close, still active |
 | Built GTM infrastructure from zero | Mixmax — 53 inboxes, ICP validation, full documentation |
-| 270 days field research | Mercury research in Peru, 2 Elsevier publications |
+| 120 days field research | Mercury research in Peru, 2 Elsevier publications |
 
 ---
 
@@ -104,5 +104,5 @@ BS Biochemistry and Molecular Biology (2019)
 
 ### Dr. Adam Kiefer (Mentor)
 - "Nobody cares. Your complaints, your lack of responsibility — nobody cares. So stop."
-- Took me to South America for 270 days
+- Took me to South America for 120 days
 - First to show me there are things to be proud of

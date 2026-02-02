@@ -429,7 +429,7 @@ portfolio/
 ## Subject Context: Keegan Moody
 
 ### Career Timeline (Known)
-- Research Assistant (Dr. Kiefer) — ~2016-2018, 270 days fieldwork
+- Research Assistant (Dr. Kiefer) — ~2016-2018, 120 days fieldwork
 - Barbour Orthopedics — Jun 2020 - Jul 2021, Corporate Development
 - Biofourmis — Aug 2021 - Jan 2023, Co-Founding SDR (fired)
 - Gap Period — Feb 2023 - Jun 2024, Home Depot + consulting

@@ -60,7 +60,7 @@ These are skills I can execute immediately with confidence. No ramp-up needed.
 
 | Skill | Evidence | Context |
 |-------|----------|---------|
-| **Primary Research** | 270 days fieldwork in South America, published papers | I know how to design and execute research from scratch |
+| **Primary Research** | 120 days fieldwork in South America, published papers | I know how to design and execute research from scratch |
 | **Data Collection & Analysis** | Mercury concentration mapping, heat map creation | Scientific method is in my DNA |
 | **Pattern Recognition** | Finding angles in markets (hospital readmissions, land developments) | I see the signal in the noise |
 | **Framework Development** | Built methodologies at every role | Maybe too much — this is also a weakness |

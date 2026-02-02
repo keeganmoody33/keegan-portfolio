@@ -8,7 +8,7 @@
 **TERMINOLOGY NOTE:** Refer to this as **independent research** or **ASGM research**, not "mercury research."
 
 ## The Overview
-- **Duration**: 270 total days of fieldwork
+- **Duration**: 120 total days of fieldwork
 - **Location**: South America (multiple countries/regions)
 - **Mentor**: Dr. Adam Kiefer
 - **Focus**: Artisanal and Small-Scale Gold Mining (ASGM) and elemental mercury vapor concentrations
@@ -97,7 +97,7 @@ The goal was to give communities the information they needed to make their own c
 ### Mindset
 - **Systematic thinking**: Scientific method applied to real problems
 - **Humility**: I'm not the expert on their lives; I'm just providing data
-- **Patience**: 270 total days of fieldwork requires sustained focus
+- **Patience**: 120 total days of fieldwork requires sustained focus
 - **Purpose**: The work matters beyond just my career
 
 ## Connection to GTM Work
@@ -289,7 +289,7 @@ This isn't posting about causes on social media. This is showing up, year after 
 ## Service + Rigor
 Every formative experience combines:
 - **Purpose beyond myself**: Independent research, Camp Horizon, teaching
-- **Demanding work**: 270 total days of fieldwork, organic chemistry mastery, showing up every year
+- **Demanding work**: 120 total days of fieldwork, organic chemistry mastery, showing up every year
 
 ## Learning by Doing
 - Independent research: Learned Excel in the field with real data
@@ -297,7 +297,7 @@ Every formative experience combines:
 - IROC-Z: Learned body work by stripping the car to the frame
 
 ## Long-Term Investment Over Quick Wins
-- Independent research: 270 total days, not a quick study
+- Independent research: 120 total days, not a quick study
 - Camp Horizon: 4 years with the same kid
 - The commitment to future roles: Looking for somewhere to "level up and grow"
 

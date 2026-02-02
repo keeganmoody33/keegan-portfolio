@@ -62,10 +62,10 @@ Both query `ai_instructions` by type and build dynamic system prompts.
 - **Location:** Atlanta area, remote preference
 
 ### The Elevator Pitch
-> "I'm a product builder with a science background — biochemistry degree, 270 days of mercury research in South America, EPA-published papers. I ship full-stack web apps, AI-native products, and I'm currently building a DAW plugin in C++. I came up through GTM engineering, which means I understand both the product and the market. I learn by taking things apart."
+> "I'm a product builder with a science background — biochemistry degree, 120 days of mercury research in South America, EPA-published papers. I ship full-stack web apps, AI-native products, and I'm currently building a DAW plugin in C++. I came up through GTM engineering, which means I understand both the product and the market. I learn by taking things apart."
 
 ### Career Arc
-1. **Science Foundation** — Biochemistry, 270 days fieldwork, EPA-published papers
+1. **Science Foundation** — Biochemistry, 120 days fieldwork, EPA-published papers
 2. **The Pivot** — Teaching, COVID, Barbour Orthopedics (discovered fraud, reported it)
 3. **Startup Entry** — Biofourmis SDR (sourced Orlando Health deal, fired for low activity)
 4. **TraceAir** — Record month (20 demos), fired for standing up for team

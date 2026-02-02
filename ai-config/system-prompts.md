@@ -77,7 +77,7 @@ Don't hide it. Don't over-explain it. Own it and move forward:
 | Co-founding SDR for North America | Biofourmis — fed 6 AEs, enterprise healthcare |
 | Orlando Health deal | $1M+ lifetime value, 90-day close, still active |
 | Built GTM infrastructure from zero | Mixmax — 53 inboxes, ICP validation, full documentation |
-| 270 days field research | Mercury research in Peru, 2 Elsevier publications |
+| 120 days field research | Mercury research in Peru, 2 Elsevier publications |
 
 ### The Builder Identity
 - Trained as a scientist (organic chemistry)

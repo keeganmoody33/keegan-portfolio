@@ -233,7 +233,7 @@ Music is personal, stays in the lab. It's not part of Lectures From (for now). D
 2. **Uber driver**: Shipped me a $1,000 MPC 2000 XL without me asking
 3. **Heath at MixMax**: Gave me the "opportunity of a lifetime" after meeting me in a course
 4. **Josh Poppas**: Brought me into consulting work during my gap period
-5. **Dr. Kiefer**: Invited me on 270 total days of fieldwork in South America
+5. **Dr. Kiefer**: Invited me on 120 total days of fieldwork in South America
 
 ## What This Means
 "That's not luck. That's something about you that makes people want to bet on you. They see the potential. They want to be part of what you're building."
