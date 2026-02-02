@@ -8,6 +8,7 @@ import SprayText from '@/components/SprayText'
 import Timeline from '@/components/Timeline'
 import ActivityStream from '@/components/ActivityStream'
 import Marquee from '@/components/Marquee'
+import posthog from 'posthog-js'
 
 interface Profile {
   id: string
@@ -36,6 +37,34 @@ export default function Home() {
   const [showChat, setShowChat] = useState(false)
   const [showJD, setShowJD] = useState(false)
   const [showSidebar, setShowSidebar] = useState(false)
+
+  // Event handlers with PostHog tracking
+  const handleOpenChat = () => {
+    posthog.capture('chat_modal_opened', {
+      source: 'page_interaction'
+    })
+    setShowChat(true)
+  }
+
+  const handleCloseChat = () => {
+    posthog.capture('chat_modal_closed')
+    setShowChat(false)
+  }
+
+  const handleToggleSidebar = () => {
+    const newState = !showSidebar
+    posthog.capture('activity_sidebar_toggled', {
+      sidebar_visible: newState
+    })
+    setShowSidebar(newState)
+  }
+
+  const handleExternalLinkClick = (linkName: string, url: string) => {
+    posthog.capture('external_link_clicked', {
+      link_name: linkName,
+      destination_url: url
+    })
+  }
 
   useEffect(() => {
     async function fetchData() {
@@ -86,8 +115,8 @@ export default function Home() {
               <a href="#contact" className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
                 Contact <span className="text-[var(--text-muted)]">[C]</span>
               </a>
-              <button 
-                onClick={() => setShowChat(true)}
+              <button
+                onClick={handleOpenChat}
                 className="ask-ai-btn px-4 py-2 font-mono text-sm"
               >
                 Ask AI
@@ -135,8 +164,8 @@ export default function Home() {
                   Don't guess. Query the system directly.<br />
                   The answer is in the data.
                 </p>
-                <button 
-                  onClick={() => setShowChat(true)}
+                <button
+                  onClick={handleOpenChat}
                   className="ask-ai-btn px-6 py-3 font-mono"
                 >
                   Ask AI
@@ -181,6 +210,7 @@ export default function Home() {
                   href={profile?.linkedin_url || 'https://linkedin.com/in/keeganmoody33'}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => handleExternalLinkClick('linkedin', profile?.linkedin_url || 'https://linkedin.com/in/keeganmoody33')}
                   className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
                 >
                   LINKEDIN
@@ -189,6 +219,7 @@ export default function Home() {
                   href="https://x.com/keeganmoody33"
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => handleExternalLinkClick('x', 'https://x.com/keeganmoody33')}
                   className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
                 >
                   X
@@ -197,6 +228,7 @@ export default function Home() {
                   href="https://substack.com/@keeganmoody33"
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => handleExternalLinkClick('substack', 'https://substack.com/@keeganmoody33')}
                   className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
                 >
                   SUBSTACK
@@ -205,6 +237,7 @@ export default function Home() {
                   href={profile?.github_url || 'https://github.com/keeganmoody33'}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => handleExternalLinkClick('github', profile?.github_url || 'https://github.com/keeganmoody33')}
                   className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
                 >
                   GITHUB
@@ -216,7 +249,7 @@ export default function Home() {
 
         {/* Sidebar Toggle Button */}
         <button
-          onClick={() => setShowSidebar(!showSidebar)}
+          onClick={handleToggleSidebar}
           className="hidden lg:flex fixed right-4 bottom-4 z-40 items-center gap-2 px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-dim)] rounded text-[var(--text-muted)] hover:text-[var(--accent-lime)] hover:border-[var(--accent-lime)] font-mono text-xs transition-colors"
         >
           {showSidebar ? 'Hide' : 'Show'} Activity
@@ -236,8 +269,8 @@ export default function Home() {
           <div className="bg-[var(--bg-surface)] border border-[var(--border-dim)] rounded-lg w-full max-w-2xl max-h-[80vh] overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-[var(--border-dim)]">
               <h3 className="text-[var(--text-bright)] font-mono">Ask AI</h3>
-              <button 
-                onClick={() => setShowChat(false)}
+              <button
+                onClick={handleCloseChat}
                 className="text-[var(--text-muted)] hover:text-[var(--text-bright)]"
               >
                 ✕

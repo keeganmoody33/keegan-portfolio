@@ -1,8 +1,22 @@
 # Ask Alan Iverson — Feature Spec
 
-**Status:** Scoping
+**Status:** LOCKED
 **Created:** Feb 1, 2026
+**Updated:** Feb 2, 2026
 **Priority:** High (brand-defining feature)
+
+---
+
+## Final Decisions (Locked Feb 2, 2026)
+
+| Decision | Answer |
+|----------|--------|
+| **Alan appears** | Every time chat opens |
+| **Intro bubble ("practice" + handoff)** | First open per session only (sessionStorage) — joke shouldn't repeat |
+| **Visual style approach** | Prototype Street 3D + 60s comic in parallel, pick winner. Hybrid as tie-breaker. |
+| **Character assets** | Placeholders first → upgrade to Lottie (2D) or WebM (3D) after style decision |
+| **Handoff** | Alan stays visible (75-85% opacity, subtle idle blink/bounce), Keegan voice runs chat |
+| **Sequence** | Swoop in → "practice" bubble → "Keegan's got you" → bubble fades → Alan stays quiet → chat continues |
 
 ---
 
@@ -58,22 +72,23 @@
 
 ## Visual Style Tracks
 
-### Track A — Street-inspired 3D
+### Track A — Street-inspired 3D ← PROTOTYPE THIS
 - Chunky proportions (oversized head, big hands/feet)
 - Glossy highlights, simple materials
 - Clean readable silhouette
 - Confident low stance
 
-### Track B — 1960s Comic Print
+### Track B — 1960s Comic Print ← PROTOTYPE THIS
 - Bold ink outlines
 - Ben-Day/halftone dot shading
 - Limited flat color palette (3-5 colors)
 - High contrast, simple highlights
 
-### Track C — Hybrid (optional)
+### Track C — Hybrid (tie-breaker only)
 - Street proportions (form) + 60s print surfacing (dots/ink)
+- Only use if A and B are too close to call
 
-**Decision:** Generate all tracks, compare at small UI size, pick winner.
+**Decision:** Prototype A and B in parallel. If one clearly wins (readability + subtlety), lock it. If too close, use Hybrid as tie-breaker.
 
 ---
 

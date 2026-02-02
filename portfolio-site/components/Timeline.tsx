@@ -1,6 +1,7 @@
 'use client'
 
 import Publications from './Publications'
+import posthog from 'posthog-js'
 
 interface Experience {
   id: number
@@ -133,11 +134,19 @@ function CompanyLink({ company }: { company: string }) {
   )?.[1]
 
   if (url) {
+    const handleCompanyClick = () => {
+      posthog.capture('company_link_clicked', {
+        company_name: company,
+        destination_url: url
+      })
+    }
+
     return (
       <a
         href={url}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={handleCompanyClick}
         className="hover:text-[var(--accent-lime)] transition-colors"
       >
         {company}

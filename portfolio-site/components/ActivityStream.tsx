@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import posthog from 'posthog-js'
 
 interface LogEntry {
   type: 'success' | 'warn' | 'info'
@@ -62,13 +63,19 @@ export default function ActivityStream() {
 
       {/* Theme Toggle */}
       <div className="mt-6 flex gap-2">
-        <button 
-          onClick={() => document.documentElement.removeAttribute('data-theme')}
+        <button
+          onClick={() => {
+            document.documentElement.removeAttribute('data-theme')
+            posthog.capture('theme_changed', { theme: 'dark' })
+          }}
           className="w-8 h-8 rounded border border-[var(--border-dim)] bg-[#121212] hover:border-[var(--accent-lime)]"
           title="Dark Mode"
         />
-        <button 
-          onClick={() => document.documentElement.setAttribute('data-theme', 'light')}
+        <button
+          onClick={() => {
+            document.documentElement.setAttribute('data-theme', 'light')
+            posthog.capture('theme_changed', { theme: 'light' })
+          }}
           className="w-8 h-8 rounded border border-[var(--border-dim)] bg-[#E8E2D2] hover:border-[var(--accent-lime)]"
           title="Light Mode"
         />

@@ -1,19 +1,35 @@
 # Turntable Loading Page — Feature Spec
 
-**Status:** Scoping
+**Status:** LOCKED
 **Created:** Feb 1, 2026
+**Updated:** Feb 2, 2026
 **Priority:** Critical (entry point, first impression)
 
 ---
 
 ## Overview
 
-The turntable loading page is the entry experience before the portfolio. A vinyl record on a turntable with a tonearm — the needle drop is the disguised "proceed to portfolio" action. Music starts playing and persists into the banner player.
+The turntable loading page is the entry experience before the portfolio. The needle drop is a **disguised play button** — it triggers a hidden YouTube embed and simultaneously proceeds to the portfolio. Users cannot enter the site without playing music (forcing function).
 
 **Why YouTube over Tidal:**
 - Tidal requires subscription for full playback
 - YouTube embeds are free, ubiquitous, and reliable
 - Can still curate specific tracks/playlists
+
+---
+
+## Final Decisions (Locked Feb 2, 2026)
+
+| Decision | Answer |
+|----------|--------|
+| **Perspective** | 45° angle POV (looking down at turntable on desk), not bird's eye |
+| **Style** | Sketch aesthetic, designed in Aura.build |
+| **Core mechanic** | Needle drop = play button = enter site. Could be a button, TBD. May use Unicorn Studio. |
+| **Skip button** | Yes, subtle. Doesn't say "skip" — says something that makes user feel "lame" for using it |
+| **Once inside** | Music plays in banner, user CAN pause/stop |
+| **Return visitors** | Remember them (localStorage), skip straight to portfolio |
+| **Mobile** | Same experience for now |
+| **Playlist** | ✅ `PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk` |
 
 ---
 
@@ -42,19 +58,17 @@ The turntable loading page is the entry experience before the portfolio. A vinyl
 ## Visual Design
 
 ### Aesthetic
-- **Black and white** primary palette
+- **Perspective:** 45° angle POV — like looking down at a turntable on a desk in front of you
+- **Style:** Sketch aesthetic (hand-drawn/illustrated feel)
+- **Tools:** Aura.build for design, Unicorn Studio for effects/animations
 - Clean, minimal, high contrast
-- Vinyl record texture and grooves
-- Tonearm with realistic pivot mechanics
-- **Tool:** Unicorn Studio for visual effects/animations
 
 ### Elements
 | Element | Description |
 |---------|-------------|
-| Record | Black vinyl with label art (could be custom) |
-| Platter | Silver/chrome turntable platter, spinning |
-| Tonearm | Realistic pivot, follows groove path |
-| Needle | Highlight on contact point |
+| Record | Black vinyl with label art (TBD: custom or placeholder) |
+| Platter | Turntable platter, spinning |
+| Tonearm/Button | Interactive element to trigger play (could be tonearm OR button — TBD) |
 | Background | Dark/black, minimal distraction |
 
 ### Animation States
@@ -149,12 +163,14 @@ const handleNeedleDrop = () => {
 
 ### Skip Option
 ```javascript
-// Subtle skip for returning visitors or accessibility
+// Subtle skip for accessibility — wording makes user feel "lame" for using it
+// Does NOT say "skip" — says something clever that encourages engagement
 <button
   className="absolute bottom-4 right-4 text-xs text-gray-500 hover:text-white"
   onClick={() => router.push('/portfolio')}
 >
-  Skip intro →
+  {/* TBD: Clever copy that makes skipping feel lame */}
+  {/* Examples: "I don't like music", "silence please", "party pooper entrance" */}
 </button>
 ```
 
@@ -297,13 +313,19 @@ if (prefersReducedMotion) {
 
 ---
 
-## Open Questions
+## Resolved Questions
 
 1. ~~**Track selection:**~~ ✅ Playlist: `PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk`
-2. **Label art:** Custom design or placeholder?
-3. **Skip behavior:** Immediate skip or brief animation?
-4. **Return visitors:** Show turntable every time or remember?
-5. **Mobile:** Same experience or simplified version?
+2. ~~**Skip behavior:**~~ ✅ Subtle button with "lame" copy (not "skip")
+3. ~~**Return visitors:**~~ ✅ Remember them (localStorage), skip to portfolio
+4. ~~**Mobile:**~~ ✅ Same experience for now
+5. ~~**Once inside:**~~ ✅ Music pauseable in banner
+
+## Remaining TBD (Design Phase)
+
+1. **Label art:** Custom design or placeholder?
+2. **Exact skip copy:** What makes user feel "lame"?
+3. **Needle drop mechanic:** Tonearm drag vs button vs other?
 
 ---
 

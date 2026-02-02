@@ -1,143 +1,153 @@
 # Banner Widgets Spec
 
-**Status:** Planning
+**Status:** LOCKED
 **Created:** Feb 1, 2026
-**Goal:** Replace static marquee text with live, dynamic widgets
+**Updated:** Feb 2, 2026
+**Goal:** Dynamic widgets with live data + persistent music player
 
 ---
 
-## Overview
+## Final Decisions (Locked Feb 2, 2026)
 
-Current state: Static fake data in a scrolling marquee
-Target state: Real-time widgets pulling from APIs + persistent music player
+| Decision | Answer |
+|----------|--------|
+| **Layout** | TBD in Aura — not specifying config now |
+| **Position** | Top of page |
+| **Behavior** | Cursor hover stops marquee scroll |
+| **Music source** | YouTube (NOT Tidal) — persists from turntable |
 
 ---
 
-## Widgets
+## Widgets (4 Total)
 
-### 1. Music Player (Tidal)
+### 1. YouTube Player
 
 **What it does:**
-- Embeds a Tidal track/playlist
-- Persists outside the marquee scroll (keeps playing when scrolled)
-- Shows: Album art, track name, artist, play/pause
+- Persistent music player that continues from turntable intro
+- Can browse playlist and switch tracks
+- Hover reveals controls
+- Play/pause, track info, progress
 
 **Technical approach:**
-- Option A: Tidal embed iframe (simplest, limited customization)
-- Option B: Tidal API + custom player UI (more control, needs auth)
+- YouTube IFrame API (same as turntable)
+- State passed via sessionStorage from turntable
+- Controls: play/pause, next/prev, volume
 
-**Open questions:**
-- [ ] What track/playlist to feature? Or pull "now playing"?
-- [ ] Tidal API access — do you have developer credentials?
-
-**Fallback:** Static curated track with manual updates
+**Playlist:** `PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk`
 
 ---
 
-### 2. GitHub Activity Graph
+### 2. GitHub Activity (Classic Retro Bars)
 
 **What it does:**
-- Mini bar graph showing recent commit activity
-- Shows last 7-14 days of contributions
+- Retro vertical bar graph showing recent commit activity
+- Classic arcade/pixel aesthetic
+- Last 7-14 days of contributions
 - Clicking opens GitHub profile
 
 **Technical approach:**
-- Fetch from: `api.github.com/users/{username}/events`
-- Or scrape contribution calendar data
-- Render as mini SVG bars in marquee
+- Fetch from: `api.github.com/users/keeganmoody33/events`
+- Render as retro vertical bars (think classic arcade)
+- Subtle animation/glow optional
 
-**Data needed:**
-- [ ] GitHub username: `keeganmoody33` (confirm)
+**Username:** `keeganmoody33` ✅
 
-**Scope:**
-- MVP: Static fetch on page load
-- V2: Real-time updates via polling or webhooks
+**Visual reference:**
+- Classic retro vertical bars
+- Pixel/arcade aesthetic
+- Could add subtle glow or pulse
 
 ---
 
-### 3. Discogs Recent Adds
+### 3. Recent Digs (Discogs)
 
 **What it does:**
 - Shows recently added vinyl to collection
-- Album art thumbnails that scroll through
-- Clicking opens Discogs listing
+- Title + metadata displayed
+- Taps into Discogs API
 
 **Technical approach:**
-- Discogs API: `api.discogs.com/users/{username}/collection`
-- Requires: Username + Personal Access Token
-- Rate limit: 60 requests/min (generous)
+- Discogs API: `api.discogs.com/users/lecturesfrom/collection`
+- Show recent additions with:
+  - Album title
+  - Artist
+  - Year (optional)
+  - Cover art thumbnail
 
-**Data needed:**
-- [ ] Discogs username
-- [ ] Personal Access Token (from Discogs settings)
+**Username:** `lecturesfrom` ✅
 
 **Scope:**
-- MVP: Last 5 records added
-- V2: Carousel with album art hover states
+- MVP: Last 3-5 records added
+- Display: Title, artist, thumbnail
 
 ---
 
-### 4. Status Badge
+### 4. Worthy Reads
 
 **What it does:**
-- Shows current availability/status
-- "Open to founding GTM roles" or "Building: [project]"
-- Could link to calendar or contact
+- Curated list of stuff you've recently read
+- Backlinks to other people's content (Substack posts, articles, etc.)
+- Updates manually
 
 **Technical approach:**
-- Simple state from database or config file
-- Admin toggle to update status
+- Data source: TBD — will be dropped in chat when needed
+- Could be:
+  - Simple JSON config file
+  - Supabase table
+  - Manual entry somewhere
 
 **Scope:**
-- MVP: Static text from config
-- V2: Editable via admin panel
+- MVP: 3-5 recent reads
+- Display: Title, source, link
 
 ---
 
-## Architecture
+## Confirmed Accounts
+
+| Service | Username |
+|---------|----------|
+| GitHub | keeganmoody33 |
+| Discogs | lecturesfrom |
+| YouTube | Playlist `PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk` |
+
+---
+
+## Architecture (Conceptual)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  PERSISTENT MUSIC PLAYER (fixed position, always visible)   │
-│  [▶] Track Name - Artist                    [Tidal logo]   │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│  SCROLLING MARQUEE                                          │
-│  [GitHub ▃▅▂▇▄ 14 commits] [🎵 New: Blue Note] [Status]    │
+│  BANNER (top of page, hover stops scroll)                   │
+│                                                             │
+│  [▶ YouTube Player]  [GitHub ▃▅▂▇▄]  [Digs]  [Reads]       │
+│                                                             │
+│  Layout TBD in Aura                                         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Linear Issues Breakdown
+## Dependencies
 
-| Issue | Priority | Estimate |
-|-------|----------|----------|
-| Create GitHub activity widget component | P1 | 2h |
-| Integrate GitHub API fetch | P1 | 1h |
-| Create Discogs widget component | P2 | 2h |
-| Integrate Discogs API fetch | P2 | 1h |
-| Build persistent Tidal player | P2 | 3h |
-| Refactor Marquee to accept widget components | P1 | 1h |
-| Add status badge widget | P3 | 30m |
-| Environment variables for API keys | P1 | 30m |
-
-**Total estimate:** ~11 hours
+- YouTube IFrame API
+- GitHub REST API (no auth needed for public events)
+- Discogs API + token (env var)
+- Worthy Reads data source (TBD)
 
 ---
 
-## Open Questions
+## Resolved Questions
 
-1. **Tidal:** Track/playlist URL? Or "now playing" integration?
-2. **Discogs:** Username + do you have API token?
-3. **GitHub:** Confirm `keeganmoody33`
-4. **Priority:** Which widget first?
+1. ~~**Music source:**~~ ✅ YouTube (not Tidal)
+2. ~~**GitHub username:**~~ ✅ keeganmoody33
+3. ~~**Discogs username:**~~ ✅ lecturesfrom
+4. ~~**GitHub visualization:**~~ ✅ Classic retro vertical bars
+5. ~~**Layout:**~~ ✅ TBD in Aura
+
+## Remaining TBD
+
+1. **Worthy Reads data source:** Where do you log these?
+2. **Exact layout/spacing:** Will be designed in Aura
 
 ---
 
-## Next Steps
-
-1. Answer open questions above
-2. Create Linear issues from breakdown
-3. Start with GitHub widget (no auth needed, quick win)
+*Spec v2.0 — Feb 2, 2026*

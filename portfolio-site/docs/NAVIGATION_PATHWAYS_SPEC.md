@@ -1,8 +1,22 @@
 # Navigation & Pathways Architecture — Feature Spec
 
-**Status:** Scoping
+**Status:** LOCKED
 **Created:** Feb 2, 2026
+**Updated:** Feb 2, 2026
 **Priority:** High (defines entire site structure)
+
+---
+
+## Final Decisions (Locked Feb 2, 2026)
+
+| Decision | Answer |
+|----------|--------|
+| **Vinyl grid overlay** | Personal Projects + My Stack of Wax ONLY |
+| **Physical Products** | Placeholder page for now (no content yet) |
+| **Other nav items** | Just pages (Who I Am, About LecturesFrom, Contact, Work With Me) |
+| **Built-out project click** | Route to `/projects/[id]` page |
+| **Non-built project click** | Stay in overlay (simpler treatment) |
+| **UX/UI transitions** | TBD in Aura — not specifying now |
 
 ---
 
@@ -20,9 +34,9 @@ This spec defines the header navigation system, vinyl stack pathway model, proje
 
 | # | Label | Slug | Type | Notes |
 |---|-------|------|------|-------|
-| 1 | Personal Projects | `/personal-projects` | collection | What I've been building on my own |
-| 2 | Physical Products | `/physical-products` | collection | Ideations built out (no physical prod yet) |
-| 3 | My Stack of Wax | `/stack-of-wax` | collection | Discogs API — vinyl collection display |
+| 1 | Personal Projects | `/personal-projects` | collection | What I've been building on my own — **VINYL GRID** |
+| 2 | Physical Products | `/physical-products` | page | **PLACEHOLDER** — no content yet |
+| 3 | My Stack of Wax | `/stack-of-wax` | collection | Discogs API — **VINYL GRID** |
 | 4 | Who I Am | `/about` | page | About me |
 | 5 | About LecturesFrom | `/about-lecturesfrom` | page | The business side |
 | 6 | Contact | `/contact` | page | Contact form/info |
@@ -32,9 +46,16 @@ This spec defines the header navigation system, vinyl stack pathway model, proje
 
 | Type | Click Behavior |
 |------|----------------|
-| `collection` | Opens full-screen vinyl grid overlay |
+| `collection` | Opens vinyl grid overlay (Personal Projects, Stack of Wax) |
 | `page` | Routes directly to page |
 | `external` | Opens in new tab |
+
+### Project Tile Click Behavior
+
+| Project Status | Click Behavior |
+|----------------|----------------|
+| **Built-out** (has repo, visuals, lots to explain) | Route to `/projects/[id]` page |
+| **Not fully built** (concept, WIP, minimal content) | Stay in overlay (simpler treatment) |
 
 ---
 
@@ -486,11 +507,17 @@ Discogs releases → VinylTile format:
 
 ---
 
-## 12. Open Questions
+## 12. Resolved Questions
 
-1. ~~**Physical Products**~~ → Placeholder for now, no content yet
-2. **Overlay vs Route** — Collection items open overlay or navigate to dedicated page?
-3. **Mobile behavior** — Same vinyl grid or simplified list view?
+1. ~~**Physical Products**~~ ✅ Placeholder page for now
+2. ~~**Overlay vs Route**~~ ✅ Vinyl grid for Personal Projects + Stack of Wax; others are pages
+3. ~~**Project tile behavior**~~ ✅ Built-out → page, not built → stay in overlay
+
+## Remaining TBD (Design Phase)
+
+1. **Mobile behavior** — Same vinyl grid or simplified list view?
+2. **Overlay transitions/animations** — TBD in Aura
+3. **Tile hover effects** — TBD in Aura/Unicorn Studio
 
 ---
 

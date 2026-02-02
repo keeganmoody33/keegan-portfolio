@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import posthog from 'posthog-js'
 
 export default function JDAnalyzer() {
   const [input, setInput] = useState('')
@@ -13,6 +14,13 @@ export default function JDAnalyzer() {
       setError('Please paste a job description or URL.')
       return
     }
+
+    // Track analysis started - high intent action
+    const isUrl = input.trim().startsWith('http')
+    posthog.capture('jd_analysis_started', {
+      input_type: isUrl ? 'url' : 'text',
+      input_length: input.length
+    })
 
     setLoading(true)
     setError(null)
@@ -37,8 +45,21 @@ export default function JDAnalyzer() {
       }
 
       const data = await response.json()
+
+      // Track successful completion
+      posthog.capture('jd_analysis_completed', {
+        input_type: isUrl ? 'url' : 'text',
+        analysis_length: data.analysis?.length || 0
+      })
+
       setAnalysis(data.analysis)
     } catch (err: any) {
+      // Track error
+      posthog.capture('jd_analysis_error', {
+        error_message: err.message
+      })
+      posthog.captureException(err)
+
       setError(err.message)
     } finally {
       setLoading(false)

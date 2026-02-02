@@ -1,9 +1,23 @@
 # Human/Machine Toggle — Feature Spec
 
-**Status:** Scoping
+**Status:** LOCKED
 **Created:** Feb 2, 2026
+**Updated:** Feb 2, 2026
 **Priority:** High (differentiator feature)
 **Inspiration:** [Parallel.ai](https://parallel.ai)
+
+---
+
+## Final Decisions (Locked Feb 2, 2026)
+
+| Decision | Answer |
+|----------|--------|
+| **Dual content v1** | Hero + About + one "Proof" section (not full site day one) |
+| **Main proof section** | **JD Analyzer** — `POST /api/jd-analyze`, JSON Schema for I/O, example payloads |
+| **Secondary proof** | **Chat API** — OpenAI-compatible style, streaming flag, context injection (abstract) |
+| **Priority order** | Hero/About → How it works → Example workflows → Everything else after tooling |
+| **Schema depth** | Start with A (abstracted/simplified), design to evolve to B/C later |
+| **`?view=machine` landing** | "Config loading" turntable — runtime config panel, shows schema version, sample request |
 
 ---
 
@@ -36,12 +50,19 @@ When users toggle between modes, they see the same content presented in radicall
 
 ## Toggle Component
 
-### Visual Design
-- Horizontal toggle: `[HUMAN]` `[MACHINE]`
-- Pill shape (200px × 40px desktop, 160px × 36px mobile)
-- Active state: filled background, high contrast
-- Inactive state: outline only, transparent
-- Position: Header area (persistent across pages)
+### Visual Design (from Parallel.ai observation)
+- Horizontal toggle: `[● HUMAN]` `[○ MACHINE]`
+- Pill shape with radio-button style indicators
+- Active state: filled circle indicator (●)
+- Inactive state: empty circle indicator (○)
+- **Position: Sticky/floating at bottom center of viewport**
+- Always accessible regardless of scroll position
+
+### Behavior (observed)
+- **Instant swap** — no transition animation
+- **Scroll position preserved** when toggling
+- Nav visible in both modes (just restyled)
+- Content structure identical — only rendering changes
 
 ### States
 ```typescript
@@ -58,6 +79,21 @@ interface ModeContextValue {
 - Keyboard: Space/Enter
 - URL param: `?view=machine` for direct linking
 - LocalStorage: remember preference (optional)
+
+---
+
+## Parallel.ai Transformation Patterns (Observed)
+
+| Element | Human Mode | Machine Mode |
+|---------|------------|--------------|
+| Navigation | Visual navbar, dropdowns, styled buttons | Markdown links with visible URLs |
+| Headlines | Typography hierarchy, gradients | `#` and `##` markdown headers |
+| Features | Card grid, bold headings, icons | `###` headers with plain text descriptions |
+| Data tables | Interactive charts, scatter plots | Markdown tables with pipe separators |
+| CTAs | Styled buttons (orange, pill shape) | `[Button Text](https://url)` |
+| Logos | Visual logo images | Company names as text |
+| Background | Gradients, visual effects | Solid dark (#000 or similar) |
+| Font | Sans-serif, varied weights | Monospace, uniform weight |
 
 ---
 
@@ -421,13 +457,17 @@ analytics.track('mode_toggle', {
 
 ---
 
-## Open Questions
+## Resolved Questions
 
-1. **Toggle placement**: Header (global) or per-section?
-2. **Machine mode depth**: How much actual code/schema to show? (Security consideration)
-3. **Default for developers**: Auto-detect developer audience and default to machine?
-4. **Turntable in machine mode**: Skip entirely or show config?
-5. **Mobile treatment**: Same experience or simplified?
+1. ~~**Toggle placement**~~ ✅ Sticky/floating at bottom center (from Parallel.ai observation)
+2. ~~**Machine mode depth**~~ ✅ Start abstracted (A), design to evolve to B/C
+3. ~~**Turntable in machine mode**~~ ✅ "Config loading" version — runtime config panel
+4. ~~**Which sections first**~~ ✅ Hero + About + JD Analyzer proof section
+
+## Remaining TBD
+
+1. **Default for developers**: Auto-detect and default to machine? (nice-to-have)
+2. **Mobile treatment**: Same experience or simplified?
 
 ---
 

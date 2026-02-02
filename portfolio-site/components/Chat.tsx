@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import posthog from 'posthog-js'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -27,8 +28,15 @@ export default function Chat() {
     scrollToBottom()
   }, [messages])
 
-  const sendMessage = async (question: string) => {
+  const sendMessage = async (question: string, isSuggested: boolean = false) => {
     if (!question.trim() || isLoading) return
+
+    // Track message sent event
+    posthog.capture('chat_message_sent', {
+      message_length: question.length,
+      is_suggested_question: isSuggested,
+      message_count: messages.length + 1
+    })
 
     const userMessage: Message = { role: 'user', content: question }
     setMessages(prev => [...prev, userMessage])
@@ -51,10 +59,23 @@ export default function Chat() {
         throw new Error(data.error)
       }
 
+      // Track successful response
+      posthog.capture('chat_response_received', {
+        response_length: data.answer?.length || 0,
+        message_count: messages.length + 2
+      })
+
       const assistantMessage: Message = { role: 'assistant', content: data.answer }
       setMessages(prev => [...prev, assistantMessage])
     } catch (error) {
       console.error('Chat error:', error)
+
+      // Track chat error
+      posthog.capture('chat_error', {
+        error_message: error instanceof Error ? error.message : 'Unknown error'
+      })
+      posthog.captureException(error)
+
       const errorMessage: Message = {
         role: 'assistant',
         content: 'Sorry, I encountered an error. Please try again.',
@@ -80,9 +101,15 @@ export default function Chat() {
             {SUGGESTED_QUESTIONS.map((q, i) => (
               <button
                 key={i}
-                onClick={() => sendMessage(q)}
-                className="px-3 py-1.5 text-sm bg-[var(--bg-body)] border border-[var(--border-dim)] 
-                         text-[var(--text-muted)] rounded hover:border-[var(--accent-lime)] 
+                onClick={() => {
+                  posthog.capture('chat_suggested_question_clicked', {
+                    question: q,
+                    question_index: i
+                  })
+                  sendMessage(q, true)
+                }}
+                className="px-3 py-1.5 text-sm bg-[var(--bg-body)] border border-[var(--border-dim)]
+                         text-[var(--text-muted)] rounded hover:border-[var(--accent-lime)]
                          hover:text-[var(--accent-lime)] transition-colors font-mono"
               >
                 {q}
@@ -155,7 +182,12 @@ export default function Chat() {
       {/* Clear Chat */}
       {messages.length > 0 && (
         <button
-          onClick={() => setMessages([])}
+          onClick={() => {
+            posthog.capture('chat_cleared', {
+              messages_cleared: messages.length
+            })
+            setMessages([])
+          }}
           className="mt-2 text-sm text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono"
         >
           Clear chat
