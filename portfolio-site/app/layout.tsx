@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { PostHogProvider } from './providers'
 
 export const metadata: Metadata = {
   title: 'Keegan | High-Vis Operations',
@@ -13,7 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="antialiased min-h-screen">{children}</body>
+      <body className="antialiased min-h-screen">
+        <PostHogProvider>{children}</PostHogProvider>
+      </body>
     </html>
   )
 }
