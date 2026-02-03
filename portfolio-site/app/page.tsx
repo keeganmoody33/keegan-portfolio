@@ -102,7 +102,7 @@ export default function Home() {
           {/* Navigation */}
           <nav className="flex items-center justify-between mb-16">
             <div className="flex items-center gap-2">
-              <span className="text-[var(--text-muted)] font-mono text-sm">⌘</span>
+              <span className="text-[var(--text-muted)] font-mono text-sm">/</span>
               <span className="text-[var(--text-bright)] font-space">lecturesfrom</span>
             </div>
             <div className="flex items-center gap-8">
