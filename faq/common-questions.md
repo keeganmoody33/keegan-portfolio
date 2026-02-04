@@ -44,15 +44,16 @@ After college, I got into hip-hop production — sampling, MPC, making something
 
 ### Tell me about the Mixmax project
 
-First time building GTM infrastructure from zero. No playbook, no predecessor — just me and a whiteboard.
+First time building GTM infrastructure from zero. No playbook, no predecessor — just me and a whiteboard. AI-native from day one.
 
 What I built:
 - 53-inbox email infrastructure across multiple providers
 - ICP validation across 280 customers ($4.79M ARR analyzed)
 - 9-agent AI orchestration system for outbound
+- Internal apps and AI-powered workflows to automate pipeline generation
 - Full methodology documentation for handoff
 
-The company had been running on PLG with no outbound for over a year. I came in to build it from scratch — worked directly with the CRO daily. By the time the infrastructure was production-ready, the company's priorities had shifted. But the system works. They have everything they need to execute.
+The company had been running on PLG with no outbound for over a year. I came in to build it from scratch — worked directly with the CRO daily. Ran experiments in production, A/B tested messaging and segmentation, killed what didn't work fast. By the time the infrastructure was production-ready, the company's priorities had shifted. But the system works. They have everything they need to execute.
 
 ---
 

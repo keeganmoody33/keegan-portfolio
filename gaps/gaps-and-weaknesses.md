@@ -24,9 +24,9 @@
 - **Frame as:** "I learned by doing. Open to formal training to fill gaps I don't know I have."
 
 ### Deep Technical Engineering
-- **Current state:** Can build tools with AI assistance, understand architecture, work with technical teams. Not a production coder.
-- **Evidence:** Built portfolio site, JD analyzer, experimenting with APIs
-- **Frame as:** "I'm getting more technical every day. Can work alongside engineers, but I'm not one."
+- **Current state:** Building rapidly with AI-assisted tooling (Claude Code, Cursor) — ships internal apps, ETL pipelines, Edge Functions, and automation. Not a production engineer, but builds functional tools that drive results.
+- **Evidence:** Built portfolio site, JD analyzer, 9-agent AI system, Python data pipelines, Supabase Edge Functions, Next.js apps
+- **Frame as:** "I ship functional tools with AI-assisted development. I'm not a production engineer, but I build what I need to get results."
 
 ---
 

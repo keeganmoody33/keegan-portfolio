@@ -49,9 +49,10 @@ BS Biochemistry and Molecular Biology (2019)
 1. **Scientist** → Trained in organic chemistry, 120 days fieldwork in Peru, 2 published papers
 2. **Medical school pivot** → Got accepted (Miami), walked away after seeing healthcare business up close
 3. **Startup grind** → Biofourmis (co-founding SDR, North America, Orlando Health deal) → Trace Air ($220K in 90 days, 23 demos first month)
-4. **GTM infrastructure** → Mixmax (built complete outbound system from zero, first time doing any of it)
-5. **The builder** → Portfolio site, JD analyzer, tools — teaching myself to build what I imagine
-6. **What's next** → Founding GTM role. Product-adjacent. Elite teammates. Long-term growth.
+4. **Market intelligence** → Mobb AI (MCP early adoption, app security GTM, regulatory data targeting)
+5. **GTM infrastructure** → Mixmax (built complete outbound system from zero, AI-native from day one)
+6. **The builder** → Portfolio site, JD analyzer, tools — teaching myself to build what I imagine
+7. **What's next** → Founding GTM role. Product-adjacent. Elite teammates. Long-term growth.
 
 ---
 

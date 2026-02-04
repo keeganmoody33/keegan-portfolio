@@ -21,10 +21,13 @@ These are skills I can execute immediately with confidence. No ramp-up needed.
 
 | Skill | Evidence | Context |
 |-------|----------|---------|
-| **Claude Code / Cursor** | Built 9-agent autonomous GTM system, terminal-native workflows | "Vibe coding" - AI-assisted development in production contexts |
+| **Claude Code / Cursor** | Built 9-agent autonomous GTM system, internal apps, ETL pipelines, terminal-native workflows | AI-assisted development shipping functional tools in production contexts |
 | **Python / Pandas** | 17 production scripts at Mixmax for data pipelines, ICP scoring | Not deep engineering, but can script analysis workflows |
-| **Multi-Agent AI Systems** | 9 specialized agents with handoff protocols at Mixmax | Designed agent architecture, orchestration flows, feedback loops |
-| **Claude API / Prompt Engineering** | Tacit knowledge extraction, case study analysis prompts | Systematic prompt design for repeatable outputs |
+| **Multi-Agent AI Systems** | 9-agent agentic AI system shipped at Mixmax with custom orchestration logic, evaluation criteria, and handoff protocols | Designed agent architecture, orchestration flows, feedback loops |
+| **Claude API / Prompt Engineering** | Custom prompting strategies, agent orchestration logic, tacit knowledge extraction, case study analysis prompts | Systematic prompt design for repeatable outputs |
+| **Claude MCP** | Adopted MCP the week it launched at Mobb AI — integrated SEC EDGAR data for regulatory filing analysis | Early adopter, production use |
+| **Koncert** | Parallel dialer for high-cadence outbound at Mobb AI | Heavy daily activity at scale |
+| **Apollo.io** | Lead sourcing and enrichment at Mobb AI | Contact data and prospecting workflows |
 | **Clay** | Built full workflows at Mixmax, 12k+ row tables, automated enrichment pipelines | Comfortable with complex Clay tables, views, integrations |
 | **SmartLead / ScaledMail** | 53-inbox infrastructure, multi-provider diversification | Domain warming, deliverability optimization, campaign deployment |
 | **HubSpot** | Used extensively at Biofourmis for sequencing | Solid foundation |
@@ -90,6 +93,7 @@ These are skills I have foundations in but would need time to get sharp. 1-4 wee
 | **Trigify** | Used at Mixmax but didn't master | Need more time with signal-based prospecting |
 | **SQL / Database Queries** | Can do basic queries, not advanced | Would need training for complex analysis |
 | **CRM Administration** | User-level proficiency, not admin | Could learn but not immediate strength |
+| **Next.js / React / TypeScript** | Built portfolio site, internal apps, Supabase Edge Functions | Functional but not a production engineer — ships tools, not scalable software |
 
 ### Soft Skills
 
@@ -98,7 +102,7 @@ These are skills I have foundations in but would need time to get sharp. 1-4 wee
 | **Concise Communication** | I struggle with this when riffing | Active practice, feedback, maybe frameworks |
 | **Managing Up** | Have done it poorly (Biofourmis, Trace Air) | Need to learn how to advocate without creating friction |
 | **Political Navigation** | Got fired twice partly due to this | Need mentorship on reading rooms and picking battles |
-| **Documentation / Process Writing** | Can do it but it's not natural | Need discipline to document as I go, not after |
+| **Documentation / Process Writing** | 30+ operational docs at Mixmax covering methodology, targeting, playbooks, system architecture, and onboarding — built for handoff from day one | Proven at scale, not just capable |
 
 ---
 
@@ -110,7 +114,7 @@ These are skills I genuinely lack. Would need significant training or should avo
 
 | Skill | Honest Assessment |
 |-------|-------------------|
-| **Coding / Engineering** | I'm not a developer. I can work with technical teams, understand concepts, but I don't write code |
+| **Coding / Engineering** | Building rapidly with AI-assisted tooling (Claude Code, Cursor) — ships internal apps, ETL pipelines, Edge Functions, and automation. Not a production engineer, but builds functional tools that drive results |
 | **Formal Sales Training (MEDDIC, Sandler, etc.)** | Never had structured sales methodology training. Learned by doing |
 | **People Management** | Have never managed direct reports. Led by influence, not authority |
 | **Financial Modeling** | Don't have this skill. Could learn basics but not a strength |
@@ -145,18 +149,18 @@ These are skills I genuinely lack. Would need significant training or should avo
 - **Gap:** Closing, negotiation, contract management, quota carrying as AE
 
 ### Tools & Technology
-- **Strong:** Claude Code, Cursor, Python/Pandas, Clay, SmartLead/ScaledMail, HubSpot, Salesforce (user), LinkedIn Sales Navigator, ZoomInfo, Excel, Jupyter
-- **Moderate:** SalesLoft/Outreach, Gong, Trigify, basic SQL
-- **Gap:** CRM administration, RevOps, marketing automation (Marketo, Pardot), deep engineering
+- **Strong:** Claude Code, Cursor, Claude MCP, Python/Pandas, Clay, SmartLead/ScaledMail, Koncert, Apollo.io, HubSpot, Salesforce (user), LinkedIn Sales Navigator, ZoomInfo, Excel, Jupyter
+- **Moderate:** SalesLoft/Outreach, Gong, Trigify, basic SQL, Next.js/React/TypeScript
+- **Gap:** CRM administration, RevOps, marketing automation (Marketo, Pardot)
 
 ### GTM Engineering
-- **Strong:** Outbound infrastructure design, ICP validation methodology, tacit knowledge extraction, customer scoring models, campaign testing frameworks, tech stack integration, GTM documentation
-- **Moderate:** AI agent orchestration (learning by doing), prompt engineering
-- **Gap:** Deep technical engineering, production code from scratch
+- **Strong:** Outbound infrastructure design, ICP validation methodology, tacit knowledge extraction, customer scoring models, campaign testing frameworks, tech stack integration, GTM documentation, AI agent orchestration, prompt engineering
+- **Moderate:** Next.js/React/TypeScript, Supabase Edge Functions, signal-based prospecting (Trigify)
+- **Gap:** Production engineering at scale
 
 ### Communication
-- **Strong:** Written outreach, authentic conversation, relationship building
-- **Moderate:** Concise verbal communication, managing up, documentation
+- **Strong:** Written outreach, authentic conversation, relationship building, documentation
+- **Moderate:** Concise verbal communication, managing up
 - **Gap:** Public speaking (large audiences), formal presentation skills
 
 ### Strategy & Analysis
