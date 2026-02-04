@@ -27,24 +27,20 @@ export default function JDAnalyzer() {
     setAnalysis('')
 
     try {
-      // Get the anon key from environment
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/jd-analyzer`, {
+      const response = await fetch('/api/jd-analyzer', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseAnonKey}`,
+          'X-POSTHOG-DISTINCT-ID': posthog.get_distinct_id(),
         },
         body: JSON.stringify({ input }),
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || errorData.details || 'Failed to analyze job description')
-      }
-
       const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to analyze job description')
+      }
 
       // Track successful completion
       posthog.capture('jd_analysis_completed', {
@@ -77,16 +73,16 @@ export default function JDAnalyzer() {
                    focus:outline-none focus:border-[var(--accent-lime)]
                    placeholder:text-[var(--text-muted)]"
       />
-      
+
       <button
         onClick={handleAnalyze}
         disabled={loading}
         className={`mt-4 px-6 py-3 font-mono text-sm border border-[var(--border-dim)] 
                    text-[var(--text-bright)] rounded transition-all
-                   ${loading 
-                     ? 'opacity-50 cursor-not-allowed' 
-                     : 'sketch-btn hover:border-[var(--accent-lime)]'
-                   }`}
+                   ${loading
+            ? 'opacity-50 cursor-not-allowed'
+            : 'sketch-btn hover:border-[var(--accent-lime)]'
+          }`}
       >
         {loading ? 'Analyzing...' : 'Analyze Fit'}
       </button>

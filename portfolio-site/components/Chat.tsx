@@ -44,11 +44,11 @@ export default function Chat() {
     setIsLoading(true)
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/chat`, {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          'X-POSTHOG-DISTINCT-ID': posthog.get_distinct_id(),
         },
         body: JSON.stringify({ question }),
       })
