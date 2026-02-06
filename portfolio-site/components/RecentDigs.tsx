@@ -19,11 +19,7 @@ export default function RecentDigs() {
   useEffect(() => {
     async function fetchDigs() {
       try {
-        const response = await fetch('/api/discogs', {
-          headers: {
-            'X-POSTHOG-DISTINCT-ID': posthog.get_distinct_id(),
-          },
-        })
+        const response = await fetch('/api/discogs')
         if (!response.ok) throw new Error('Failed to fetch')
         const data = await response.json()
         setReleases(data)
@@ -44,11 +40,11 @@ export default function RecentDigs() {
   // Loading state
   if (isLoading) {
     return (
-    <div className="w-full border-b border-[var(--border-dim)] bg-[var(--bg-surface)] font-mono">
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        <p className="text-[var(--text-muted)] text-xs uppercase tracking-wider mb-3">
-          Recent Digs
-        </p>
+      <div className="w-full border-b border-[var(--border-dim)] bg-[var(--bg-surface)] font-mono">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <p className="text-[var(--text-muted)] text-xs uppercase tracking-wider mb-3">
+            Recent Digs
+          </p>
           {/* Desktop: horizontal row skeleton */}
           <div className="hidden md:flex gap-4">
             {Array.from({ length: 5 }).map((_, i) => (
