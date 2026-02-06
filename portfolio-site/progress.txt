@@ -1,0 +1,33 @@
+COMPLETED:
+- Single-page portfolio (app/page.tsx)
+- Hero with SprayText animation (components/SprayText.tsx)
+- Career timeline (components/Timeline.tsx)
+- JD Analyzer with Firecrawl URL scraping (components/JDAnalyzer.tsx, app/api/jd-analyzer/route.ts)
+- AI Chat via Supabase Edge Functions + Claude API (components/Chat.tsx, app/api/chat/route.ts)
+- PostHog analytics (client + server)
+- Marquee ticker (components/Marquee.tsx)
+- Publications section (components/Publications.tsx, used inside Timeline)
+- ActivityStream sidebar (components/ActivityStream.tsx)
+- Vercel deployment with URL rewrites (vercel.json)
+- Discogs "Recent Digs" banner widget (components/RecentDigs.tsx, app/api/discogs/route.ts)
+
+IN PROGRESS:
+- Banner widget section buildout
+
+NEXT:
+- Banner widget section buildout
+- Then: Allen Iverson chat persona
+
+KNOWN ISSUES:
+- Schema drift: multiple SQL files reference incorrect column names (see root-level SQL files)
+- achievements table populated but not queried by any Edge Function
+- Deno std lib in Edge Functions pinned to 0.168.0 (~45 versions behind)
+- DESIGN_PLAYBOOK.md needs to be renamed to FRONTEND_GUIDELINES.md for canonical naming
+
+PARKING LOT (not in scope yet):
+- Human/Machine toggle
+- Turntable loading screen
+- Navigation pathways redesign
+- Vinyl grid overlay (Stack of Wax)
+- Worthy Reads widget
+- GitHub activity widget

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Component, useEffect, useState, type ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
 import Chat from '@/components/Chat'
 import JDAnalyzer from '@/components/JDAnalyzer'
@@ -8,7 +8,29 @@ import SprayText from '@/components/SprayText'
 import Timeline from '@/components/Timeline'
 import ActivityStream from '@/components/ActivityStream'
 import Marquee from '@/components/Marquee'
+import RecentDigs from '@/components/RecentDigs'
 import posthog from 'posthog-js'
+
+/** Error boundary — Discogs API failure never crashes the page */
+class WidgetErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+  componentDidCatch(error: Error) {
+    console.error('WidgetErrorBoundary caught:', error)
+  }
+  render() {
+    if (this.state.hasError) return null
+    return this.props.children
+  }
+}
 
 interface Profile {
   id: string
@@ -94,6 +116,11 @@ export default function Home() {
     <div className="min-h-screen">
       {/* Marquee Ticker */}
       <Marquee />
+
+      {/* Recent Digs — Discogs widget */}
+      <WidgetErrorBoundary>
+        <RecentDigs />
+      </WidgetErrorBoundary>
 
       {/* Main Layout */}
       <div className="flex">
