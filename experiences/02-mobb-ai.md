@@ -15,6 +15,7 @@
 Developed pain-based segmentation framework targeting pre-IPO companies facing SEC cybersecurity compliance gaps. Adopted Claude's Model Context Protocol (MCP) architecture within the first week—learning the full stack and immediately applying SEC EDGAR integration to automate regulatory filing analysis for go-to-market targeting.
 
 **Bullets:**
+
 - Developed pain-based segmentation framework targeting pre-IPO companies facing SEC cybersecurity compliance gaps, identifying $202M total addressable market across four urgency tiers
 - Created proprietary "Existential Data Point" formula (Days to IPO ÷ Days to Clear Compliance) to score and prioritize prospects by conversion likelihood
 - Adopted Claude's Model Context Protocol (MCP) architecture within the first week—learned the full stack and immediately applied SEC EDGAR integration to automate regulatory filing analysis and detect compliance crisis signals for go-to-market targeting
@@ -32,6 +33,7 @@ Developed pain-based segmentation framework targeting pre-IPO companies facing S
 I quickly adopted Anthropic's Model Context Protocol (MCP) the week it launched, unlocking expanded capabilities through its public API integrations. By connecting MCP to SEC EDGAR, I was able to analyze S-1 filings and extract key insights, particularly focused on the SEC's security-related comments. These insights highlighted urgent needs and actionable solutions for prospective companies, effectively shaping what I consider a PVP (Permissionless Value Proposition)—a strategy popularized by Cannonball GTM.
 
 **Key Points:**
+
 - Early adoption of Anthropic's MCP (the week it launched)
 - Integration with SEC EDGAR for real-time insights
 - Focused on security-related SEC comments
@@ -46,6 +48,7 @@ Mobb AI is a code vulnerability remediation platform. The GTM challenge: how do 
 
 **The insight:**
 Pre-IPO companies can't afford security vulnerabilities:
+
 - SEC comment letters on cybersecurity literally block IPOs
 - Material weaknesses require public disclosure to investors
 - 2023 SEC cybersecurity rules created new compliance gaps
@@ -56,9 +59,11 @@ This isn't a "nice to have." This is existential pain with a deadline.
 **What I built:**
 
 ### 1. Existential Data Point (EDP) Formula
+
 ```
 EDP = Days Until IPO ÷ Days to Clear Compliance Issues
 ```
+
 - EDP < 1.0 → IPO is mathematically impossible without intervention
 - EDP 0.1-0.3 → Crisis mode, IPO blocked
 - EDP 0.3-0.7 → Emergency, IPO at serious risk
@@ -77,23 +82,27 @@ EDP = Days Until IPO ÷ Days to Clear Compliance Issues
 **Total Addressable Revenue: $202M**
 
 ### 3. MCP Integration (Early Adopter)
+
 - Used SEC EDGAR MCP server while still in beta (one of earliest adopters)
 - Automated regulatory filing analysis within Claude's local environment
 - Built workflow to detect compliance crisis signals programmatically
 - MCP was brand new—this was cutting-edge adoption
 
 **What didn't ship (but still matters):**
+
 - Product Hunt launch plan for Mobb Vibe Shield
 - Positioning strategy for MCP-native security products
 - Plan was developed but not deployed during engagement
 
 **Key learnings:**
+
 1. Regulatory pressure creates the most urgent pain
 2. Public data (SEC filings) is underutilized for GTM
 3. Early adoption of AI tooling creates differentiation
 4. Pain intensity predicts conversion better than company size
 
 **Why this matters for portfolio:**
+
 - Demonstrates pain-based segmentation methodology
 - Shows technical sophistication (MCP early adopter)
 - Quantified market sizing with conversion assumptions

@@ -74,6 +74,11 @@ skills: skill_name, category, evidence
 - `supabase/functions/chat/index.ts` — Portfolio AI chat
 - `supabase/functions/jd-analyzer/index.ts` — Job description fit analyzer
 
+**Environment Variable Conventions:**
+- Env var names in `.env.local` must exactly match what the code references (e.g. `process.env.DISCOGS_TOKEN`).
+- Convention: use the service's own naming (e.g. `DISCOGS_TOKEN`, not `DISCOGS_API_TOKEN`) so config and code stay in sync.
+- When adding a new integration, grep the codebase for the expected var name before creating the `.env.local` entry.
+
 ---
 
 ## AI Behavior Guidelines
