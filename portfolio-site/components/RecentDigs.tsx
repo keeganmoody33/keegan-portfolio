@@ -19,7 +19,11 @@ export default function RecentDigs() {
   useEffect(() => {
     async function fetchDigs() {
       try {
-        const response = await fetch('/api/discogs')
+        const response = await fetch('/api/discogs', {
+          headers: {
+            'X-POSTHOG-DISTINCT-ID': posthog.get_distinct_id(),
+          },
+        })
         if (!response.ok) throw new Error('Failed to fetch')
         const data = await response.json()
         setReleases(data)
