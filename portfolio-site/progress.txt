@@ -12,10 +12,16 @@ COMPLETED:
 - Discogs "Recent Digs" banner widget (components/RecentDigs.tsx, app/api/discogs/route.ts)
 - Canonical documentation: PRD.md, APP_FLOW.md, TECH_STACK.md, FRONTEND_GUIDELINES.md, BACKEND_STRUCTURE.md, IMPLEMENTATION_PLAN.md
 - DESIGN_PLAYBOOK.md content folded into FRONTEND_GUIDELINES.md
+- Page title updated to 'Keegan Moody | lecturesfrom' (LEC-25)
+- Hero taglines updated to Set Q: Revenue systems / Useful in every room / Here for the long build (LEC-26)
+- Footer: added Discord + Bluesky social links (LEC-27)
+- Marquee: replaced fake data with real GitHub API via /api/github route (LEC-28)
+- FRONTEND_GUIDELINES.md synced to match actual component behavior (LEC-29)
+- Supabase experiences: fixed dates (TraceAir, Chapel Hill), title (Barbour), enriched bullets (Mixmax, Biofourmis), added Mercer + EMT rows (LEC-30)
+- Supabase MCP config fixed: project_ref and read_only flag corrected
 
 IN PROGRESS:
-- Site copy review and updates (2026-02-09 session)
-- Documentation fixes from principal engineer review
+- Banner widget section buildout (Phase 1 of IMPLEMENTATION_PLAN.md)
 
 NEXT:
 - Banner widget section buildout (Phase 1 of IMPLEMENTATION_PLAN.md)

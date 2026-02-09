@@ -3,7 +3,7 @@ import './globals.css'
 import { PostHogProvider } from './providers'
 
 export const metadata: Metadata = {
-  title: 'Keegan | High-Vis Operations',
+  title: 'Keegan Moody | lecturesfrom',
   description: 'GTM Engineer. I build go-to-market infrastructure from scratch. Query the system directly.',
 }
 

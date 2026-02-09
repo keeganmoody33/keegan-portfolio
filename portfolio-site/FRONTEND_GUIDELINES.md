@@ -199,7 +199,9 @@ Animated 60px x 60px grid pattern on body:
 2. All components live in `portfolio-site/components/`
 3. Functional components with hooks (no class components)
 4. No inline styles -- always Tailwind classes or CSS custom properties
+   - **Exception:** Dynamic values that depend on element index (e.g. staggered animation delays in `SprayText.tsx`, bounce delays in `Chat.tsx`) may use inline `style` when no Tailwind equivalent exists.
 5. PostHog tracking on every interactive component
+   - **Known gap:** `Publications.tsx` has no PostHog events. DOI links and citation links are untracked.
 
 ### Custom CSS Classes (globals.css)
 
@@ -232,6 +234,12 @@ Animated 60px x 60px grid pattern on body:
 **Ghost (Secondary):**
 - `bg` transparent, `border` dim
 - Hover: `bg` elevated surface
+
+**Send/Submit (Lime Fill):**
+- `bg: var(--accent-lime)`, `color: var(--bg-body)` (inverted for contrast)
+- Used in `Chat.tsx` for the send button
+- Hover: slightly brighter lime
+- Disabled: reduced opacity
 
 ### Card Pattern
 
@@ -291,11 +299,13 @@ Mobile-first approach using Tailwind defaults:
 
 ### Current Responsive Rules
 
+Only `RecentDigs.tsx` has dedicated mobile/desktop handling. All other components render identically across breakpoints.
+
 | Component | Mobile | Desktop (md+) |
 |-----------|--------|----------------|
 | Recent Digs | Horizontal scroll, `w-[140px]` items, snap points | Flex row, `flex-1` items |
 | Recent Digs loading | Scroll skeleton | Row skeleton |
-| All other components | Same layout (no responsive overrides) | Same layout |
+| All other components | Same layout | Same layout |
 
 ### Responsive Priorities (future)
 

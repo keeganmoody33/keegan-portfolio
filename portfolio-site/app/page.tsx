@@ -157,15 +157,15 @@ export default function Home() {
             <div className="space-y-2 mb-8">
               <div className="flex items-center gap-3 text-[var(--text-muted)]">
                 <span className="text-[var(--accent-orange)]">//</span>
-                <span className="font-mono text-sm">GTM systems that actually ship</span>
+                <span className="font-mono text-sm">Revenue systems. Built from zero.</span>
               </div>
               <div className="flex items-center gap-3 text-[var(--text-muted)]">
                 <span className="text-[var(--accent-lime)]">//</span>
-                <span className="font-mono text-sm">Science background, startup mindset</span>
+                <span className="font-mono text-sm">Useful in every room.</span>
               </div>
               <div className="flex items-center gap-3 text-[var(--text-muted)]">
                 <span className="text-[var(--accent-red)]">//</span>
-                <span className="font-mono text-sm">Building at the intersection of sales and code</span>
+                <span className="font-mono text-sm">Here for the long build.</span>
               </div>
             </div>
 
@@ -268,6 +268,24 @@ export default function Home() {
                   className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
                 >
                   GITHUB
+                </a>
+                <a
+                  href="https://discord.com/users/lecturesfrom"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => handleExternalLinkClick('discord', 'https://discord.com/users/lecturesfrom')}
+                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+                >
+                  DISCORD
+                </a>
+                <a
+                  href="https://bsky.app/profile/lecturesfrom.bsky.social"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => handleExternalLinkClick('bluesky', 'https://bsky.app/profile/lecturesfrom.bsky.social')}
+                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+                >
+                  BLUESKY
                 </a>
               </div>
             </div>
