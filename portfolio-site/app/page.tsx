@@ -9,6 +9,7 @@ import Timeline from '@/components/Timeline'
 import ActivityStream from '@/components/ActivityStream'
 import Marquee from '@/components/Marquee'
 import RecentDigs from '@/components/RecentDigs'
+import GitHubActivity from '@/components/GitHubActivity'
 import posthog from 'posthog-js'
 
 /** Error boundary — Discogs API failure never crashes the page */
@@ -117,9 +118,12 @@ export default function Home() {
       {/* Marquee Ticker */}
       <Marquee />
 
-      {/* Recent Digs — Discogs widget */}
+      {/* Banner Widgets */}
       <WidgetErrorBoundary>
         <RecentDigs />
+      </WidgetErrorBoundary>
+      <WidgetErrorBoundary>
+        <GitHubActivity />
       </WidgetErrorBoundary>
 
       {/* Main Layout */}

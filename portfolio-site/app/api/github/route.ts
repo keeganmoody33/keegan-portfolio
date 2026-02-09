@@ -81,6 +81,18 @@ export async function GET(request: NextRequest) {
     const latestAction = latestEvent?.type?.replace('Event', '') || null
     const latestTime = latestEvent?.created_at || null
 
+    // Daily activity breakdown for bar chart (last 14 days)
+    const dailyActivity: { date: string; count: number }[] = []
+    for (let i = 13; i >= 0; i--) {
+      const day = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
+      const dayStr = day.toISOString().split('T')[0]
+      const count = events.filter((e) => {
+        const eventDay = new Date(e.created_at).toISOString().split('T')[0]
+        return eventDay === dayStr
+      }).length
+      dailyActivity.push({ date: dayStr, count })
+    }
+
     return NextResponse.json({
       pushes_24h: pushes24h,
       pushes_7d: pushes7d,
@@ -89,6 +101,7 @@ export async function GET(request: NextRequest) {
       latest_action: latestAction,
       latest_time: latestTime,
       total_events: events.length,
+      daily_activity: dailyActivity,
     })
 
   } catch (error) {
