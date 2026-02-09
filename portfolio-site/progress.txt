@@ -24,6 +24,7 @@ COMPLETED:
 - Banner compaction (LEC-31): RecentDigs covers 250px→72px, GitHubActivity chart 48px→24px, YouTubePlayer tightened, all widgets py-2 with inline labels
 - YouTubePlayer: fixed persistState stale closure (reads player.getPlayerState() instead of React state)
 - YouTubePlayer: fixed Script deadlock (<Script> + hidden iframe now always render, skeleton is a ternary inside same return)
+- BannerRotator (LEC-32): YouTubePlayer, RecentDigs, GitHubActivity cycle in single rotating slot below Marquee — 8s auto-rotate, pause-on-hover, dot indicators
 
 IN PROGRESS:
 - Phase 2: Turntable loading experience (see TURNTABLE HANDOFF section below)

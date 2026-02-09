@@ -165,11 +165,10 @@ Single-page app. All content on one route (`/`). No multi-page navigation curren
 
 ```
 ┌──────────────────────────────────────────────┐
-│ BANNER STACK (~160px total, all full-width)   │
+│ BANNER (~68px total, all full-width)           │
 │   ├── Marquee ticker         (py-2, ~28px)   │
-│   ├── YouTubePlayer          (py-2, ~36px)   │
-│   ├── Recent Digs            (py-2, ~80px)   │
-│   └── GitHub Activity        (py-2, ~32px)   │
+│   └── BannerRotator          (py-2, ~40px)   │
+│         rotates: Player / Digs / GitHub       │
 ├──────────────────────────────────────────────┤
 │ Main Content (max-width container, centered)  │
 │   ├── Nav Header                              │
@@ -183,6 +182,15 @@ Single-page app. All content on one route (`/`). No multi-page navigation curren
 │ Chat Modal (overlay, conditional)             │
 └──────────────────────────────────────────────┘
 ```
+
+### Banner Rotator
+
+The three widget layers (YouTubePlayer, RecentDigs, GitHubActivity) live inside a `BannerRotator` that shows one at a time:
+- **Component:** `components/BannerRotator.tsx`
+- **Rotation:** 8-second auto-cycle, crossfade (500ms `transition-opacity`)
+- **Interaction:** Pauses on hover; dot indicators at right edge for manual switching
+- **Mounting:** All children stay mounted (critical for YouTubePlayer iframe audio continuity); inactive panels get `opacity-0 absolute pointer-events-none`
+- **PostHog:** Fires `banner_panel_switched` on manual dot clicks with `from`/`to` labels
 
 ### Banner Widget Rules
 

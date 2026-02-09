@@ -99,7 +99,7 @@ export default function GitHubActivity() {
               return (
                 <div
                   key={day.date}
-                  className="flex-1 relative"
+                  className="flex-1 relative h-full"
                 >
                   <div
                     className={`

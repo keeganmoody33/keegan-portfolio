@@ -11,6 +11,7 @@ import Marquee from '@/components/Marquee'
 import RecentDigs from '@/components/RecentDigs'
 import GitHubActivity from '@/components/GitHubActivity'
 import YouTubePlayer from '@/components/YouTubePlayer'
+import BannerRotator from '@/components/BannerRotator'
 import posthog from 'posthog-js'
 
 /** Error boundary — Discogs API failure never crashes the page */
@@ -119,16 +120,18 @@ export default function Home() {
       {/* Marquee Ticker */}
       <Marquee />
 
-      {/* Banner Widgets */}
-      <WidgetErrorBoundary>
-        <YouTubePlayer />
-      </WidgetErrorBoundary>
-      <WidgetErrorBoundary>
-        <RecentDigs />
-      </WidgetErrorBoundary>
-      <WidgetErrorBoundary>
-        <GitHubActivity />
-      </WidgetErrorBoundary>
+      {/* Rotating Banner — one widget visible at a time, auto-cycles */}
+      <BannerRotator labels={['Now Playing', 'Recent Digs', 'GitHub']}>
+        <WidgetErrorBoundary>
+          <YouTubePlayer />
+        </WidgetErrorBoundary>
+        <WidgetErrorBoundary>
+          <RecentDigs />
+        </WidgetErrorBoundary>
+        <WidgetErrorBoundary>
+          <GitHubActivity />
+        </WidgetErrorBoundary>
+      </BannerRotator>
 
       {/* Main Layout */}
       <div className="flex">

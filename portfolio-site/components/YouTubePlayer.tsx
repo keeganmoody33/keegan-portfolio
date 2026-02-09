@@ -49,6 +49,7 @@ function formatTime(seconds: number): string {
 export default function YouTubePlayer() {
   const playerRef = useRef<YT.Player | null>(null)
   const containerRef = useRef<string>('yt-player-' + Math.random().toString(36).slice(2, 8))
+  const wrapperRef = useRef<HTMLDivElement>(null)
   const progressInterval = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const [isReady, setIsReady] = useState(false)
@@ -124,6 +125,17 @@ export default function YouTubePlayer() {
   // ── Initialise YT.Player once API is loaded ──────────────
   const initPlayer = useCallback(() => {
     if (playerRef.current) return
+
+    // Re-create container element if a previous destroy() removed it.
+    // YT.Player replaces the target <div> with an <iframe>; destroy()
+    // removes that iframe entirely. React doesn't know the DOM was
+    // mutated, so the element is simply gone on the next init attempt
+    // (happens in React 18 strict mode and after HMR).
+    if (!document.getElementById(containerRef.current)) {
+      const el = document.createElement('div')
+      el.id = containerRef.current
+      wrapperRef.current?.appendChild(el)
+    }
 
     const saved = loadState()
 
@@ -232,13 +244,29 @@ export default function YouTubePlayer() {
       // Cleanup on unmount
       if (progressInterval.current) clearInterval(progressInterval.current)
       try {
-        playerRef.current?.destroy()
+        const p = playerRef.current
+        playerRef.current = null      // clear ref BEFORE destroy so re-init isn't blocked
+        p?.destroy()
       } catch {
         // ignore
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // ── Script onLoad fallback — covers the race where the
+  //    <Script> fires before the useEffect sets the callback ─
+  const handleScriptLoad = useCallback(() => {
+    // Small delay to let YouTube set window.YT.Player
+    const poll = setInterval(() => {
+      if (window.YT?.Player) {
+        clearInterval(poll)
+        initPlayer()
+      }
+    }, 100)
+    // Safety cap — stop polling after 10s
+    setTimeout(() => clearInterval(poll), 10_000)
+  }, [initPlayer])
 
   // ── Controls ─────────────────────────────────────────────
   const handlePlayPause = () => {
@@ -309,10 +337,12 @@ export default function YouTubePlayer() {
       <Script
         src="https://www.youtube.com/iframe_api"
         strategy="afterInteractive"
+        onLoad={handleScriptLoad}
       />
 
       {/* Hidden YouTube iframe — must be ≥200×200 per API requirement */}
       <div
+        ref={wrapperRef}
         className="absolute overflow-hidden"
         style={{ width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
         aria-hidden="true"
