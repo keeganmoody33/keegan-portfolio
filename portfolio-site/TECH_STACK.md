@@ -64,7 +64,8 @@ Runtime: **Deno**. Imports use URL specifiers with pinned versions where availab
 
 - **Project:** PostgreSQL + Edge Functions
 - **Edge Functions runtime:** Deno
-- **Tables used by app:** candidate_profile, experiences, skills, gaps_weaknesses, values_culture, faq_responses, ai_instructions
+- **Tables used by app:** candidate_profile, experiences, skills, gaps_weaknesses*, values_culture, faq_responses, ai_instructions
+- *`gaps_weaknesses` is fetched by Edge Functions but **not included in public chat context** (removed Jan 2026). See BACKEND_STRUCTURE.md for details.
 - **Edge Functions:** `chat`, `jd-analyzer` (deployed via `supabase functions deploy`)
 
 ---
@@ -74,3 +75,15 @@ Runtime: **Deno**. Imports use URL specifiers with pinned versions where availab
 - **Platform:** Vercel
 - **Live URL:** lecturesfrom.com/keeganmoody33 (rewrites in vercel.json: `/` → `/keeganmoody33`, `/keeganmoody33` → `/`)
 - **Build:** Next.js (`next build`); auto-deploy on push to main
+
+---
+
+## Related Docs
+
+- [PRD.md](PRD.md) -- Product definition, features, scope
+- [APP_FLOW.md](APP_FLOW.md) -- Route inventory and interaction flows
+- [FRONTEND_GUIDELINES.md](FRONTEND_GUIDELINES.md) -- Design system, tokens, component patterns
+- [BACKEND_STRUCTURE.md](BACKEND_STRUCTURE.md) -- Database schema, API contracts, Edge Functions
+- [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) -- Phased build sequence
+- [progress.txt](progress.txt) -- Current completion state
+- [lessons.md](lessons.md) -- Mistakes and patterns to avoid

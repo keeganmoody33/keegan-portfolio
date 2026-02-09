@@ -1,8 +1,9 @@
 # Keegan Moody — Portfolio Context
 
-**Last Updated:** 2026-01-31
+**Last Updated:** 2026-02-09
 **Status:** Actively seeking GTM Engineer / Founding Growth roles
 **Location:** Atlanta, GA or Remote
+**Live Site:** [lecturesfrom.com/keeganmoody33](https://lecturesfrom.com/keeganmoody33)
 
 ---
 
@@ -53,9 +54,26 @@ Keegan Moody is a GTM Engineer who builds revenue infrastructure from scratch. N
 | `experiences/` | Role summaries with public bullets and private context |
 | `ai-config/` | System prompts, AI instructions, session logs |
 | `supabase/` | Edge Functions (chat, jd-analyzer), database schema |
-| `portfolio-site/` | Next.js frontend |
+| `portfolio-site/` | Next.js frontend + canonical docs |
 | `Mixmax/` | GTM system docs, methodologies, playbooks |
 | `certificates/` | All certifications (Anthropic, Google, Zapier, etc.) |
+
+## Canonical Docs (in `portfolio-site/`)
+
+Read these before any implementation work. They are the source of truth.
+
+| Doc | Purpose |
+|-----|---------|
+| `PRD.md` | What we're building, who it's for, features with status, scope boundaries |
+| `APP_FLOW.md` | Every route, every interaction flow, component render order, states |
+| `TECH_STACK.md` | Locked dependencies, exact versions, external APIs, env vars |
+| `FRONTEND_GUIDELINES.md` | Design tokens, component patterns, responsive rules, animations |
+| `BACKEND_STRUCTURE.md` | Full database schema, API endpoint contracts, Edge Function specs |
+| `IMPLEMENTATION_PLAN.md` | Phased build sequence with dependencies and validation steps |
+
+**Session persistence files (also in `portfolio-site/`):**
+- `progress.txt` -- What's done, in progress, next. Read at session start. Update after every feature.
+- `lessons.md` -- Mistakes and patterns. Review at session start. Update after every correction.
 
 ---
 
@@ -136,16 +154,22 @@ Only surface when directly asked. Frame constructively.
 
 ---
 
-## Recent Session (2026-01-31)
+## Recent Sessions
 
-Fixed self-sabotaging AI behavior:
+**2026-02-09:** Created canonical documentation system
+- Drafted all six canonical docs: PRD, APP_FLOW, TECH_STACK (existed), FRONTEND_GUIDELINES, BACKEND_STRUCTURE, IMPLEMENTATION_PLAN
+- Folded DESIGN_PLAYBOOK.md content into FRONTEND_GUIDELINES.md
+- Archived Discogs-specific IMPLEMENTATION_PLAN, created master site-wide plan
+- Updated CLAUDE.md, .cursorrules, and progress.txt to reference all docs
+
+**2026-01-31:** Fixed self-sabotaging AI behavior
 - Updated Edge Functions to use correct database columns
 - Rewrote system prompts to lead with value
 - Updated public_bullets for key experiences
 - Deployed and tested chat + JD analyzer
 
-See `ai-config/SESSION_LOG_2026-01-31.md` for full details.
+See `ai-config/SESSION_LOG_2026-01-31.md` for details.
 
 ---
 
-*Portfolio context v3.0 — Lead with value, acknowledge gaps only when asked.*
+*Portfolio context v4.0 — Documentation first. Code second. Always.*

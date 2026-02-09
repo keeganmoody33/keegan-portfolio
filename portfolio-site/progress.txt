@@ -10,24 +10,36 @@ COMPLETED:
 - ActivityStream sidebar (components/ActivityStream.tsx)
 - Vercel deployment with URL rewrites (vercel.json)
 - Discogs "Recent Digs" banner widget (components/RecentDigs.tsx, app/api/discogs/route.ts)
+- Canonical documentation: PRD.md, APP_FLOW.md, TECH_STACK.md, FRONTEND_GUIDELINES.md, BACKEND_STRUCTURE.md, IMPLEMENTATION_PLAN.md
+- DESIGN_PLAYBOOK.md content folded into FRONTEND_GUIDELINES.md
 
 IN PROGRESS:
-- Banner widget section buildout
+- Site copy review and updates (2026-02-09 session)
+- Documentation fixes from principal engineer review
 
 NEXT:
-- Banner widget section buildout
-- Then: Allen Iverson chat persona
+- Banner widget section buildout (Phase 1 of IMPLEMENTATION_PLAN.md)
+  - YouTube persistent player widget (Phase 1, Step 1.1)
+  - GitHub activity widget (Phase 1, Step 1.2)
+  - Worthy Reads widget (Phase 1, Step 1.3 -- data source TBD)
+  - Banner section layout (Phase 1, Step 1.4)
+- Then: Turntable loading experience (Phase 2)
+- Alan Iverson chat persona (Phase 3) -- DEFERRED, moved to Backlog
 
 KNOWN ISSUES:
 - Schema drift: multiple SQL files reference incorrect column names (see root-level SQL files)
 - achievements table populated but not queried by any Edge Function
 - Deno std lib in Edge Functions pinned to 0.168.0 (~45 versions behind)
-- DESIGN_PLAYBOOK.md needs to be renamed to FRONTEND_GUIDELINES.md for canonical naming
+- Most components lack dedicated mobile responsive handling (only RecentDigs has mobile/desktop variants)
+- No ARIA labels on most interactive elements
+- No rate limiting on API routes
+- No caching on Discogs API route
+- Activity Stream uses hardcoded/simulated data (not real-time)
+- DISCOGS_TOKEN missing from .env.local.example
 
 PARKING LOT (not in scope yet):
-- Human/Machine toggle
-- Turntable loading screen
-- Navigation pathways redesign
-- Vinyl grid overlay (Stack of Wax)
-- Worthy Reads widget
-- GitHub activity widget
+- Human/Machine toggle (Phase 5)
+- Navigation pathways redesign (Phase 4)
+- Vinyl grid overlay / Stack of Wax (Phase 4)
+- Easter eggs (Konami code, hidden /practice route)
+- Console.log personality messages

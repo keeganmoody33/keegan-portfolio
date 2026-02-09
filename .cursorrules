@@ -1,7 +1,38 @@
 # Cursor Rules — Keegan Moody Portfolio
 
 > For AI assistants working on this codebase
-> Last updated: 2026-01-31
+> Last updated: 2026-02-09
+
+---
+
+## Workflow: Documentation First, Code Second
+
+This project follows a documentation-first methodology. Before writing code:
+
+1. Read `CLAUDE.md` and `progress.txt` at session start
+2. Review `lessons.md` for patterns and mistakes to avoid
+3. Reference the six canonical docs for any implementation work
+4. Update `progress.txt` after completing any feature
+5. Update `lessons.md` after every correction
+
+**The six canonical docs (in `portfolio-site/`):**
+
+| Doc | Purpose |
+|-----|---------|
+| `PRD.md` | What we're building, who it's for, what's in scope |
+| `APP_FLOW.md` | Every route, every interaction flow, every state |
+| `TECH_STACK.md` | Locked dependencies, exact versions, external APIs |
+| `FRONTEND_GUIDELINES.md` | Design tokens, component patterns, responsive rules |
+| `BACKEND_STRUCTURE.md` | Database schema, API contracts, Edge Function specs |
+| `IMPLEMENTATION_PLAN.md` | Phased build sequence with validation steps |
+
+**Session files:**
+
+| File | Purpose |
+|------|---------|
+| `CLAUDE.md` (repo root) | AI operating manual -- rules, context, constraints |
+| `portfolio-site/progress.txt` | What's done, what's in progress, what's next |
+| `portfolio-site/lessons.md` | Mistakes and patterns to avoid |
 
 ---
 
@@ -10,16 +41,18 @@
 This is Keegan Moody's portfolio website with AI-powered chat and JD analyzer features.
 
 **Stack:**
-- Frontend: Next.js (in `portfolio-site/`)
+- Frontend: Next.js (App Router) in `portfolio-site/`
 - Backend: Supabase (PostgreSQL + Edge Functions)
 - AI: Claude API via Edge Functions
+- Analytics: PostHog (client + server)
 - Deployment: Vercel (auto-deploy on push to main)
+- Live URL: [lecturesfrom.com/keeganmoody33](https://lecturesfrom.com/keeganmoody33)
 
 ---
 
 ## Database Schema (Critical)
 
-The Edge Functions query these tables. Use the **correct column names**:
+Full schema in `portfolio-site/BACKEND_STRUCTURE.md`. Quick reference for correct column names:
 
 ```sql
 candidate_profile:
@@ -49,6 +82,7 @@ skills:
 - `profile.name` → Use `${profile.first_name} ${profile.last_name}`
 - `profile.title` → Use `profile.headline`
 - `exp.bullet_points` → Use `exp.public_bullets`
+- Table is `candidate_profile` (singular), NOT `candidate_profiles` (plural)
 
 ---
 
@@ -69,6 +103,20 @@ supabase functions deploy jd-analyzer
 
 ---
 
+## API Routes (Next.js Proxy Pattern)
+
+All API routes follow: browser → Next.js Route Handler (keeps keys server-side) → external API.
+
+| Route | Method | Proxies To |
+|-------|--------|------------|
+| `/api/chat` | POST | Supabase `chat` Edge Function |
+| `/api/discogs` | GET | Discogs API |
+| `/api/jd-analyzer` | POST | Supabase `jd-analyzer` Edge Function |
+
+Full contracts in `portfolio-site/BACKEND_STRUCTURE.md`.
+
+---
+
 ## AI Behavior Philosophy
 
 The portfolio AI should:
@@ -84,31 +132,13 @@ The portfolio AI should:
 
 ---
 
-## Key Files
+## Component Rules
 
-| File | Purpose |
-|------|---------|
-| `CLAUDE.md` | Full portfolio context for AI assistants |
-| `ai-config/SESSION_LOG_*.md` | Session logs documenting changes |
-| `ai-config/system-prompts.md` | AI chat behavior guidelines |
-| `supabase/functions/*/index.ts` | Edge Function source code |
-
----
-
-## Positioning Summary
-
-**Headline:** GTM Engineer | Builder | Finds diamonds in dirt
-
-**Looking for:**
-- Founding GTM Engineer / Growth / Early Team roles
-- Product-adjacent work
-- Remote or Atlanta-based
-- $120K floor, $150-180K target
-
-**NOT looking for:**
-- BDR/SDR roles
-- Pure cold calling
-- Micromanagement
+- All components are `'use client'` and live in `portfolio-site/components/`
+- Functional components with hooks (no class components)
+- No inline styles -- always Tailwind classes or CSS custom properties
+- PostHog tracking on every interactive component
+- Style per `FRONTEND_GUIDELINES.md` design tokens
 
 ---
 
@@ -117,16 +147,6 @@ The portfolio AI should:
 - **Main branch:** Production (Vercel auto-deploys)
 - **Feature branches:** Use for multi-file changes or experiments
 - **Naming:** `fix/description` or `feature/description`
-
-**When to branch:**
-- Adding new features
-- Changing how something works
-- Anything you might want to undo
-
-**Push to main directly for:**
-- Small copy changes
-- Quick CSS tweaks
-- Obvious bug fixes
 
 ---
 
@@ -139,16 +159,13 @@ After changes to Edge Functions:
 3. Test edge case: Ask "Why have you had short stints?"
 4. Test JD analyzer: Paste a real job posting URL
 
----
+After changes to frontend:
 
-## Session Log
-
-**2026-01-31:** Fixed self-sabotaging AI behavior
-- Updated Edge Functions to use correct database columns
-- Rewrote system prompts to lead with value
-- Updated public_bullets for key experiences
-- See `ai-config/SESSION_LOG_2026-01-31.md` for details
+1. Check desktop and mobile
+2. Verify PostHog events fire
+3. Test error states (disable network, bad input)
+4. Test empty states
 
 ---
 
-*Cursor rules v3.0 — Lead with value, build with precision.*
+*Cursor rules v4.0 — Documentation first. Code second. Always.*
