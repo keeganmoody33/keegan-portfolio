@@ -34,6 +34,9 @@ Updated: 2026-02-10
 - **When rotating widgets that contain iframes/scripts, keep all children mounted.** BannerRotator uses `opacity-0 absolute pointer-events-none` for inactive panels instead of `display: none` or conditional rendering. This is critical for YouTubePlayer — the hidden YouTube iframe must stay in the DOM for audio to continue playing when the panel rotates away. Using `hidden` or unmounting would kill the audio stream.
 - **`YT.Player` replaces its target `<div>` with an `<iframe>`; `destroy()` removes it from the DOM entirely.** React doesn't know the element was removed (it happened outside the reconciler), so it won't re-create it. In strict mode (mount → cleanup → mount), `destroy()` in the cleanup leaves no container for the second `initPlayer()` call, causing silent failure. Fix: before calling `new YT.Player(id, ...)`, check `document.getElementById(id)` and re-create the element inside a wrapper ref if missing.
 
+## Local Development
+- **The dev server serves the portfolio at `/`, not `/keeganmoody33`.** The `/keeganmoody33` path is a Vercel rewrite that only exists in production. Locally, navigate to `http://localhost:3000`. The `next.config.js` has no rewrites configured.
+
 ## Environment Variables
 - Env var names must match exactly between .env.local and code. DISCOGS_API_TOKEN in .env.local vs DISCOGS_TOKEN in code caused a silent failure -- the API call got `undefined` with no error.
 
