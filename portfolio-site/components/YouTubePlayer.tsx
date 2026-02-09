@@ -63,18 +63,22 @@ export default function YouTubePlayer() {
   const [expanded, setExpanded] = useState(false)
 
   // ── Persist state to sessionStorage ───────────────────────
+  // Derives playing from player.getPlayerState() instead of React state
+  // to avoid stale closure when called from onStateChange (React state
+  // updates are async, but getPlayerState() is synchronous and always current).
   const persistState = useCallback(() => {
     const player = playerRef.current
     if (!player) return
     try {
       const data = player.getVideoData()
+      const playerState = player.getPlayerState()
       saveState({
         videoId: data?.video_id || '',
         trackTitle: data?.title || '',
         trackAuthor: data?.author || '',
         position: player.getCurrentTime() || 0,
         duration: player.getDuration() || 0,
-        playing,
+        playing: playerState === YT.PlayerState.PLAYING || playerState === YT.PlayerState.BUFFERING,
         playlistIndex: player.getPlaylistIndex() || 0,
         volume: player.getVolume() || 50,
         timestamp: Date.now(),
@@ -82,7 +86,7 @@ export default function YouTubePlayer() {
     } catch {
       // player may not be fully initialised yet
     }
-  }, [playing])
+  }, [])
 
   // ── Update track info from player ────────────────────────
   const syncTrackInfo = useCallback(() => {
@@ -295,31 +299,13 @@ export default function YouTubePlayer() {
   // ── Error → graceful hide ────────────────────────────────
   if (error) return null
 
-  // ── Loading skeleton ─────────────────────────────────────
-  if (isLoading) {
-    return (
-      <div className="w-full border-b border-[var(--border-dim)] bg-[var(--bg-surface)] font-mono">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            {/* Play button skeleton */}
-            <div className="w-8 h-8 rounded bg-[var(--bg-body)] border border-[var(--border-dim)] animate-pulse" />
-            {/* Track info skeleton */}
-            <div className="flex-1 space-y-1.5">
-              <div className="h-3 w-48 bg-[var(--bg-body)] border border-[var(--border-dim)] rounded animate-pulse" />
-              <div className="h-2 w-32 bg-[var(--bg-body)] border border-[var(--border-dim)] rounded animate-pulse" />
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   // ── Render ───────────────────────────────────────────────
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
 
   return (
     <>
-      {/* Load YouTube IFrame API */}
+      {/* Load YouTube IFrame API — must always render, even during loading,
+          otherwise the script never loads and isLoading never clears (deadlock) */}
       <Script
         src="https://www.youtube.com/iframe_api"
         strategy="afterInteractive"
@@ -334,19 +320,36 @@ export default function YouTubePlayer() {
         <div id={containerRef.current} />
       </div>
 
-      {/* Visible custom controls */}
+      {/* Loading skeleton */}
+      {isLoading ? (
+        <div className="w-full border-b border-[var(--border-dim)] bg-[var(--bg-surface)] font-mono">
+          <div className="max-w-7xl mx-auto px-4 py-2">
+            <div className="flex items-center gap-3">
+              {/* Play button skeleton */}
+              <div className="w-6 h-6 rounded bg-[var(--bg-body)] border border-[var(--border-dim)] animate-pulse" />
+              {/* Track info skeleton */}
+              <div className="flex-1 space-y-1">
+                <div className="h-2.5 w-40 bg-[var(--bg-body)] border border-[var(--border-dim)] rounded animate-pulse" />
+                <div className="h-2 w-24 bg-[var(--bg-body)] border border-[var(--border-dim)] rounded animate-pulse" />
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+
+      /* Visible custom controls */
       <div
         className="w-full border-b border-[var(--border-dim)] bg-[var(--bg-surface)] font-mono group"
         onMouseEnter={() => setExpanded(true)}
         onMouseLeave={() => setExpanded(false)}
       >
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 py-2">
+          <div className="flex items-center gap-3">
             {/* Play / Pause */}
             <button
               onClick={handlePlayPause}
               className={`
-                w-8 h-8 flex items-center justify-center rounded border
+                w-6 h-6 flex items-center justify-center rounded border
                 transition-colors duration-150
                 ${playing
                   ? 'border-[var(--accent-lime)] text-[var(--accent-lime)]'
@@ -357,13 +360,13 @@ export default function YouTubePlayer() {
             >
               {playing ? (
                 // Pause icon
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                <svg width="10" height="10" viewBox="0 0 14 14" fill="currentColor">
                   <rect x="2" y="1" width="3.5" height="12" rx="0.5" />
                   <rect x="8.5" y="1" width="3.5" height="12" rx="0.5" />
                 </svg>
               ) : (
                 // Play icon
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                <svg width="10" height="10" viewBox="0 0 14 14" fill="currentColor">
                   <polygon points="3,1 12,7 3,13" />
                 </svg>
               )}
@@ -451,6 +454,7 @@ export default function YouTubePlayer() {
           )}
         </div>
       </div>
+      )}
     </>
   )
 }

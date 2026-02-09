@@ -1,6 +1,6 @@
 # App Flow — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-02-08
+**Last Updated:** 2026-02-09
 **Framework:** Next.js (App Router)
 **Deployment:** Vercel (auto-deploy on push to main)
 
@@ -254,20 +254,24 @@ Land on /keeganmoody33
 **Trigger:** Page load (automatic). Loads YouTube IFrame API client-side.
 
 **Steps:**
-1. Loading skeleton renders (play button + track info placeholder)
-2. YouTube IFrame API script loads (`afterInteractive`)
-3. `onYouTubeIframeAPIReady` fires, creates hidden YT.Player with playlist
-4. Player loads playlist `PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk`
-5. Track title and author populate from `getVideoData()`
-6. User clicks play → music starts
-7. Hover expands to reveal next/prev, progress bar, volume slider
-8. State persisted to `sessionStorage['yt-player-state']` on every change
+1. Component always renders `<Script>` tag + hidden iframe (even while loading)
+2. Loading skeleton shows inline (play button + track info placeholder) via ternary
+3. YouTube IFrame API script loads (`afterInteractive`)
+4. `onYouTubeIframeAPIReady` fires, creates hidden YT.Player with playlist
+5. Player loads playlist `PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk`
+6. `onReady` sets `isLoading=false`, skeleton swaps to real controls
+7. Track title and author populate from `getVideoData()`
+8. User clicks play → music starts
+9. Hover expands to reveal next/prev, progress bar, volume slider
+10. State persisted to `sessionStorage['yt-player-state']` on every change via `player.getPlayerState()` (not React state)
 
-**Success state:** Player shows track title, play/pause controls. Hover reveals full controls. Music plays from YouTube playlist.
+**Critical:** The `<Script>` tag and hidden iframe div must NOT be gated behind `isLoading`. The script sets `isLoading=false` via its callback — gating creates a deadlock where the skeleton renders forever.
+
+**Success state:** Player shows track title, play/pause controls (w-6 h-6). Hover reveals full controls. Music plays from YouTube playlist.
 
 **Error state:** Component returns `null` (graceful failure). Wrapped in `WidgetErrorBoundary`.
 
-**Empty state:** Loading skeleton while IFrame API loads.
+**Empty state:** Compact loading skeleton (py-2, inline layout) while IFrame API loads.
 
 **sessionStorage contract (Phase 2 Turntable handoff):**
 - Key: `yt-player-state`

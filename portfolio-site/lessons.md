@@ -1,5 +1,5 @@
 # Lessons Learned
-Updated: 2026-02-09
+Updated: 2026-02-10
 
 ## Schema
 - Multiple SQL files in repo root reference wrong column names. Always verify against live Supabase schema before writing SQL.
@@ -26,6 +26,11 @@ Updated: 2026-02-09
 - **When a component calls an API route, pass `X-POSTHOG-DISTINCT-ID: posthog.get_distinct_id()` in the request headers.** Chat.tsx and JDAnalyzer.tsx both do this. RecentDigs.tsx was built without it — server-side events silently fell back to `'anonymous_server'` instead of the real user. The fetch worked fine, so the bug was invisible unless you checked PostHog. Treat header forwarding as part of the API proxy contract, not optional.
 - **Check Tailwind config before adding inline styles.** `font-mono` was already mapped to Roboto Mono in `tailwind.config.js`. The first pass used inline `fontFamily` which worked but violated the project's no-inline-styles rule and duplicated config. Always grep tailwind.config for existing mappings first.
 - **Error boundaries are the one exception to "no class components."** React requires error boundaries to be class components — there is no hook equivalent. When wrapping third-party or async widgets, add a lightweight error boundary that renders `null` on failure so a single widget crash never takes down the page.
+
+## Component Architecture
+- **Never gate a `<Script>` tag behind loading state that the script itself resolves.** The YouTubePlayer had `<Script src="youtube.com/iframe_api">` inside the "ready" return path, but `isLoading` was only set to `false` by the `onReady` callback — which required the script to have loaded. Classic deadlock on cold loads. It only worked in dev because hot-reload kept `window.YT.Player` alive from the previous render. Fix: always render the `<Script>` and hidden iframe, use a ternary for the skeleton vs. controls below them.
+- **Don't read React state from callbacks that fire synchronously after `setState`.** `persistState` captured `playing` from its `useCallback` closure, then `onStateChange` called `setPlaying(true)` and immediately `persistState()`. The closure still held the old value because `setState` is async. Fix: read the authoritative value from the source-of-truth API (`player.getPlayerState()`) instead of React state. This also removes the state variable from the dependency array, making the callback a stable reference.
+- **Banner widgets should be single-row, inline-label layouts.** The original RecentDigs used `flex-1 aspect-square` covers (~250px each on desktop) with metadata text below, consuming massive vertical space. The fix: fixed-width thumbnails (72px desktop / 60px mobile), inline labels, no metadata text (title on hover). Same pattern for GitHubActivity: label + chart + push count all on one row. This keeps the entire banner stack (marquee + player + digs + GitHub) to roughly ~160px total height.
 
 ## Environment Variables
 - Env var names must match exactly between .env.local and code. DISCOGS_API_TOKEN in .env.local vs DISCOGS_TOKEN in code caused a silent failure -- the API call got `undefined` with no error.

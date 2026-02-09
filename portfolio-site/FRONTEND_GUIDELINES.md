@@ -165,9 +165,11 @@ Single-page app. All content on one route (`/`). No multi-page navigation curren
 
 ```
 ┌──────────────────────────────────────────────┐
-│ Marquee (full-width, always visible)          │
-├──────────────────────────────────────────────┤
-│ Recent Digs Banner (full-width)               │
+│ BANNER STACK (~160px total, all full-width)   │
+│   ├── Marquee ticker         (py-2, ~28px)   │
+│   ├── YouTubePlayer          (py-2, ~36px)   │
+│   ├── Recent Digs            (py-2, ~80px)   │
+│   └── GitHub Activity        (py-2, ~32px)   │
 ├──────────────────────────────────────────────┤
 │ Main Content (max-width container, centered)  │
 │   ├── Nav Header                              │
@@ -181,6 +183,18 @@ Single-page app. All content on one route (`/`). No multi-page navigation curren
 │ Chat Modal (overlay, conditional)             │
 └──────────────────────────────────────────────┘
 ```
+
+### Banner Widget Rules
+
+All banner widgets follow the same compact pattern:
+- **Padding:** `py-2` (8px vertical), consistent across all layers
+- **Labels:** Inline with content (not stacked above), `text-[10px] uppercase tracking-wider`
+- **Container:** `max-w-7xl mx-auto px-4`
+- **Layout:** Single-row flex (`flex items-center gap-4`)
+- **Border:** `border-b border-[var(--border-dim)]` between each layer
+- **Covers (RecentDigs):** Fixed width `w-[72px]` desktop / `w-[60px]` mobile, no metadata text (title via `title` attr on hover)
+- **Chart (GitHubActivity):** `h-[24px]` bar chart, `flex-1` fills available space
+- **Player (YouTubePlayer):** `w-6 h-6` play button, track info truncated, expand-on-hover for prev/next/volume
 
 ### Grid Background
 
