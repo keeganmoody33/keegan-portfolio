@@ -111,6 +111,7 @@ All API routes follow: browser → Next.js Route Handler (keeps keys server-side
 |-------|--------|------------|
 | `/api/chat` | POST | Supabase `chat` Edge Function |
 | `/api/discogs` | GET | Discogs API |
+| `/api/github` | GET | GitHub public events API |
 | `/api/jd-analyzer` | POST | Supabase `jd-analyzer` Edge Function |
 
 Full contracts in `portfolio-site/BACKEND_STRUCTURE.md`.

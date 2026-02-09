@@ -156,7 +156,19 @@ Only surface when directly asked. Frame constructively.
 
 ## Recent Sessions
 
-**2026-02-09:** Created canonical documentation system
+**2026-02-09 (evening):** Site copy updates, Supabase data sync, doc alignment
+- Updated page title to "Keegan Moody | lecturesfrom" (LEC-25)
+- Replaced hero taglines with Set Q: "Revenue systems. Built from zero." / "Useful in every room." / "Here for the long build." (LEC-26)
+- Added Discord + Bluesky footer links (LEC-27)
+- Replaced fake marquee data with real GitHub API via new `/api/github` route (LEC-28)
+- Synced FRONTEND_GUIDELINES.md to match actual component behavior (LEC-29)
+- Cross-verified all Supabase experiences against resume — fixed dates (TraceAir, Chapel Hill), title (Barbour), enriched Mixmax (8 bullets) and Biofourmis (7 bullets), added Mercer + Community Ambulance rows for chat context (LEC-30)
+- Fixed Supabase MCP config: wrong project_ref and read_only flag
+- Moved LEC-23 (Alan Iverson) to Backlog
+- Cleaned up git: merged docs branch, deleted 5 stale branches
+- Principal engineer review of all canonical docs — fixed 8 issues
+
+**2026-02-09 (earlier):** Created canonical documentation system
 - Drafted all six canonical docs: PRD, APP_FLOW, TECH_STACK (existed), FRONTEND_GUIDELINES, BACKEND_STRUCTURE, IMPLEMENTATION_PLAN
 - Folded DESIGN_PLAYBOOK.md content into FRONTEND_GUIDELINES.md
 - Archived Discogs-specific IMPLEMENTATION_PLAN, created master site-wide plan

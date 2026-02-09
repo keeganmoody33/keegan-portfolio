@@ -21,7 +21,7 @@ COMPLETED:
 - Supabase MCP config fixed: project_ref and read_only flag corrected
 
 IN PROGRESS:
-- Banner widget section buildout (Phase 1 of IMPLEMENTATION_PLAN.md)
+- Nothing actively in-flight
 
 NEXT:
 - Banner widget section buildout (Phase 1 of IMPLEMENTATION_PLAN.md)

@@ -30,6 +30,12 @@ Updated: 2026-02-09
 ## Environment Variables
 - Env var names must match exactly between .env.local and code. DISCOGS_API_TOKEN in .env.local vs DISCOGS_TOKEN in code caused a silent failure -- the API call got `undefined` with no error.
 
+## Database Content Management
+- **Enriching DB bullets doesn't change the website display** — the Timeline component renders `public_bullets` as a joined paragraph. Adding more bullets to the array makes the paragraph longer on the site. If you want richer chat context without changing the website, you'd need a separate column (e.g. `chat_bullets`). For now, the enriched bullets serve both.
+- **Use `display_order >= 100` for chat-only rows.** Mercer University and Community Ambulance are in the database for AI chat context but shouldn't dominate the timeline. Camp Horizon is at 99, so anything 100+ sorts after it.
+- **When the Supabase MCP times out, the REST API still works.** `curl` against `NEXT_PUBLIC_SUPABASE_URL/rest/v1/` with the anon key is reliable for reads. For writes, you need either the MCP (with correct `project_ref` and `read_only=false`) or `psql` with the database password.
+- **Cross-verify Supabase data against the resume periodically.** Dates, titles, and bullet content drift over time as different sessions make different updates. The resume is the source of truth — run a comparison at least once a month.
+
 ## MCP / External Tool Config
 - **Supabase MCP `project_ref` must match `.env.local`.** The Cursor MCP config (`~/.cursor/mcp.json`) had `project_ref=krywcgrrrdpudysphgbp` while the actual project was `cvkcwvmlnghwwvdqudod`. This caused "Connection timeout" on SQL queries and "Project not found" on every other MCP call. The error messages gave no hint that the project ref was wrong — it looked like a network issue. When Supabase MCP fails, check `project_ref` in `~/.cursor/mcp.json` against `NEXT_PUBLIC_SUPABASE_URL` in `.env.local` first.
 - **Set `read_only=false` in the MCP URL if you need to write SQL.** The default Supabase MCP setup URL uses `read_only=true`, which silently blocks mutations. If you're planning to run INSERT/UPDATE/DELETE via MCP, flip it before you start.

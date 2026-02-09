@@ -234,6 +234,37 @@ Proxies to Discogs API. Returns 5 most recently added records.
 
 ---
 
+### GET /api/github
+
+Proxies to GitHub public events API. Returns aggregated activity stats for keeganmoody33.
+
+**Request:** No params.
+
+**Response (200):**
+```json
+{
+  "pushes_24h": "number",
+  "pushes_7d": "number",
+  "prs_recent": "number",
+  "latest_repo": "string | null",
+  "latest_action": "string | null",
+  "latest_time": "string (ISO) | null",
+  "total_events": "number"
+}
+```
+
+**Errors:**
+- `500` -- `{ "error": "Internal server error" }`
+- `502` -- `{ "error": "Failed to fetch from GitHub" }`
+
+**External endpoint:** `https://api.github.com/users/keeganmoody33/events/public?per_page=100`
+
+**Caching:** 5-minute revalidation via Next.js `next: { revalidate: 300 }`
+
+**PostHog events:** `api_github_request`, `api_github_error`
+
+---
+
 ### POST /api/jd-analyzer
 
 Proxies to Supabase `jd-analyzer` Edge Function.

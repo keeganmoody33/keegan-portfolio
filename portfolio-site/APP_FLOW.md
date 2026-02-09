@@ -32,6 +32,7 @@
 |-------|--------|------|---------|
 | `/api/chat` | POST | `app/api/chat/route.ts` | Proxy to Supabase `chat` Edge Function |
 | `/api/discogs` | GET | `app/api/discogs/route.ts` | Proxy to Discogs API |
+| `/api/github` | GET | `app/api/github/route.ts` | Proxy to GitHub public events API |
 | `/api/jd-analyzer` | POST | `app/api/jd-analyzer/route.ts` | Proxy to Supabase `jd-analyzer` Edge Function |
 
 ---
@@ -76,7 +77,7 @@ Top to bottom, this is exactly what renders on the main page:
    ├── JD Analyzer Section (id="projects")
    │   └── JDAnalyzer
    ├── Footer (id="contact")
-   │   └── Social links: LinkedIn, X, Substack, GitHub
+   │   └── Social links: LinkedIn, X, Substack, GitHub, Discord, Bluesky
    ├── Sidebar Toggle Button (fixed, bottom-right)
    └── Activity Stream Sidebar (conditional, fixed right)
        └── ActivityStream
@@ -107,7 +108,7 @@ Land on /keeganmoody33
     ├─→ Click "Show Activity" → Sidebar slides in
     │       └─→ Theme toggle buttons (dark/light)
     │
-    └─→ Click footer social links → Opens external profiles (new tab)
+    └─→ Click footer social links (LinkedIn, X, Substack, GitHub, Discord, Bluesky) → Opens external profiles (new tab)
 ```
 
 ---
