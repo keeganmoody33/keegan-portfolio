@@ -10,6 +10,7 @@ import ActivityStream from '@/components/ActivityStream'
 import Marquee from '@/components/Marquee'
 import RecentDigs from '@/components/RecentDigs'
 import GitHubActivity from '@/components/GitHubActivity'
+import YouTubePlayer from '@/components/YouTubePlayer'
 import posthog from 'posthog-js'
 
 /** Error boundary — Discogs API failure never crashes the page */
@@ -119,6 +120,9 @@ export default function Home() {
       <Marquee />
 
       {/* Banner Widgets */}
+      <WidgetErrorBoundary>
+        <YouTubePlayer />
+      </WidgetErrorBoundary>
       <WidgetErrorBoundary>
         <RecentDigs />
       </WidgetErrorBoundary>

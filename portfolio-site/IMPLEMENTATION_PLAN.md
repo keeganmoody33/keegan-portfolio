@@ -1,6 +1,6 @@
 # Implementation Plan — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-02-09
+**Last Updated:** 2026-02-08
 **Status:** Phase 0 complete (MVP shipped). Phases 1-5 sequenced below.
 **Previous plan:** `IMPLEMENTATION_PLAN_DISCOGS_ARCHIVED.md` (completed Discogs widget build)
 
@@ -34,25 +34,24 @@
 
 **Inputs:** `BANNER_WIDGETS_SPEC.md`, `FRONTEND_GUIDELINES.md`
 
-### Step 1.1 — YouTube Persistent Player Widget
+### Step 1.1 — YouTube Persistent Player Widget (DONE)
 
-- **Goal:** Embed YouTube player in banner that can play from Keegan's playlist
-- **Output:** `components/YouTubePlayer.tsx`, potentially `app/api/youtube/route.ts` if playlist data needed
-- **Technical:** YouTube IFrame API, playlist `PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk`
-- **Controls:** Play/pause, next/prev, track info
-- **State:** `sessionStorage` for audio state (will connect to Turntable in Phase 2)
-- **PostHog:** `youtube_player_play`, `youtube_player_pause`, `youtube_track_changed`
-- **Validation:** Player loads, plays audio, switches tracks, persists across page sections
+- **Status:** Completed 2026-02-08
+- **Output:** `components/YouTubePlayer.tsx`, `types/youtube.d.ts`
+- **Technical:** YouTube IFrame API loaded client-side via `next/script`. No API route needed.
+- **Playlist:** `PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk`
+- **Controls:** Play/pause, next/prev (hover-reveal), track info, progress bar, volume
+- **State:** `sessionStorage['yt-player-state']` -- stores videoId, trackTitle, trackAuthor, position, duration, playing, playlistIndex, volume, timestamp
+- **PostHog:** `youtube_player_loaded`, `youtube_player_play`, `youtube_player_pause`, `youtube_track_changed`
+- **Phase 2 handoff:** On mount, reads sessionStorage. If `playing: true` and timestamp < 30s old, resumes playback. This is how the Turntable hands off to the banner player.
 
-### Step 1.2 — GitHub Activity Widget
+### Step 1.2 — GitHub Activity Widget (DONE)
 
-- **Goal:** Show recent commit activity as retro vertical bars
-- **Output:** `components/GitHubActivity.tsx`, `app/api/github/route.ts` (proxy)
-- **Technical:** GitHub REST API `api.github.com/users/keeganmoody33/events` (public, no auth needed)
-- **Visual:** Classic arcade/pixel aesthetic per `BANNER_WIDGETS_SPEC.md`
-- **Data:** Last 7-14 days of contributions aggregated into bars
+- **Status:** Completed 2026-02-08
+- **Output:** `components/GitHubActivity.tsx`, `app/api/github/route.ts`
+- **Technical:** GitHub REST API (public, no auth), 5-min revalidation cache
+- **Visual:** Retro vertical bars, 14-day breakdown, lime accent with glow on today's bar
 - **PostHog:** `github_activity_clicked`
-- **Validation:** Bars render with real data, clicking opens GitHub profile
 
 ### Step 1.3 — Worthy Reads Widget
 
@@ -77,9 +76,15 @@
 
 **Goal:** Entry experience with needle drop = play button = enter site.
 
+**Status:** Ready to build. Phase 1 Step 1.1 (YouTube player) is complete. sessionStorage handoff contract is in place.
+
 **Inputs:** `docs/TURNTABLE_LOADING_SPEC.md`, `FRONTEND_GUIDELINES.md`
 
-**Depends on:** Phase 1 Step 1.1 (YouTube player must exist for state handoff)
+**Depends on:** Phase 1 Step 1.1 (DONE -- `components/YouTubePlayer.tsx` exists with sessionStorage handoff)
+
+**Autoplay strategy:** Browsers block audio autoplay unless preceded by a user gesture. The turntable needle drop IS the user gesture -- the user clicks/taps to drop the needle, which calls `player.playVideo()`. Because this happens inside a click event handler, the browser allows audio. No autoplay workaround needed. The flow is: user click -> playVideo() -> music starts -> transition to portfolio -> banner YouTubePlayer reads sessionStorage and continues playback.
+
+**Deployment strategy:** Build on `feature/turntable-loading` branch. Push to get Vercel preview URL. Test on desktop + mobile. Merge to main only when verified. Rollback: `git revert HEAD`.
 
 ### Step 2.1 — Turntable Visual
 

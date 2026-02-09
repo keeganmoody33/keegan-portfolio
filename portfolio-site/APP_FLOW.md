@@ -1,6 +1,6 @@
 # App Flow — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-02-09
+**Last Updated:** 2026-02-08
 **Framework:** Next.js (App Router)
 **Deployment:** Vercel (auto-deploy on push to main)
 
@@ -60,8 +60,12 @@ Top to bottom, this is exactly what renders on the main page:
 ```
 1. Marquee                          ← Full-width ticker, always visible
 2. WidgetErrorBoundary
+   └── YouTubePlayer                ← Persistent music player (YouTube IFrame API, playlist)
+3. WidgetErrorBoundary
    └── RecentDigs                   ← Discogs widget (5 records)
-3. Main Layout Container (flex)
+4. WidgetErrorBoundary
+   └── GitHubActivity               ← Retro bar chart (14 days)
+5. Main Layout Container (flex)
    ├── Navigation Header
    │   ├── Logo: /lecturesfrom
    │   ├── Links: XP, Projects [P], Contact [C]
@@ -102,6 +106,10 @@ Land on /keeganmoody33
     │
     ├─→ Scroll to JD Analyzer → Paste URL or text
     │       └─→ Click "Analyze Fit" → Loading → Structured analysis
+    │
+    ├─→ Click play on YouTube Player → Music starts from playlist
+    │       ├─→ Hover → Reveals next/prev, progress, volume
+    │       └─→ Click next/prev → Changes track
     │
     ├─→ Click record in Recent Digs → Opens Discogs page (new tab)
     │
@@ -241,7 +249,35 @@ Land on /keeganmoody33
 
 ---
 
-### 7. SprayText Hero Animation
+### 7. YouTube Player
+
+**Trigger:** Page load (automatic). Loads YouTube IFrame API client-side.
+
+**Steps:**
+1. Loading skeleton renders (play button + track info placeholder)
+2. YouTube IFrame API script loads (`afterInteractive`)
+3. `onYouTubeIframeAPIReady` fires, creates hidden YT.Player with playlist
+4. Player loads playlist `PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk`
+5. Track title and author populate from `getVideoData()`
+6. User clicks play → music starts
+7. Hover expands to reveal next/prev, progress bar, volume slider
+8. State persisted to `sessionStorage['yt-player-state']` on every change
+
+**Success state:** Player shows track title, play/pause controls. Hover reveals full controls. Music plays from YouTube playlist.
+
+**Error state:** Component returns `null` (graceful failure). Wrapped in `WidgetErrorBoundary`.
+
+**Empty state:** Loading skeleton while IFrame API loads.
+
+**sessionStorage contract (Phase 2 Turntable handoff):**
+- Key: `yt-player-state`
+- Stores: `videoId`, `trackTitle`, `trackAuthor`, `position`, `duration`, `playing`, `playlistIndex`, `volume`, `timestamp`
+
+**PostHog events:** `youtube_player_loaded`, `youtube_player_play`, `youtube_player_pause`, `youtube_track_changed`
+
+---
+
+### 8. SprayText Hero Animation
 
 **Trigger:** Page load with configurable delay.
 
@@ -291,6 +327,13 @@ Supabase DB
     │
 Discogs API
     └── /api/discogs ──→ RecentDigs component
+
+YouTube IFrame API (client-side, no proxy)
+    └── youtube.com/iframe_api ──→ YouTubePlayer component
+        └── sessionStorage (yt-player-state) ──→ Phase 2 Turntable handoff
+
+GitHub Public Events API
+    └── /api/github ──→ Marquee + GitHubActivity components
 
 All interactions ──→ PostHog (client + server events)
 ```

@@ -1,6 +1,6 @@
 # Backend Structure — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-02-09
+**Last Updated:** 2026-02-08
 **Database:** Supabase (PostgreSQL)
 **Edge Functions Runtime:** Deno
 **API Layer:** Next.js Route Handlers (proxy pattern)
@@ -297,6 +297,20 @@ Proxies to Supabase `jd-analyzer` Edge Function.
 - `500` -- `{ "error": "Supabase configuration missing" }` or parsed Edge Function error
 
 **PostHog events:** `api_jd_analysis_request`, `api_jd_analysis_error`
+
+---
+
+## Client-Side Integrations (No API Route)
+
+### YouTube IFrame Player API
+
+The `YouTubePlayer` widget loads the YouTube IFrame API directly in the browser. No server-side proxy is needed because:
+- The API script is loaded from `youtube.com/iframe_api` via `next/script`
+- Playlist playback uses the public playlist ID `PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk`
+- No API key or authentication required
+- Playback state persisted to `sessionStorage['yt-player-state']` for Phase 2 Turntable handoff
+
+**PostHog events:** `youtube_player_loaded`, `youtube_player_play`, `youtube_player_pause`, `youtube_track_changed`
 
 ---
 

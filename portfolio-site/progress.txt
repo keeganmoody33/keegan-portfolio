@@ -19,18 +19,69 @@ COMPLETED:
 - FRONTEND_GUIDELINES.md synced to match actual component behavior (LEC-29)
 - Supabase experiences: fixed dates (TraceAir, Chapel Hill), title (Barbour), enriched bullets (Mixmax, Biofourmis), added Mercer + EMT rows (LEC-30)
 - Supabase MCP config fixed: project_ref and read_only flag corrected
+- YouTube persistent player widget (Phase 1, Step 1.1) -- components/YouTubePlayer.tsx, types/youtube.d.ts
+- GitHub activity widget (Phase 1, Step 1.2) -- components/GitHubActivity.tsx, app/api/github/route.ts
 
 IN PROGRESS:
-- Nothing actively in-flight
+- Phase 2: Turntable loading experience (see TURNTABLE HANDOFF section below)
 
 NEXT:
-- Banner widget section buildout (Phase 1 of IMPLEMENTATION_PLAN.md)
-  - YouTube persistent player widget (Phase 1, Step 1.1)
-  - GitHub activity widget (Phase 1, Step 1.2)
-  - Worthy Reads widget (Phase 1, Step 1.3 -- data source TBD)
-  - Banner section layout (Phase 1, Step 1.4)
-- Then: Turntable loading experience (Phase 2)
+- Commit YouTube player to main, verify live site
+- Build MVP turntable on feature/turntable-loading branch
+- Test via Vercel preview URL, then merge to main
+- Worthy Reads widget (Phase 1, Step 1.3 -- data source TBD)
+- Banner section layout (Phase 1, Step 1.4 -- design TBD in Aura)
 - Alan Iverson chat persona (Phase 3) -- DEFERRED, moved to Backlog
+
+--- TURNTABLE HANDOFF (Phase 2) ---
+
+This section provides full context for any agent picking up the Turntable build.
+
+GOAL: Entry experience at lecturesfrom.com/keeganmoody33. Visitor sees a turntable
+loading page. They interact with it (drop the needle / click play). Music starts via
+YouTube, then the portfolio loads with music continuing in the banner player.
+
+WHAT EXISTS ALREADY:
+- YouTubePlayer widget: components/YouTubePlayer.tsx
+  - Loads YouTube IFrame API client-side via next/script
+  - Hidden iframe, custom retro control bar
+  - Playlist: PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk
+  - sessionStorage contract at key 'yt-player-state'
+  - Persists: videoId, trackTitle, trackAuthor, position, duration, playing, playlistIndex, volume, timestamp
+  - On mount, checks sessionStorage -- if playing=true and timestamp is fresh (<30s), resumes playback
+- TypeScript types: types/youtube.d.ts (YT namespace declarations)
+- Error boundary: WidgetErrorBoundary in app/page.tsx wraps all banner widgets
+
+AUTOPLAY STRATEGY (CRITICAL):
+- Browsers block audio autoplay UNLESS preceded by a user gesture (click/touch)
+- The turntable needle drop IS the user gesture. User clicks/taps to drop the needle.
+- This click event triggers player.playVideo() -- browser allows it because it's
+  user-initiated. No autoplay workaround needed.
+- Flow: user click -> playVideo() -> music starts -> transition to portfolio
+- The banner YouTubePlayer reads sessionStorage on mount and continues playback
+
+WHAT NEEDS TO BE BUILT:
+1. Turntable page/component (MVP version for tonight, polish later in Aura)
+   - Dark page, centered turntable visual or play interaction
+   - Needle drop / click triggers YouTube playback
+   - Writes to sessionStorage['yt-player-state'] with playing: true
+   - Transition animation (fade/zoom) to portfolio
+   - Skip button with clever copy (not "skip" -- something that makes user feel lame)
+   - Return visitor bypass: check localStorage, skip to portfolio if visited before
+   - prefers-reduced-motion: skip turntable entirely
+2. Routing: turntable as entry point, portfolio loads after interaction
+3. PostHog events: turntable_loaded, turntable_needle_dropped, turntable_skipped
+
+SPEC: docs/TURNTABLE_LOADING_SPEC.md (full locked spec)
+SESSION STORAGE KEY: 'yt-player-state' (match YouTubePlayer.tsx exactly)
+LOCAL STORAGE KEY: 'lf-visited' (for return visitor bypass)
+
+DEPLOYMENT STRATEGY:
+- Build on branch: feature/turntable-loading
+- Push branch -> Vercel creates preview URL for testing
+- Test preview URL on desktop + mobile
+- Merge to main only when verified
+- Rollback: git revert HEAD --no-edit && git push origin main
 
 KNOWN ISSUES:
 - Schema drift: multiple SQL files reference incorrect column names (see root-level SQL files)

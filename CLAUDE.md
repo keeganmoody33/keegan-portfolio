@@ -1,6 +1,6 @@
 # Keegan Moody — Portfolio Context
 
-**Last Updated:** 2026-02-09
+**Last Updated:** 2026-02-08
 **Status:** Actively seeking GTM Engineer / Founding Growth roles
 **Location:** Atlanta, GA or Remote
 **Live Site:** [lecturesfrom.com/keeganmoody33](https://lecturesfrom.com/keeganmoody33)
@@ -155,6 +155,16 @@ Only surface when directly asked. Frame constructively.
 ---
 
 ## Recent Sessions
+
+**2026-02-08 (night):** YouTube player + Turntable prep
+- Built YouTube persistent player widget (Phase 1, Step 1.1): components/YouTubePlayer.tsx, types/youtube.d.ts
+- Hidden iframe with custom retro control bar (play/pause, next/prev on hover, progress, volume)
+- sessionStorage handoff contract at 'yt-player-state' -- ready for Phase 2 Turntable
+- Integrated into page.tsx banner section with WidgetErrorBoundary
+- Updated APP_FLOW.md and BACKEND_STRUCTURE.md with YouTube integration docs
+- Prepared Turntable handoff context in progress.txt for agent continuity
+- Clarified autoplay strategy: needle drop IS the user gesture, no browser blocking
+- Deployment strategy locked: feature branch -> Vercel preview -> test -> merge to main
 
 **2026-02-09 (evening):** Site copy updates, Supabase data sync, doc alignment
 - Updated page title to "Keegan Moody | lecturesfrom" (LEC-25)
