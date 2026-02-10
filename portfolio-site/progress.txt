@@ -37,6 +37,28 @@ NEXT:
 - Banner section layout (Phase 1, Step 1.4 -- design TBD in Aura)
 - Alan Iverson chat persona (Phase 3) -- DEFERRED, moved to Backlog
 
+## 2025-02-10 13:02 - US-003: Research browser autoplay policies and audio play event strategies
+- Created docs/research/audio-autoplay.md with comprehensive research on browser autoplay policies
+- Documented Chrome 120+, Safari 17+, Firefox 120+ autoplay restrictions
+- Covered User Activation API requirements and qualifying gesture events
+- Specified YouTube IFrame API integration with synchronous play pattern
+- Provided complete gesture-to-audio unlock code examples
+- Documented AudioContext suspension/resumption for advanced audio handling
+- Included sessionStorage state management pattern for audio handoff to banner player
+- Added fallback UX patterns for blocked autoplay scenarios with unblock prompt UI
+- Documented error handling and detection strategies
+- Created comprehensive tests (23 tests, all passing)
+- Build passes with no errors
+- **Learnings:**
+  - Safari is the strictest browser — if it works there, it works everywhere
+  - playVideo() MUST be called synchronously within the user gesture event handler
+  - Async gaps (setTimeout, Promises) break user activation context
+  - Use sessionStorage (not localStorage) for audio state handoff — per-tab, auto-cleans
+  - Always provide "Enter Without Audio" fallback
+  - Detection pattern: call playVideo() -> check state after 500ms -> show fallback if not playing
+
+---
+
 --- TURNTABLE HANDOFF (Phase 2) ---
 
 This section provides full context for any agent picking up the Turntable build.
