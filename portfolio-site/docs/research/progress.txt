@@ -1,0 +1,67 @@
+# Progress Log
+Run: af8b5ad6-aa43-4761-8ff4-096949c27924
+Task: Research and produce Technical Feasibility Study for Technics SL-1200 MK2 interactive 3D loading page
+Started: Tuesday, February 10, 2026 - 9:52 AM
+
+## Codebase Patterns
+- This is a Next.js 16+ project with React 19
+- Tests use Node.js built-in test runner (`node --test`)
+- Docs are in `/docs` folder with subfolders for organization
+- TypeScript strict mode enabled
+- No `typecheck` npm script, use `npm run build` for type checking
+
+---
+
+## 2025-02-10 13:32 - US-004: Define performance budgets and constraints for 3D loading page
+- Created docs/research/performance-budget.md with comprehensive performance guidelines
+- Document includes:
+  - Total page weight budget: 500KB maximum (350KB target)
+  - 3D model size limits: 200KB GLB, 15-25K polygons, 1K textures
+  - TTI targets: 2.0s (4G), 3.5s (3G Fast), 5.0s (3G Slow)
+  - Lighthouse targets: 90+ Performance, FCP <1.0s, LCP <2.0s, CLS <0.05
+  - Mobile GPU memory constraints (384MB limit on iOS Safari)
+  - Progressive enhancement tiers from full 3D to static fallback
+  - Complete optimization checklist (Draco, Basis Universal, lazy loading)
+  - Measurement methodology with tools and Web Vitals tracking
+- Wrote comprehensive tests in docs/research/performance-budget.test.ts (28 tests, all passing)
+- Build passes with no errors
+- **Learnings:**
+  - iOS Safari has a 384MB GPU memory limit per tab - critical constraint
+  - Draco compression can reduce GLB size by 80-95%
+  - Device tier detection enables graceful degradation
+  - Always provide static fallback for low-end devices
+
+---
+
+## 2025-02-10 10:00 - US-002: Evaluate Three.js vs Spline vs React Three Fiber for Next.js integration
+- Created docs/research/3d-engines.md with comprehensive comparison of three 3D engines
+- Evaluation criteria covered: bundle size, Next.js compatibility, animation support, mobile perf, DX
+- Each technology has full code snippet example for turntable interaction
+- Risk assessment included for each option with severity/mitigation
+- Clear recommendation: **Spline** as primary, **React Three Fiber** as fallback
+- Included migration path from Spline to R3F if needed
+- Wrote comprehensive tests in docs/research/3d-engines.test.ts (40 tests, all passing)
+- Build passes with no errors
+- **Learnings:**
+  - Spline is the best fit: smallest bundle (~280KB), sketch aesthetic support, visual editor
+  - React Three Fiber offers good React integration but larger bundle (~350KB)
+  - Vanilla Three.js is too heavy (~600KB) and verbose for this use case
+  - All 3D options require 'use client' - no SSR benefits possible
+  - Node's TypeScript runner doesn't like complex generic syntax in assertions
+
+---
+
+## 2025-02-10 09:52 - US-001: Research available 3D turntable models from Sketchfab and marketplaces
+- Created docs/research/3d-models.md with 4 model options evaluated
+- Options covered: Sketchfab (free MK7), TurboSquid (paid MK2), CGTrader (paid), Spline DIY
+- Document includes all required fields: source URL, price, poly count, format, license
+- Clear recommendation: Spline DIY approach for sketch aesthetic match
+- Fallback: Sketchfab free model if time-constrained
+- Wrote comprehensive tests in docs/research/3d-models.test.ts (13 tests, all passing)
+- Typecheck passes with no errors
+- **Learnings:** 
+  - Use Node.js built-in test runner for simple file/content validation tests
+  - Spline is best fit for sketch aesthetic (per spec)
+  - Pre-made models are too photorealistic for this design direction
+
+---
