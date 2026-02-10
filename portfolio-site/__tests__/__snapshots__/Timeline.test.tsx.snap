@@ -1,0 +1,191 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Timeline matches snapshot 1`] = `
+<div
+  class="relative"
+>
+  <div
+    class="absolute left-[100px] top-0 bottom-0 w-px timeline-line"
+  />
+  <div
+    class="space-y-8"
+  >
+    <div
+      class="flex gap-8"
+    >
+      <div
+        class="w-[100px] flex-shrink-0 text-right"
+      >
+        <div
+          class="text-[var(--text-bright)] font-mono text-sm"
+        >
+          DEC 2022
+           — 
+          DEC 2023
+        </div>
+        <div
+          class="text-[var(--text-muted)] font-mono text-xs"
+        >
+          1 yr
+        </div>
+      </div>
+      <div
+        class="relative flex-shrink-0"
+      >
+        <div
+          class="w-3 h-3 rotate-45 bg-[var(--bg-body)] border border-[var(--border-dim)] timeline-node"
+        />
+      </div>
+      <div
+        class="flex-1 experience-card p-6 rounded-lg"
+      >
+        <div
+          class="flex items-start justify-between mb-4"
+        >
+          <div>
+            <h4
+              class="text-xl font-bold text-[var(--text-bright)]"
+            >
+              <span>
+                Test Company
+              </span>
+            </h4>
+            <p
+              class="text-[var(--accent-orange)] font-mono text-sm uppercase tracking-wider"
+            >
+              Test Role
+            </p>
+          </div>
+        </div>
+        <ul
+          class="text-[var(--text-main)] mb-4 leading-relaxed list-disc list-inside space-y-1"
+        >
+          <li>
+            Achieved 150% of quota in Q1 2023
+          </li>
+          <li>
+            Built pipeline worth $2M in ARR
+          </li>
+          <li>
+            Trained 3 new SDRs on outreach best practices
+          </li>
+        </ul>
+        <div
+          class="flex flex-wrap gap-2"
+        />
+      </div>
+    </div>
+    <div
+      class="flex gap-8"
+    >
+      <div
+        class="w-[100px] flex-shrink-0 text-right"
+      >
+        <div
+          class="text-[var(--text-bright)] font-mono text-sm"
+        >
+          DEC 2021
+           — 
+          DEC 2022
+        </div>
+        <div
+          class="text-[var(--text-muted)] font-mono text-xs"
+        >
+          1 yr
+        </div>
+      </div>
+      <div
+        class="relative flex-shrink-0"
+      >
+        <div
+          class="w-3 h-3 rotate-45 bg-[var(--bg-body)] border border-[var(--border-dim)] timeline-node"
+        />
+      </div>
+      <div
+        class="flex-1 experience-card p-6 rounded-lg"
+      >
+        <div
+          class="flex items-start justify-between mb-4"
+        >
+          <div>
+            <h4
+              class="text-xl font-bold text-[var(--text-bright)]"
+            >
+              <span>
+                Another Company
+              </span>
+            </h4>
+            <p
+              class="text-[var(--accent-orange)] font-mono text-sm uppercase tracking-wider"
+            >
+              Another Role
+            </p>
+          </div>
+        </div>
+        <ul
+          class="text-[var(--text-main)] mb-4 leading-relaxed list-disc list-inside space-y-1"
+        >
+          <li>
+            Single bullet point for this role
+          </li>
+        </ul>
+        <div
+          class="flex flex-wrap gap-2"
+        />
+      </div>
+    </div>
+    <div
+      class="flex gap-8"
+    >
+      <div
+        class="w-[100px] flex-shrink-0 text-right"
+      >
+        <div
+          class="text-[var(--text-bright)] font-mono text-sm"
+        >
+          DEC 2020
+           — 
+          DEC 2021
+        </div>
+        <div
+          class="text-[var(--text-muted)] font-mono text-xs"
+        >
+          1 yr
+        </div>
+      </div>
+      <div
+        class="relative flex-shrink-0"
+      >
+        <div
+          class="w-3 h-3 rotate-45 bg-[var(--bg-body)] border border-[var(--border-dim)] timeline-node"
+        />
+      </div>
+      <div
+        class="flex-1 experience-card p-6 rounded-lg"
+      >
+        <div
+          class="flex items-start justify-between mb-4"
+        >
+          <div>
+            <h4
+              class="text-xl font-bold text-[var(--text-bright)]"
+            >
+              <span>
+                No Bullets Company
+              </span>
+            </h4>
+            <p
+              class="text-[var(--accent-orange)] font-mono text-sm uppercase tracking-wider"
+            >
+              No Bullets Role
+            </p>
+          </div>
+        </div>
+        <div
+          class="flex flex-wrap gap-2"
+        />
+      </div>
+    </div>
+  </div>
+</div>
+`;

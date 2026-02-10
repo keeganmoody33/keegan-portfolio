@@ -81,9 +81,11 @@ export default function Timeline({ experiences }: TimelineProps) {
 
               {/* Bullets */}
               {exp.public_bullets && exp.public_bullets.length > 0 && (
-                <p className="text-[var(--text-main)] mb-4 leading-relaxed">
-                  {exp.public_bullets.join(' ')}
-                </p>
+                <ul className="text-[var(--text-main)] mb-4 leading-relaxed list-disc list-inside space-y-1">
+                  {exp.public_bullets.map((bullet, bulletIndex) => (
+                    <li key={bulletIndex}>{bullet}</li>
+                  ))}
+                </ul>
               )}
 
               {/* Tech Stack - would need to add to database */}
