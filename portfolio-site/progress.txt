@@ -1,114 +1,21 @@
-COMPLETED:
-- Single-page portfolio (app/page.tsx)
-- Hero with SprayText animation (components/SprayText.tsx)
-- Career timeline (components/Timeline.tsx)
-- JD Analyzer with Firecrawl URL scraping (components/JDAnalyzer.tsx, app/api/jd-analyzer/route.ts)
-- AI Chat via Supabase Edge Functions + Claude API (components/Chat.tsx, app/api/chat/route.ts)
-- PostHog analytics (client + server)
-- Marquee ticker (components/Marquee.tsx)
-- Publications section (components/Publications.tsx, used inside Timeline)
-- ActivityStream sidebar (components/ActivityStream.tsx)
-- Vercel deployment with URL rewrites (vercel.json)
-- Discogs "Recent Digs" banner widget (components/RecentDigs.tsx, app/api/discogs/route.ts)
-- Canonical documentation: PRD.md, APP_FLOW.md, TECH_STACK.md, FRONTEND_GUIDELINES.md, BACKEND_STRUCTURE.md, IMPLEMENTATION_PLAN.md
-- DESIGN_PLAYBOOK.md content folded into FRONTEND_GUIDELINES.md
-- Page title updated to 'Keegan Moody | lecturesfrom' (LEC-25)
-- Hero taglines updated to Set Q: Revenue systems / Useful in every room / Here for the long build (LEC-26)
-- Footer: added Discord + Bluesky social links (LEC-27)
-- Marquee: replaced fake data with real GitHub API via /api/github route (LEC-28)
-- FRONTEND_GUIDELINES.md synced to match actual component behavior (LEC-29)
-- Supabase experiences: fixed dates (TraceAir, Chapel Hill), title (Barbour), enriched bullets (Mixmax, Biofourmis), added Mercer + EMT rows (LEC-30)
-- Supabase MCP config fixed: project_ref and read_only flag corrected
-- YouTube persistent player widget (Phase 1, Step 1.1) -- components/YouTubePlayer.tsx, types/youtube.d.ts
-- GitHub activity widget (Phase 1, Step 1.2) -- components/GitHubActivity.tsx, app/api/github/route.ts
-- Banner compaction (LEC-31): RecentDigs covers 250px→72px, GitHubActivity chart 48px→24px, YouTubePlayer tightened, all widgets py-2 with inline labels
-- YouTubePlayer: fixed persistState stale closure (reads player.getPlayerState() instead of React state)
-- YouTubePlayer: fixed Script deadlock (<Script> + hidden iframe now always render, skeleton is a ternary inside same return)
-- BannerRotator (LEC-32): YouTubePlayer, RecentDigs, GitHubActivity cycle in single rotating slot below Marquee — 8s auto-rotate, pause-on-hover, dot indicators
-- YouTubePlayer: fixed strict-mode container destruction (LEC-33) — YT.Player replaces <div> with <iframe>, destroy() removes it from DOM, React doesn't know. Fix: wrapperRef + re-create container in initPlayer() if missing.
-
-IN PROGRESS:
-- Phase 2: Turntable loading experience (see TURNTABLE HANDOFF section below)
-
-NEXT:
-- Build MVP turntable on feature/turntable-loading branch
-- Test via Vercel preview URL, then merge to main
-- Worthy Reads widget (Phase 1, Step 1.3 -- data source TBD)
-- Banner section layout (Phase 1, Step 1.4 -- design TBD in Aura)
-- Alan Iverson chat persona (Phase 3) -- DEFERRED, moved to Backlog
-
---- TURNTABLE HANDOFF (Phase 2) ---
-
-This section provides full context for any agent picking up the Turntable build.
-
-GOAL: Entry experience at lecturesfrom.com/keeganmoody33. Visitor sees a turntable
-loading page. They interact with it (drop the needle / click play). Music starts via
-YouTube, then the portfolio loads with music continuing in the banner player.
-
-WHAT EXISTS ALREADY:
-- YouTubePlayer widget: components/YouTubePlayer.tsx
-  - Loads YouTube IFrame API client-side via next/script
-  - Hidden iframe, custom retro control bar
-  - Playlist: PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk
-  - sessionStorage contract at key 'yt-player-state'
-  - Persists: videoId, trackTitle, trackAuthor, position, duration, playing, playlistIndex, volume, timestamp
-  - On mount, checks sessionStorage -- if playing=true and timestamp is fresh (<30s), resumes playback
-- TypeScript types: types/youtube.d.ts (YT namespace declarations)
-- Error boundary: WidgetErrorBoundary in app/page.tsx wraps all banner widgets
-
-AUTOPLAY STRATEGY (CRITICAL):
-- Browsers block audio autoplay UNLESS preceded by a user gesture (click/touch)
-- The turntable needle drop IS the user gesture. User clicks/taps to drop the needle.
-- This click event triggers player.playVideo() -- browser allows it because it's
-  user-initiated. No autoplay workaround needed.
-- Flow: user click -> playVideo() -> music starts -> transition to portfolio
-- The banner YouTubePlayer reads sessionStorage on mount and continues playback
-
-WHAT NEEDS TO BE BUILT:
-1. Turntable page/component (MVP version for tonight, polish later in Aura)
-   - Dark page, centered turntable visual or play interaction
-   - Needle drop / click triggers YouTube playback
-   - Writes to sessionStorage['yt-player-state'] with playing: true
-   - Transition animation (fade/zoom) to portfolio
-   - Skip button with clever copy (not "skip" -- something that makes user feel lame)
-   - Return visitor bypass: check localStorage, skip to portfolio if visited before
-   - prefers-reduced-motion: skip turntable entirely
-2. Routing: turntable as entry point, portfolio loads after interaction
-3. PostHog events: turntable_loaded, turntable_needle_dropped, turntable_skipped
-
-SPEC: docs/TURNTABLE_LOADING_SPEC.md (full locked spec)
-SESSION STORAGE KEY: 'yt-player-state' (match YouTubePlayer.tsx exactly)
-LOCAL STORAGE KEY: 'lf-visited' (for return visitor bypass)
-
-DEPLOYMENT STRATEGY:
-- Build on branch: feature/turntable-loading
-- Push branch -> Vercel creates preview URL for testing
-- Test preview URL on desktop + mobile
-- Merge to main only when verified
-- Rollback: git revert HEAD --no-edit && git push origin main
-
-KNOWN ISSUES:
-- Schema drift: multiple SQL files reference incorrect column names (see root-level SQL files)
-- achievements table populated but not queried by any Edge Function
-- Deno std lib in Edge Functions pinned to 0.168.0 (~45 versions behind)
-- Most components lack dedicated mobile responsive handling (RecentDigs no longer has separate mobile/desktop variants -- unified compact layout)
-- No ARIA labels on most interactive elements
-- No rate limiting on API routes
-- No caching on Discogs API route
-- Activity Stream uses hardcoded/simulated data (not real-time)
-- DISCOGS_TOKEN missing from .env.local.example
-
-PARKING LOT (not in scope yet):
-- Human/Machine toggle (Phase 5)
-- Navigation pathways redesign (Phase 4)
-- Vinyl grid overlay / Stack of Wax (Phase 4)
-- Easter eggs (Konami code, hidden /practice route)
-- Console.log personality messages
 
 ---
 
-## Tuesday, February 10th, 2026 — 7:28 PM - US-001: Add Spline runtime dependency and YouTube types
-- Installed @splinetool/react-spline@^4.1.0 package
-- Created types/spline.d.ts with full Spline component type declarations
-- Verified npm run build passes
-- Verified npx tsc --noEmit passes (no type errors)
+## Tuesday, February 10th, 2026 — 7:35 PM - US-002: Create YouTube player service for loading page
+- Created lib/youtube-service.ts with full YouTube player service
+- Exports: createPlayer(), playVideo(), saveStateToSession(), destroyPlayer(), etc.
+- Session storage state format matches YouTubePlayer.tsx exactly (yt-player-state key)
+- Supports onReady, onStateChange, onError callbacks
+- Proper cleanup/destroy handling with active player tracking
+- Added waitForYouTubeApi() helper for async initialization
+- Added getHandoffState() for banner player handoff with 30s freshness check
+- Created comprehensive test suite: lib/youtube-service.test.ts (34 tests, all passing)
+- Critical: playVideo() is designed for synchronous click handler invocation
+- Updated tsconfig.json to exclude *.test.ts files from typecheck
+- Build passes, typecheck passes, all tests pass
+
+**Learnings:**
+- Session storage contract must match between loading page and banner player
+- PLAYLIST_ID: PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk
+- SESSION_KEY: 'yt-player-state'
+- State format: { videoId, trackTitle, trackAuthor, position, duration, playing, playlistIndex, volume, timestamp }
