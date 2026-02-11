@@ -104,3 +104,11 @@ PARKING LOT (not in scope yet):
 - Vinyl grid overlay / Stack of Wax (Phase 4)
 - Easter eggs (Konami code, hidden /practice route)
 - Console.log personality messages
+
+---
+
+## Tuesday, February 10th, 2026 — 7:28 PM - US-001: Add Spline runtime dependency and YouTube types
+- Installed @splinetool/react-spline@^4.1.0 package
+- Created types/spline.d.ts with full Spline component type declarations
+- Verified npm run build passes
+- Verified npx tsc --noEmit passes (no type errors)
