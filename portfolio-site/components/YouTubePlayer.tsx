@@ -171,6 +171,9 @@ export default function YouTubePlayer() {
 
             // If Phase 2 turntable handed off a playing state, resume
             if (saved?.playing && Date.now() - saved.timestamp < 30_000) {
+              if (saved.position > 0) p.seekTo(saved.position, true)
+              setCurrentTime(saved.position)
+              setDuration(saved.duration || 0)
               p.playVideo()
             }
 
