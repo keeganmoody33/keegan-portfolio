@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 COMPLETED:
 - Single-page portfolio (app/page.tsx)
 - Hero with SprayText animation (components/SprayText.tsx)
@@ -108,8 +109,21 @@ PARKING LOT (not in scope yet):
 
 ---
 
-## Tuesday, February 10th, 2026 — 7:28 PM - US-001: Add Spline runtime dependency and YouTube types
-- Installed @splinetool/react-spline@^4.1.0 package
-- Created types/spline.d.ts with full Spline component type declarations
-- Verified npm run build passes
-- Verified npx tsc --noEmit passes (no type errors)
+## Tuesday, February 10th, 2026 — 7:35 PM - US-002: Create YouTube player service for loading page
+- Created lib/youtube-service.ts with full YouTube player service
+- Exports: createPlayer(), playVideo(), saveStateToSession(), destroyPlayer(), etc.
+- Session storage state format matches YouTubePlayer.tsx exactly (yt-player-state key)
+- Supports onReady, onStateChange, onError callbacks
+- Proper cleanup/destroy handling with active player tracking
+- Added waitForYouTubeApi() helper for async initialization
+- Added getHandoffState() for banner player handoff with 30s freshness check
+- Created comprehensive test suite: lib/youtube-service.test.ts (34 tests, all passing)
+- Critical: playVideo() is designed for synchronous click handler invocation
+- Updated tsconfig.json to exclude *.test.ts files from typecheck
+- Build passes, typecheck passes, all tests pass
+
+**Learnings:**
+- Session storage contract must match between loading page and banner player
+- PLAYLIST_ID: PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk
+- SESSION_KEY: 'yt-player-state'
+- State format: { videoId, trackTitle, trackAuthor, position, duration, playing, playlistIndex, volume, timestamp }
