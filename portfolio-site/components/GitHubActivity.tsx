@@ -15,6 +15,8 @@ interface GitHubData {
   daily_activity: DailyActivity[]
 }
 
+const SKELETON_BAR_HEIGHTS = [35, 60, 25, 70, 45, 85, 30, 55, 75, 40, 65, 50, 80, 45]
+
 export default function GitHubActivity() {
   const [data, setData] = useState<GitHubData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -23,7 +25,11 @@ export default function GitHubActivity() {
   useEffect(() => {
     async function fetchActivity() {
       try {
-        const response = await fetch('/api/github')
+        const response = await fetch('/api/github', {
+          headers: {
+            'X-POSTHOG-DISTINCT-ID': posthog.get_distinct_id(),
+          },
+        })
         if (!response.ok) throw new Error('Failed to fetch')
         const json = await response.json()
         setData(json)
@@ -57,11 +63,11 @@ export default function GitHubActivity() {
               GitHub Activity
             </p>
             <div className="flex items-end gap-[2px] h-[24px] flex-1">
-              {Array.from({ length: 14 }).map((_, i) => (
+              {SKELETON_BAR_HEIGHTS.map((height, i) => (
                 <div
                   key={i}
                   className="flex-1 bg-[var(--bg-body)] border border-[var(--border-dim)] rounded-sm animate-pulse"
-                  style={{ height: `${Math.random() * 60 + 20}%` }}
+                  style={{ height: `${height}%` }}
                 />
               ))}
             </div>
