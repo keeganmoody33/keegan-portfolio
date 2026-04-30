@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { getPostHogDistinctIdHeader } from '@/lib/posthog-client'
 
 interface GitHubStats {
   pushes_24h: number
@@ -16,7 +17,9 @@ export default function Marquee() {
   useEffect(() => {
     async function fetchGitHub() {
       try {
-        const res = await fetch('/api/github')
+        const res = await fetch('/api/github', {
+          headers: getPostHogDistinctIdHeader(),
+        })
         if (res.ok) {
           const data = await res.json()
           setGitHub(data)

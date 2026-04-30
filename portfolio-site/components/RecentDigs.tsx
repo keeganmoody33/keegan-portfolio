@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import posthog from 'posthog-js'
+import { getPostHogDistinctIdHeader } from '@/lib/posthog-client'
 
 interface Release {
   title: string
@@ -19,7 +20,9 @@ export default function RecentDigs() {
   useEffect(() => {
     async function fetchDigs() {
       try {
-        const response = await fetch('/api/discogs')
+        const response = await fetch('/api/discogs', {
+          headers: getPostHogDistinctIdHeader(),
+        })
         if (!response.ok) throw new Error('Failed to fetch')
         const data = await response.json()
         setReleases(data)
