@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useId } from 'react'
 import Script from 'next/script'
 import posthog from 'posthog-js'
 
@@ -47,8 +47,9 @@ function formatTime(seconds: number): string {
 
 // ── Component ──────────────────────────────────────────────────
 export default function YouTubePlayer() {
+  const reactId = useId()
   const playerRef = useRef<YT.Player | null>(null)
-  const containerRef = useRef<string>('yt-player-' + Math.random().toString(36).slice(2, 8))
+  const containerRef = useRef<string>(`yt-player-${reactId.replace(/:/g, '')}`)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const progressInterval = useRef<ReturnType<typeof setInterval> | null>(null)
 

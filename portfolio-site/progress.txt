@@ -26,7 +26,7 @@ COMPLETED:
 - YouTubePlayer: fixed Script deadlock (<Script> + hidden iframe now always render, skeleton is a ternary inside same return)
 - BannerRotator (LEC-32): YouTubePlayer, RecentDigs, GitHubActivity cycle in single rotating slot below Marquee — 8s auto-rotate, pause-on-hover, dot indicators
 - YouTubePlayer: fixed strict-mode container destruction (LEC-33) — YT.Player replaces <div> with <iframe>, destroy() removes it from DOM, React doesn't know. Fix: wrapperRef + re-create container in initPlayer() if missing.
-- Banner widget bug fixes: RecentDigs, GitHubActivity, and Marquee now forward X-POSTHOG-DISTINCT-ID to API routes when PostHog has a real distinct ID; GitHubActivity loading skeleton uses stable heights instead of Math.random() to avoid hydration mismatch.
+- Banner widget bug fixes: RecentDigs, GitHubActivity, and Marquee now forward X-POSTHOG-DISTINCT-ID to API routes when PostHog has a real distinct ID; GitHubActivity loading skeleton and YouTubePlayer iframe container id are deterministic to avoid hydration mismatch.
 
 IN PROGRESS:
 - Phase 2: Turntable loading experience (see TURNTABLE HANDOFF section below)
