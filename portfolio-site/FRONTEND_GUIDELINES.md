@@ -165,6 +165,9 @@ Single-page app. All content on one route (`/`). No multi-page navigation curren
 
 ```
 ┌──────────────────────────────────────────────┐
+│ TurntableGate (first visit overlay)          │
+│   └── Bypassed on return/reduced-motion       │
+├──────────────────────────────────────────────┤
 │ BANNER (~68px total, all full-width)           │
 │   ├── Marquee ticker         (py-2, ~28px)   │
 │   └── BannerRotator          (py-2, ~40px)   │
@@ -241,6 +244,10 @@ Animated 60px x 60px grid pattern on body:
 | `.log-success` | Green log entry | `color: #4ADE80` |
 | `.log-warn` | Orange log entry | `color: var(--accent-orange)` |
 | `.log-info` | Muted log entry | `color: var(--text-muted)` |
+| `.turntable-perspective` | Entry turntable depth wrapper | 3D perspective for deck |
+| `.turntable-deck` | Entry turntable base | 45-degree deck transform |
+| `.turntable-record` | Entry vinyl record | CSS radial grooves + spin animation |
+| `.turntable-tonearm` | Entry tonearm | Lifted/dropped transform states |
 
 ### Button Patterns
 

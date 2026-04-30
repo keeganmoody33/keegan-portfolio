@@ -309,8 +309,10 @@ The `YouTubePlayer` widget loads the YouTube IFrame API directly in the browser.
 - Playlist playback uses the public playlist ID `PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk`
 - No API key or authentication required
 - Playback state persisted to `sessionStorage['yt-player-state']` for Phase 2 Turntable handoff
+- `TurntableGate` listens for `youtube-player-ready`, then dispatches `turntable:needle-drop` from the user's click handler so `YouTubePlayer` calls `playVideo()` under a user gesture.
+- Return visitor bypass uses `localStorage['lf-visited']`.
 
-**PostHog events:** `youtube_player_loaded`, `youtube_player_play`, `youtube_player_pause`, `youtube_track_changed`
+**PostHog events:** `youtube_player_loaded`, `youtube_player_play`, `youtube_player_pause`, `youtube_track_changed`, `turntable_loaded`, `turntable_needle_dropped`, `turntable_skipped`, `turntable_reduced_motion_bypassed`
 
 ---
 

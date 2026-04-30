@@ -12,6 +12,7 @@ import RecentDigs from '@/components/RecentDigs'
 import GitHubActivity from '@/components/GitHubActivity'
 import YouTubePlayer from '@/components/YouTubePlayer'
 import BannerRotator from '@/components/BannerRotator'
+import TurntableGate from '@/components/TurntableGate'
 import posthog from 'posthog-js'
 
 /** Error boundary — Discogs API failure never crashes the page */
@@ -117,6 +118,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
+      <TurntableGate />
+
       {/* Marquee Ticker */}
       <Marquee />
 

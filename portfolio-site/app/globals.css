@@ -154,3 +154,39 @@ body {
 .log-success { color: #4ADE80; }
 .log-warn { color: var(--accent-orange); }
 .log-info { color: var(--text-muted); }
+
+/* Turntable entry */
+.turntable-perspective {
+  perspective: 1200px;
+}
+
+.turntable-deck {
+  transform: rotateX(58deg) rotateZ(-8deg);
+  transform-style: preserve-3d;
+}
+
+.turntable-record {
+  animation: recordSpin 5s linear infinite;
+}
+
+.turntable-tonearm {
+  transform: rotate(-28deg);
+}
+
+.turntable-tonearm-dropped {
+  transform: rotate(12deg);
+}
+
+@keyframes recordSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body,
+  .marquee-container,
+  .spray-char,
+  .turntable-record {
+    animation: none;
+  }
+}

@@ -58,7 +58,8 @@ PostHog initializes on mount if `NEXT_PUBLIC_POSTHOG_KEY` exists. No-ops silentl
 Top to bottom, this is exactly what renders on the main page:
 
 ```
-1. Marquee                          ← Full-width ticker, always visible
+0. TurntableGate                    ← First-visit entry overlay, bypassed for return/reduced-motion users
+1. Marquee                          ← Full-width ticker, always visible behind gate
 2. WidgetErrorBoundary
    └── YouTubePlayer                ← Persistent music player (YouTube IFrame API, playlist)
 3. WidgetErrorBoundary
@@ -85,7 +86,7 @@ Top to bottom, this is exactly what renders on the main page:
    ├── Sidebar Toggle Button (fixed, bottom-right)
    └── Activity Stream Sidebar (conditional, fixed right)
        └── ActivityStream
-4. Chat Modal (conditional overlay)
+6. Chat Modal (conditional overlay)
    └── Chat
 ```
 
@@ -95,6 +96,9 @@ Top to bottom, this is exactly what renders on the main page:
 
 ```
 Land on /keeganmoody33
+    │
+    ├─→ First visit: Drop needle → Music starts → Portfolio reveals
+    │       └─→ Return visits or reduced-motion users bypass this gate
     │
     ├─→ Scroll down → Read timeline → See career arc
     │       └─→ Click company link → Opens external site (new tab)
@@ -281,6 +285,27 @@ Land on /keeganmoody33
 
 ---
 
+### 7a. TurntableGate
+
+**Trigger:** First page load for visitors without `localStorage['lf-visited']`.
+
+**Steps:**
+1. Gate checks `localStorage['lf-visited']` and `prefers-reduced-motion`
+2. Return visitors and reduced-motion users see portfolio immediately
+3. First-time visitors see fixed turntable overlay while `YouTubePlayer` warms up
+4. `YouTubePlayer` dispatches `youtube-player-ready`; gate enables "drop needle"
+5. User clicks "drop needle" or "Start with sound"
+6. Gate sets `localStorage['lf-visited']='true'`, dispatches `turntable:needle-drop`, and fades out
+7. `YouTubePlayer` receives the same user-initiated event and calls `playVideo()`
+
+**Success state:** Turntable disappears, portfolio remains visible, and banner player shows active playback.
+
+**Skip state:** "silence is a choice" sets `lf-visited` and enters without dispatching playback.
+
+**PostHog events:** `turntable_loaded`, `turntable_needle_dropped`, `turntable_skipped`, `turntable_reduced_motion_bypassed`
+
+---
+
 ### 8. SprayText Hero Animation
 
 **Trigger:** Page load with configurable delay.
@@ -334,7 +359,8 @@ Discogs API
 
 YouTube IFrame API (client-side, no proxy)
     └── youtube.com/iframe_api ──→ YouTubePlayer component
-        └── sessionStorage (yt-player-state) ──→ Phase 2 Turntable handoff
+        ├── CustomEvent('youtube-player-ready') ──→ TurntableGate enables needle drop
+        └── sessionStorage (yt-player-state) ──→ TurntableGate / banner playback handoff
 
 GitHub Public Events API
     └── /api/github ──→ Marquee + GitHubActivity components

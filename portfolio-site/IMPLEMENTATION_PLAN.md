@@ -76,7 +76,7 @@
 
 **Goal:** Entry experience with needle drop = play button = enter site.
 
-**Status:** Ready to build. Phase 1 Step 1.1 (YouTube player) is complete. sessionStorage handoff contract is in place.
+**Status:** Completed 2026-04-30. Phase 1 Step 1.1 (YouTube player) is complete, and `TurntableGate` now uses the mounted banner player as the audio source.
 
 **Inputs:** `docs/TURNTABLE_LOADING_SPEC.md`, `FRONTEND_GUIDELINES.md`
 
@@ -89,27 +89,27 @@
 ### Step 2.1 — Turntable Visual
 
 - **Goal:** 45-degree angle turntable with sketch aesthetic
-- **Output:** `components/Turntable.tsx` or `app/turntable/page.tsx` (routing TBD)
-- **Visual:** Designed in Aura.build per spec
+- **Output:** `components/TurntableGate.tsx`
+- **Visual:** CSS-only 45-degree turntable MVP; Aura polish can replace this later
 - **Interaction:** Needle drop triggers play + site entry
-- **Skip button:** Subtle, doesn't say "skip" -- messaging per spec
+- **Skip button:** "silence is a choice"
 
 ### Step 2.2 — Audio State Handoff
 
 - **Goal:** Music starts on turntable, continues in banner player
-- **Technical:** `sessionStorage` for playback state (track, position, playing)
-- **Output:** Shared state logic between Turntable and YouTubePlayer components
+- **Technical:** `TurntableGate` dispatches `turntable:needle-drop`; `YouTubePlayer` calls `playVideo()` on the existing iframe and persists `sessionStorage['yt-player-state']`
+- **Output:** Event bridge between `TurntableGate` and `YouTubePlayer`
 
 ### Step 2.3 — Return Visitor Bypass
 
 - **Goal:** Return visitors skip turntable, go straight to portfolio
-- **Technical:** `localStorage` flag set after first visit
+- **Technical:** `localStorage['lf-visited']` flag set after needle drop or skip
 - **Validation:** First visit shows turntable. Subsequent visits skip to portfolio.
 
 ### Step 2.4 — Integration
 
 - **Goal:** Wire turntable as entry point
-- **Output:** Update routing to show turntable first, portfolio second
+- **Output:** `TurntableGate` renders as a fixed first-visit overlay in `app/page.tsx`
 - **Validation:** Full flow works: turntable → needle drop → music plays → portfolio loads → music continues in banner
 
 ---

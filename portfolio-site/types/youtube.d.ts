@@ -10,6 +10,7 @@
 interface Window {
   YT: typeof YT
   onYouTubeIframeAPIReady: (() => void) | undefined
+  __lfYouTubePlayerReady?: boolean
 }
 
 declare namespace YT {

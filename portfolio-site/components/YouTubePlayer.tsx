@@ -7,6 +7,8 @@ import posthog from 'posthog-js'
 // ── Constants ──────────────────────────────────────────────────
 const PLAYLIST_ID = 'PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk'
 const SESSION_KEY = 'yt-player-state'
+const PLAYER_READY_EVENT = 'youtube-player-ready'
+const NEEDLE_DROP_EVENT = 'turntable:needle-drop'
 
 // ── sessionStorage contract (Phase 2 Turntable handoff) ──────
 interface YouTubePlayerState {
@@ -164,6 +166,8 @@ export default function YouTubePlayer() {
 
           setIsReady(true)
           setIsLoading(false)
+          window.__lfYouTubePlayerReady = true
+          window.dispatchEvent(new CustomEvent(PLAYER_READY_EVENT))
 
           // Small delay to let playlist metadata load
           setTimeout(() => {
@@ -253,6 +257,26 @@ export default function YouTubePlayer() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // ── Turntable handoff ─────────────────────────────────────
+  // The turntable dispatches this inside the user's click handler,
+  // so browser autoplay policy treats playVideo() as user-initiated.
+  useEffect(() => {
+    const handleNeedleDrop = () => {
+      const player = playerRef.current
+      if (!player) return
+
+      try {
+        player.playVideo()
+        persistState()
+      } catch {
+        // player may still be warming up; the gate disables until ready
+      }
+    }
+
+    window.addEventListener(NEEDLE_DROP_EVENT, handleNeedleDrop)
+    return () => window.removeEventListener(NEEDLE_DROP_EVENT, handleNeedleDrop)
+  }, [persistState])
 
   // ── Script onLoad fallback — covers the race where the
   //    <Script> fires before the useEffect sets the callback ─

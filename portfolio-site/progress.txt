@@ -26,13 +26,13 @@ COMPLETED:
 - YouTubePlayer: fixed Script deadlock (<Script> + hidden iframe now always render, skeleton is a ternary inside same return)
 - BannerRotator (LEC-32): YouTubePlayer, RecentDigs, GitHubActivity cycle in single rotating slot below Marquee — 8s auto-rotate, pause-on-hover, dot indicators
 - YouTubePlayer: fixed strict-mode container destruction (LEC-33) — YT.Player replaces <div> with <iframe>, destroy() removes it from DOM, React doesn't know. Fix: wrapperRef + re-create container in initPlayer() if missing.
+- Turntable loading experience MVP (LEC-19): first-visit gate, CSS sketch turntable, needle-drop event bridge to YouTubePlayer, localStorage return-visitor bypass, reduced-motion bypass
 
 IN PROGRESS:
-- Phase 2: Turntable loading experience (see TURNTABLE HANDOFF section below)
+- Manual preview verification for LEC-19 turntable flow
 
 NEXT:
-- Build MVP turntable on feature/turntable-loading branch
-- Test via Vercel preview URL, then merge to main
+- Test LEC-19 via Vercel preview URL, then merge to main
 - Worthy Reads widget (Phase 1, Step 1.3 -- data source TBD)
 - Banner section layout (Phase 1, Step 1.4 -- design TBD in Aura)
 - Alan Iverson chat persona (Phase 3) -- DEFERRED, moved to Backlog
@@ -55,6 +55,11 @@ WHAT EXISTS ALREADY:
   - On mount, checks sessionStorage -- if playing=true and timestamp is fresh (<30s), resumes playback
 - TypeScript types: types/youtube.d.ts (YT namespace declarations)
 - Error boundary: WidgetErrorBoundary in app/page.tsx wraps all banner widgets
+- TurntableGate component: components/TurntableGate.tsx
+  - Shows first-visit overlay unless localStorage['lf-visited'] is true
+  - Dispatches 'turntable:needle-drop' inside the user click handler
+  - YouTubePlayer listens for that event and calls playVideo() on the existing mounted player
+  - Listens for 'youtube-player-ready' before enabling the drop controls
 
 AUTOPLAY STRATEGY (CRITICAL):
 - Browsers block audio autoplay UNLESS preceded by a user gesture (click/touch)
@@ -65,16 +70,12 @@ AUTOPLAY STRATEGY (CRITICAL):
 - The banner YouTubePlayer reads sessionStorage on mount and continues playback
 
 WHAT NEEDS TO BE BUILT:
-1. Turntable page/component (MVP version for tonight, polish later in Aura)
-   - Dark page, centered turntable visual or play interaction
-   - Needle drop / click triggers YouTube playback
-   - Writes to sessionStorage['yt-player-state'] with playing: true
-   - Transition animation (fade/zoom) to portfolio
-   - Skip button with clever copy (not "skip" -- something that makes user feel lame)
-   - Return visitor bypass: check localStorage, skip to portfolio if visited before
-   - prefers-reduced-motion: skip turntable entirely
-2. Routing: turntable as entry point, portfolio loads after interaction
-3. PostHog events: turntable_loaded, turntable_needle_dropped, turntable_skipped
+1. Preview verification/polish
+   - Confirm first visit shows overlay
+   - Confirm needle drop starts banner audio and reveals portfolio
+   - Confirm skip button bypasses overlay
+   - Confirm return visitor bypass via localStorage['lf-visited']
+   - Confirm prefers-reduced-motion bypasses overlay
 
 SPEC: docs/TURNTABLE_LOADING_SPEC.md (full locked spec)
 SESSION STORAGE KEY: 'yt-player-state' (match YouTubePlayer.tsx exactly)
