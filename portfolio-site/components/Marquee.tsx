@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import posthog from 'posthog-js'
+import { getPostHogDistinctIdHeader } from '@/lib/posthog-client'
 
 interface GitHubStats {
   pushes_24h: number
@@ -18,9 +18,7 @@ export default function Marquee() {
     async function fetchGitHub() {
       try {
         const res = await fetch('/api/github', {
-          headers: {
-            'X-POSTHOG-DISTINCT-ID': posthog.get_distinct_id(),
-          },
+          headers: getPostHogDistinctIdHeader(),
         })
         if (res.ok) {
           const data = await res.json()

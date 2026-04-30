@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import posthog from 'posthog-js'
+import { getPostHogDistinctIdHeader } from '@/lib/posthog-client'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -48,7 +49,7 @@ export default function Chat() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-POSTHOG-DISTINCT-ID': posthog.get_distinct_id(),
+          ...getPostHogDistinctIdHeader(),
         },
         body: JSON.stringify({ question }),
       })

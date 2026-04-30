@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import posthog from 'posthog-js'
+import { getPostHogDistinctIdHeader } from '@/lib/posthog-client'
 
 interface DailyActivity {
   date: string
@@ -26,9 +27,7 @@ export default function GitHubActivity() {
     async function fetchActivity() {
       try {
         const response = await fetch('/api/github', {
-          headers: {
-            'X-POSTHOG-DISTINCT-ID': posthog.get_distinct_id(),
-          },
+          headers: getPostHogDistinctIdHeader(),
         })
         if (!response.ok) throw new Error('Failed to fetch')
         const json = await response.json()
