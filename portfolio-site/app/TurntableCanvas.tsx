@@ -61,11 +61,11 @@ const MATERIAL_MAP: Record<string, MaterialSpec> = {
   // Controls
   PitchSlider: { color: 0x2a2a2a, roughness: 0.5, metalness: 0.2 },
   StartButton: {
-    color: 0xff2a1a,
-    roughness: 0.3,
-    metalness: 0,
+    color: 0xcc2211,
+    roughness: 0.4,
+    metalness: 0.1,
     emissive: 0xff2a1a,
-    emissiveIntensity: 0.6,
+    emissiveIntensity: 0.25,
   },
   PowerButton: { color: 0x1a1a1a, roughness: 0.4, metalness: 0.3 },
 };
@@ -76,7 +76,7 @@ const PLATTER_DOT_MATERIAL: MaterialSpec = {
   roughness: 0.2,
   metalness: 0.9,
   emissive: 0x442200,
-  emissiveIntensity: 0.4,
+  emissiveIntensity: 0.2,
 };
 
 function materialForMeshName(name: string): MaterialSpec | null {
@@ -164,6 +164,14 @@ function prepareScene(source: THREE.Group): PreparedScene {
 
   scene.add(spinningGroup);
   scene.add(tonearmGroup);
+
+  // Re-center the whole model on the world origin. The Blender script offsets
+  // the platter (and everything attached to it) by 0.05 units in X and starts
+  // the base above z=0, which pushes the composition off-frame.
+  const bbox = new THREE.Box3().setFromObject(scene);
+  const center = new THREE.Vector3();
+  bbox.getCenter(center);
+  scene.position.set(-center.x, -bbox.min.y, -center.z);
 
   return { scene, spinningGroup, tonearmGroup, clickableMeshes };
 }
@@ -293,11 +301,13 @@ function SceneContent({ onNeedleDrop, isPlaying }: SceneContentProps) {
         shadow-bias={-0.0005}
       />
 
-      {/* Cool rim light — back-left, kicks the chrome tonearm */}
-      <directionalLight position={[-2, 1.5, -2]} intensity={0.8} color="#5566ff" />
+      {/* Cool rim light — back-left, kicks the chrome tonearm.
+          Kept subtle (0.25) so the vinyl record stays truly black. */}
+      <directionalLight position={[-2, 1.5, -2]} intensity={0.25} color="#8899cc" />
 
-      {/* Subtle blue underlight for a moody club feel */}
-      <pointLight position={[-1, 0.2, 0.5]} intensity={0.4} color="#2244ff" distance={3} />
+      {/* Very subtle warm underlight for club-glow, low distance so it
+          only touches the base area not the whole record */}
+      <pointLight position={[-1, 0.1, 0.3]} intensity={0.15} color="#ff6633" distance={0.8} />
 
       <Suspense fallback={null}>
         <TurntableModel onNeedleDrop={onNeedleDrop} isPlaying={isPlaying} />
