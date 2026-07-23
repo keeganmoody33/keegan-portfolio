@@ -1,11 +1,6 @@
 {
   "redirects": [
     {
-      "source": "/",
-      "destination": "/keeganmoody33",
-      "permanent": true
-    },
-    {
       "source": "/KeeganMoody33",
       "destination": "/keeganmoody33",
       "permanent": true
@@ -14,12 +9,6 @@
       "source": "/keeganMoody33",
       "destination": "/keeganmoody33",
       "permanent": true
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/keeganmoody33",
-      "destination": "/"
     }
   ]
 }

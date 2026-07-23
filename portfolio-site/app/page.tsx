@@ -1,343 +1,286 @@
-'use client'
+'use client';
 
-import { Component, useEffect, useState, type ReactNode } from 'react'
-import { supabase } from '@/lib/supabase'
-import Chat from '@/components/Chat'
-import JDAnalyzer from '@/components/JDAnalyzer'
-import SprayText from '@/components/SprayText'
-import Timeline from '@/components/Timeline'
-import ActivityStream from '@/components/ActivityStream'
-import Marquee from '@/components/Marquee'
-import RecentDigs from '@/components/RecentDigs'
-import GitHubActivity from '@/components/GitHubActivity'
-import YouTubePlayer from '@/components/YouTubePlayer'
-import BannerRotator from '@/components/BannerRotator'
-import posthog from 'posthog-js'
+import { useEffect, useRef, useState, useCallback } from 'react';
+import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 
-/** Error boundary — Discogs API failure never crashes the page */
-class WidgetErrorBoundary extends Component<
-  { children: ReactNode },
-  { hasError: boolean }
-> {
-  constructor(props: { children: ReactNode }) {
-    super(props)
-    this.state = { hasError: false }
-  }
-  static getDerivedStateFromError() {
-    return { hasError: true }
-  }
-  componentDidCatch(error: Error) {
-    console.error('WidgetErrorBoundary caught:', error)
-  }
-  render() {
-    if (this.state.hasError) return null
-    return this.props.children
-  }
-}
+// Canvas/R3F only on client to avoid SSR and React 19 scheduler issues
+const TurntableCanvas = dynamic(() => import('./TurntableCanvas'), {
+  ssr: false,
+  loading: () => <div className="absolute inset-0 bg-neutral-900" aria-hidden />,
+});
 
-interface Profile {
-  id: string
-  first_name: string
-  last_name: string
-  headline: string
-  summary: string
-  linkedin_url: string
-  github_url: string
-}
+// Playlist ID from spec (YT types from types/youtube.d.ts)
+const PLAYLIST_ID = 'PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk';
+const HAS_VISITED_KEY = 'hasVisitedPortfolio';
+// Must match YouTubePlayer.tsx / youtube-service SESSION_KEY for handoff
+const SESSION_KEY = 'yt-player-state';
 
-interface Experience {
-  id: number
-  company_name: string
-  role_title: string
-  start_date: string
-  end_date: string | null
-  duration_months: number
-  public_bullets: string[]
-  display_order: number
-}
-
-export default function Home() {
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [experiences, setExperiences] = useState<Experience[]>([])
-  const [showChat, setShowChat] = useState(false)
-  const [showJD, setShowJD] = useState(false)
-  const [showSidebar, setShowSidebar] = useState(false)
-
-  // Event handlers with PostHog tracking
-  const handleOpenChat = () => {
-    posthog.capture('chat_modal_opened', {
-      source: 'page_interaction'
-    })
-    setShowChat(true)
-  }
-
-  const handleCloseChat = () => {
-    posthog.capture('chat_modal_closed')
-    setShowChat(false)
-  }
-
-  const handleToggleSidebar = () => {
-    const newState = !showSidebar
-    posthog.capture('activity_sidebar_toggled', {
-      sidebar_visible: newState
-    })
-    setShowSidebar(newState)
-  }
-
-  const handleExternalLinkClick = (linkName: string, url: string) => {
-    posthog.capture('external_link_clicked', {
-      link_name: linkName,
-      destination_url: url
-    })
-  }
+// YouTube Player Hook (uses YT from types/youtube.d.ts)
+function useYouTubePlayer() {
+  const playerRef = useRef<YT.Player | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    async function fetchData() {
-      // Fetch profile
-      const { data: profileData } = await supabase
-        .from('candidate_profile')
-        .select('*')
-        .eq('id', 'keegan-moody-001')
-        .single()
-      
-      if (profileData) setProfile(profileData)
-
-      // Fetch experiences
-      const { data: expData } = await supabase
-        .from('experiences')
-        .select('*')
-        .eq('candidate_id', 'keegan-moody-001')
-        .order('display_order', { ascending: true })
-      
-      if (expData) setExperiences(expData)
+    if (typeof window === 'undefined') return;
+    if (!window.YT) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
     }
 
-    fetchData()
-  }, [])
+    window.onYouTubeIframeAPIReady = () => {
+      playerRef.current = new window.YT.Player('yt-player-hidden', {
+        playerVars: {
+          listType: 'playlist',
+          list: PLAYLIST_ID,
+          autoplay: 0,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          modestbranding: 1,
+          rel: 0,
+          playsinline: 1,
+        },
+        events: {
+          onReady: () => setIsReady(true),
+        },
+      });
+    };
+    if (typeof window.YT !== 'undefined' && window.YT.Player) {
+      window.onYouTubeIframeAPIReady();
+    }
+
+    return () => {
+      playerRef.current?.destroy();
+    };
+  }, []);
+
+  const play = useCallback(() => {
+    if (playerRef.current) {
+      playerRef.current.playVideo();
+    }
+  }, []);
+
+  const saveState = useCallback(() => {
+    const p = playerRef.current;
+    if (!p) return;
+    try {
+      const data = p.getVideoData?.() ?? {};
+      const state = {
+        videoId: data.video_id ?? '',
+        trackTitle: data.title ?? '',
+        trackAuthor: data.author ?? '',
+        position: p.getCurrentTime?.() ?? 0,
+        duration: p.getDuration?.() ?? 0,
+        playing: true,
+        playlistIndex: p.getPlaylistIndex?.() ?? 0,
+        volume: p.getVolume?.() ?? 50,
+        timestamp: Date.now(),
+      };
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(state));
+    } catch {
+      // player may not expose all methods yet
+    }
+  }, []);
+
+  return { player: playerRef.current, isReady, play, saveState };
+}
+
+// Static Transition Effect
+function StaticTransition({ isActive }: { isActive: boolean }) {
+  return (
+    <AnimatePresence>
+      {isActive && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 pointer-events-none"
+          style={{
+            background: `
+              repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(255,255,255,0.1) 2px,
+                rgba(255,255,255,0.1) 4px
+              ),
+              repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.1) 2px,
+                rgba(0,0,0,0.1) 4px
+              )
+            `,
+          }}
+        >
+          <motion.div
+            animate={{
+              opacity: [0.3, 0.8, 0.3],
+              scale: [1, 1.02, 1],
+            }}
+            transition={{
+              duration: 0.1,
+              repeat: Infinity,
+            }}
+            className="absolute inset-0 bg-black/40"
+          />
+          {/* Scanlines */}
+          <div className="absolute inset-0 opacity-30">
+            {Array.from({ length: 20 }).map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute w-full h-px bg-white/20"
+                animate={{
+                  top: ['0%', '100%'],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  delay: i * 0.1,
+                  ease: 'linear',
+                }}
+                style={{ top: `${i * 5}%` }}
+              />
+            ))}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// Main Loading Page Component
+export default function TurntableLoadingPage() {
+  const router = useRouter();
+  const { isReady, play, saveState } = useYouTubePlayer();
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showSkip, setShowSkip] = useState(false);
+  const [hovered, setHovered] = useState(false);
+
+  // Check for return visitor
+  useEffect(() => {
+    const hasVisited = localStorage.getItem(HAS_VISITED_KEY);
+    if (hasVisited) {
+      router.replace('/keeganmoody33');
+    } else {
+      // Show skip button after 3 seconds
+      const timer = setTimeout(() => setShowSkip(true), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [router]);
+
+  // Check for reduced motion preference
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (prefersReducedMotion) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <button
+          onClick={() => {
+            localStorage.setItem(HAS_VISITED_KEY, 'true');
+            router.push('/keeganmoody33');
+          }}
+          className="px-8 py-4 bg-white text-black font-medium rounded"
+        >
+          Enter Portfolio
+        </button>
+      </div>
+    );
+  }
+
+  const handleNeedleDrop = () => {
+    if (!isReady || isPlaying) return;
+
+    // SYNCHRONOUS: Play audio immediately within user gesture
+    play();
+    setIsPlaying(true);
+
+    // Delay before transition
+    setTimeout(() => {
+      setIsTransitioning(true);
+      saveState();
+      localStorage.setItem(HAS_VISITED_KEY, 'true');
+
+      // Static glitch transition
+      setTimeout(() => {
+        router.push('/keeganmoody33');
+      }, 1500);
+    }, 2000);
+  };
+
+  const handleSkip = () => {
+    localStorage.setItem(HAS_VISITED_KEY, 'true');
+    router.push('/keeganmoody33');
+  };
 
   return (
-    <div className="min-h-screen">
-      {/* Marquee Ticker */}
-      <Marquee />
+    <div
+      className="min-h-screen bg-neutral-900 relative overflow-hidden"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Hidden YouTube player */}
+      <div id="yt-player-hidden" className="absolute opacity-0 pointer-events-none" />
 
-      {/* Rotating Banner — one widget visible at a time, auto-cycles */}
-      <BannerRotator labels={['Now Playing', 'Recent Digs', 'GitHub']}>
-        <WidgetErrorBoundary>
-          <YouTubePlayer />
-        </WidgetErrorBoundary>
-        <WidgetErrorBoundary>
-          <RecentDigs />
-        </WidgetErrorBoundary>
-        <WidgetErrorBoundary>
-          <GitHubActivity />
-        </WidgetErrorBoundary>
-      </BannerRotator>
+      {/* 3D Scene */}
+      <motion.div
+        className="absolute inset-0"
+        animate={{
+          scale: hovered && !isPlaying ? 1.02 : 1,
+        }}
+        transition={{ duration: 0.3 }}
+      >
+        <TurntableCanvas onNeedleDrop={handleNeedleDrop} isPlaying={isPlaying} />
+      </motion.div>
 
-      {/* Main Layout */}
-      <div className="flex">
-        {/* Main Content */}
-        <main className={`flex-1 px-8 lg:px-16 py-8 ${showSidebar ? 'lg:pr-[400px]' : ''}`}>
-          {/* Navigation */}
-          <nav className="flex items-center justify-between mb-16">
-            <div className="flex items-center gap-2">
-              <span className="text-[var(--text-muted)] font-mono text-sm">/</span>
-              <span className="text-[var(--text-bright)] font-space">lecturesfrom</span>
-            </div>
-            <div className="flex items-center gap-8">
-              <a href="#experience" className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
-                XP
-              </a>
-              <a href="#projects" className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
-                Projects <span className="text-[var(--text-muted)]">[P]</span>
-              </a>
-              <a href="#contact" className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
-                Contact <span className="text-[var(--text-muted)]">[C]</span>
-              </a>
-              <button
-                onClick={handleOpenChat}
-                className="ask-ai-btn px-4 py-2 font-mono text-sm"
-              >
-                Ask AI
-              </button>
-            </div>
-          </nav>
-
-          {/* Hero Section */}
-          <section className="mb-24">
-            {/* Taglines */}
-            <div className="space-y-2 mb-8">
-              <div className="flex items-center gap-3 text-[var(--text-muted)]">
-                <span className="text-[var(--accent-orange)]">//</span>
-                <span className="font-mono text-sm">Revenue systems. Built from zero.</span>
-              </div>
-              <div className="flex items-center gap-3 text-[var(--text-muted)]">
-                <span className="text-[var(--accent-lime)]">//</span>
-                <span className="font-mono text-sm">Useful in every room.</span>
-              </div>
-              <div className="flex items-center gap-3 text-[var(--text-muted)]">
-                <span className="text-[var(--accent-red)]">//</span>
-                <span className="font-mono text-sm">Here for the long build.</span>
-              </div>
-            </div>
-
-            {/* Name */}
-            <h1 className="text-7xl lg:text-9xl font-bold tracking-tight mb-8">
-              <SprayText 
-                text={profile?.first_name?.toUpperCase() || 'KEEGAN'} 
-                className="text-[var(--accent-lime)]"
-              />
-              <br />
-              <SprayText 
-                text={profile?.last_name?.toUpperCase() || 'MOODY'} 
-                className="text-[var(--accent-orange)]"
-                delay={500}
-              />
-            </h1>
-
-            {/* CTA */}
-            <div className="flex items-start gap-4">
-              <div className="w-1 h-16 bg-[var(--accent-lime)]" />
-              <div>
-                <p className="text-[var(--text-muted)] font-mono text-sm mb-4">
-                  Don't guess. Query the system directly.<br />
-                  The answer is in the data.
-                </p>
-                <button
-                  onClick={handleOpenChat}
-                  className="ask-ai-btn px-6 py-3 font-mono"
-                >
-                  Ask AI
-                </button>
-              </div>
-            </div>
-          </section>
-
-          {/* Career Timeline */}
-          <section id="experience" className="mb-24">
-            <h2 className="text-[var(--accent-orange)] font-mono text-sm mb-8">
-              // Chronological Execution Log
-            </h2>
-            <h3 className="text-3xl font-bold text-[var(--text-bright)] mb-12">
-              Career Timeline
-            </h3>
-            <Timeline experiences={experiences} />
-          </section>
-
-          {/* JD Analyzer */}
-          <section id="projects" className="mb-24">
-            <h2 className="text-[var(--accent-orange)] font-mono text-sm mb-8">
-              // Fit Analysis Tool
-            </h2>
-            <h3 className="text-3xl font-bold text-[var(--text-bright)] mb-8">
-              JD Fit Analyzer
-            </h3>
-            <p className="text-[var(--text-muted)] mb-8 max-w-xl">
-              Paste a job description. I'll give you an honest assessment of fit—including where I fall short.
+      {/* UI Overlay */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Instructions */}
+        {!isPlaying && !isTransitioning && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="absolute bottom-32 left-1/2 -translate-x-1/2 text-center"
+          >
+            <p className="text-white/60 text-sm tracking-widest uppercase">
+              Click the tonearm to start
             </p>
-            <JDAnalyzer />
-          </section>
+          </motion.div>
+        )}
 
-          {/* Footer */}
-          <footer id="contact" className="border-t border-[var(--border-dim)] pt-8">
-            <div className="flex items-center justify-between">
-              <span className="text-[var(--text-muted)] font-mono text-sm">
-                © 2026 lecturesfrom
-              </span>
-              <div className="flex gap-6">
-                <a
-                  href={profile?.linkedin_url || 'https://linkedin.com/in/keeganmoody33'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleExternalLinkClick('linkedin', profile?.linkedin_url || 'https://linkedin.com/in/keeganmoody33')}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
-                >
-                  LINKEDIN
-                </a>
-                <a
-                  href="https://x.com/keeganmoody33"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleExternalLinkClick('x', 'https://x.com/keeganmoody33')}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
-                >
-                  X
-                </a>
-                <a
-                  href="https://substack.com/@keeganmoody33"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleExternalLinkClick('substack', 'https://substack.com/@keeganmoody33')}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
-                >
-                  SUBSTACK
-                </a>
-                <a
-                  href={profile?.github_url || 'https://github.com/keeganmoody33'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleExternalLinkClick('github', profile?.github_url || 'https://github.com/keeganmoody33')}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
-                >
-                  GITHUB
-                </a>
-                <a
-                  href="https://discord.com/users/lecturesfrom"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleExternalLinkClick('discord', 'https://discord.com/users/lecturesfrom')}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
-                >
-                  DISCORD
-                </a>
-                <a
-                  href="https://bsky.app/profile/lecturesfrom.bsky.social"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleExternalLinkClick('bluesky', 'https://bsky.app/profile/lecturesfrom.bsky.social')}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
-                >
-                  BLUESKY
-                </a>
-              </div>
-            </div>
-          </footer>
-        </main>
+        {/* Skip Button */}
+        <AnimatePresence>
+          {showSkip && !isPlaying && !isTransitioning && (
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleSkip}
+              className="absolute bottom-8 right-8 text-xs text-white/30 hover:text-white/60 transition-colors pointer-events-auto"
+            >
+              I don&apos;t like music
+            </motion.button>
+          )}
+        </AnimatePresence>
 
-        {/* Sidebar Toggle Button */}
-        <button
-          onClick={handleToggleSidebar}
-          className="hidden lg:flex fixed right-4 bottom-4 z-40 items-center gap-2 px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-dim)] rounded text-[var(--text-muted)] hover:text-[var(--accent-lime)] hover:border-[var(--accent-lime)] font-mono text-xs transition-colors"
-        >
-          {showSidebar ? 'Hide' : 'Show'} Activity
-        </button>
-
-        {/* Right Sidebar - Activity Stream (toggleable) */}
-        {showSidebar && (
-          <aside className="hidden lg:block fixed right-0 top-0 w-[380px] h-screen border-l border-[var(--border-dim)] bg-[var(--bg-glass)] p-6 overflow-y-auto">
-            <ActivityStream />
-          </aside>
+        {/* Loading state */}
+        {!isReady && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+            <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+          </div>
         )}
       </div>
 
-      {/* Chat Modal */}
-      {showChat && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-dim)] rounded-lg w-full max-w-2xl max-h-[80vh] overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-[var(--border-dim)]">
-              <h3 className="text-[var(--text-bright)] font-mono">Ask AI</h3>
-              <button
-                onClick={handleCloseChat}
-                className="text-[var(--text-muted)] hover:text-[var(--text-bright)]"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-4 overflow-y-auto max-h-[calc(80vh-60px)]">
-              <Chat />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Static Transition */}
+      <StaticTransition isActive={isTransitioning} />
     </div>
-  )
+  );
 }
