@@ -183,7 +183,7 @@ function SceneContent({ onNeedleDrop, isPlaying }: SceneContentProps) {
       <directionalLight position={[1, -1, 2]} intensity={1.5} castShadow />
       <pointLight position={[-1, 1, 0.5]} intensity={0.3} color="#4444ff" />
       <TurntableModel onNeedleDrop={onNeedleDrop} isPlaying={isPlaying} />
-      <Environment preset="studio" />
+      <Environment files="/hdri/studio_small_03_1k.hdr" />
     </>
   );
 }

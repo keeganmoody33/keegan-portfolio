@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { Component, useEffect, useRef, useState, useCallback, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,6 +10,27 @@ const TurntableCanvas = dynamic(() => import('./TurntableCanvas'), {
   ssr: false,
   loading: () => <div className="absolute inset-0 bg-neutral-900" aria-hidden />,
 });
+
+/** Error boundary — 3D/WebGL failure must not block entry to the portfolio */
+class SceneErrorBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode; fallback: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error) {
+    console.error('SceneErrorBoundary caught:', error);
+  }
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
 
 // Playlist ID from spec (YT types from types/youtube.d.ts)
 const PLAYLIST_ID = 'PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk';
@@ -238,7 +259,20 @@ export default function TurntableLoadingPage() {
         }}
         transition={{ duration: 0.3 }}
       >
-        <TurntableCanvas onNeedleDrop={handleNeedleDrop} isPlaying={isPlaying} />
+        <SceneErrorBoundary
+          fallback={(
+            <div className="absolute inset-0 flex items-center justify-center bg-neutral-900">
+              <button
+                onClick={handleSkip}
+                className="px-8 py-4 bg-white text-black font-medium rounded"
+              >
+                Enter Portfolio
+              </button>
+            </div>
+          )}
+        >
+          <TurntableCanvas onNeedleDrop={handleNeedleDrop} isPlaying={isPlaying} />
+        </SceneErrorBoundary>
       </motion.div>
 
       {/* UI Overlay */}
