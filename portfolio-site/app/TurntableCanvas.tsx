@@ -179,15 +179,17 @@ function SceneContent({ onNeedleDrop, isPlaying }: SceneContentProps) {
   return (
     <>
       <PerspectiveCamera makeDefault position={[2, 1.5, 2]} fov={45} />
+      <ambientLight intensity={0.6} />
+      <directionalLight position={[1, -1, 2]} intensity={1.5} castShadow />
+      <pointLight position={[-1, 1, 0.5]} intensity={0.3} color="#4444ff" />
       <mesh position={[0, 0, 0]}>
         <boxGeometry args={[0.2, 0.2, 0.2]} />
         <meshStandardMaterial color="red" />
       </mesh>
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[1, -1, 2]} intensity={1.5} castShadow />
-      <pointLight position={[-1, 1, 0.5]} intensity={0.3} color="#4444ff" />
-      <TurntableModel onNeedleDrop={onNeedleDrop} isPlaying={isPlaying} />
-      <Environment files="/hdri/studio_small_03_1k.hdr" />
+      <Suspense fallback={null}>
+        <TurntableModel onNeedleDrop={onNeedleDrop} isPlaying={isPlaying} />
+        <Environment files="/hdri/studio_small_03_1k.hdr" />
+      </Suspense>
     </>
   );
 }
@@ -200,9 +202,7 @@ export interface TurntableCanvasProps {
 export default function TurntableCanvas({ onNeedleDrop, isPlaying }: TurntableCanvasProps) {
   return (
     <Canvas shadows gl={{ antialias: true }}>
-      <Suspense fallback={null}>
-        <SceneContent onNeedleDrop={onNeedleDrop} isPlaying={isPlaying} />
-      </Suspense>
+      <SceneContent onNeedleDrop={onNeedleDrop} isPlaying={isPlaying} />
     </Canvas>
   );
 }
