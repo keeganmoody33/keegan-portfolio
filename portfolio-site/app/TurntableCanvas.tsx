@@ -24,6 +24,94 @@ const TONEARM_MESHES = new Set(['Tonearm', 'Headshell', 'Stylus']);
 // Meshes that are clickable to trigger the needle drop
 const CLICKABLE_MESHES = new Set(['Tonearm', 'Headshell', 'Stylus', 'TonearmPost']);
 
+// ── PBR Material Assignments (photoreal SL-1200 MK2) ────────────────────
+// The GLB has flat white default materials because the Blender script uses
+// legacy diffuse_color. Apply proper MeshStandardMaterial per named mesh.
+interface MaterialSpec {
+  color: number;
+  roughness: number;
+  metalness: number;
+  emissive?: number;
+  emissiveIntensity?: number;
+  clearcoat?: number;
+}
+
+const MATERIAL_MAP: Record<string, MaterialSpec> = {
+  // Chassis — matte black plastic
+  Base: { color: 0x0a0a0a, roughness: 0.35, metalness: 0.05 },
+
+  // Platter — brushed aluminum
+  Platter: { color: 0xb0b0b0, roughness: 0.28, metalness: 0.85 },
+  Spindle: { color: 0xd0d0d0, roughness: 0.2, metalness: 0.95 },
+
+  // Slipmat — matte black felt
+  Slipmat: { color: 0x0f0f0f, roughness: 0.95, metalness: 0 },
+
+  // Record — high-gloss vinyl (clear-coated black)
+  Record: { color: 0x050505, roughness: 0.15, metalness: 0, clearcoat: 1 },
+  RecordLabel: { color: 0xcc4a17, roughness: 0.6, metalness: 0 }, // lecturesfrom orange
+
+  // Tonearm — chrome
+  TonearmBase: { color: 0x1a1a1a, roughness: 0.4, metalness: 0.3 },
+  TonearmPost: { color: 0xc8c8c8, roughness: 0.18, metalness: 0.95 },
+  Tonearm: { color: 0xc8c8c8, roughness: 0.18, metalness: 0.95 },
+  Headshell: { color: 0x1a1a1a, roughness: 0.3, metalness: 0.4 },
+  Stylus: { color: 0x080808, roughness: 0.5, metalness: 0.2 },
+
+  // Controls
+  PitchSlider: { color: 0x2a2a2a, roughness: 0.5, metalness: 0.2 },
+  StartButton: {
+    color: 0xff2a1a,
+    roughness: 0.3,
+    metalness: 0,
+    emissive: 0xff2a1a,
+    emissiveIntensity: 0.6,
+  },
+  PowerButton: { color: 0x1a1a1a, roughness: 0.4, metalness: 0.3 },
+};
+
+// Platter speed-indicator dots — apply a matching material to all 8
+const PLATTER_DOT_MATERIAL: MaterialSpec = {
+  color: 0xe0e0e0,
+  roughness: 0.2,
+  metalness: 0.9,
+  emissive: 0x442200,
+  emissiveIntensity: 0.4,
+};
+
+function materialForMeshName(name: string): MaterialSpec | null {
+  if (MATERIAL_MAP[name]) return MATERIAL_MAP[name];
+  if (name.startsWith('PlatterDot_')) return PLATTER_DOT_MATERIAL;
+  return null;
+}
+
+function buildMaterial(spec: MaterialSpec): THREE.MeshStandardMaterial | THREE.MeshPhysicalMaterial {
+  if (spec.clearcoat !== undefined) {
+    const mat = new THREE.MeshPhysicalMaterial({
+      color: spec.color,
+      roughness: spec.roughness,
+      metalness: spec.metalness,
+      clearcoat: spec.clearcoat,
+      clearcoatRoughness: 0.1,
+    });
+    if (spec.emissive !== undefined) {
+      mat.emissive = new THREE.Color(spec.emissive);
+      mat.emissiveIntensity = spec.emissiveIntensity ?? 1;
+    }
+    return mat;
+  }
+  const mat = new THREE.MeshStandardMaterial({
+    color: spec.color,
+    roughness: spec.roughness,
+    metalness: spec.metalness,
+  });
+  if (spec.emissive !== undefined) {
+    mat.emissive = new THREE.Color(spec.emissive);
+    mat.emissiveIntensity = spec.emissiveIntensity ?? 1;
+  }
+  return mat;
+}
+
 interface PreparedScene {
   scene: THREE.Group;
   spinningGroup: THREE.Group;
@@ -44,6 +132,15 @@ function prepareScene(source: THREE.Group): PreparedScene {
   scene.traverse((obj) => {
     if (obj.type !== 'Mesh') return;
     const mesh = obj as THREE.Mesh;
+
+    // Assign photoreal PBR material based on mesh name.
+    const spec = materialForMeshName(mesh.name);
+    if (spec) {
+      mesh.material = buildMaterial(spec);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+    }
+
     if (SPINNING_MESHES.has(mesh.name)) {
       toSpin.push(mesh);
     } else if (TONEARM_MESHES.has(mesh.name)) {
@@ -178,13 +275,44 @@ interface SceneContentProps {
 function SceneContent({ onNeedleDrop, isPlaying }: SceneContentProps) {
   return (
     <>
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[1, -1, 2]} intensity={1.5} castShadow />
-      <pointLight position={[-1, 1, 0.5]} intensity={0.3} color="#4444ff" />
+      {/* Low ambient so shadows read; HDR handles most of the fill. */}
+      <ambientLight intensity={0.15} />
+
+      {/* Key light — top-right, warm-white, sharp shadow */}
+      <directionalLight
+        position={[3, 4, 2]}
+        intensity={2.2}
+        color="#fff2e0"
+        castShadow
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-camera-left={-2}
+        shadow-camera-right={2}
+        shadow-camera-top={2}
+        shadow-camera-bottom={-2}
+        shadow-bias={-0.0005}
+      />
+
+      {/* Cool rim light — back-left, kicks the chrome tonearm */}
+      <directionalLight position={[-2, 1.5, -2]} intensity={0.8} color="#5566ff" />
+
+      {/* Subtle blue underlight for a moody club feel */}
+      <pointLight position={[-1, 0.2, 0.5]} intensity={0.4} color="#2244ff" distance={3} />
+
       <Suspense fallback={null}>
         <TurntableModel onNeedleDrop={onNeedleDrop} isPlaying={isPlaying} />
         <Environment files="/hdri/studio_small_03_1k.hdr" />
       </Suspense>
+
+      {/* Ground plane for shadow catching */}
+      <mesh
+        position={[0, -0.05, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        receiveShadow
+      >
+        <planeGeometry args={[10, 10]} />
+        <shadowMaterial opacity={0.5} />
+      </mesh>
     </>
   );
 }
