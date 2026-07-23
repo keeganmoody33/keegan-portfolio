@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect, useMemo } from 'react';
+import { useRef, useState, useEffect, useMemo, Suspense } from 'react';
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { PerspectiveCamera, Environment, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -24,6 +24,53 @@ const TONEARM_MESHES = new Set(['Tonearm', 'Headshell', 'Stylus']);
 // Meshes that are clickable to trigger the needle drop
 const CLICKABLE_MESHES = new Set(['Tonearm', 'Headshell', 'Stylus', 'TonearmPost']);
 
+interface PreparedScene {
+  scene: THREE.Group;
+  spinningGroup: THREE.Group;
+  tonearmGroup: THREE.Group;
+  clickableMeshes: THREE.Mesh[];
+}
+
+function prepareScene(source: THREE.Group): PreparedScene {
+  const scene = source.clone(true);
+  const spinningGroup = new THREE.Group();
+  const tonearmGroup = new THREE.Group();
+  const clickableMeshes: THREE.Mesh[] = [];
+
+  // Collect meshes first; do NOT modify the scene graph while traversing.
+  const toSpin: THREE.Mesh[] = [];
+  const toTonearm: THREE.Mesh[] = [];
+
+  scene.traverse((obj) => {
+    if (obj.type !== 'Mesh') return;
+    const mesh = obj as THREE.Mesh;
+    if (SPINNING_MESHES.has(mesh.name)) {
+      toSpin.push(mesh);
+    } else if (TONEARM_MESHES.has(mesh.name)) {
+      toTonearm.push(mesh);
+      if (CLICKABLE_MESHES.has(mesh.name)) {
+        clickableMeshes.push(mesh);
+      }
+    }
+  });
+
+  // Now re-parent the collected meshes into their animation groups.
+  toSpin.forEach((mesh) => {
+    mesh.updateMatrixWorld(true);
+    spinningGroup.attach(mesh);
+  });
+
+  toTonearm.forEach((mesh) => {
+    mesh.updateMatrixWorld(true);
+    tonearmGroup.attach(mesh);
+  });
+
+  scene.add(spinningGroup);
+  scene.add(tonearmGroup);
+
+  return { scene, spinningGroup, tonearmGroup, clickableMeshes };
+}
+
 interface TurntableModelProps {
   onNeedleDrop: () => void;
   isPlaying: boolean;
@@ -33,51 +80,22 @@ function TurntableModel({ onNeedleDrop, isPlaying }: TurntableModelProps) {
   const { scene } = useGLTF(GLB_PATH);
   const [hovered, setHovered] = useState(false);
 
-  // Clone scene so we don't mutate the cached original
-  const cloned = useMemo(() => scene.clone(true), [scene]);
-
-  // Refs for animated parts
-  const spinningRef = useRef<THREE.Group>(null);
-  const tonearmRef = useRef<THREE.Group>(null);
-
-  // Build groups from named meshes and tag clickable ones
-  useEffect(() => {
-    const spinningGroup = new THREE.Group();
-    const tonearmGroup = new THREE.Group();
-
-    cloned.traverse((obj) => {
-      if (obj.type !== 'Mesh') return;
-      const mesh = obj as THREE.Mesh;
-
-      if (SPINNING_MESHES.has(mesh.name)) {
-        mesh.updateMatrixWorld(true);
-        spinningGroup.attach(mesh);
-      } else if (TONEARM_MESHES.has(mesh.name)) {
-        mesh.updateMatrixWorld(true);
-        tonearmGroup.attach(mesh);
-        if (CLICKABLE_MESHES.has(mesh.name)) {
-          mesh.userData.clickable = true;
-        }
-      }
-    });
-
-    cloned.add(spinningGroup);
-    cloned.add(tonearmGroup);
-
-    spinningRef.current = spinningGroup;
-    tonearmRef.current = tonearmGroup;
-  }, [cloned]);
+  // Prepare the scene once, before the first render.
+  const { scene: root, spinningGroup, tonearmGroup, clickableMeshes } = useMemo(
+    () => prepareScene(scene),
+    [scene]
+  );
 
   // Spin animation
   useFrame((_, delta) => {
-    if (spinningRef.current && isPlaying) {
-      spinningRef.current.rotation.y += delta * 3;
+    if (isPlaying) {
+      spinningGroup.rotation.y += delta * 3;
     }
   });
 
   // Tonearm drop animation
   useEffect(() => {
-    if (!tonearmRef.current || !isPlaying) return;
+    if (!isPlaying) return;
     const targetRotation = 0.35;
     const startRotation = 0;
     const duration = 800;
@@ -87,49 +105,64 @@ function TurntableModel({ onNeedleDrop, isPlaying }: TurntableModelProps) {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
-      if (tonearmRef.current) {
-        tonearmRef.current.rotation.y = startRotation + (targetRotation - startRotation) * eased;
-      }
+      tonearmGroup.rotation.y = startRotation + (targetRotation - startRotation) * eased;
       if (progress < 1) requestAnimationFrame(animate);
     };
     animate();
-  }, [isPlaying]);
+  }, [isPlaying, tonearmGroup]);
 
   // Apply hover emissive to tonearm meshes
   useEffect(() => {
-    cloned.traverse((obj) => {
+    tonearmGroup.traverse((obj) => {
       if (obj.type !== 'Mesh') return;
       const mesh = obj as THREE.Mesh;
-      if (TONEARM_MESHES.has(mesh.name)) {
-        const mat = mesh.material as THREE.MeshStandardMaterial;
-        if (mat && mat.emissive) {
-          mat.emissive.setHex(hovered ? 0x332211 : 0x000000);
+      const material = mesh.material;
+      if (!material) return;
+
+      const applyEmissive = (mat: THREE.Material) => {
+        const std = mat as THREE.MeshStandardMaterial;
+        if (std.emissive) {
+          std.emissive.setHex(hovered ? 0x332211 : 0x000000);
         }
+      };
+
+      if (Array.isArray(material)) {
+        material.forEach(applyEmissive);
+      } else {
+        applyEmissive(material);
       }
     });
-  }, [hovered, cloned]);
+  }, [hovered, tonearmGroup]);
 
   const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
-    if (!e.object.userData.clickable) return;
+    if (!isClickableMesh(e.object)) return;
     e.stopPropagation();
     if (!isPlaying) onNeedleDrop();
   };
 
   const handlePointerOver = (e: ThreeEvent<PointerEvent>) => {
-    if (!e.object.userData.clickable) return;
+    if (!isClickableMesh(e.object)) return;
     e.stopPropagation();
     setHovered(true);
-    document.body.style.cursor = 'pointer';
+    if (typeof document !== 'undefined') {
+      document.body.style.cursor = 'pointer';
+    }
   };
 
   const handlePointerOut = () => {
     setHovered(false);
-    document.body.style.cursor = 'auto';
+    if (typeof document !== 'undefined') {
+      document.body.style.cursor = 'auto';
+    }
   };
+
+  function isClickableMesh(object: THREE.Object3D): boolean {
+    return object.type === 'Mesh' && clickableMeshes.includes(object as THREE.Mesh);
+  }
 
   return (
     <primitive
-      object={cloned}
+      object={root}
       onPointerDown={handlePointerDown}
       onPointerOver={handlePointerOver}
       onPointerOut={handlePointerOut}
@@ -163,7 +196,9 @@ export interface TurntableCanvasProps {
 export default function TurntableCanvas({ onNeedleDrop, isPlaying }: TurntableCanvasProps) {
   return (
     <Canvas shadows gl={{ antialias: true }}>
-      <SceneContent onNeedleDrop={onNeedleDrop} isPlaying={isPlaying} />
+      <Suspense fallback={null}>
+        <SceneContent onNeedleDrop={onNeedleDrop} isPlaying={isPlaying} />
+      </Suspense>
     </Canvas>
   );
 }
