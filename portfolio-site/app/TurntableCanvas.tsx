@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect, useMemo, Suspense } from 'react';
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
-import { PerspectiveCamera, Environment, useGLTF } from '@react-three/drei';
+import { Environment, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
 // ── GLB turntable model ───────────────────────────────────────────────
@@ -178,14 +178,9 @@ interface SceneContentProps {
 function SceneContent({ onNeedleDrop, isPlaying }: SceneContentProps) {
   return (
     <>
-      <PerspectiveCamera makeDefault position={[2, 1.5, 2]} fov={45} />
       <ambientLight intensity={0.6} />
       <directionalLight position={[1, -1, 2]} intensity={1.5} castShadow />
       <pointLight position={[-1, 1, 0.5]} intensity={0.3} color="#4444ff" />
-      <mesh position={[0, 0, 0]}>
-        <boxGeometry args={[0.2, 0.2, 0.2]} />
-        <meshStandardMaterial color="red" />
-      </mesh>
       <Suspense fallback={null}>
         <TurntableModel onNeedleDrop={onNeedleDrop} isPlaying={isPlaying} />
         <Environment files="/hdri/studio_small_03_1k.hdr" />
@@ -201,7 +196,7 @@ export interface TurntableCanvasProps {
 
 export default function TurntableCanvas({ onNeedleDrop, isPlaying }: TurntableCanvasProps) {
   return (
-    <Canvas shadows gl={{ antialias: true }}>
+    <Canvas shadows gl={{ antialias: true }} camera={{ position: [2, 1.5, 2], fov: 45 }}>
       <SceneContent onNeedleDrop={onNeedleDrop} isPlaying={isPlaying} />
     </Canvas>
   );
