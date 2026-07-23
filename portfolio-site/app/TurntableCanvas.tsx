@@ -133,6 +133,14 @@ function prepareScene(source: THREE.Group): PreparedScene {
     if (obj.type !== 'Mesh') return;
     const mesh = obj as THREE.Mesh;
 
+    // The Blender script places StartButton / PowerButton at coordinates that
+    // don't sit flush with the base. Hide them until the model is redone in
+    // Blender with correct topology.
+    if (mesh.name === 'StartButton' || mesh.name === 'PowerButton') {
+      mesh.visible = false;
+      return;
+    }
+
     // Assign photoreal PBR material based on mesh name.
     const spec = materialForMeshName(mesh.name);
     if (spec) {
@@ -334,7 +342,11 @@ export interface TurntableCanvasProps {
 
 export default function TurntableCanvas({ onNeedleDrop, isPlaying }: TurntableCanvasProps) {
   return (
-    <Canvas shadows gl={{ antialias: true }} camera={{ position: [1, 0.7, 1.2], fov: 35 }}>
+    <Canvas
+      shadows
+      gl={{ antialias: true }}
+      camera={{ position: [0.9, 0.6, 1.1], fov: 32 }}
+    >
       <SceneContent onNeedleDrop={onNeedleDrop} isPlaying={isPlaying} />
     </Canvas>
   );
