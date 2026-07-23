@@ -196,7 +196,7 @@ export interface TurntableCanvasProps {
 
 export default function TurntableCanvas({ onNeedleDrop, isPlaying }: TurntableCanvasProps) {
   return (
-    <Canvas shadows gl={{ antialias: true }} camera={{ position: [2, 1.5, 2], fov: 45 }}>
+    <Canvas shadows gl={{ antialias: true }} camera={{ position: [1, 0.7, 1.2], fov: 35 }}>
       <SceneContent onNeedleDrop={onNeedleDrop} isPlaying={isPlaying} />
     </Canvas>
   );
