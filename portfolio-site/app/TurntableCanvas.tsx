@@ -178,7 +178,11 @@ interface SceneContentProps {
 function SceneContent({ onNeedleDrop, isPlaying }: SceneContentProps) {
   return (
     <>
-      <PerspectiveCamera makeDefault position={[0.5, -0.5, 0.6]} fov={35} />
+      <PerspectiveCamera makeDefault position={[2, 1.5, 2]} fov={45} />
+      <mesh position={[0, 0, 0]}>
+        <boxGeometry args={[0.2, 0.2, 0.2]} />
+        <meshStandardMaterial color="red" />
+      </mesh>
       <ambientLight intensity={0.6} />
       <directionalLight position={[1, -1, 2]} intensity={1.5} castShadow />
       <pointLight position={[-1, 1, 0.5]} intensity={0.3} color="#4444ff" />
