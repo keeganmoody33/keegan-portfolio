@@ -10,17 +10,17 @@
 
 ### Pages
 
-| Route | File | What It Shows |
-|-------|------|---------------|
-| `/` | `app/page.tsx` | Turntable loading gate — click tonearm to start music and enter |
-| `/keeganmoody33` | `app/keeganmoody33/page.tsx` | Main portfolio page (all content on one page) |
+| Route            | File                         | What It Shows                                                   |
+|------------------|------------------------------|-----------------------------------------------------------------|
+| `/`              | `app/page.tsx`               | Turntable loading gate — click tonearm to start music and enter |
+| `/keeganmoody33` | `app/keeganmoody33/page.tsx` | Main portfolio page (all content on one page)                   |
 
 ### Vercel Routing Rules (vercel.json)
 
-| Type | From | To | Notes |
-|------|------|----|-------|
-| Redirect (301) | `/KeeganMoody33` | `/keeganmoody33` | Case normalization |
-| Redirect (301) | `/keeganMoody33` | `/keeganmoody33` | Case normalization |
+| Type           | From             | To               | Notes               |
+|----------------|------------------|------------------|---------------------|
+| Redirect (301) | `/KeeganMoody33` | `/keeganmoody33` | Case normalization  |
+| Redirect (301) | `/keeganMoody33` | `/keeganmoody33` | Case normalization  |
 
 **Result:** Visitors land on `lecturesfrom.com` and see the turntable gate. After the needle drop they are routed to `lecturesfrom.com/keeganmoody33`, the portfolio.
 
