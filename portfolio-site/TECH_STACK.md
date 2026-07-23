@@ -39,8 +39,8 @@ Runtime: **Deno**. Imports use URL specifiers with pinned versions where availab
 
 | Import URL | Pinned Version | Purpose |
 |------------|----------------|---------|
-| https://deno.land/std@0.168.0/http/server.ts | 0.168.0 | HTTP server (serve) |
-| https://esm.sh/@supabase/supabase-js@2 | @2 only (no patch) | Supabase client in Edge Functions |
+| <https://deno.land/std@0.168.0/http/server.ts> | 0.168.0 | HTTP server (serve) |
+| <https://esm.sh/@supabase/supabase-js@2> | @2 only (no patch) | Supabase client in Edge Functions |
 
 **Note:** `@supabase/supabase-js@2` is not patch-pinned; consider pinning to a specific version (e.g. 2.90.1) for reproducibility.
 
@@ -50,10 +50,10 @@ Runtime: **Deno**. Imports use URL specifiers with pinned versions where availab
 
 | Service | Endpoint | Auth Method | Env Variable |
 |---------|----------|-------------|--------------|
-| Anthropic Claude | https://api.anthropic.com/v1/messages | Header: `x-api-key` | ANTHROPIC_API_KEY (Supabase secrets) |
-| Firecrawl | https://api.firecrawl.dev/v1/scrape | Header: `Authorization: Bearer <token>` | FIRECRAWL_API_KEY (Supabase secrets) |
-| PostHog | https://us.i.posthog.com | Project key in client init | NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST |
-| Discogs | https://api.discogs.com | Header: `Authorization: Discogs token=<token>`, User-Agent required | DISCOGS_TOKEN (Next.js env) |
+| Anthropic Claude | <https://api.anthropic.com/v1/messages> | Header: `x-api-key` | ANTHROPIC_API_KEY (Supabase secrets) |
+| Firecrawl | <https://api.firecrawl.dev/v1/scrape> | Header: `Authorization: Bearer <token>` | FIRECRAWL_API_KEY (Supabase secrets) |
+| PostHog | <https://us.i.posthog.com> | Project key in client init | NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST |
+| Discogs | <https://api.discogs.com> | Header: `Authorization: Discogs token=<token>`, User-Agent required | DISCOGS_TOKEN (Next.js env) |
 | Supabase | NEXT_PUBLIC_SUPABASE_URL/functions/v1/* | Header: `Authorization: Bearer <anon_key>` | NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY |
 
 **Discogs (new):** `api.discogs.com`; auth via personal token; env var `DISCOGS_TOKEN`. Used for Recent Digs widget (collection endpoint).
@@ -73,7 +73,7 @@ Runtime: **Deno**. Imports use URL specifiers with pinned versions where availab
 ## Deployment
 
 - **Platform:** Vercel
-- **Live URL:** lecturesfrom.com/keeganmoody33 (rewrites in vercel.json: `/` → `/keeganmoody33`, `/keeganmoody33` → `/`)
+- **Live URL:** lecturesfrom.com (turntable gate) and lecturesfrom.com/keeganmoody33 (portfolio)
 - **Build:** Next.js (`next build`); auto-deploy on push to main
 
 ---

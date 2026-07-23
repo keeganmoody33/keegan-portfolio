@@ -29,12 +29,19 @@ COMPLETED:
 - YouTubePlayer: fixed strict-mode container destruction (LEC-33) — YT.Player replaces <div> with <iframe>, destroy() removes it from DOM, React doesn't know. Fix: wrapperRef + re-create container in initPlayer() if missing.
 - Banner widget bug fixes: RecentDigs, GitHubActivity, and Marquee now forward X-POSTHOG-DISTINCT-ID to API routes when PostHog has a real distinct ID; GitHubActivity loading skeleton and YouTubePlayer iframe container id are deterministic to avoid hydration mismatch.
 
+COMPLETED:
+- Phase 2: Turntable loading experience — shipped as root `/` gate
+  - Exported turntable.blend → public/models/turntable.glb
+  - Rewrote TurntableCanvas.tsx to load GLB, spin platter/record group, pivot tonearm group
+  - Moved portfolio from `/` to `/keeganmoody33`, turntable gate now at `/`
+  - Updated vercel.json to remove old `/` → `/keeganmoody33` redirect/rewrite
+  - Updated APP_FLOW.md and TECH_STACK.md to match new routing
+
 IN PROGRESS:
-- Phase 2: Turntable loading experience (see TURNTABLE HANDOFF section below)
+- Deploy to Vercel (auto-deploy not triggering; manual redeploy needed)
 
 NEXT:
-- Build MVP turntable on feature/turntable-loading branch
-- Test via Vercel preview URL, then merge to main
+- Worthy Reads widget (Phase 1, Step 1.3 -- data source TBD)
 - Worthy Reads widget (Phase 1, Step 1.3 -- data source TBD)
 - Banner section layout (Phase 1, Step 1.4 -- design TBD in Aura)
 - Alan Iverson chat persona (Phase 3) -- DEFERRED, moved to Backlog

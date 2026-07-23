@@ -1,6 +1,6 @@
 # App Flow — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-02-09
+**Last Updated:** 2026-07-22
 **Framework:** Next.js (App Router)
 **Deployment:** Vercel (auto-deploy on push to main)
 
@@ -12,19 +12,17 @@
 
 | Route | File | What It Shows |
 |-------|------|---------------|
-| `/` | `app/page.tsx` | Main portfolio page (all content on one page) |
-| `/keeganmoody33` | Vercel rewrite → `/` | Public-facing URL; rewrites internally to `/` |
+| `/` | `app/page.tsx` | Turntable loading gate — click tonearm to start music and enter |
+| `/keeganmoody33` | `app/keeganmoody33/page.tsx` | Main portfolio page (all content on one page) |
 
 ### Vercel Routing Rules (vercel.json)
 
 | Type | From | To | Notes |
 |------|------|----|-------|
-| Redirect (301) | `/` | `/keeganmoody33` | Root always redirects to vanity URL |
 | Redirect (301) | `/KeeganMoody33` | `/keeganmoody33` | Case normalization |
 | Redirect (301) | `/keeganMoody33` | `/keeganmoody33` | Case normalization |
-| Rewrite | `/keeganmoody33` | `/` | Internal rewrite; URL stays `/keeganmoody33` |
 
-**Result:** Visitors always see `lecturesfrom.com/keeganmoody33` in their browser. Internally, Next.js serves `app/page.tsx`.
+**Result:** Visitors land on `lecturesfrom.com` and see the turntable gate. After the needle drop they are routed to `lecturesfrom.com/keeganmoody33`, the portfolio.
 
 ### API Routes
 
@@ -128,6 +126,7 @@ Land on /keeganmoody33
 **Trigger:** Click "Ask AI" button (nav or hero CTA)
 
 **Steps:**
+
 1. Chat modal opens (overlay)
 2. If no messages: show 3 suggested questions
 3. User clicks suggested question OR types own question
@@ -152,6 +151,7 @@ Land on /keeganmoody33
 **Trigger:** Scroll to Projects section, interact with textarea
 
 **Steps:**
+
 1. User pastes job description text OR a URL into textarea
 2. Click "Analyze Fit" button
 3. Button shows "Analyzing...", disabled during processing
@@ -174,6 +174,7 @@ Land on /keeganmoody33
 **Trigger:** Page load (automatic)
 
 **Steps:**
+
 1. Component mounts, fires GET `/api/discogs`
 2. Loading skeleton renders (5 pulsing items)
 3. Data returns: 5 records with cover art, title, artist
@@ -194,6 +195,7 @@ Land on /keeganmoody33
 **Trigger:** Page load (data fetched from Supabase on mount in page.tsx)
 
 **Steps:**
+
 1. Page component fetches `experiences` from Supabase ordered by `display_order`
 2. Passes array to `Timeline` component as props
 3. Timeline renders vertical line with experience cards
@@ -215,6 +217,7 @@ Land on /keeganmoody33
 **Trigger:** Click "Show Activity" button (fixed, bottom-right)
 
 **Steps:**
+
 1. Sidebar slides in from right (fixed position)
 2. Shows system log entries (currently hardcoded/simulated)
 3. Theme toggle buttons at bottom (dark/light)
@@ -235,6 +238,7 @@ Land on /keeganmoody33
 **Trigger:** Always visible on page load.
 
 **Steps:**
+
 1. Renders immediately with hardcoded items
 2. Scrolls horizontally in infinite loop (40s cycle)
 3. Hover pauses animation
@@ -254,6 +258,7 @@ Land on /keeganmoody33
 **Trigger:** Page load (automatic). Loads YouTube IFrame API client-side.
 
 **Steps:**
+
 1. Component always renders `<Script>` tag + hidden iframe (even while loading)
 2. Loading skeleton shows inline (play button + track info placeholder) via ternary
 3. YouTube IFrame API script loads (`afterInteractive`)
@@ -274,6 +279,7 @@ Land on /keeganmoody33
 **Empty state:** Compact loading skeleton (py-2, inline layout) while IFrame API loads.
 
 **sessionStorage contract (Phase 2 Turntable handoff):**
+
 - Key: `yt-player-state`
 - Stores: `videoId`, `trackTitle`, `trackAuthor`, `position`, `duration`, `playing`, `playlistIndex`, `volume`, `timestamp`
 
@@ -286,6 +292,7 @@ Land on /keeganmoody33
 **Trigger:** Page load with configurable delay.
 
 **Steps:**
+
 1. Component mounts with `opacity-0`
 2. After delay (0ms for first name, 500ms for last name), `visible` state set to true
 3. Characters animate in sequence (50ms per character)

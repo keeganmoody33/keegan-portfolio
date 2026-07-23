@@ -1,0 +1,19 @@
+{
+  "plugins": {
+    "vercel": {
+      "enabled": true
+    },
+    "linear": {
+      "enabled": true
+    },
+    "posthog": {
+      "enabled": true
+    },
+    "supabase": {
+      "enabled": true
+    },
+    "sentry": {
+      "enabled": true
+    }
+  }
+}
