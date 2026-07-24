@@ -36,6 +36,9 @@ These are skills I can execute immediately with confidence. No ramp-up needed.
 | **ZoomInfo** | Used at Biofourmis and Mixmax | Know how to pull and enrich data |
 | **Excel / Data Manipulation** | Built methodology pairing spectrophotometer data with GPS coordinates | VLOOKUPs, concatenations, data cleaning — this is where my science background shows |
 | **Jupyter Notebooks** | Data analysis, customer cohort analysis at Mixmax | Reproducible analysis workflows |
+| **SendKit / icypeas** | Kivira campaign dispatch and email validation workflows | Contact verification and send orchestration |
+| **Context OS / Knowledge Graph** | Built Kivira Context OS with markdown nodes, `[[wiki-links]]`, and graph indexing | GTM memory and research compounding |
+| **React + Vite + TypeScript + Leaflet** | Morph MSO Intelligence Platform | Built interactive data visualization app for healthcare MSO research |
 
 ### GTM Engineering Specific
 
@@ -48,12 +51,15 @@ These are skills I can execute immediately with confidence. No ramp-up needed.
 | **Campaign Testing Frameworks** | Kill/scale thresholds (>4% = scale, <1% = kill), A/B/C variance testing | Systematic approach to finding winning combinations |
 | **Tech Stack Integration** | Clay -> Octave -> SmartLead -> HeyReach end-to-end workflow | Multi-tool orchestration for repeatable execution |
 | **GTM Documentation** | 30+ strategic documents, GTM onboarding system, methodology compendium | Academic-quality documentation for knowledge transfer |
+| **Healthcare GTM / Compliance-Forward Messaging** | Kivira CDS framing, BCOFA HIPAA/CAN-SPAM aware outreach | Navigating clinical/regulatory language in B2B healthcare outbound |
+| **MSO Market Intelligence / PE Signal Research** | Morph Focus HCS research — NPI/TIN, SOS, Form D, CRE signals | Public-data-driven predictive targeting for healthcare MSO acquisition |
+| **GTM Team Enablement / Intern Onboarding** | Kivira — onboarded and ramped NYU interns on research, outreach, and ops | Delegating and teaching GTM execution to junior contributors |
 
 ### Soft Skills
 
 | Skill | Evidence | Context |
 |-------|----------|---------|
-| **Learning New Domains Quickly** | Digital health (Biofourmis), land development (Trace Air), sales engagement (Mixmax) | Give me a week and I'll understand your market |
+| **Learning New Domains Quickly** | Digital health (Biofourmis), land development (Trace Air), sales engagement (Mixmax), mental health / clinical decision support (Kivira), bariatric / MSO healthcare (BCOFA, Morph) | Give me a week and I'll understand your market |
 | **Building Relationships** | People invest in me before I've proven anything — turntables, MPC, contracts, opportunities | Something about me makes people want to bet on me |
 | **Authenticity / Genuine Connection** | "Being personal on the phone. Being genuine. Having a real reason for the call." | I don't fake it. People can tell |
 | **Creative Problem Solving** | Hospital readmission methodology, self-sourced contacts, sampling/digging philosophy | I find what's hidden in plain sight |
@@ -139,36 +145,43 @@ These are skills I genuinely lack. Would need significant training or should avo
 ## Quick Reference by Category
 
 ### Prospecting & Lead Generation
+
 - **Strong:** Cold outreach strategy, lead sourcing, ICP development, personalized outreach, territory development, pain-based positioning
 - **Moderate:** Signal-based prospecting (Trigify), intent data interpretation
 - **Gap:** Paid lead generation, marketing-sourced pipeline
 
 ### Sales Execution
+
 - **Strong:** Meeting setting, discovery calls, relationship building
 - **Moderate:** Demo delivery, objection handling, multi-threading
 - **Gap:** Closing, negotiation, contract management, quota carrying as AE
 
 ### Tools & Technology
-- **Strong:** Claude Code, Cursor, Claude MCP, Python/Pandas, Clay, SmartLead/ScaledMail, Koncert, Apollo.io, HubSpot, Salesforce (user), LinkedIn Sales Navigator, ZoomInfo, Excel, Jupyter
-- **Moderate:** SalesLoft/Outreach, Gong, Trigify, basic SQL, Next.js/React/TypeScript
+
+- **Strong:** Claude Code, Cursor, Claude MCP, Python/Pandas, Clay, SmartLead/ScaledMail, Koncert, Apollo.io, HubSpot, Salesforce (user), LinkedIn Sales Navigator, ZoomInfo, Excel, Jupyter, SendKit/icypeas
+- **Moderate:** SalesLoft/Outreach, Gong, Trigify, basic SQL, Next.js/React/TypeScript, Context OS / knowledge graph, React + Vite + TypeScript + Leaflet
 - **Gap:** CRM administration, RevOps, marketing automation (Marketo, Pardot)
 
 ### GTM Engineering
-- **Strong:** Outbound infrastructure design, ICP validation methodology, tacit knowledge extraction, customer scoring models, campaign testing frameworks, tech stack integration, GTM documentation, AI agent orchestration, prompt engineering
-- **Moderate:** Next.js/React/TypeScript, Supabase Edge Functions, signal-based prospecting (Trigify)
+
+- **Strong:** Outbound infrastructure design, ICP validation methodology, tacit knowledge extraction, customer scoring models, campaign testing frameworks, tech stack integration, GTM documentation, AI agent orchestration, prompt engineering, compliance-forward healthcare messaging, MSO market intelligence, GTM team enablement
+- **Moderate:** Next.js/React/TypeScript, Supabase Edge Functions, signal-based prospecting (Trigify), Context OS / knowledge graph, React + Vite + TypeScript + Leaflet
 - **Gap:** Production engineering at scale
 
 ### Communication
+
 - **Strong:** Written outreach, authentic conversation, relationship building, documentation
 - **Moderate:** Concise verbal communication, managing up
 - **Gap:** Public speaking (large audiences), formal presentation skills
 
 ### Strategy & Analysis
+
 - **Strong:** Market research, ICP development, prospecting methodology design, pattern recognition
 - **Moderate:** Pipeline analysis, territory planning, competitive analysis
 - **Gap:** Financial modeling, forecasting, RevOps architecture
 
 ### Leadership
+
 - **Strong:** Leading by influence, mentoring peers, advocating for team
 - **Moderate:** Cross-functional collaboration, stakeholder management
 - **Gap:** People management, hiring, performance management
