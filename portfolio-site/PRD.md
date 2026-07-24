@@ -1,6 +1,6 @@
 # PRD — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-02-09
+**Last Updated:** 2026-07-24
 **Status:** MVP Shipped, Iterating
 **Live URL:** [lecturesfrom.com/keeganmoody33](https://lecturesfrom.com/keeganmoody33)
 

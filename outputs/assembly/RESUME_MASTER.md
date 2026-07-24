@@ -1,6 +1,6 @@
 # Keegan Moody — Resume
 
-> Last updated: 2026-01-19 | All metrics verified
+> Last updated: 2026-07-24 | All metrics verified
 
 ---
 

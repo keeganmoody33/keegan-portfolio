@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 COMPLETED:
 - Single-page portfolio (app/page.tsx)
 - Hero with SprayText animation (components/SprayText.tsx)

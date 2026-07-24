@@ -1,6 +1,6 @@
 # Implementation Plan — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-02-08
+**Last Updated:** 2026-07-24
 **Status:** Phase 0 complete (MVP shipped). Phases 1-5 sequenced below.
 **Previous plan:** `IMPLEMENTATION_PLAN_DISCOGS_ARCHIVED.md` (completed Discogs widget build)
 

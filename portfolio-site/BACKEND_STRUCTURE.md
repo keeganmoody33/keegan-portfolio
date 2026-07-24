@@ -1,6 +1,6 @@
 # Backend Structure — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-02-08
+**Last Updated:** 2026-07-24
 **Database:** Supabase (PostgreSQL)
 **Edge Functions Runtime:** Deno
 **API Layer:** Next.js Route Handlers (proxy pattern)
