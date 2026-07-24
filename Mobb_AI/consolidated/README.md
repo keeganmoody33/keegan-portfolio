@@ -6,18 +6,14 @@ This folder consolidates Mobb AI (mobb.ai / mobb.dev) work into markdown.
 
 | File | Source | Description |
 |------|--------|-------------|
-| [`../mobb-ai-work-summary.md`](../mobb-ai-work-summary.md) | Existing repo markdown | Main GTM strategy and market intelligence summary |
-| [`mobb-call-script.md`](mobb-call-script.md) | `Mobb Call Script.pdf` | Cold call script used for Mobb AI outreach |
+| [`mobb-ai-work-summary.md`](mobb-ai-work-summary.md) | Existing repo markdown | Main GTM strategy and market intelligence summary |
+| [`mobb-call-script.md`](mobb-call-script.md) | `Mobb Call Script.pdf` (converted) | Cold call script used for Mobb AI outreach |
 | [`mobb-vibe-shield-product-brief.md`](mobb-vibe-shield-product-brief.md) | `Mobb Product Breif.pdf` + `2025-06-13-mobb-product-brief-*.md` | Mobb Vibe Shield product brief |
 | [`mobb-vibe-shield-one-pager.md`](mobb-vibe-shield-one-pager.md) | `MOBB_AI_ONE_PAGER.pdf` / `Mobb Vibe Shield One-Pager.jpg` | One-page summary of Mobb Vibe Shield |
 
-## Original PDFs
+## Original PDFs (converted; deleted from `../` per user cleanup)
 
-Original PDFs remain in `../`:
-
-- `../Mobb Call Script.pdf`
-- `../Mobb Product Breif.pdf`
-- `../MOBB_AI_ONE_PAGER.pdf`
+Original PDFs have been removed from `../` after markdown conversion. Converted versions are above.
 
 ## Other Mobb artifacts found (not yet consolidated)
 
