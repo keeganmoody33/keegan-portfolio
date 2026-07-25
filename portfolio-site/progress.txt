@@ -7,7 +7,6 @@ COMPLETED:
 - PostHog analytics (client + server)
 - Marquee ticker (components/Marquee.tsx)
 - Publications section (components/Publications.tsx, used inside Timeline)
-- ActivityStream sidebar (components/ActivityStream.tsx)
 - Vercel deployment with URL rewrites (vercel.json)
 - Discogs "Recent Digs" banner widget (components/RecentDigs.tsx, app/api/discogs/route.ts)
 - Canonical documentation: PRD.md, APP_FLOW.md, TECH_STACK.md, FRONTEND_GUIDELINES.md, BACKEND_STRUCTURE.md, IMPLEMENTATION_PLAN.md
@@ -27,6 +26,7 @@ COMPLETED:
 - BannerRotator (LEC-32): YouTubePlayer, RecentDigs, GitHubActivity cycle in single rotating slot below Marquee — 8s auto-rotate, pause-on-hover, dot indicators
 - YouTubePlayer: fixed strict-mode container destruction (LEC-33) — YT.Player replaces <div> with <iframe>, destroy() removes it from DOM, React doesn't know. Fix: wrapperRef + re-create container in initPlayer() if missing.
 - Banner widget bug fixes: RecentDigs, GitHubActivity, and Marquee now forward X-POSTHOG-DISTINCT-ID to API routes when PostHog has a real distinct ID; GitHubActivity loading skeleton and YouTubePlayer iframe container id are deterministic to avoid hydration mismatch.
+- Phase 1, Step 1.4 (Banner Section Layout) -- DONE, shipped via BannerRotator with 3 widgets (YouTube, RecentDigs, GitHub)
 
 COMPLETED:
 - Phase 2: Turntable loading experience — shipped as root `/` gate
@@ -36,12 +36,29 @@ COMPLETED:
   - Updated vercel.json to remove old `/` → `/keeganmoody33` redirect/rewrite
   - Updated APP_FLOW.md and TECH_STACK.md to match new routing
 
-NEXT:
-- Banner section layout (Phase 1, Step 1.4 -- design TBD in Aura)
+COMPLETED (2026-07-24 session — debt + polish):
+- Rate limiting on all 4 API routes (lib/rate-limit.ts): chat/jd-analyzer 10/min, discogs/github 30/min, 429 + Retry-After + PostHog tracking
+- Discogs API route: added 5-min cache (next: { revalidate: 300 })
+- .env.local.example: added DISCOGS_TOKEN entry
+- ARIA labels added: YouTubePlayer progress bar (role=slider), Marquee (aria-label), Chat (send/input/clear/suggested), JDAnalyzer (submit/textarea), BannerRotator dots, Timeline company links, page nav/CTA buttons
+- Mobile responsive fixes: hero text (text-5xl sm:text-7xl), padding (px-4 sm:px-8), nav gap, footer stacking, Timeline date column/card padding, Chat send button
+- ActivityStream component REMOVED from app/keeganmoody33/page.tsx (fake data undermined credibility; GitHub Activity widget covers real activity)
+- APP_FLOW.md updated: removed Activity Stream from render order + interaction flows
+- Edge Functions modernized: replaced deprecated std@0.168.0/http/server.ts with built-in Deno.serve(); pinned @supabase/supabase-js@2.90.1
+- Edge Functions deployed: chat v14, jd-analyzer v13 (both live on Supabase)
+- Schema drift fixed in archived SQL files: candidate_profiles→candidate_profile, bullet_points→public_bullets, key_deliverables→public_bullets, honest_assessment→private_context_what_id_do_differently
+- All docs scrubbed: Worthy Reads and Alan Iverson removed/cancelled across PRD, IMPLEMENTATION_PLAN, BANNER_WIDGETS_SPEC, AURA_PROMPTS, DESIGN_PLAYBOOK, TURNTABLE_LOADING_SPEC, NAVIGATION_PATHWAYS_SPEC, HUMAN_MACHINE_TOGGLE_SPEC, lessons.md
+- docs/ALAN_IVERSON_SPEC.md deleted
+- TECH_STACK.md updated with Edge Function changes
+- Commit 2e9fc67 pushed to origin/main, Vercel auto-deployed, site live (200 OK)
 
 CANCELLED:
 - Worthy Reads widget (Phase 1, Step 1.3) -- CANCELLED 2026-07-24, feature descoped
 - Alan Iverson chat persona (Phase 3) -- CANCELLED 2026-07-24, feature descoped
+
+NEXT:
+- Phase 4: Navigation pathways redesign + Vinyl grid overlay (spec exists: docs/NAVIGATION_PATHWAYS_SPEC.md)
+- Phase 5: Human/Machine toggle (spec exists: docs/HUMAN_MACHINE_TOGGLE_SPEC.md, depends on Phase 4)
 
 --- TURNTABLE HANDOFF (Phase 2) ---
 
@@ -94,15 +111,18 @@ DEPLOYMENT STRATEGY:
 - Rollback: git revert HEAD --no-edit && git push origin main
 
 KNOWN ISSUES:
-- Schema drift: multiple SQL files reference incorrect column names (see root-level SQL files)
 - achievements table populated but not queried by any Edge Function
-- Deno std lib in Edge Functions pinned to 0.168.0 (~45 versions behind)
-- Most components lack dedicated mobile responsive handling (RecentDigs no longer has separate mobile/desktop variants -- unified compact layout)
-- No ARIA labels on most interactive elements
-- No rate limiting on API routes
-- No caching on Discogs API route
-- Activity Stream uses hardcoded/simulated data (not real-time)
-- DISCOGS_TOKEN missing from .env.local.example
+- In-memory rate limiting won't work across multiple Vercel serverless instances (stopgap; needs Upstash Redis or Vercel KV for production-grade)
+- components/ActivityStream.tsx still exists on disk but is no longer imported or rendered (safe to delete if confirmed not needed)
+
+RESOLVED (2026-07-24 session):
+- ~~Schema drift in SQL files~~ — fixed: candidate_profiles→candidate_profile, bullet_points→public_bullets, key_deliverables→public_bullets
+- ~~Deno std lib pinned to 0.168.0~~ — replaced with built-in Deno.serve()
+- ~~No ARIA labels~~ — added to all interactive elements
+- ~~No rate limiting~~ — added to all 4 API routes
+- ~~No caching on Discogs~~ — added 5-min revalidation
+- ~~Activity Stream hardcoded data~~ — component removed from page
+- ~~DISCOGS_TOKEN missing from .env.local.example~~ — added
 
 PARKING LOT (not in scope yet):
 - Human/Machine toggle (Phase 5)

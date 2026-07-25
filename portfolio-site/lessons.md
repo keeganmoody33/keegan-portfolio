@@ -65,3 +65,11 @@ Updated: 2026-02-10
 ## Descoped Features
 
 - Worthy Reads widget and Alan Iverson chat persona were cancelled on 2026-07-24. Both have been removed from all planning docs. Do not reintroduce them without explicit request.
+
+## Edge Function Deployment
+
+- **`import { serve } from "https://deno.land/std@0.168.0/http/server.ts"` is deprecated.** Use the built-in `Deno.serve()` instead. The std/http server module was the old pattern; modern Deno has `Deno.serve` as a global. Both Edge Functions were updated 2026-07-24.
+- **Pin `@supabase/supabase-js` in Edge Functions.** The original used `@2` (floating major). Pin to a patch version (e.g. `@2.90.1`) for reproducibility — matches the version in package.json.
+- **`request.ip` is not in the standard `NextRequest` type.** Next.js exposes it at runtime but TypeScript doesn't know about it. Use `(request as NextRequest & { ip?: string }).ip` to access it without TS errors. The rate-limit.ts helper handles this; API routes that reference `request.ip` directly in PostHog properties need the same cast.
+- **In-memory rate limiting is a stopgap for Vercel.** Each serverless instance has its own memory, so rate limits won't be accurate across multiple instances. Acceptable for a low-traffic portfolio site. For production-grade, use Upstash Redis or Vercel KV.
+- **Always grep all docs after cancelling a feature.** Cancelling Worthy Reads + Alan Iverson required edits across 10+ files (PRD, IMPLEMENTATION_PLAN, BANNER_WIDGETS_SPEC, AURA_PROMPTS, AURA_PROMPTS_V2, DESIGN_PLAYBOOK, TURNTABLE_LOADING_SPEC, NAVIGATION_PATHWAYS_SPEC, HUMAN_MACHINE_TOGGLE_SPEC, lessons.md, progress.txt). The first subagent pass missed references in spec docs that weren't in the original task list. A final grep caught them.

@@ -166,6 +166,21 @@ Only surface when directly asked. Frame constructively.
 
 ## Recent Sessions
 
+**2026-07-24:** Debt + polish sweep (5 parallel loops)
+
+- Rate limiting on all 4 API routes (lib/rate-limit.ts): chat/jd-analyzer 10/min, discogs/github 30/min
+- Discogs API route: added 5-min cache (next: { revalidate: 300 })
+- ARIA labels added to all interactive elements (YouTubePlayer, Marquee, Chat, JDAnalyzer, BannerRotator, Timeline, nav buttons)
+- Mobile responsive fixes: hero text, padding, nav gap, footer stacking, timeline columns, card padding
+- ActivityStream component removed from page (fake data; GitHub Activity widget covers real activity)
+- Edge Functions modernized: deprecated std@0.168.0/http/server.ts → built-in Deno.serve(); pinned @supabase/supabase-js@2.90.1
+- Edge Functions deployed: chat v14, jd-analyzer v13 (both live)
+- Schema drift fixed in archived SQL files (candidate_profiles→candidate_profile, bullet_points→public_bullets, key_deliverables→public_bullets)
+- Worthy Reads and Alan Iverson CANCELLED — scrubbed from all docs, ALAN_IVERSON_SPEC.md deleted
+- Phase 2 turntable marked COMPLETED, Phase 1.4 banner layout marked DONE
+- Commit 2e9fc67 pushed to origin/main, Vercel auto-deployed, site live (200 OK)
+- Next: Phase 4 (Navigation pathways + Vinyl grid), Phase 5 (Human/Machine toggle)
+
 **2026-02-08 (night):** YouTube player + Turntable prep
 
 - Built YouTube persistent player widget (Phase 1, Step 1.1): components/YouTubePlayer.tsx, types/youtube.d.ts
