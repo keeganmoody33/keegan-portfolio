@@ -1,6 +1,6 @@
 # Keegan Moody — Portfolio Context
 
-**Last Updated:** 2026-02-08
+**Last Updated:** 2026-07-24
 **Status:** Actively seeking GTM Engineer / Founding Growth roles
 **Location:** Atlanta, GA or Remote
 **Live Site:** [lecturesfrom.com/keeganmoody33](https://lecturesfrom.com/keeganmoody33)

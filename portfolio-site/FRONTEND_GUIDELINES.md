@@ -1,6 +1,6 @@
 # Frontend Guidelines — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-02-09
+**Last Updated:** 2026-07-24
 **Supersedes:** `docs/DESIGN_PLAYBOOK.md` (archived -- all content folded into this doc)
 **CSS Framework:** Tailwind CSS 3.4.19 + CSS Custom Properties
 **Fonts:** Google Fonts (Space Grotesk, Roboto Mono, Roboto Slab)
