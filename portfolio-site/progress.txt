@@ -34,13 +34,12 @@ COMPLETED:
   - Updated vercel.json to remove old `/` → `/keeganmoody33` redirect/rewrite
   - Updated APP_FLOW.md and TECH_STACK.md to match new routing
 
-IN PROGRESS:
-- Deploy to Vercel (auto-deploy not triggering; manual redeploy needed)
-
 NEXT:
-- Worthy Reads widget (Phase 1, Step 1.3 -- data source TBD)
 - Banner section layout (Phase 1, Step 1.4 -- design TBD in Aura)
-- Alan Iverson chat persona (Phase 3) -- DEFERRED, moved to Backlog
+
+CANCELLED:
+- Worthy Reads widget (Phase 1, Step 1.3) -- CANCELLED 2026-07-24, feature descoped
+- Alan Iverson chat persona (Phase 3) -- CANCELLED 2026-07-24, feature descoped
 
 --- TURNTABLE HANDOFF (Phase 2) ---
 

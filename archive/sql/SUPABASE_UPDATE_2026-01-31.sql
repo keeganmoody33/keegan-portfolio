@@ -1,3 +1,4 @@
+-- ARCHIVED: Historical update script. Corrected to match live schema (2026-07-24).
 -- ============================================================
 -- PORTFOLIO DATABASE UPDATE - 2026-01-31
 -- Run this in Supabase SQL Editor
@@ -65,14 +66,14 @@ WHERE id = 'keegan-moody-001';
 -- Trace Air - Focus on wins
 UPDATE experiences
 SET
-    bullet_points = ARRAY[
+    public_bullets = ARRAY[
         '$220K generated in 90 days from greenfield territory',
         '23 demos booked in first fully onboarded month',
         '18 of 23 demos (78%) self-sourced from outside the CRM',
         'Built territory from scratch for new AE with no existing book of business',
         'Prospected via LinkedIn, personalized videos, direct phone outreach'
     ],
-    honest_assessment = NULL,
+    private_context_what_id_do_differently = NULL,
     would_do_differently = NULL,
     updated_at = NOW()
 WHERE company_name ILIKE '%trace%air%';
@@ -80,14 +81,14 @@ WHERE company_name ILIKE '%trace%air%';
 -- Biofourmis - Focus on wins
 UPDATE experiences
 SET
-    bullet_points = ARRAY[
+    public_bullets = ARRAY[
         'Co-founding SDR feeding 6 AEs across all of North America',
         'Enterprise healthcare accounts: hospitals, academic medical centers',
         'Originated Orlando Health deal: $1M+ lifetime value, 90-day close, still active',
         'Built prospecting methodology from scratch in remote-first startup',
         'Developed hospital readmission pain-based messaging framework'
     ],
-    honest_assessment = NULL,
+    private_context_what_id_do_differently = NULL,
     would_do_differently = NULL,
     updated_at = NOW()
 WHERE company_name ILIKE '%biofourmis%';
@@ -95,7 +96,7 @@ WHERE company_name ILIKE '%biofourmis%';
 -- Mixmax - Frame as infrastructure build, not failure
 UPDATE experiences
 SET
-    bullet_points = ARRAY[
+    public_bullets = ARRAY[
         'Built complete GTM infrastructure from zero — first time doing any of it',
         '53-inbox email infrastructure across multiple providers',
         'ICP validation across 280 customers ($4.79M ARR analyzed)',
@@ -103,7 +104,7 @@ SET
         'Full methodology documentation for handoff — system is production-ready',
         'Worked directly with CRO daily; RevOps was counterpart'
     ],
-    honest_assessment = NULL,
+    private_context_what_id_do_differently = NULL,
     would_do_differently = NULL,
     updated_at = NOW()
 WHERE company_name ILIKE '%mixmax%';
@@ -183,7 +184,7 @@ FROM candidate_profile
 WHERE id = 'keegan-moody-001';
 
 -- Check experiences
-SELECT company_name, bullet_points[1] as first_bullet, honest_assessment
+SELECT company_name, public_bullets[1] as first_bullet, private_context_what_id_do_differently
 FROM experiences
 WHERE candidate_id = 'keegan-moody-001';
 

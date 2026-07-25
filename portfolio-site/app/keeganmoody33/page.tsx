@@ -6,7 +6,6 @@ import Chat from '@/components/Chat'
 import JDAnalyzer from '@/components/JDAnalyzer'
 import SprayText from '@/components/SprayText'
 import Timeline from '@/components/Timeline'
-import ActivityStream from '@/components/ActivityStream'
 import Marquee from '@/components/Marquee'
 import RecentDigs from '@/components/RecentDigs'
 import GitHubActivity from '@/components/GitHubActivity'
@@ -61,7 +60,6 @@ export default function Home() {
   const [experiences, setExperiences] = useState<Experience[]>([])
   const [showChat, setShowChat] = useState(false)
   const [showJD, setShowJD] = useState(false)
-  const [showSidebar, setShowSidebar] = useState(false)
 
   // Event handlers with PostHog tracking
   const handleOpenChat = () => {
@@ -74,14 +72,6 @@ export default function Home() {
   const handleCloseChat = () => {
     posthog.capture('chat_modal_closed')
     setShowChat(false)
-  }
-
-  const handleToggleSidebar = () => {
-    const newState = !showSidebar
-    posthog.capture('activity_sidebar_toggled', {
-      sidebar_visible: newState
-    })
-    setShowSidebar(newState)
   }
 
   const handleExternalLinkClick = (linkName: string, url: string) => {
@@ -99,7 +89,7 @@ export default function Home() {
         .select('*')
         .eq('id', 'keegan-moody-001')
         .single()
-      
+
       if (profileData) setProfile(profileData)
 
       // Fetch experiences
@@ -108,7 +98,7 @@ export default function Home() {
         .select('*')
         .eq('candidate_id', 'keegan-moody-001')
         .order('display_order', { ascending: true })
-      
+
       if (expData) setExperiences(expData)
     }
 
@@ -136,14 +126,14 @@ export default function Home() {
       {/* Main Layout */}
       <div className="flex">
         {/* Main Content */}
-        <main className={`flex-1 px-8 lg:px-16 py-8 ${showSidebar ? 'lg:pr-[400px]' : ''}`}>
+        <main className="flex-1 px-4 sm:px-8 lg:px-16 py-8">
           {/* Navigation */}
-          <nav className="flex items-center justify-between mb-16">
+          <nav className="flex items-center justify-between mb-12 sm:mb-16">
             <div className="flex items-center gap-2">
               <span className="text-[var(--text-muted)] font-mono text-sm">/</span>
               <span className="text-[var(--text-bright)] font-space">lecturesfrom</span>
             </div>
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-3 sm:gap-8">
               <a href="#experience" className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
                 XP
               </a>
@@ -155,7 +145,8 @@ export default function Home() {
               </a>
               <button
                 onClick={handleOpenChat}
-                className="ask-ai-btn px-4 py-2 font-mono text-sm"
+                aria-label="Ask AI"
+                className="ask-ai-btn px-3 py-2 sm:px-4 font-mono text-sm"
               >
                 Ask AI
               </button>
@@ -181,14 +172,14 @@ export default function Home() {
             </div>
 
             {/* Name */}
-            <h1 className="text-7xl lg:text-9xl font-bold tracking-tight mb-8">
-              <SprayText 
-                text={profile?.first_name?.toUpperCase() || 'KEEGAN'} 
+            <h1 className="text-5xl sm:text-7xl lg:text-9xl font-bold tracking-tight mb-8">
+              <SprayText
+                text={profile?.first_name?.toUpperCase() || 'KEEGAN'}
                 className="text-[var(--accent-lime)]"
               />
               <br />
-              <SprayText 
-                text={profile?.last_name?.toUpperCase() || 'MOODY'} 
+              <SprayText
+                text={profile?.last_name?.toUpperCase() || 'MOODY'}
                 className="text-[var(--accent-orange)]"
                 delay={500}
               />
@@ -204,6 +195,7 @@ export default function Home() {
                 </p>
                 <button
                   onClick={handleOpenChat}
+                  aria-label="Ask AI"
                   className="ask-ai-btn px-6 py-3 font-mono"
                 >
                   Ask AI
@@ -239,11 +231,11 @@ export default function Home() {
 
           {/* Footer */}
           <footer id="contact" className="border-t border-[var(--border-dim)] pt-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <span className="text-[var(--text-muted)] font-mono text-sm">
                 © 2026 lecturesfrom
               </span>
-              <div className="flex gap-6">
+              <div className="flex flex-wrap gap-4 sm:gap-6">
                 <a
                   href={profile?.linkedin_url || 'https://linkedin.com/in/keeganmoody33'}
                   target="_blank"
@@ -303,20 +295,6 @@ export default function Home() {
           </footer>
         </main>
 
-        {/* Sidebar Toggle Button */}
-        <button
-          onClick={handleToggleSidebar}
-          className="hidden lg:flex fixed right-4 bottom-4 z-40 items-center gap-2 px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-dim)] rounded text-[var(--text-muted)] hover:text-[var(--accent-lime)] hover:border-[var(--accent-lime)] font-mono text-xs transition-colors"
-        >
-          {showSidebar ? 'Hide' : 'Show'} Activity
-        </button>
-
-        {/* Right Sidebar - Activity Stream (toggleable) */}
-        {showSidebar && (
-          <aside className="hidden lg:block fixed right-0 top-0 w-[380px] h-screen border-l border-[var(--border-dim)] bg-[var(--bg-glass)] p-6 overflow-y-auto">
-            <ActivityStream />
-          </aside>
-        )}
       </div>
 
       {/* Chat Modal */}
@@ -327,6 +305,7 @@ export default function Home() {
               <h3 className="text-[var(--text-bright)] font-mono">Ask AI</h3>
               <button
                 onClick={handleCloseChat}
+                aria-label="Close chat"
                 className="text-[var(--text-muted)] hover:text-[var(--text-bright)]"
               >
                 ✕

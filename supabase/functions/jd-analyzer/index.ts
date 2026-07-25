@@ -4,8 +4,7 @@
 // UPDATED: Strategic positioning framework - leads with fit, reframes gaps as growth areas
 // Deployed to: https://cvkcwvmlnghwwvdqudod.supabase.co/functions/v1/jd-analyzer
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,7 +30,7 @@ interface PortfolioContext {
   ai_instructions: AIInstruction[];
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -104,7 +103,7 @@ function isUrl(str: string): boolean {
 
 async function scrapeJobPosting(url: string): Promise<string> {
   const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
-  
+
   if (!firecrawlKey) {
     throw new Error("Firecrawl API key not configured. Please paste the job description text directly.");
   }
@@ -154,7 +153,7 @@ async function fetchPortfolioContext(supabase: any): Promise<PortfolioContext> {
 
 function buildJDAnalyzerPrompt(context: PortfolioContext): string {
   const { ai_instructions } = context;
-  
+
   // Group instructions by type
   const byType: Record<string, string[]> = {};
   for (const inst of ai_instructions) {
@@ -289,17 +288,17 @@ ${bullets.map((b: string) => `- ${b}`).join("\n")}
   }
 
   candidateText += "\n## SKILLS & CAPABILITIES\n";
-  
+
   const strong = skills.filter((s: any) => s.category === 'strong');
   const moderate = skills.filter((s: any) => s.category === 'moderate');
-  
+
   if (strong.length > 0) {
     candidateText += "\n### Core Strengths\n";
     for (const skill of strong) {
       candidateText += `- ${skill.skill_name}: ${skill.evidence || ""}\n`;
     }
   }
-  
+
   if (moderate.length > 0) {
     candidateText += "\n### Developing Skills\n";
     for (const skill of moderate) {

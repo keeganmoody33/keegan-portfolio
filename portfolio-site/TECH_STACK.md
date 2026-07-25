@@ -39,10 +39,8 @@ Runtime: **Deno**. Imports use URL specifiers with pinned versions where availab
 
 | Import URL | Pinned Version | Purpose |
 |------------|----------------|---------|
-| <https://deno.land/std@0.168.0/http/server.ts> | 0.168.0 | HTTP server (serve) |
-| <https://esm.sh/@supabase/supabase-js@2> | @2 only (no patch) | Supabase client in Edge Functions |
-
-**Note:** `@supabase/supabase-js@2` is not patch-pinned; consider pinning to a specific version (e.g. 2.90.1) for reproducibility.
+| `Deno.serve()` | Built-in (Deno runtime) | HTTP server — replaced deprecated `std@0.168.0/http/server.ts` import on 2026-07-24 |
+| <https://esm.sh/@supabase/supabase-js@2.90.1> | 2.90.1 | Supabase client in Edge Functions (patch-pinned for reproducibility) |
 
 ---
 

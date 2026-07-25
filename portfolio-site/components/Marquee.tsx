@@ -50,7 +50,7 @@ export default function Marquee() {
   const allItems = [...items, ...items]
 
   return (
-    <div className="w-full overflow-hidden border-b border-[var(--border-dim)] bg-[var(--bg-surface)]">
+    <div className="w-full overflow-hidden border-b border-[var(--border-dim)] bg-[var(--bg-surface)]" aria-label="Activity ticker">
       <div className="marquee-container py-2">
         {allItems.map((item, i) => (
           <div key={i} className="flex items-center gap-2 px-8 whitespace-nowrap">

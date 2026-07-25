@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPostHogClient } from '@/lib/posthog-server'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 interface GitHubEvent {
   type: string
@@ -12,6 +13,23 @@ interface GitHubEvent {
 export async function GET(request: NextRequest) {
   const posthog = getPostHogClient()
   const distinctId = request.headers.get('X-POSTHOG-DISTINCT-ID') || 'anonymous_server'
+
+  // Rate limit: 30 requests per minute per IP
+  const rateLimit = checkRateLimit(request, 'api/github', 30, 60 * 1000)
+  if (!rateLimit.success) {
+    posthog.capture({
+      distinctId,
+      event: 'api_rate_limited',
+      properties: {
+        route: 'api/github',
+        ip: (request as NextRequest & { ip?: string }).ip || request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown',
+      }
+    })
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfter) } }
+    )
+  }
 
   try {
     posthog.capture({

@@ -18,17 +18,19 @@
 
 ---
 
-## Widgets (4 Total)
+## Widgets (3 Total)
 
 ### 1. YouTube Player
 
 **What it does:**
+
 - Persistent music player that continues from turntable intro
 - Can browse playlist and switch tracks
 - Hover reveals controls
 - Play/pause, track info, progress
 
 **Technical approach:**
+
 - YouTube IFrame API (same as turntable)
 - State passed via sessionStorage from turntable
 - Controls: play/pause, next/prev, volume
@@ -40,12 +42,14 @@
 ### 2. GitHub Activity (Classic Retro Bars)
 
 **What it does:**
+
 - Retro vertical bar graph showing recent commit activity
 - Classic arcade/pixel aesthetic
 - Last 7-14 days of contributions
 - Clicking opens GitHub profile
 
 **Technical approach:**
+
 - Fetch from: `api.github.com/users/keeganmoody33/events`
 - Render as retro vertical bars (think classic arcade)
 - Subtle animation/glow optional
@@ -53,6 +57,7 @@
 **Username:** `keeganmoody33` ✅
 
 **Visual reference:**
+
 - Classic retro vertical bars
 - Pixel/arcade aesthetic
 - Could add subtle glow or pulse
@@ -62,11 +67,13 @@
 ### 3. Recent Digs (Discogs)
 
 **What it does:**
+
 - Shows recently added vinyl to collection
 - Title + metadata displayed
 - Taps into Discogs API
 
 **Technical approach:**
+
 - Discogs API: `api.discogs.com/users/lecturesfrom/collection`
 - Show recent additions with:
   - Album title
@@ -77,28 +84,9 @@
 **Username:** `lecturesfrom` ✅
 
 **Scope:**
+
 - MVP: Last 3-5 records added
 - Display: Title, artist, thumbnail
-
----
-
-### 4. Worthy Reads
-
-**What it does:**
-- Curated list of stuff you've recently read
-- Backlinks to other people's content (Substack posts, articles, etc.)
-- Updates manually
-
-**Technical approach:**
-- Data source: TBD — will be dropped in chat when needed
-- Could be:
-  - Simple JSON config file
-  - Supabase table
-  - Manual entry somewhere
-
-**Scope:**
-- MVP: 3-5 recent reads
-- Display: Title, source, link
 
 ---
 
@@ -118,7 +106,7 @@
 ┌─────────────────────────────────────────────────────────────┐
 │  BANNER (top of page, hover stops scroll)                   │
 │                                                             │
-│  [▶ YouTube Player]  [GitHub ▃▅▂▇▄]  [Digs]  [Reads]       │
+│  [▶ YouTube Player]  [GitHub ▃▅▂▇▄]  [Digs]                  │
 │                                                             │
 │  Layout TBD in Aura                                         │
 └─────────────────────────────────────────────────────────────┘
@@ -131,7 +119,6 @@
 - YouTube IFrame API
 - GitHub REST API (no auth needed for public events)
 - Discogs API + token (env var)
-- Worthy Reads data source (TBD)
 
 ---
 
@@ -145,8 +132,7 @@
 
 ## Remaining TBD
 
-1. **Worthy Reads data source:** Where do you log these?
-2. **Exact layout/spacing:** Will be designed in Aura
+1. **Exact layout/spacing:** Will be designed in Aura
 
 ---
 

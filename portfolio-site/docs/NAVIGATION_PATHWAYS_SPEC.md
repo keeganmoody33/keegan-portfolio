@@ -318,17 +318,20 @@ interface VinylTileProps {
 ### Sections
 
 #### 1. Hero Block
+
 - Title
 - Tagline / goal
 - Category badge
 - Hero album-style visual
 
 #### 2. Narrative: "Why I Built It"
+
 - Tie into LecturesFrom context (honest, not polished)
 - Personal motivation
 - Problem being solved
 
 #### 3. Technical Breakdown
+
 - Stack overview (chips)
 - Architecture sketch (text or diagram)
 - Implementation details:
@@ -338,12 +341,14 @@ interface VinylTileProps {
   - etc.
 
 #### 4. Outcome / Impact
+
 - Did it ship?
 - What changed about how you build?
 - Live usage metrics or qualitative outcomes
 - Honest assessment (works, doesn't work, learned X)
 
 #### 5. Links
+
 - Source repo
 - Live demo
 - Related docs
@@ -357,6 +362,7 @@ interface VinylTileProps {
 **Purpose:** Generate real HTML/Tailwind that can be transplanted into Next.js
 
 **Use for:**
+
 1. **Header + Overlay Layout**
    - Prompt: "Design a dark-mode portfolio header with bold, vinyl-inspired tiles for navigation. When a nav tile is active, show a full-screen grid of album-like project cards that can be exported to HTML/Tailwind."
    - Use Advanced Design Mode for spacing/breakpoints
@@ -378,6 +384,7 @@ interface VinylTileProps {
 **Purpose:** Add depth, motion, and atmosphere
 
 **Use for:**
+
 1. **Hero Vinyl Stack Scene**
    - 3-6 vinyl covers in 3D space
    - Slow rotation, mouse tracking tilt
@@ -420,6 +427,7 @@ export async function getCollection() {
 ### Data Mapping
 
 Discogs releases → VinylTile format:
+
 ```typescript
 {
   id: release.id.toString(),
@@ -436,6 +444,7 @@ Discogs releases → VinylTile format:
 ## 10. Implementation Phases
 
 ### Phase 0 — Content Prep
+
 - [ ] Finalize categories + list 6-12 projects for first run
 - [ ] For each project, draft:
   - Title
@@ -446,6 +455,7 @@ Discogs releases → VinylTile format:
   - Links to repos/demos
 
 ### Phase 1 — Code Skeleton
+
 - [ ] Add `lib/nav.ts` with nav items array
 - [ ] Add `lib/projects.ts` with schema + helper functions
 - [ ] Implement `NavBar` with clickable items that set Pathway state
@@ -453,11 +463,13 @@ Discogs releases → VinylTile format:
 - [ ] Tiles route to `/projects/[id]`
 
 ### Phase 2 — Project Pages
+
 - [ ] Create dynamic route `app/projects/[id]/page.tsx`
 - [ ] Render 4 main sections using projects metadata
 - [ ] Apply LecturesFrom "honest context" tone
 
 ### Phase 3 — Aura Integration
+
 - [ ] Generate nav + overlay layout in Aura
 - [ ] Generate vinyl card component
 - [ ] Export HTML/Tailwind
@@ -465,12 +477,14 @@ Discogs releases → VinylTile format:
 - [ ] Dial in mobile/tablet breakpoints
 
 ### Phase 4 — Unicorn Integration
+
 - [ ] Build hero "vinyl stack" scene
 - [ ] Add mouse tracking, 3D tilt, appear events
 - [ ] Export as embed
 - [ ] Slot into / hero or /stack-of-wax
 
 ### Phase 5 — Perplexity Labs Test Loop
+
 - [ ] Point Labs at GitHub repo
 - [ ] Attach product spec
 - [ ] Generate UX tweaks (copy, ordering, empty states)
@@ -482,6 +496,7 @@ Discogs releases → VinylTile format:
 ## 11. Project Inventory
 
 ### Personal Projects (all 15 confirmed)
+
 | Project | Status | Notes |
 |---------|--------|-------|
 | demonstr8 | TBD | |
@@ -503,6 +518,7 @@ Discogs releases → VinylTile format:
 *Not all complete — easy to add/subtract in the future*
 
 ### Physical Products
+
 *Placeholder for now — no content yet*
 
 ---
@@ -547,7 +563,7 @@ Discogs releases → VinylTile format:
 |---------|----------|
 | Turntable Loading | Entry experience before this navigation |
 | Banner Widgets | Lives in header alongside nav |
-| Alan Iverson | Chat overlay, separate from nav pathways |
+| Alan Iverson | CANCELLED 2026-07-24 — feature descoped |
 
 ---
 

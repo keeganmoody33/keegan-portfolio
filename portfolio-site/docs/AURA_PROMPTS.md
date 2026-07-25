@@ -8,6 +8,7 @@
 ## 1. Turntable Loading Page
 
 ### Prompt
+
 ```
 Design a turntable loading page for a portfolio website.
 
@@ -33,6 +34,7 @@ Export as HTML/Tailwind.
 ## 2. Banner / Header
 
 ### Prompt
+
 ```
 Design a banner/header for a portfolio website with 4 widget sections.
 
@@ -43,7 +45,6 @@ WIDGETS (left to right or however looks best):
 1. YouTube Music Player — play/pause, track info, ability to browse playlist
 2. GitHub Activity — classic retro vertical bar graph showing recent commits (arcade/pixel aesthetic)
 3. Recent Digs — Discogs integration, shows recently added vinyl (thumbnail, title, artist)
-4. Worthy Reads — curated reading list, links to articles/Substack posts
 
 AESTHETIC:
 - Dark mode
@@ -59,6 +60,7 @@ Export as HTML/Tailwind with responsive breakpoints.
 ## 3. Navigation Header
 
 ### Prompt
+
 ```
 Design a navigation header for a portfolio website.
 
@@ -89,6 +91,7 @@ Export as HTML/Tailwind.
 ## 4. Vinyl Grid Overlay
 
 ### Prompt
+
 ```
 Design a full-screen overlay for displaying project tiles in a vinyl/album cover aesthetic.
 
@@ -121,6 +124,7 @@ Export as HTML/Tailwind with hover states.
 ## 5. Vinyl Tile Component
 
 ### Prompt
+
 ```
 Design a single project tile in vinyl/album cover style.
 
@@ -153,6 +157,7 @@ Export as HTML/Tailwind component with hover animations.
 ## 6. Project Detail Page
 
 ### Prompt
+
 ```
 Design a project detail page for a portfolio website.
 
@@ -177,43 +182,10 @@ Export as HTML/Tailwind.
 
 ---
 
-## 7. Alan Iverson Chat Interface
+## 7. Human/Machine Toggle
 
 ### Prompt
-```
-Design a chat interface with a character mascot.
 
-CHARACTER: "Alan" — arcade/streetball inspired character
-- Positioned bottom-right of chat window
-- 75-85% opacity when idle
-- Subtle idle animation (blink or slight bounce)
-
-CHAT FLOW:
-1. User opens chat
-2. Alan swoops in from right
-3. Speech bubble appears: "We talkin' about practice. Not a game."
-4. Second bubble: "Alright—Keegan's got you. Ask away."
-5. Bubbles fade, Alan stays visible but quiet
-6. Chat continues in standard format
-
-CHAT INTERFACE:
-- Dark mode
-- Message bubbles (user right, AI left)
-- Input field at bottom
-- Clean, minimal
-
-CHARACTER STYLE OPTIONS (design both):
-A) Street 3D — chunky proportions, glossy, arcade-game feel
-B) 60s Comic — bold ink outlines, Ben-Day dots, limited color palette
-
-Export as HTML/Tailwind with animation keyframes.
-```
-
----
-
-## 8. Human/Machine Toggle
-
-### Prompt
 ```
 Design a Human/Machine mode toggle for a portfolio website.
 
@@ -247,9 +219,10 @@ Export as HTML/Tailwind with both mode states.
 
 ---
 
-## 9. Turntable "Config Loading" (Machine Mode)
+## 8. Turntable "Config Loading" (Machine Mode)
 
 ### Prompt
+
 ```
 Design a "machine mode" version of the turntable loading page.
 
