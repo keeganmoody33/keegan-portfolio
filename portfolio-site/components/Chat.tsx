@@ -109,6 +109,7 @@ export default function Chat() {
                   })
                   sendMessage(q, true)
                 }}
+                aria-label={q}
                 className="px-3 py-1.5 text-sm bg-[var(--bg-body)] border border-[var(--border-dim)]
                          text-[var(--text-muted)] rounded hover:border-[var(--accent-lime)]
                          hover:text-[var(--accent-lime)] transition-colors font-mono"
@@ -130,11 +131,10 @@ export default function Chat() {
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] px-4 py-2 rounded-lg ${
-                    message.role === 'user'
-                      ? 'bg-[var(--accent-lime)] text-[var(--bg-body)]'
-                      : 'bg-[var(--bg-body)] border border-[var(--border-dim)] text-[var(--text-main)]'
-                  }`}
+                  className={`max-w-[80%] px-4 py-2 rounded-lg ${message.role === 'user'
+                    ? 'bg-[var(--accent-lime)] text-[var(--bg-body)]'
+                    : 'bg-[var(--bg-body)] border border-[var(--border-dim)] text-[var(--text-main)]'
+                    }`}
                 >
                   <p className="whitespace-pre-wrap text-sm">{message.content}</p>
                 </div>
@@ -163,6 +163,7 @@ export default function Chat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about my experience, skills, or work history..."
+          aria-label="Ask a question"
           className="flex-1 px-4 py-3 border border-[var(--border-dim)] rounded-lg 
                    bg-[var(--bg-body)] text-[var(--text-main)] font-mono text-sm
                    placeholder:text-[var(--text-muted)]
@@ -172,7 +173,8 @@ export default function Chat() {
         <button
           type="submit"
           disabled={isLoading || !input.trim()}
-          className="px-6 py-3 bg-[var(--accent-lime)] text-[var(--bg-body)] font-mono text-sm
+          aria-label="Send message"
+          className="px-4 sm:px-6 py-3 bg-[var(--accent-lime)] text-[var(--bg-body)] font-mono text-sm
                    rounded-lg hover:bg-[var(--accent-orange)] 
                    disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
@@ -189,6 +191,7 @@ export default function Chat() {
             })
             setMessages([])
           }}
+          aria-label="Clear conversation"
           className="mt-2 text-sm text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono"
         >
           Clear chat

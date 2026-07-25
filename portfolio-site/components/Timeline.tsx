@@ -26,7 +26,7 @@ function formatDate(dateStr: string): string {
 function formatDuration(months: number): string {
   const years = Math.floor(months / 12)
   const remainingMonths = months % 12
-  
+
   if (years === 0) return `${remainingMonths} mo`
   if (remainingMonths === 0) return `${years} yr`
   return `${years} yr ${remainingMonths} mo`
@@ -44,21 +44,21 @@ export default function Timeline({ experiences }: TimelineProps) {
   return (
     <div className="relative">
       {/* Timeline Line */}
-      <div className="absolute left-[100px] top-0 bottom-0 w-px timeline-line" />
+      <div className="absolute left-[70px] sm:left-[100px] top-0 bottom-0 w-px timeline-line" />
 
       {/* Timeline Items */}
       <div className="space-y-8">
         {experiences.map((exp, index) => (
-          <div key={exp.id} className="flex gap-8">
+          <div key={exp.id} className="flex gap-4 sm:gap-8">
             {/* Date Column */}
-            <div className="w-[100px] flex-shrink-0 text-right">
+            <div className="w-[70px] sm:w-[100px] flex-shrink-0 text-right">
               <div className="text-[var(--text-bright)] font-mono text-sm">
                 {formatDate(exp.start_date)} — {exp.end_date ? formatDate(exp.end_date) : 'Present'}
               </div>
               <div className="text-[var(--text-muted)] font-mono text-xs">
                 {formatDuration(exp.duration_months)}
               </div>
-{/* Removed "Current" label - Keegan is actively job seeking */}
+              {/* Removed "Current" label - Keegan is actively job seeking */}
             </div>
 
             {/* Timeline Node */}
@@ -67,7 +67,7 @@ export default function Timeline({ experiences }: TimelineProps) {
             </div>
 
             {/* Content Card */}
-            <div className="flex-1 experience-card p-6 rounded-lg">
+            <div className="flex-1 experience-card p-4 sm:p-6 rounded-lg">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h4 className="text-xl font-bold text-[var(--text-bright)]">
@@ -147,6 +147,7 @@ function CompanyLink({ company }: { company: string }) {
         target="_blank"
         rel="noopener noreferrer"
         onClick={handleCompanyClick}
+        aria-label={`${company} (opens in new tab)`}
         className="hover:text-[var(--accent-lime)] transition-colors"
       >
         {company}

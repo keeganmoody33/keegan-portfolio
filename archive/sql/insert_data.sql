@@ -1,11 +1,12 @@
+-- ARCHIVED: Historical insert script. Corrected to match live schema (2026-07-24). Not intended to be re-run.
 -- Keegan Moody Portfolio Data
 -- Generated from outputs/supabase_export.json
 -- Run this AFTER create_tables.sql
 
 -- ============================================
--- INSERT: candidate_profiles
+-- INSERT: candidate_profile
 -- ============================================
-INSERT INTO candidate_profiles (
+INSERT INTO candidate_profile (
   id, first_name, last_name, email, location, headline, summary,
   primary_role_type, ideal_company_stage, ideal_environment, work_style,
   linkedin_url, github_url, portfolio_url
@@ -35,7 +36,7 @@ INSERT INTO experiences (
   id, candidate_id, company_name, company_url, role_title,
   start_date, end_date, duration_months, location, employment_type,
   company_stage, company_funding, company_industry, description,
-  key_deliverables, metrics, honest_assessment, exit_reason,
+  public_bullets, metrics, private_context_what_id_do_differently, exit_reason,
   verification_status, verification_sources, is_featured, display_order
 ) VALUES (
   'exp-001',
@@ -67,7 +68,7 @@ INSERT INTO experiences (
   id, candidate_id, company_name, company_url, role_title,
   start_date, end_date, duration_months, location, employment_type,
   company_stage, company_funding, company_industry, description,
-  key_deliverables, honest_assessment, exit_reason,
+  public_bullets, private_context_what_id_do_differently, exit_reason,
   verification_status, verification_sources, is_featured, display_order
 ) VALUES (
   'exp-002',
@@ -98,7 +99,7 @@ INSERT INTO experiences (
   id, candidate_id, company_name, company_url, role_title,
   start_date, end_date, duration_months, location, employment_type,
   company_stage, company_funding, company_industry, description,
-  key_deliverables, metrics, honest_assessment, exit_reason,
+  public_bullets, metrics, private_context_what_id_do_differently, exit_reason,
   verification_status, verification_sources, is_featured, display_order
 ) VALUES (
   'exp-003',
@@ -130,7 +131,7 @@ INSERT INTO experiences (
   id, candidate_id, company_name, company_url, role_title,
   start_date, end_date, duration_months, location, employment_type,
   company_stage, company_funding, company_industry, description,
-  key_deliverables, honest_assessment, exit_reason,
+  public_bullets, private_context_what_id_do_differently, exit_reason,
   verification_status, verification_sources, is_featured, display_order
 ) VALUES (
   'exp-004',
@@ -161,7 +162,7 @@ INSERT INTO experiences (
   id, candidate_id, company_name, company_url, role_title,
   start_date, end_date, duration_months, location, employment_type,
   company_stage, company_funding, company_industry, description,
-  key_deliverables, metrics, honest_assessment, exit_reason,
+  public_bullets, metrics, private_context_what_id_do_differently, exit_reason,
   verification_status, verification_sources, is_featured, display_order
 ) VALUES (
   'exp-005',
@@ -193,7 +194,7 @@ INSERT INTO experiences (
   id, candidate_id, company_name, company_url, role_title,
   start_date, end_date, duration_months, location, employment_type,
   company_stage, company_funding, company_industry, description,
-  key_deliverables, honest_assessment, exit_reason,
+  public_bullets, private_context_what_id_do_differently, exit_reason,
   verification_status, verification_sources, is_featured, display_order
 ) VALUES (
   'exp-006',
@@ -224,7 +225,7 @@ INSERT INTO experiences (
   id, candidate_id, company_name, company_url, role_title,
   start_date, end_date, duration_months, location, employment_type,
   company_stage, company_funding, company_industry, description,
-  key_deliverables, metrics, honest_assessment, exit_reason,
+  public_bullets, metrics, private_context_what_id_do_differently, exit_reason,
   verification_status, verification_sources, is_featured, display_order
 ) VALUES (
   'exp-007',
@@ -412,7 +413,7 @@ INSERT INTO ai_instructions (
 -- VERIFY INSERT COUNTS
 -- ============================================
 -- Expected counts after running:
--- candidate_profiles: 1
+-- candidate_profile: 1
 -- experiences: 7
 -- skills: 17
 -- achievements: 8

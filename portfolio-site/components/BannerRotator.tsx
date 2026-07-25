@@ -76,7 +76,7 @@ export default function BannerRotator({
             key={i}
             onClick={() => goTo(i)}
             className="p-1.5 -m-0.5"
-            aria-label={labels[i] || `Banner ${i + 1}`}
+            aria-label={labels[i] ? `Switch to ${labels[i]}` : `Switch to banner ${i + 1}`}
             title={labels[i] || undefined}
           >
             <span

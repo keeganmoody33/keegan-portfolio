@@ -3,8 +3,7 @@
 // Updated with Strategic Positioning Framework - Jan 2026
 // Deployed to: https://cvkcwvmlnghwwvdqudod.supabase.co/functions/v1/chat
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,7 +30,7 @@ interface PortfolioContext {
   ai_instructions: AIInstruction[];
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -115,7 +114,7 @@ async function fetchPortfolioContext(supabase: any): Promise<PortfolioContext> {
 function buildSystemPrompt(context: PortfolioContext): string {
   const instructions = context.ai_instructions;
   const profile = context.profile;
-  
+
   // Group instructions by type
   const byType: Record<string, string[]> = {};
   for (const inst of instructions) {
@@ -313,7 +312,7 @@ ${bullets.map((b: string) => `- ${b}`).join("\n")}
   }
 
   portfolioText += "\n## MY SKILLS\n";
-  
+
   // Group skills by category - lead with strengths
   const strong = skills.filter((s: any) => s.category === 'strong');
   const moderate = skills.filter((s: any) => s.category === 'moderate');

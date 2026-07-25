@@ -26,6 +26,7 @@
 A toggle that switches between **Human mode** (traditional visual web design) and **Machine mode** (structured data, API schemas, AI-readable formats). Shows visitors how the same content is consumed by humans vs. AI agents.
 
 **Why this matters for LecturesFrom:**
+
 - The portfolio is already AI-queryable (Supabase + Claude integration)
 - This feature makes that architecture *visible* and *educational*
 - Meta-demonstration: the portfolio shows how it works
@@ -51,6 +52,7 @@ When users toggle between modes, they see the same content presented in radicall
 ## Toggle Component
 
 ### Visual Design (from Parallel.ai observation)
+
 - Horizontal toggle: `[● HUMAN]` `[○ MACHINE]`
 - Pill shape with radio-button style indicators
 - Active state: filled circle indicator (●)
@@ -59,12 +61,14 @@ When users toggle between modes, they see the same content presented in radicall
 - Always accessible regardless of scroll position
 
 ### Behavior (observed)
+
 - **Instant swap** — no transition animation
 - **Scroll position preserved** when toggling
 - Nav visible in both modes (just restyled)
 - Content structure identical — only rendering changes
 
 ### States
+
 ```typescript
 type ViewMode = 'human' | 'machine';
 
@@ -75,6 +79,7 @@ interface ModeContextValue {
 ```
 
 ### Interaction
+
 - Click to toggle
 - Keyboard: Space/Enter
 - URL param: `?view=machine` for direct linking
@@ -102,6 +107,7 @@ interface ModeContextValue {
 ### Hero Section
 
 **Human:**
+
 ```
 Keegan Moody
 GTM Engineer | Builder | Researcher
@@ -110,6 +116,7 @@ I connect people to products through systems, strategy, and story.
 ```
 
 **Machine:**
+
 ```json
 {
   "candidate": {
@@ -126,11 +133,13 @@ I connect people to products through systems, strategy, and story.
 ### Experience Timeline
 
 **Human:**
+
 - Visual cards with company logos
 - Date ranges, job titles
 - Narrative descriptions
 
 **Machine:**
+
 ```sql
 SELECT * FROM experiences
 WHERE candidate_id = 'keegan-moody'
@@ -143,11 +152,13 @@ ORDER BY start_date DESC;
 ### Projects Grid
 
 **Human:**
+
 - Album cover tiles
 - Hover reveals goal + stack
 - Click → detail page
 
 **Machine:**
+
 ```typescript
 interface ProjectMeta {
   id: string;
@@ -165,11 +176,12 @@ interface ProjectMeta {
 ### Chat Interface
 
 **Human:**
-- Alan Iverson intro animation
+
 - Conversational chat UI
 - Natural language responses
 
 **Machine:**
+
 ```yaml
 chat_architecture:
   entry_point: /api/chat
@@ -179,7 +191,7 @@ chat_architecture:
     - supabase.candidate_profile
     - supabase.experiences
     - supabase.skills
-  persona_layer: "Alan Iverson cameo → Keegan voice"
+  persona_layer: "Keegan voice (Alan Iverson cameo CANCELLED 2026-07-24)"
   guardrails:
     - "Never volunteer weaknesses"
     - "Honest but not self-sabotaging"
@@ -306,12 +318,14 @@ export function DualContent({ human, machine }: DualContentProps) {
 ## Machine Mode Styling
 
 ### Typography
+
 - Font: Monospace (JetBrains Mono, Fira Code)
 - Color: Green-on-black terminal aesthetic, or clean white-on-dark
 - Code blocks: Syntax highlighting
 - Reduced visual hierarchy — more information density
 
 ### Layout
+
 - Less whitespace
 - Grid-based data display
 - Collapsible sections for deep schemas
@@ -320,16 +334,19 @@ export function DualContent({ human, machine }: DualContentProps) {
 ### Visual Treatment Options
 
 **Option A: Terminal Aesthetic**
+
 - Black background, green/amber text
 - Cursor blink effects
 - "Typing" animation for content reveal
 
 **Option B: Clean Technical**
+
 - Dark mode with syntax highlighting
 - Card-based schema displays
 - Mermaid diagrams for architecture
 
 **Option C: Hybrid**
+
 - Mostly clean, with terminal accents
 - Code blocks in terminal style
 - Prose in clean technical sans-serif
@@ -362,18 +379,22 @@ interface DualContentSection {
 ## Integration with Existing Features
 
 ### Turntable Loading
+
 - Human mode: Full vinyl experience
 - Machine mode: Skip intro, show session config
 
 ### Navigation Pathways
+
 - Human mode: Vinyl grid overlay
 - Machine mode: JSON project manifest, API endpoints
 
-### Alan Iverson Chat
-- Human mode: Full animation + conversational UI
+### Chat (Alan Iverson CANCELLED 2026-07-24)
+
+- Human mode: Conversational UI
 - Machine mode: Show prompt engineering, context injection, model config
 
 ### Banner Widgets
+
 - Human mode: Visual widgets (Tidal, GitHub, Discogs)
 - Machine mode: API response payloads, webhook configs
 
@@ -382,6 +403,7 @@ interface DualContentSection {
 ## Accessibility
 
 ### Requirements
+
 - ARIA labels: `aria-pressed="true/false"`
 - Keyboard navigation: Tab → Space/Enter to toggle
 - Screen reader: Announce mode change
@@ -389,6 +411,7 @@ interface DualContentSection {
 - Respect `prefers-reduced-motion`
 
 ### Implementation
+
 ```tsx
 <button
   role="switch"
@@ -407,6 +430,7 @@ interface DualContentSection {
 ## Analytics
 
 ### Metrics to Track
+
 - Toggle engagement rate (% who interact)
 - Time spent in each mode
 - Sections most viewed in machine mode
@@ -414,6 +438,7 @@ interface DualContentSection {
 - Return visit mode preference
 
 ### Events
+
 ```typescript
 analytics.track('mode_toggle', {
   from: 'human',
@@ -428,27 +453,32 @@ analytics.track('mode_toggle', {
 ## Implementation Phases
 
 ### Phase 1: Core Toggle
+
 - [ ] ModeContext provider
 - [ ] ModeToggle component
 - [ ] Place in header
 - [ ] Basic transition animation
 
 ### Phase 2: Hero + About
+
 - [ ] Dual content for hero section
 - [ ] Dual content for about/bio
 - [ ] Show actual Supabase schema in machine mode
 
 ### Phase 3: Projects + Timeline
+
 - [ ] Dual content for experience timeline
 - [ ] Dual content for projects grid
 - [ ] API endpoint documentation in machine mode
 
 ### Phase 4: Chat Integration
+
 - [ ] Show chat architecture in machine mode
 - [ ] Display prompt engineering / context injection
 - [ ] Model config and guardrails visible
 
 ### Phase 5: Polish
+
 - [ ] URL param support (`?view=machine`)
 - [ ] LocalStorage persistence
 - [ ] Analytics integration
@@ -485,7 +515,7 @@ analytics.track('mode_toggle', {
 | Feature | Relation |
 |---------|----------|
 | Turntable Loading | Entry point — may skip in machine mode |
-| Alan Iverson Chat | Shows underlying architecture in machine mode |
+| Alan Iverson Chat | CANCELLED 2026-07-24 — feature descoped |
 | Navigation Pathways | Project data schemas visible in machine mode |
 | Banner Widgets | API responses visible in machine mode |
 

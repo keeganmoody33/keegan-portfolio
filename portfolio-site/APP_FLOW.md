@@ -80,10 +80,7 @@ Top to bottom, this is exactly what renders on the main page:
    │   └── JDAnalyzer
    ├── Footer (id="contact")
    │   └── Social links: LinkedIn, X, Substack, GitHub, Discord, Bluesky
-   ├── Sidebar Toggle Button (fixed, bottom-right)
-   └── Activity Stream Sidebar (conditional, fixed right)
-       └── ActivityStream
-4. Chat Modal (conditional overlay)
+6. Chat Modal (conditional overlay)
    └── Chat
 ```
 
@@ -110,9 +107,6 @@ Land on /keeganmoody33
     │       └─→ Click next/prev → Changes track
     │
     ├─→ Click record in Recent Digs → Opens Discogs page (new tab)
-    │
-    ├─→ Click "Show Activity" → Sidebar slides in
-    │       └─→ Theme toggle buttons (dark/light)
     │
     └─→ Click footer social links (LinkedIn, X, Substack, GitHub, Discord, Bluesky) → Opens external profiles (new tab)
 ```
@@ -212,28 +206,7 @@ Land on /keeganmoody33
 
 ---
 
-### 5. Activity Stream Sidebar
-
-**Trigger:** Click "Show Activity" button (fixed, bottom-right)
-
-**Steps:**
-
-1. Sidebar slides in from right (fixed position)
-2. Shows system log entries (currently hardcoded/simulated)
-3. Theme toggle buttons at bottom (dark/light)
-4. Click toggle button to switch theme
-
-**Success state:** Sidebar visible with log entries and theme controls.
-
-**Error state:** N/A (hardcoded data, always renders).
-
-**Empty state:** N/A (always has initial log entries).
-
-**PostHog events:** `activity_sidebar_toggled`, `theme_changed` (includes `theme: 'dark' | 'light'`)
-
----
-
-### 6. Marquee Ticker
+### 5. Marquee Ticker
 
 **Trigger:** Always visible on page load.
 
@@ -253,7 +226,7 @@ Land on /keeganmoody33
 
 ---
 
-### 7. YouTube Player
+### 6. YouTube Player
 
 **Trigger:** Page load (automatic). Loads YouTube IFrame API client-side.
 
@@ -287,7 +260,7 @@ Land on /keeganmoody33
 
 ---
 
-### 8. SprayText Hero Animation
+### 7. SprayText Hero Animation
 
 **Trigger:** Page load with configurable delay.
 
@@ -315,7 +288,6 @@ Land on /keeganmoody33
 | Recent Digs | Horizontal row (`flex`) | Horizontal scroll with snap points (`snap-x`) |
 | Recent Digs items | `flex-1` fill available space | Fixed `w-[140px]` with `touch-pan-x` |
 | Chat modal | Overlay on page | Same (full overlay) |
-| Activity sidebar | Fixed right panel | Same (fixed right, may overlap content) |
 | Navigation | Horizontal top bar | Same (no hamburger menu currently) |
 | Timeline | Full-width cards | Same layout (no responsive changes) |
 | JD Analyzer | Full-width textarea | Same layout |

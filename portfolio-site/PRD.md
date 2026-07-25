@@ -1,6 +1,6 @@
 # PRD — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-02-09
+**Last Updated:** 2026-07-24
 **Status:** MVP Shipped, Iterating
 **Live URL:** [lecturesfrom.com/keeganmoody33](https://lecturesfrom.com/keeganmoody33)
 
@@ -44,23 +44,20 @@ Everything that serves the core purpose: help visitors understand who Keegan is,
 | PostHog Analytics | Client + server-side tracking | **Shipped** |
 | Vercel Deployment | Auto-deploy on push to main | **Shipped** |
 | Dark/Light Theme Toggle | ActivityStream theme buttons, CSS custom properties | **Shipped** |
+| YouTube Persistent Player | `YouTubePlayer.tsx`, `types/youtube.d.ts` | **Shipped** |
+| GitHub Activity Widget | `GitHubActivity.tsx`, `/api/github` | **Shipped** |
+| Turntable Loading Page | `TurntableCanvas.tsx`, root `/` gate → `/keeganmoody33` | **Shipped** |
 
 ### Spec-Locked (Not Yet Built)
 
 | Feature | Spec Doc | Status |
 |---------|----------|--------|
 | Banner Widget Section | `docs/BANNER_WIDGETS_SPEC.md` | **Spec Locked** |
-| YouTube Persistent Player | `docs/BANNER_WIDGETS_SPEC.md` Section 1 | **Spec Locked** |
-| GitHub Activity Widget | `docs/BANNER_WIDGETS_SPEC.md` Section 2 | **Spec Locked** |
-| Worthy Reads Widget | `docs/BANNER_WIDGETS_SPEC.md` Section 4 | **Spec Locked** |
-| Turntable Loading Page | `docs/TURNTABLE_LOADING_SPEC.md` | **Spec Locked** |
-| Alan Iverson Chat Persona | `docs/ALAN_IVERSON_SPEC.md` | **Spec Locked** |
 | Human/Machine Toggle | `docs/HUMAN_MACHINE_TOGGLE_SPEC.md` | **Spec Locked** |
 | Navigation Pathways + Vinyl Grid | `docs/NAVIGATION_PATHWAYS_SPEC.md` | **Spec Locked** |
 
 ### Parking Lot (Ideas, Not Scoped)
 
-- Turntable loading screen
 - Stack of Wax (vinyl grid overlay for Discogs collection)
 - Physical Products placeholder page
 - Easter eggs (Konami code, hidden /practice route)
@@ -91,15 +88,15 @@ These are explicitly **not** what this site is:
 
 ### Visitor / Collaborator
 
-5. **As a visitor**, I want to see what records Keegan recently bought so I get a sense of personality beyond work.
-6. **As a collaborator**, I want to find LinkedIn/GitHub/Substack links so I can connect on other platforms.
-7. **As a visitor**, I want the site to load fast and look good on my phone so I can browse during a commute.
+1. **As a visitor**, I want to see what records Keegan recently bought so I get a sense of personality beyond work.
+2. **As a collaborator**, I want to find LinkedIn/GitHub/Substack links so I can connect on other platforms.
+3. **As a visitor**, I want the site to load fast and look good on my phone so I can browse during a commute.
 
 ### Keegan (Operator)
 
-8. **As the operator**, I want AI behavior tuned via `ai_instructions` table so I can adjust tone without redeploying code.
-9. **As the operator**, I want PostHog tracking on every interaction so I can see what visitors actually do.
-10. **As the operator**, I want the AI to lead with value and only acknowledge gaps when directly asked.
+1. **As the operator**, I want AI behavior tuned via `ai_instructions` table so I can adjust tone without redeploying code.
+2. **As the operator**, I want PostHog tracking on every interaction so I can see what visitors actually do.
+3. **As the operator**, I want the AI to lead with value and only acknowledge gaps when directly asked.
 
 ---
 
@@ -130,10 +127,7 @@ These are explicitly **not** what this site is:
 
 ## Open Questions
 
-1. **Worthy Reads data source** -- JSON config file, Supabase table, or manual entry? (per `BANNER_WIDGETS_SPEC.md`)
-2. **Alan Iverson art style** -- Street 3D or 60s Comic? Both prototyped in Aura, winner TBD.
-3. **Navigation redesign** -- Current top nav vs. fixed left sidebar (per `FRONTEND_GUIDELINES.md` and `docs/NAVIGATION_PATHWAYS_SPEC.md`). When to ship?
-4. **YouTube playlist integration** -- Does turntable need to ship before the banner YouTube player? Or can banner player stand alone?
+1. **Navigation redesign** -- Current top nav vs. fixed left sidebar (per `FRONTEND_GUIDELINES.md` and `docs/NAVIGATION_PATHWAYS_SPEC.md`). When to ship?
 
 ---
 

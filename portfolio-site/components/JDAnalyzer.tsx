@@ -64,11 +64,12 @@ export default function JDAnalyzer() {
   }
 
   return (
-    <div className="experience-card p-6 rounded-lg">
+    <div className="experience-card p-4 sm:p-6 rounded-lg">
       <textarea
         value={input}
         onChange={(e) => setInput(e.target.value)}
         placeholder="Paste a job description or URL here..."
+        aria-label="Paste job description or URL"
         className="w-full h-40 bg-[var(--bg-body)] border border-[var(--border-dim)] rounded-lg p-4 
                    text-[var(--text-main)] font-mono text-sm resize-none
                    focus:outline-none focus:border-[var(--accent-lime)]
@@ -78,6 +79,7 @@ export default function JDAnalyzer() {
       <button
         onClick={handleAnalyze}
         disabled={loading}
+        aria-label="Analyze job description fit"
         className={`mt-4 px-6 py-3 font-mono text-sm border border-[var(--border-dim)] 
                    text-[var(--text-bright)] rounded transition-all
                    ${loading
@@ -95,7 +97,7 @@ export default function JDAnalyzer() {
       )}
 
       {analysis && (
-        <div className="mt-6 p-6 bg-[var(--bg-body)] border border-[var(--border-dim)] rounded-lg">
+        <div className="mt-6 p-4 sm:p-6 bg-[var(--bg-body)] border border-[var(--border-dim)] rounded-lg">
           <h4 className="text-[var(--accent-lime)] font-mono text-sm mb-4">// Analysis Result</h4>
           <div className="text-[var(--text-main)] whitespace-pre-wrap leading-relaxed">
             {analysis}

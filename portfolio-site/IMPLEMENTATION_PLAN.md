@@ -1,6 +1,6 @@
 # Implementation Plan — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-02-08
+**Last Updated:** 2026-07-24
 **Status:** Phase 0 complete (MVP shipped). Phases 1-5 sequenced below.
 **Previous plan:** `IMPLEMENTATION_PLAN_DISCOGS_ARCHIVED.md` (completed Discogs widget build)
 
@@ -11,6 +11,7 @@
 **Goal:** Ship the MVP portfolio with AI chat, JD analyzer, career timeline, and analytics.
 
 **What shipped:**
+
 - Single-page portfolio (`app/page.tsx`)
 - Hero with SprayText animation
 - Career Timeline from Supabase `experiences` table
@@ -53,30 +54,23 @@
 - **Visual:** Retro vertical bars, 14-day breakdown, lime accent with glow on today's bar
 - **PostHog:** `github_activity_clicked`
 
-### Step 1.3 — Worthy Reads Widget
+### Step 1.3 — Worthy Reads Widget (CANCELLED)
 
-- **Goal:** Curated reading list (3-5 items)
-- **Output:** `components/WorthyReads.tsx`
-- **Technical:** Data source TBD -- likely JSON config file or Supabase table
-- **Display:** Title, source, link for each item
-- **PostHog:** `worthy_reads_link_clicked`
-- **Validation:** Links render, open in new tab
-- **Blocker:** Need to decide data source before building (see PRD.md open questions)
+- **Status:** CANCELLED 2026-07-24 — feature descoped
 
-### Step 1.4 — Banner Section Layout
+### Step 1.4 — Banner Section Layout (DONE)
 
-- **Goal:** Arrange all 4 widgets (YouTube, GitHub, Discogs, Worthy Reads) in banner
-- **Output:** Update `app/page.tsx` to compose widgets in banner section
-- **Technical:** Layout TBD in Aura per spec, but must be responsive
-- **Validation:** All 4 widgets visible on desktop and mobile, hover stops marquee scroll
+- **Status:** Completed — shipped via `BannerRotator` with 3 widgets (YouTube, RecentDigs, GitHub)
+- **Output:** `components/BannerRotator.tsx` composes widgets in a single rotating slot below Marquee — 8s auto-rotate, pause-on-hover, dot indicators
+- **Validation:** All 3 widgets visible on desktop and mobile, hover pauses rotation
 
 ---
 
-## Phase 2: Turntable Loading Experience
+## Phase 2: Turntable Loading Experience (COMPLETED)
 
 **Goal:** Entry experience with needle drop = play button = enter site.
 
-**Status:** Ready to build. Phase 1 Step 1.1 (YouTube player) is complete. sessionStorage handoff contract is in place.
+**Status:** COMPLETED — live at lecturesfrom.com. Turntable gate is at `/` and routes to `/keeganmoody33` after needle drop.
 
 **Inputs:** `docs/TURNTABLE_LOADING_SPEC.md`, `FRONTEND_GUIDELINES.md`
 
@@ -114,9 +108,9 @@
 
 ---
 
-## Phase 3: Alan Iverson Chat Persona (DEFERRED)
+## Phase 3: Alan Iverson Chat Persona (CANCELLED)
 
-**Status:** Backlogged. Deprioritized as of 2026-02-09 -- too large to tackle before Phases 1-2 are complete. See LEC-23 (moved to Backlog in Linear).
+**Status:** CANCELLED 2026-07-24 — feature descoped.
 
 **Goal:** Add Alan Iverson character to chat experience.
 
@@ -225,11 +219,11 @@
 ```
 Phase 0 (DONE)
     │
-    ├── Phase 1: Banner Widgets
+    ├── Phase 1: Banner Widgets (Steps 1.1-1.4 DONE, Step 1.3 CANCELLED)
     │       │
-    │       └── Phase 2: Turntable (needs YouTube player from 1.1)
+    │       └── Phase 2: Turntable (COMPLETED — needs YouTube player from 1.1)
     │
-    ├── Phase 3: Alan Iverson (independent, needs Chat from Phase 0)
+    ├── Phase 3: Alan Iverson (CANCELLED)
     │
     ├── Phase 4: Navigation + Vinyl Grid (independent)
     │       │
@@ -237,7 +231,7 @@ Phase 0 (DONE)
     │
 ```
 
-Phases 1, 3, and 4 can run in parallel after Phase 0.
+Phases 1 and 4 can run in parallel after Phase 0. Phase 3 is cancelled.
 
 ---
 
