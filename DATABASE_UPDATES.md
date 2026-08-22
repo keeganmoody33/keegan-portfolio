@@ -5,7 +5,7 @@
 
 ---
 
-**Last Updated:** 2026-07-24
+**Last Updated:** 2026-08-22
 **Status:** Active
 **Supabase Project:** `cvkcwvmlnghwwvdqudod`
 
@@ -120,23 +120,13 @@ WHERE instruction_type = 'system_prompt';
 
 ### SQL Update
 
-```sql
-INSERT INTO experiences (company, role, start_date, end_date, description, honest_context)
-VALUES (
-  'Mixmax',
-  'Founding GTM Engineer',
-  '2025-08-01',
-  '2025-12-31',
-  'Built GTM infrastructure from zero: 53 inboxes, integrated tech stack (Clay → Octave → SmartLead → HeyReach). Validated ICP across 280 customers ($4.79M ARR). Created "The Volley Method" for dual-source validation. Debunked ghost statistics with audit trails. Built 9-agent AI system (Gutenberg Framework). Packaged methodology for handoff.',
-  'Short engagement (5 months). Built systems and methodology but didn''t stay to see full execution results. The work is solid and documented, but I can''t claim revenue outcomes from campaigns I didn''t run.'
-);
-```
+Applied as `exp-001` during the 2026-07-24 data sync (see `archive/sql/insert_data.sql`). The canonical Mixmax insert uses the live schema (`company_name`, `role_title`, `public_bullets`, `private_context_what_id_do_differently`, etc.).
 
 ### Status
 
-- [ ] SQL executed in Supabase
-- [ ] Files uploaded to repo
-- [ ] AI can reference Mixmax work
+- [x] SQL executed in Supabase
+- [x] Files uploaded to repo
+- [x] AI can reference Mixmax work
 
 ---
 
@@ -168,30 +158,12 @@ VALUES (
 
 ### SQL Updates
 
-```sql
--- Update coding gap
-UPDATE gaps_weaknesses 
-SET gap_type = 'learnable_weakness',
-    current_status = 'actively developing',
-    evidence = 'Built portfolio site with Next.js, TypeScript, Supabase Edge Functions. Learning by doing.',
-    updated_at = NOW()
-WHERE gap_name ILIKE '%coding%' OR gap_name ILIKE '%technical%';
+Corrected and consolidated in `sql/2026-08-22_sync_recent_experiences.sql`.
 
--- Add new skills
-INSERT INTO skills (skill_name, category, proficiency, evidence)
-VALUES 
-  ('TypeScript', 'Programming', 'beginner', 'Portfolio site, Edge Functions'),
-  ('React/Next.js', 'Frontend', 'beginner', 'Portfolio site'),
-  ('Supabase', 'Backend', 'beginner', 'Database design, Edge Functions'),
-  ('API Integration', 'Backend', 'intermediate', 'Claude API, Firecrawl'),
-  ('System Design', 'Architecture', 'intermediate', 'Mixmax GTM Intelligence System'),
-  ('Clay / Outbound Infrastructure', 'GTM Engineering', 'intermediate', 'AssetMule, BCOFA, Kivira — list building, sequencing, inbox provisioning'),
-  ('Knowledge Graph / Context OS', 'GTM Engineering', 'intermediate', 'Kivira Context OS with linked nodes, wiki-links, graph indexing'),
-  ('React + Vite + TypeScript + Leaflet', 'Frontend', 'intermediate', 'Morph MSO Intelligence Platform'),
-  ('Healthcare GTM / Compliance Messaging', 'GTM Engineering', 'intermediate', 'Kivira CDS framing, BCOFA HIPAA/CAN-SPAM aware outreach'),
-  ('MSO Market Intelligence / PE Signal Research', 'GTM Engineering', 'intermediate', 'Morph Focus HCS research — NPI/TIN, SOS, Form D, CRE signals'),
-  ('Intern Onboarding / Delegation', 'Operations', 'intermediate', 'Kivira — onboarded and ramped NYU interns on GTM work');
-```
+Key schema fixes from this round:
+- `gaps_weaknesses` uses `(candidate_id, gap_name, gap_type, description, growth_path, is_active)` (or the legacy `area`/`context` layout — the migration handles both).
+- `skills` uses `(id, candidate_id, category, skill_name, proficiency_level, evidence, notes, years_experience, created_at)` where `category` is the chat bucket (`strong`/`moderate`/`developing`/`gap`).
+- `experiences` uses the live column set (`company_name`, `role_title`, `public_bullets` as `TEXT[]`, `private_context_what_id_do_differently`, `metrics` as `JSONB`, `display_order`, etc.).
 
 ### Status
 
@@ -271,7 +243,7 @@ keegan-portfolio/
 
 | Table | Purpose |
 |-------|---------|
-| `candidate_profiles` | Basic profile info |
+| `candidate_profile` | Basic profile info |
 | `experiences` | Work history with honest context |
 | `skills` | Skills matrix with proficiency |
 | `achievements` | Quantified accomplishments |
@@ -312,60 +284,35 @@ Four new work experiences added to `experiences/` in this update.
 **File:** `experiences/12-morph-data-strategies.md`  
 **Key points:** MSO market research, six angle dossiers, interactive HTML figures, full publication, working React/Vite/TS/Leaflet platform. Publication had review issues and no confirmed client handoff.
 
+### Audit Summary
+
+| Experience | Verified | Unverified / Caveated |
+|------------|----------|------------------------|
+| **AssetMule** | Engagement happened; Clay list-building and sequencer use; worked with Jorge Macias | No verified revenue or reply-rate metrics; unpaid freelance |
+| **BCOFA 2025** | Inbox/email infra built; Python scrapers; LinkedIn/list workflows; weekly advising | `$200K+ pipeline` and `20+ net-new leads` are early-stage, founder-assisted pipeline, not closed revenue; no paper proof |
+| **Kivira** | 15 inboxes provisioned; campaigns launched; cold calls; intern onboarding; Context OS built | `285 validated CIO/CMIO/CTO contacts` comes from list-building/enrichment; no verified closed-revenue numbers |
+| **Morph** | Research brief, publication, six dossiers, six interactive figures, working React/Leaflet platform pushed to GitHub | Final publication received "needs changes" review; no confirmed client sign-off or deployment; EDP scoring dropped after retrospective validation failed |
+
+All four rows carry an `honest_context` caveat in `private_context_what_id_do_differently` consistent with the **honest over polished** principle.
+
 ### SQL Update
 
-```sql
--- AssetMule
-INSERT INTO experiences (company, role, start_date, end_date, description, honest_context)
-VALUES (
-  'AssetMule',
-  'GTM Contractor — Outbound Operations',
-  '2025-07-01',
-  '2025-07-31',
-  'Supported early GTM execution for AssetMule via SoundGTM. Built Clay lists targeting product marketers at startups up to 100 employees, launched outbound email campaigns using Clay email sequencer, and worked with Jorge Macias on campaign setup.',
-  'Short, unpaid freelance engagement. Referral/affiliate compensation structure. No verified revenue or reply-rate metrics.'
-);
+Corrected, consolidated, and made idempotent in:
+`sql/2026-08-22_sync_recent_experiences.sql`
 
--- BCOFA
-INSERT INTO experiences (company, role, start_date, end_date, description, honest_context)
-VALUES (
-  'Bariatric Centers of America',
-  'GTM Engineer Consultant',
-  '2025-03-01',
-  '2025-04-30',
-  'Built outbound GTM engine for BariTotalCare across bariatric surgery, medical weight loss, HRT, and lifestyle medicine clinics. Provisioned inboxes, configured cold email, built Python scraping and enrichment pipelines, designed LinkedIn and parallel list-building workflows.',
-  'Short advising/execution engagement. Heavy on strategy and enablement. $200K+ early-stage pipeline, 20+ net-new leads — founder-assisted, not closed revenue.'
-);
-
--- Kivira
-INSERT INTO experiences (company, role, start_date, end_date, description, honest_context)
-VALUES (
-  'Kivira.health',
-  'GTM Engineering / Outbound Operations',
-  '2026-04-01',
-  '2026-06-30',
-  'Led cold outbound execution for Kivira mental-health clinical decision support platform. Provisioned 15 inboxes, built lists, sent campaigns, made cold calls, onboarded NYU interns, and built the Kivira Context OS knowledge graph for GTM memory.',
-  'Three-month contract. Outbound execution + knowledge-system build. No verified closed-revenue numbers from campaigns.'
-);
-
--- Morph Data Strategies / Focus HCS
-INSERT INTO experiences (company, role, start_date, end_date, description, honest_context)
-VALUES (
-  'Morph Data Strategies (Focus HCS)',
-  'Outside Creative Researcher — MSO Intelligence Engine',
-  '2026-05-01',
-  '2026-05-31',
-  'Built MSO Intelligence Engine for Focus HCS client: market research, six angle dossiers, interactive HTML figures, full publication, and a working React/Vite/TypeScript/Leaflet platform.',
-  'Research contract. Publication received "needs changes" review and was not fully cleared for handoff. Platform pushed to GitHub but no confirmed deployment or client sign-off.'
-);
-```
+Schema drift corrected in this file:
+- Table name: `candidate_profile` (singular), not `candidate_profiles`.
+- `experiences` columns use `company_name`, `role_title`, `public_bullets` (`TEXT[]`), `private_context_what_id_do_differently`, `metrics` (`JSONB`), `display_order`, etc.
+- `skills` columns use `category` as the chat bucket (`strong`/`moderate`/`developing`/`gap`) and `proficiency_level` for the descriptive label.
+- `gaps_weaknesses` uses `(candidate_id, gap_name, gap_type, description, growth_path, is_active)` with a fallback for the legacy `area`/`context` layout.
 
 ### Pending
 
-- [ ] Source interview with Keegan on the four new experiences
-- [ ] External audit of claims and evidence for BCOFA, Kivira, Morph, and AssetMule
-- [ ] Sync updated experiences to Supabase
-- [ ] Update `skills-matrix.md` after source interview and audit
+- [ ] Keegan confirms audit summary and honest_context wording
+- [ ] Run `sql/2026-08-22_sync_recent_experiences.sql` in Supabase
+- [ ] Verify Timeline renders Kivira, Morph, AssetMule, and BCOFA 2025 in the correct order
+- [ ] Verify chat surfaces the new skills with the right buckets
+- [ ] Update `skills-matrix.md` after the sync
 
 ---
 
@@ -373,7 +320,8 @@ VALUES (
 
 | Date | Change | Status |
 |------|--------|--------|
-| 2026-07-24 | Added AssetMule, BCOFA, Kivira, Morph experiences | ⏳ Pending source interview / audit / SQL |
+| 2026-08-22 | Audited AssetMule, BCOFA, Kivira, Morph; corrected schema drift; prepared `sql/2026-08-22_sync_recent_experiences.sql` | ⏳ Pending Keegan sign-off / SQL execution |
+| 2026-07-24 | Added AssetMule, BCOFA, Kivira, Morph experiences | ✅ Audited & migrated to live schema |
 | 2026-07-24 | Added new skills to Skills to Add / SQL | ⏳ Pending SQL |
 | 2026-07-24 | Added recent work artifacts to Artifact Library | ✅ |
 | 2026-01-20 | Created DATABASE_UPDATES.md | ✅ |

@@ -1,6 +1,6 @@
 # Keegan Portfolio — Complete Project Context
 
-**Last Updated:** 2026-07-24
+**Last Updated:** 2026-08-22
 **Purpose:** Single source of truth for the AI-queryable portfolio project
 
 ---
@@ -175,11 +175,15 @@ Both query `ai_instructions` by type and build dynamic system prompts.
 - ✅ Chat and JD Analyzer with new styling
 
 ### What Needs Attention
-- [ ] Verify `experiences` table has all 7+ roles with private context
-- [ ] Update `skills` table with strong/moderate/gap categories
+- [x] Add Mixmax experience data
+- [x] Verify `experiences` table has 7+ roles with private context (12 roles prepared, pending SQL execution)
+- [ ] Keegan confirms audit summary and honest_context wording in `DATABASE_UPDATES.md`
+- [ ] Run `sql/2026-08-22_sync_recent_experiences.sql` in Supabase
+- [ ] Verify Timeline renders Kivira, Morph, AssetMule, and BCOFA 2025 in the correct order
+- [ ] Update `skills` table with strong/moderate/developing/gap categories
 - [ ] Update coding gap to "actively developing"
+- [ ] Update `skills-matrix.md` after the sync
 - [ ] Test AI responses for brevity and tone
-- [ ] Add Mixmax experience data
 
 ---
 

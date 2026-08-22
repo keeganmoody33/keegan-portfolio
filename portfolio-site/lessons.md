@@ -1,6 +1,6 @@
 # Lessons Learned
 
-Updated: 2026-02-10
+Updated: 2026-08-22
 
 ## Schema
 
@@ -53,6 +53,7 @@ Updated: 2026-02-10
 ## Database Content Management
 
 - **Enriching DB bullets doesn't change the website display** — the Timeline component renders `public_bullets` as a joined paragraph. Adding more bullets to the array makes the paragraph longer on the site. If you want richer chat context without changing the website, you'd need a separate column (e.g. `chat_bullets`). For now, the enriched bullets serve both.
+- **Never execute SQL before an audit gate.** `DATABASE_UPDATES.md` was shipping `INSERT` statements with wrong column names (`company`, `role`, `description`, `honest_context`) and the wrong table name (`candidate_profiles`). Always cross-check markdown claims, mark verified vs. unverified metrics, and produce a single consolidated migration file for owner sign-off.
 - **Use `display_order >= 100` for chat-only rows.** Mercer University and Community Ambulance are in the database for AI chat context but shouldn't dominate the timeline. Camp Horizon is at 99, so anything 100+ sorts after it.
 - **When the Supabase MCP times out, the REST API still works.** `curl` against `NEXT_PUBLIC_SUPABASE_URL/rest/v1/` with the anon key is reliable for reads. For writes, you need either the MCP (with correct `project_ref` and `read_only=false`) or `psql` with the database password.
 - **Cross-verify Supabase data against the resume periodically.** Dates, titles, and bullet content drift over time as different sessions make different updates. The resume is the source of truth — run a comparison at least once a month.

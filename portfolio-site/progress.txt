@@ -1,3 +1,13 @@
+COMPLETED (2026-08-22 session — portfolio audit + schema sync):
+- Audited AssetMule, BCOFA 2025, Kivira, and Morph experience markdowns against DATABASE_UPDATES.md
+- Flagged unverified metrics ($200K early-stage pipeline, 20+ net-new leads, 285 validated contacts, AssetMule revenue/reply rates, Morph publication sign-off)
+- Wrote honest_context caveats for all four new rows consistent with "honest over polished"
+- Corrected schema drift in DATABASE_UPDATES.md (candidate_profile singular, company_name/role_title/public_bullets/private_context_what_id_do_differently, skills category/proficiency_level, gaps_weaknesses robust fallback)
+- Produced consolidated idempotent migration: sql/2026-08-22_sync_recent_experiences.sql
+- Updated current-state docs and timestamps: PROJECT_CONTEXT.md, DATABASE_UPDATES.md, README.md, CLAUDE.md, lessons.md, progress.txt
+- Created CONTENT_SYNC.md with the single source of truth + recurring cadence pipeline
+- Opened PR for owner sign-off; SQL execution gated until Keegan approves
+
 COMPLETED:
 - Single-page portfolio (app/page.tsx)
 - Hero with SprayText animation (components/SprayText.tsx)
