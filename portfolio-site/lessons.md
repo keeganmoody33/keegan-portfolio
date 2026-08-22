@@ -7,6 +7,8 @@ Updated: 2026-08-22
 - Multiple SQL files in repo root reference wrong column names. Always verify against live Supabase schema before writing SQL.
 - The live table is `candidate_profile` (singular), NOT `candidate_profiles` (plural).
 - experiences table uses `public_bullets` (not `bullet_points`, not `key_deliverables`).
+- The live schema can be substantially narrower than committed documentation. On 2026-08-22, `experiences`, `skills`, and `gaps_weaknesses` lacked the documented `metrics`, `description`, `company_stage`, `company_funding`, `company_industry`, `exit_reason`, `verification_status`, `verification_sources`, `is_featured`, `years_experience`, `notes`, `created_at`, and `gap_name`-style columns.
+- A migration was authored twice against columns that never existed and would have aborted. Introspect the live PostgREST OpenAPI document at `/rest/v1/` first, then write migration SQL from the observed schema instead of trusting committed docs.
 
 ## Process
 

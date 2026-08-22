@@ -4,6 +4,7 @@
 // Deployed to: https://cvkcwvmlnghwwvdqudod.supabase.co/functions/v1/chat
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
+import { skillBucket } from "../_shared/skillBucket.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -316,19 +317,6 @@ ${bullets.map((b: string) => `- ${b}`).join("\n")}
   // Derive the chat bucket from either the new category field or the legacy
   // proficiency_level field so both old (domain category + STRONG/MODERATE/GAP)
   // and new (bucket category + descriptive label) skill rows surface correctly.
-  function skillBucket(skill: any): 'strong' | 'moderate' | 'developing' | null {
-    const category = (skill.category || '').toString().toLowerCase().trim();
-    if (category === 'strong') return 'strong';
-    if (category === 'moderate') return 'moderate';
-    if (category === 'gap' || category === 'developing') return 'developing';
-
-    const proficiency = (skill.proficiency_level || '').toString().toLowerCase().trim();
-    if (proficiency === 'strong') return 'strong';
-    if (proficiency === 'moderate') return 'moderate';
-    if (proficiency === 'gap' || proficiency.includes('beginner')) return 'developing';
-    return null;
-  }
-
   const strong = skills.filter((s: any) => skillBucket(s) === 'strong');
   const moderate = skills.filter((s: any) => skillBucket(s) === 'moderate');
   const developing = skills.filter((s: any) => skillBucket(s) === 'developing');
@@ -342,8 +330,15 @@ ${bullets.map((b: string) => `- ${b}`).join("\n")}
   }
 
   if (moderate.length > 0) {
-    portfolioText += "\n### Developing Skills\n";
+    portfolioText += "\n### Intermediate Skills\n";
     for (const skill of moderate) {
+      portfolioText += `- **${skill.skill_name}**: ${skill.evidence || ""}\n`;
+    }
+  }
+
+  if (developing.length > 0) {
+    portfolioText += "\n### Developing Skills\n";
+    for (const skill of developing) {
       portfolioText += `- **${skill.skill_name}**: ${skill.evidence || ""}\n`;
     }
   }

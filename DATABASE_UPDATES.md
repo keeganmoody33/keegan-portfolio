@@ -161,13 +161,13 @@ Applied as `exp-001` during the 2026-07-24 data sync (see `archive/sql/insert_da
 Corrected and consolidated in `sql/2026-08-22_sync_recent_experiences.sql`.
 
 Key schema fixes from this round:
-- `gaps_weaknesses` uses `(candidate_id, gap_name, gap_type, description, growth_path, is_active)` (or the legacy `area`/`context` layout — the migration handles both).
-- `skills` uses `(id, candidate_id, category, skill_name, proficiency_level, evidence, years_experience)` where `category` is the chat bucket (`strong`/`moderate`/`developing`/`gap`). `notes` and `created_at` are optional defaults and omitted from the migration to stay compatible with both schema variants.
-- `experiences` uses the live column set (`company_name`, `role_title`, `public_bullets` as `TEXT[]`, `private_context_what_id_do_differently`, `metrics` as `JSONB`, `display_order`, etc.).
+- `gaps_weaknesses` uses `(id, candidate_id, type, item, context)`. `id` is auto-generated; there are no `gap_name`, `gap_type`, `description`, `growth_path`, `is_active`, or `area` columns.
+- `skills` uses `(id, candidate_id, category, skill_name, proficiency_level, evidence)`, with an auto-generated integer `id`. `category` is the chat bucket (`strong`/`moderate`/`developing`/`gap`), and `proficiency_level` mirrors the bucket label (`STRONG`/`MODERATE`/`GAP`) in the live rows. There are no `years_experience`, `notes`, or `created_at` columns.
+- `experiences` uses the live column set: `id` is a text primary key, and the table includes `candidate_id`, `company_name`, `company_url`, `role_title`, `start_date`, `end_date`, `duration_months`, `location`, `employment_type`, `public_bullets` (`TEXT[]`), `display_order`, and the six `private_context_*` fields. There is no `metrics` column.
 
 ### Status
 
-- [ ] SQL executed in Supabase
+- [x] SQL executed in Supabase
 - [ ] AI reflects updated gaps
 
 ---
@@ -302,14 +302,15 @@ Corrected, consolidated, and made idempotent in:
 
 Schema drift corrected in this file:
 - Table name: `candidate_profile` (singular), not `candidate_profiles`.
-- `experiences` columns use `company_name`, `role_title`, `public_bullets` (`TEXT[]`), `private_context_what_id_do_differently`, `metrics` (`JSONB`), `display_order`, etc.
+- `experiences.id` is a text primary key, not an auto-generated integer. The live columns include `candidate_id`, `company_name`, `company_url`, `role_title`, `start_date`, `end_date`, `duration_months`, `location`, `employment_type`, `public_bullets` (`TEXT[]`), `display_order`, and the six `private_context_*` fields. There is no `metrics` column.
 - `skills` columns use `category` as the chat bucket (`strong`/`moderate`/`developing`/`gap`) and `proficiency_level` for the descriptive label. The chat Edge Function now derives the bucket from `category` first, then falls back to `proficiency_level` (`STRONG`/`MODERATE`/`GAP`/beginner) so legacy domain-categorized rows still appear.
-- `gaps_weaknesses` uses `(candidate_id, gap_name, gap_type, description, growth_path, is_active)` with a fallback for the legacy `area`/`context` layout.
+- `gaps_weaknesses` uses `(id, candidate_id, type, item, context)` with an auto-generated integer `id`; it has no `gap_name`, `gap_type`, `description`, `growth_path`, `is_active`, or `area` columns.
+- The live schema also has no `company_stage`, `company_funding`, `company_industry`, `exit_reason`, `verification_status`, `verification_sources`, `is_featured`, `years_experience`, `notes`, or `created_at` columns.
 
 ### Pending
 
-- [ ] Keegan confirms audit summary and honest_context wording
-- [ ] Run `sql/2026-08-22_sync_recent_experiences.sql` in Supabase
+- [x] Keegan confirms audit summary and honest_context wording
+- [x] Run `sql/2026-08-22_sync_recent_experiences.sql` in Supabase
 - [ ] Verify Timeline renders Kivira, Morph, AssetMule, and BCOFA 2025 in the correct order
 - [ ] Verify chat surfaces both new and existing skills with the right buckets (the `chat` Edge Function now maps legacy `proficiency_level` buckets too)
 - [ ] Update `skills-matrix.md` after the sync
@@ -320,9 +321,10 @@ Schema drift corrected in this file:
 
 | Date | Change | Status |
 |------|--------|--------|
-| 2026-08-22 | Audited AssetMule, BCOFA, Kivira, Morph; corrected schema drift; prepared `sql/2026-08-22_sync_recent_experiences.sql` | ⏳ Pending Keegan sign-off / SQL execution |
+| 2026-08-22 | Audited AssetMule, BCOFA, Kivira, Morph; corrected schema drift; prepared `sql/2026-08-22_sync_recent_experiences.sql` | ✅ Preparation complete; execution recorded below |
+| 2026-08-22 | Executed the consolidated experience, skills, and coding-gap sync after owner sign-off via equivalent PostgREST calls; verified 15 experiences, 25 skills, and the refreshed coding gap in production | ✅ Complete |
 | 2026-07-24 | Added AssetMule, BCOFA, Kivira, Morph experiences | ✅ Audited & migrated to live schema |
-| 2026-07-24 | Added new skills to Skills to Add / SQL | ⏳ Pending SQL |
+| 2026-07-24 | Added new skills to Skills to Add / SQL | ✅ Executed 2026-08-22 |
 | 2026-07-24 | Added recent work artifacts to Artifact Library | ✅ |
 | 2026-01-20 | Created DATABASE_UPDATES.md | ✅ |
 | 2026-01-20 | Added AI tone updates | ⏳ Pending SQL |

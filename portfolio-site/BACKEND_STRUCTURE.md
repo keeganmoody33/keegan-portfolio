@@ -1,6 +1,6 @@
 # Backend Structure — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-07-24
+**Last Updated:** 2026-08-22
 **Database:** Supabase (PostgreSQL)
 **Edge Functions Runtime:** Deno
 **API Layer:** Next.js Route Handlers (proxy pattern)
@@ -54,21 +54,31 @@ Career history. Ordered by `display_order` for timeline rendering.
 
 | Column | Type | Constraints | Notes |
 |--------|------|-------------|-------|
-| `id` | int | PK, auto | |
+| `id` | text | PK | Stable experience identifier, e.g. `"exp-kivira"` |
 | `candidate_id` | text | FK → candidate_profile.id | |
 | `company_name` | text | NOT NULL | |
+| `company_url` | text | | |
 | `role_title` | text | NOT NULL | **NOT `title`** -- use `role_title` |
 | `start_date` | date | | |
 | `end_date` | date | nullable | NULL = current role |
 | `duration_months` | int | | |
+| `location` | text | | |
+| `employment_type` | text | | |
 | `public_bullets` | text[] | ARRAY | **NOT `bullet_points`** -- use `public_bullets` |
+| `private_context_why_joined` | text | | Private. Not exposed to chat. |
+| `private_context_why_left` | text | | Private. Not exposed to chat. |
+| `private_context_what_i_did` | text | | Private. Not exposed to chat. |
+| `private_context_proudest_achievement` | text | | Private. Not exposed to chat. |
 | `private_context_what_id_do_differently` | text | | Private. Not exposed to chat. |
 | `private_context_manager_would_say` | text | | Private. Not exposed to chat. |
 | `display_order` | int | | Lower = higher on timeline |
 
 **Common mistakes:**
+- `experiences.id` is text, not an auto-generated integer.
 - `exp.bullet_points` does not exist. Use `exp.public_bullets`
 - `exp.title` does not exist. Use `exp.role_title`
+- `experiences.metrics`, `description`, `company_stage`, `company_funding`, and `company_industry` do not exist.
+- `experiences.exit_reason`, `verification_status`, `verification_sources`, and `is_featured` do not exist.
 - Table is `experiences` (plural), not `experience`
 
 ---
@@ -114,9 +124,16 @@ Categorized skill inventory with evidence.
 
 | Column | Type | Constraints | Notes |
 |--------|------|-------------|-------|
-| `skill_name` | text | PK or unique | |
-| `category` | text | | `"strong"`, `"moderate"`, `"developing"` |
+| `id` | int | PK, auto | |
+| `candidate_id` | text | FK → candidate_profile.id | |
+| `category` | text | | Chat bucket: `"strong"`, `"moderate"`, `"developing"`, or `"gap"` |
+| `skill_name` | text | | |
+| `proficiency_level` | text | | Descriptive label; live rows mirror the bucket as `STRONG`/`MODERATE`/`GAP` |
 | `evidence` | text | | Concrete proof of the skill |
+
+**Common mistakes:**
+- `skills` has `candidate_id` and `proficiency_level`; do not omit them from inserts.
+- `skills.years_experience`, `notes`, and `created_at` do not exist.
 
 ---
 
@@ -126,10 +143,15 @@ Explicit limitations. Fetched by Edge Functions but **not included in public-fac
 
 | Column | Type | Notes |
 |--------|------|-------|
-| `id` | int/uuid | PK |
+| `id` | int | PK, auto |
 | `candidate_id` | text | FK |
-| `area` | text | The gap |
+| `type` | text | Gap classification |
+| `item` | text | The gap |
 | `context` | text | Private framing |
+
+**Common mistakes:**
+- Use `gaps_weaknesses.type`, `item`, and `context`; `area` does not exist.
+- `gap_name`, `gap_type`, `description`, `growth_path`, and `is_active` do not exist.
 
 ---
 

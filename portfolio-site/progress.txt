@@ -1,3 +1,9 @@
+COMPLETED (2026-08-22 session — live Supabase sync execution):
+- Received owner sign-off and executed `sql/2026-08-22_sync_recent_experiences.sql` against production project `cvkcwvmlnghwwvdqudod` via equivalent PostgREST calls.
+- Synced four experiences, bringing `experiences` to 15 rows ordered by `display_order`; inserted 11 new skills, bringing `skills` to 25 rows.
+- Refreshed the coding gap to `Learnable Weakness` / `Write production code` with the current actively-developing context.
+- Verified the post-migration production state and retained the SQL file as the canonical, idempotent migration record.
+
 COMPLETED (2026-08-22 session — portfolio audit + schema sync):
 - Audited AssetMule, BCOFA 2025, Kivira, and Morph experience markdowns against DATABASE_UPDATES.md
 - Flagged unverified metrics ($200K early-stage pipeline, 20+ net-new leads, 285 validated contacts, AssetMule revenue/reply rates, Morph publication sign-off)
