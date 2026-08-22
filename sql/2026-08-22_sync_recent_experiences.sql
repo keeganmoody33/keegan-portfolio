@@ -38,7 +38,10 @@
 --     Edge Function does not read `private_context_*` fields. The
 --     longer caveat is also stored in
 --     `private_context_what_id_do_differently`.
---   - Idempotent: INSERT ... ON CONFLICT (id) updates existing rows.
+--   - Idempotent: `experiences` uses INSERT ... ON CONFLICT (id) DO
+--     UPDATE. `skills` and `gaps_weaknesses` have auto-generated
+--     integer ids and no unique natural key, so they use an
+--     update-then-insert-the-remainder CTE instead.
 -- Usage: Supabase SQL Editor for project cvkcwvmlnghwwvdqudod.
 -- ============================================================
 
@@ -243,13 +246,15 @@ ON CONFLICT (id) DO UPDATE SET
   display_order = EXCLUDED.display_order;
 
 -- ============================================================
--- 2. INSERT NEW SKILLS
---    `id` is an auto-generated integer, so rows are keyed on
---    (candidate_id, skill_name) via the guard below rather than
---    ON CONFLICT.
+-- 2. UPSERT NEW SKILLS
+--    `id` is an auto-generated integer and there is no unique
+--    constraint on (candidate_id, skill_name), so ON CONFLICT is
+--    unavailable. Update matching rows first, then insert only the
+--    names that did not match, so re-runs both avoid duplicates and
+--    propagate corrected category/proficiency/evidence values.
 -- ============================================================
-INSERT INTO skills (candidate_id, category, skill_name, proficiency_level, evidence)
-SELECT * FROM (VALUES
+WITH incoming (candidate_id, category, skill_name, proficiency_level, evidence) AS (
+  VALUES
   ('keegan-moody-001', 'developing', 'TypeScript', 'Beginner → Intermediate', 'Portfolio site, Supabase Edge Functions'),
   ('keegan-moody-001', 'developing', 'React/Next.js', 'Beginner', 'Portfolio site'),
   ('keegan-moody-001', 'developing', 'Supabase / PostgreSQL', 'Beginner', 'Database design, Edge Functions'),
@@ -261,22 +266,45 @@ SELECT * FROM (VALUES
   ('keegan-moody-001', 'moderate', 'Healthcare GTM / Compliance Messaging', 'Intermediate', 'Kivira CDS framing, BCOFA HIPAA/CAN-SPAM aware outreach'),
   ('keegan-moody-001', 'moderate', 'MSO Market Intelligence / PE Signal Research', 'Intermediate', 'Morph Focus HCS research — NPI/TIN, SOS, Form D, CRE signals'),
   ('keegan-moody-001', 'developing', 'Intern Onboarding / Delegation', 'Beginner → Intermediate', 'Kivira — onboarded and ramped NYU interns on GTM work')
-) AS incoming (candidate_id, category, skill_name, proficiency_level, evidence)
+), updated AS (
+  UPDATE skills s
+  SET category = i.category,
+      proficiency_level = i.proficiency_level,
+      evidence = i.evidence
+  FROM incoming i
+  WHERE s.candidate_id = i.candidate_id
+    AND s.skill_name = i.skill_name
+  RETURNING s.candidate_id, s.skill_name
+)
+INSERT INTO skills (candidate_id, category, skill_name, proficiency_level, evidence)
+SELECT i.candidate_id, i.category, i.skill_name, i.proficiency_level, i.evidence
+FROM incoming i
 WHERE NOT EXISTS (
-  SELECT 1 FROM skills existing
-  WHERE existing.candidate_id = incoming.candidate_id
-    AND existing.skill_name = incoming.skill_name
+  SELECT 1 FROM updated u
+  WHERE u.candidate_id = i.candidate_id
+    AND u.skill_name = i.skill_name
 );
 
 -- ============================================================
 -- 3. REFRESH THE CODING GAP TO "ACTIVELY DEVELOPING"
 --    Live layout is (candidate_id, type, item, context).
+--    Update the existing row if present, otherwise create it, so the
+--    file stays valid against a database that lacks the gap row.
 -- ============================================================
-UPDATE gaps_weaknesses
-SET type = 'Learnable Weakness',
-    context = 'Actively developing, not a hard limitation. Built this portfolio end to end with Next.js, TypeScript, and Supabase Edge Functions, plus the Morph MSO Intelligence Platform in React/Vite/Leaflet. Not applying for engineering roles, but can ship what I need.'
-WHERE candidate_id = 'keegan-moody-001'
-  AND item ILIKE '%production code%';
+WITH updated AS (
+  UPDATE gaps_weaknesses
+  SET type = 'Learnable Weakness',
+      context = 'Actively developing, not a hard limitation. Built this portfolio end to end with Next.js, TypeScript, and Supabase Edge Functions, plus the Morph MSO Intelligence Platform in React/Vite/Leaflet. Not applying for engineering roles, but can ship what I need.'
+  WHERE candidate_id = 'keegan-moody-001'
+    AND item ILIKE '%production code%'
+  RETURNING id
+)
+INSERT INTO gaps_weaknesses (candidate_id, type, item, context)
+SELECT 'keegan-moody-001',
+       'Learnable Weakness',
+       'Write production code',
+       'Actively developing, not a hard limitation. Built this portfolio end to end with Next.js, TypeScript, and Supabase Edge Functions, plus the Morph MSO Intelligence Platform in React/Vite/Leaflet. Not applying for engineering roles, but can ship what I need.'
+WHERE NOT EXISTS (SELECT 1 FROM updated);
 
 -- ============================================================
 -- 4. VERIFICATION QUERIES
