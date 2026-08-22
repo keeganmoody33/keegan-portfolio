@@ -16,8 +16,14 @@ experience markdown (experiences/*.md)
    - write honest_context caveats
         |
         v
+   live schema introspection
+   - fetch the PostgREST OpenAPI document at `/rest/v1/`
+   - authenticate with the Supabase `service_role` key
+   - record the actual columns and types before writing SQL
+        |
+        v
    SQL migration
-   - use live schema from archive/sql/insert_data.sql
+   - use the introspected live schema, not stale committed docs
    - make INSERT/UPDATE idempotent with ON CONFLICT (id)
    - consolidate in sql/YYYY-MM-DD_description.sql
         |
@@ -40,7 +46,8 @@ experience markdown (experiences/*.md)
 - [ ] Cross-check every metric against the resume and any supporting docs.
 - [ ] Add a row to `DATABASE_UPDATES.md` audit table: verified vs unverified.
 - [ ] If a metric is unverified, inline the caveat in the public bullet (or another chat-readable field); `private_context_*` is not exposed to the chat Edge Function.
-- [ ] Write the `INSERT INTO experiences ... ON CONFLICT (id)` statement using the live column set (`company_name`, `role_title`, `public_bullets` `TEXT[]`, `private_context_what_id_do_differently`, `metrics` `JSONB`, `display_order`, etc.).
+- [ ] Before writing migration SQL, fetch `/rest/v1/` with the Supabase `service_role` key and introspect the live PostgREST OpenAPI schema; record the actual columns and types.
+- [ ] Write the `INSERT INTO experiences ... ON CONFLICT (id)` statement using the introspected live column set.
 - [ ] If skills changed, update `skills` with `category` as the chat bucket (`strong`/`moderate`/`developing`/`gap`) and `proficiency_level` as the descriptive label.
 - [ ] If the coding or another gap moved, update `gaps_weaknesses`.
 - [ ] Open a PR; do **not** execute SQL in production without owner sign-off.
@@ -66,4 +73,4 @@ experience markdown (experiences/*.md)
 1. **No DB writes before audit and sign-off.**
 2. **No unverified metric appears without a caveat.**
 3. **One migration file per sync batch.**
-4. **Schema-first:** always re-read `archive/sql/insert_data.sql` and `portfolio-site/BACKEND_STRUCTURE.md` before writing SQL.
+4. **Schema-first:** introspect the live PostgREST OpenAPI document at `/rest/v1/` with the Supabase `service_role` key before writing SQL. Use committed SQL and `portfolio-site/BACKEND_STRUCTURE.md` as context, not as a substitute for live schema verification.
