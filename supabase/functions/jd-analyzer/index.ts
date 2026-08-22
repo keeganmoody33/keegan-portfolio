@@ -291,6 +291,7 @@ ${bullets.map((b: string) => `- ${b}`).join("\n")}
 
   const strong = skills.filter((s: any) => s.category === 'strong');
   const moderate = skills.filter((s: any) => s.category === 'moderate');
+  const developing = skills.filter((s: any) => s.category === 'developing');
 
   if (strong.length > 0) {
     candidateText += "\n### Core Strengths\n";
@@ -300,8 +301,15 @@ ${bullets.map((b: string) => `- ${b}`).join("\n")}
   }
 
   if (moderate.length > 0) {
-    candidateText += "\n### Developing Skills\n";
+    candidateText += "\n### Intermediate Skills\n";
     for (const skill of moderate) {
+      candidateText += `- ${skill.skill_name}: ${skill.evidence || ""}\n`;
+    }
+  }
+
+  if (developing.length > 0) {
+    candidateText += "\n### Developing Skills\n";
+    for (const skill of developing) {
       candidateText += `- ${skill.skill_name}: ${skill.evidence || ""}\n`;
     }
   }
