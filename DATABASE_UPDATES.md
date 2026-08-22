@@ -324,7 +324,7 @@ Schema drift corrected in this file:
 | 2026-08-22 | Audited AssetMule, BCOFA, Kivira, Morph; corrected schema drift; prepared `sql/2026-08-22_sync_recent_experiences.sql` | ✅ Preparation complete; execution recorded below |
 | 2026-08-22 | Executed the consolidated experience, skills, and coding-gap sync after owner sign-off via equivalent PostgREST calls; verified 15 experiences, 25 skills, and the refreshed coding gap in production | ✅ Complete |
 | 2026-07-24 | Added AssetMule, BCOFA, Kivira, Morph experiences | ✅ Audited & migrated to live schema |
-| 2026-07-24 | Added new skills to Skills to Add / SQL | ⏳ Pending SQL |
+| 2026-07-24 | Added new skills to Skills to Add / SQL | ✅ Executed 2026-08-22 |
 | 2026-07-24 | Added recent work artifacts to Artifact Library | ✅ |
 | 2026-01-20 | Created DATABASE_UPDATES.md | ✅ |
 | 2026-01-20 | Added AI tone updates | ⏳ Pending SQL |
