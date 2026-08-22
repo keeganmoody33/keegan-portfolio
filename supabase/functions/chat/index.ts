@@ -4,6 +4,7 @@
 // Deployed to: https://cvkcwvmlnghwwvdqudod.supabase.co/functions/v1/chat
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
+import { skillBucket } from "../_shared/skillBucket.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -316,21 +317,6 @@ ${bullets.map((b: string) => `- ${b}`).join("\n")}
   // Derive the chat bucket from either the new category field or the legacy
   // proficiency_level field so both old (domain category + STRONG/MODERATE/GAP)
   // and new (bucket category + descriptive label) skill rows surface correctly.
-  function skillBucket(skill: any): 'strong' | 'moderate' | 'developing' | 'gap' | null {
-    const category = (skill.category || '').toString().toLowerCase().trim();
-    if (category === 'strong') return 'strong';
-    if (category === 'moderate') return 'moderate';
-    if (category === 'developing') return 'developing';
-    if (category === 'gap') return 'gap';
-
-    const proficiency = (skill.proficiency_level || '').toString().toLowerCase().trim();
-    if (proficiency === 'strong') return 'strong';
-    if (proficiency === 'moderate') return 'moderate';
-    if (proficiency === 'developing' || proficiency.includes('beginner')) return 'developing';
-    if (proficiency === 'gap') return 'gap';
-    return null;
-  }
-
   const strong = skills.filter((s: any) => skillBucket(s) === 'strong');
   const moderate = skills.filter((s: any) => skillBucket(s) === 'moderate');
   const developing = skills.filter((s: any) => skillBucket(s) === 'developing');

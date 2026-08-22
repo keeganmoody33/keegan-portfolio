@@ -5,6 +5,7 @@
 // Deployed to: https://cvkcwvmlnghwwvdqudod.supabase.co/functions/v1/jd-analyzer
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
+import { skillBucket } from "../_shared/skillBucket.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -289,9 +290,12 @@ ${bullets.map((b: string) => `- ${b}`).join("\n")}
 
   candidateText += "\n## SKILLS & CAPABILITIES\n";
 
-  const strong = skills.filter((s: any) => s.category === 'strong');
-  const moderate = skills.filter((s: any) => s.category === 'moderate');
-  const developing = skills.filter((s: any) => s.category === 'developing');
+  // Same bucket resolution as chat: prefer category when it is a chat
+  // bucket, otherwise fall back to proficiency_level so legacy domain
+  // categories (e.g. Frontend + STRONG) still reach recruiter-facing fit.
+  const strong = skills.filter((s: any) => skillBucket(s) === 'strong');
+  const moderate = skills.filter((s: any) => skillBucket(s) === 'moderate');
+  const developing = skills.filter((s: any) => skillBucket(s) === 'developing');
 
   if (strong.length > 0) {
     candidateText += "\n### Core Strengths\n";
