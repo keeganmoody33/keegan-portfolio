@@ -11,7 +11,9 @@
 --   - `display_order` is reassigned so the timeline remains chronological
 --     (most-recent first) without touching unknown rows.
 --   - All unverified metrics ($200K pipeline, 20+ leads, etc.) are kept in
---     `public_bullets` but caveated in `private_context_what_id_do_differently`.
+--     `public_bullets` with the caveat inline (chat does not read
+--     `private_context_*` fields) and also recorded in
+--     `private_context_what_id_do_differently`.
 --   - This script is designed to be idempotent: INSERT ... ON CONFLICT (id)
 --     updates existing rows.
 -- Usage: Run this in the Supabase SQL Editor for project
@@ -67,7 +69,7 @@ INSERT INTO experiences (
   ARRAY[
     'Owned end-to-end cold outbound execution: prospecting, list building, campaign deployment, and cold calls',
     'Provisioned and managed 15 sending inboxes to support multi-channel outbound at scale',
-    'Built and sent targeted campaigns across multiple buyer personas, including an innovation-champion campaign reaching 285 validated CIO/CMIO/CTO contacts at health systems',
+    'Built and sent targeted campaigns across multiple buyer personas, including an innovation-champion campaign reaching 285 list-built/enriched CIO/CMIO/CTO contacts at health systems (outcomes not independently verified)',
     'Onboarded and ramped NYU interns interested in startup go-to-market, delegating research, outreach, and operational tasks',
     'Designed and built a Context Operating System (Context OS) — a structured knowledge graph linking market research, ICP tiers, buyer personas, messaging, and campaign artifacts',
     'Supported ICP definition around a primary-care mental-health wedge, including CoCM billing signal analysis and 9-subtier account architecture'
@@ -259,7 +261,7 @@ INSERT INTO experiences (
     'Provisioned email infrastructure and configured cold email systems so BCOFA could launch outbound campaigns',
     'Conducted market research and ICP segmentation across a finite, enumerable clinic universe (~800 US bariatric programs, 3,000–5,000+ medical weight loss/HRT/lifestyle targets)',
     'Designed LinkedIn boolean search templates, clinic scraping pipelines, and enrichment workflows to feed target account lists',
-    'Generated $200K+ in early-stage pipeline and 20+ net-new leads for BariTotalCare clinical software',
+    'Generated $200K+ in early-stage, founder-assisted pipeline and 20+ net-new leads for BariTotalCare clinical software (not closed revenue; no independent paper proof)',
     'Advised founders and internal teams on a weekly cadence around messaging, targeting, and operational rollout'
   ],
   NULL,
@@ -301,28 +303,26 @@ ON CONFLICT (id) DO UPDATE SET
 --    `proficiency_level` preserves the original descriptive label
 -- ============================================================
 INSERT INTO skills (
-  id, candidate_id, category, skill_name, proficiency_level, evidence, notes, years_experience, created_at
+  id, candidate_id, category, skill_name, proficiency_level, evidence, years_experience
 ) VALUES
-  ('skill-typescript', 'keegan-moody-001', 'developing', 'TypeScript', 'Beginner → Intermediate', 'Portfolio site, Supabase Edge Functions', NULL, 1, NOW()),
-  ('skill-react-nextjs', 'keegan-moody-001', 'developing', 'React/Next.js', 'Beginner', 'Portfolio site', NULL, 1, NOW()),
-  ('skill-supabase', 'keegan-moody-001', 'developing', 'Supabase', 'Beginner', 'Database design, Edge Functions', NULL, 1, NOW()),
-  ('skill-api-integration', 'keegan-moody-001', 'moderate', 'API Integration', 'Intermediate', 'Claude API, Firecrawl integration', NULL, 2, NOW()),
-  ('skill-system-design', 'keegan-moody-001', 'moderate', 'System Design', 'Intermediate', 'Mixmax GTM Intelligence System', NULL, 2, NOW()),
-  ('skill-clay-outbound', 'keegan-moody-001', 'moderate', 'Clay / Outbound Infrastructure', 'Intermediate', 'AssetMule, BCOFA, Kivira — list building, sequencing, inbox provisioning', NULL, 2, NOW()),
-  ('skill-knowledge-graph', 'keegan-moody-001', 'moderate', 'Knowledge Graph / Context OS', 'Intermediate', 'Kivira Context OS with linked nodes, wiki-links, graph indexing', NULL, 1, NOW()),
-  ('skill-react-vite-leaflet', 'keegan-moody-001', 'developing', 'React + Vite + TypeScript + Leaflet', 'Beginner → Intermediate', 'Morph MSO Intelligence Platform', NULL, 1, NOW()),
-  ('skill-healthcare-gtm', 'keegan-moody-001', 'moderate', 'Healthcare GTM / Compliance Messaging', 'Intermediate', 'Kivira CDS framing, BCOFA HIPAA/CAN-SPAM aware outreach', NULL, 2, NOW()),
-  ('skill-mso-intelligence', 'keegan-moody-001', 'moderate', 'MSO Market Intelligence / PE Signal Research', 'Intermediate', 'Morph Focus HCS research — NPI/TIN, SOS, Form D, CRE signals', NULL, 1, NOW()),
-  ('skill-intern-onboarding', 'keegan-moody-001', 'developing', 'Intern Onboarding / Delegation', 'Beginner → Intermediate', 'Kivira — onboarded and ramped NYU interns on GTM work', NULL, 1, NOW())
+  ('skill-typescript', 'keegan-moody-001', 'developing', 'TypeScript', 'Beginner → Intermediate', 'Portfolio site, Supabase Edge Functions', 1),
+  ('skill-react-nextjs', 'keegan-moody-001', 'developing', 'React/Next.js', 'Beginner', 'Portfolio site', 1),
+  ('skill-supabase', 'keegan-moody-001', 'developing', 'Supabase', 'Beginner', 'Database design, Edge Functions', 1),
+  ('skill-api-integration', 'keegan-moody-001', 'moderate', 'API Integration', 'Intermediate', 'Claude API, Firecrawl integration', 2),
+  ('skill-system-design', 'keegan-moody-001', 'moderate', 'System Design', 'Intermediate', 'Mixmax GTM Intelligence System', 2),
+  ('skill-clay-outbound', 'keegan-moody-001', 'moderate', 'Clay / Outbound Infrastructure', 'Intermediate', 'AssetMule, BCOFA, Kivira — list building, sequencing, inbox provisioning', 2),
+  ('skill-knowledge-graph', 'keegan-moody-001', 'moderate', 'Knowledge Graph / Context OS', 'Intermediate', 'Kivira Context OS with linked nodes, wiki-links, graph indexing', 1),
+  ('skill-react-vite-leaflet', 'keegan-moody-001', 'developing', 'React + Vite + TypeScript + Leaflet', 'Beginner → Intermediate', 'Morph MSO Intelligence Platform', 1),
+  ('skill-healthcare-gtm', 'keegan-moody-001', 'moderate', 'Healthcare GTM / Compliance Messaging', 'Intermediate', 'Kivira CDS framing, BCOFA HIPAA/CAN-SPAM aware outreach', 2),
+  ('skill-mso-intelligence', 'keegan-moody-001', 'moderate', 'MSO Market Intelligence / PE Signal Research', 'Intermediate', 'Morph Focus HCS research — NPI/TIN, SOS, Form D, CRE signals', 1),
+  ('skill-intern-onboarding', 'keegan-moody-001', 'developing', 'Intern Onboarding / Delegation', 'Beginner → Intermediate', 'Kivira — onboarded and ramped NYU interns on GTM work', 1)
 ON CONFLICT (id) DO UPDATE SET
   candidate_id = EXCLUDED.candidate_id,
   category = EXCLUDED.category,
   skill_name = EXCLUDED.skill_name,
   proficiency_level = EXCLUDED.proficiency_level,
   evidence = EXCLUDED.evidence,
-  notes = EXCLUDED.notes,
-  years_experience = EXCLUDED.years_experience,
-  created_at = skills.created_at;
+  years_experience = EXCLUDED.years_experience;
 
 -- ============================================================
 -- 3. UPDATE CODING GAP TO "ACTIVELY DEVELOPING"

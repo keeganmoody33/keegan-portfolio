@@ -39,6 +39,7 @@ experience markdown (experiences/*.md)
 - [ ] Write or update `experiences/XX-slug.md` with public bullets + honest context.
 - [ ] Cross-check every metric against the resume and any supporting docs.
 - [ ] Add a row to `DATABASE_UPDATES.md` audit table: verified vs unverified.
+- [ ] If a metric is unverified, inline the caveat in the public bullet (or another chat-readable field); `private_context_*` is not exposed to the chat Edge Function.
 - [ ] Write the `INSERT INTO experiences ... ON CONFLICT (id)` statement using the live column set (`company_name`, `role_title`, `public_bullets` `TEXT[]`, `private_context_what_id_do_differently`, `metrics` `JSONB`, `display_order`, etc.).
 - [ ] If skills changed, update `skills` with `category` as the chat bucket (`strong`/`moderate`/`developing`/`gap`) and `proficiency_level` as the descriptive label.
 - [ ] If the coding or another gap moved, update `gaps_weaknesses`.

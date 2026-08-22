@@ -313,10 +313,25 @@ ${bullets.map((b: string) => `- ${b}`).join("\n")}
 
   portfolioText += "\n## MY SKILLS\n";
 
-  // Group skills by category - lead with strengths
-  const strong = skills.filter((s: any) => s.category === 'strong');
-  const moderate = skills.filter((s: any) => s.category === 'moderate');
-  const developing = skills.filter((s: any) => s.category === 'gap' || s.category === 'developing');
+  // Derive the chat bucket from either the new category field or the legacy
+  // proficiency_level field so both old (domain category + STRONG/MODERATE/GAP)
+  // and new (bucket category + descriptive label) skill rows surface correctly.
+  function skillBucket(skill: any): 'strong' | 'moderate' | 'developing' | null {
+    const category = (skill.category || '').toString().toLowerCase().trim();
+    if (category === 'strong') return 'strong';
+    if (category === 'moderate') return 'moderate';
+    if (category === 'gap' || category === 'developing') return 'developing';
+
+    const proficiency = (skill.proficiency_level || '').toString().toLowerCase().trim();
+    if (proficiency === 'strong') return 'strong';
+    if (proficiency === 'moderate') return 'moderate';
+    if (proficiency === 'gap' || proficiency.includes('beginner')) return 'developing';
+    return null;
+  }
+
+  const strong = skills.filter((s: any) => skillBucket(s) === 'strong');
+  const moderate = skills.filter((s: any) => skillBucket(s) === 'moderate');
+  const developing = skills.filter((s: any) => skillBucket(s) === 'developing');
 
   // FIXED: Removed honest_notes (too self-critical) - just use evidence
   if (strong.length > 0) {

@@ -162,7 +162,7 @@ Corrected and consolidated in `sql/2026-08-22_sync_recent_experiences.sql`.
 
 Key schema fixes from this round:
 - `gaps_weaknesses` uses `(candidate_id, gap_name, gap_type, description, growth_path, is_active)` (or the legacy `area`/`context` layout — the migration handles both).
-- `skills` uses `(id, candidate_id, category, skill_name, proficiency_level, evidence, notes, years_experience, created_at)` where `category` is the chat bucket (`strong`/`moderate`/`developing`/`gap`).
+- `skills` uses `(id, candidate_id, category, skill_name, proficiency_level, evidence, years_experience)` where `category` is the chat bucket (`strong`/`moderate`/`developing`/`gap`). `notes` and `created_at` are optional defaults and omitted from the migration to stay compatible with both schema variants.
 - `experiences` uses the live column set (`company_name`, `role_title`, `public_bullets` as `TEXT[]`, `private_context_what_id_do_differently`, `metrics` as `JSONB`, `display_order`, etc.).
 
 ### Status
@@ -293,7 +293,7 @@ Four new work experiences added to `experiences/` in this update.
 | **Kivira** | 15 inboxes provisioned; campaigns launched; cold calls; intern onboarding; Context OS built | `285 validated CIO/CMIO/CTO contacts` comes from list-building/enrichment; no verified closed-revenue numbers |
 | **Morph** | Research brief, publication, six dossiers, six interactive figures, working React/Leaflet platform pushed to GitHub | Final publication received "needs changes" review; no confirmed client sign-off or deployment; EDP scoring dropped after retrospective validation failed |
 
-All four rows carry an `honest_context` caveat in `private_context_what_id_do_differently` consistent with the **honest over polished** principle.
+All four rows carry an `honest_context` caveat in `private_context_what_id_do_differently` consistent with the **honest over polished** principle. Because the chat Edge Function does not read `private_context_*` fields, the two public bullets containing unverified numbers (BCOFA `$200K+` pipeline / `20+` leads; Kivira `285` contacts) now include the caveat inline in `public_bullets` as well.
 
 ### SQL Update
 
@@ -303,7 +303,7 @@ Corrected, consolidated, and made idempotent in:
 Schema drift corrected in this file:
 - Table name: `candidate_profile` (singular), not `candidate_profiles`.
 - `experiences` columns use `company_name`, `role_title`, `public_bullets` (`TEXT[]`), `private_context_what_id_do_differently`, `metrics` (`JSONB`), `display_order`, etc.
-- `skills` columns use `category` as the chat bucket (`strong`/`moderate`/`developing`/`gap`) and `proficiency_level` for the descriptive label.
+- `skills` columns use `category` as the chat bucket (`strong`/`moderate`/`developing`/`gap`) and `proficiency_level` for the descriptive label. The chat Edge Function now derives the bucket from `category` first, then falls back to `proficiency_level` (`STRONG`/`MODERATE`/`GAP`/beginner) so legacy domain-categorized rows still appear.
 - `gaps_weaknesses` uses `(candidate_id, gap_name, gap_type, description, growth_path, is_active)` with a fallback for the legacy `area`/`context` layout.
 
 ### Pending
@@ -311,7 +311,7 @@ Schema drift corrected in this file:
 - [ ] Keegan confirms audit summary and honest_context wording
 - [ ] Run `sql/2026-08-22_sync_recent_experiences.sql` in Supabase
 - [ ] Verify Timeline renders Kivira, Morph, AssetMule, and BCOFA 2025 in the correct order
-- [ ] Verify chat surfaces the new skills with the right buckets
+- [ ] Verify chat surfaces both new and existing skills with the right buckets (the `chat` Edge Function now maps legacy `proficiency_level` buckets too)
 - [ ] Update `skills-matrix.md` after the sync
 
 ---
