@@ -41,6 +41,6 @@ Start with `CLAUDE.md` for context. Key files:
 
 ## Status
 
-**Last Updated:** 2026-07-24
+**Last Updated:** 2026-08-22
 **Actively job searching:** GTM Engineer / Account Executive roles
 **Location:** Atlanta, GA (Remote preferred)
