@@ -39,6 +39,9 @@
 
 ```
 <html lang="en">
+  <head>
+    Jam team metadata + recorder scripts
+  </head>
   <body>
     <PostHogProvider>        ← Client-side analytics (providers.tsx)
       <Page />               ← app/page.tsx
@@ -47,7 +50,7 @@
 </html>
 ```
 
-PostHog initializes on mount if `NEXT_PUBLIC_POSTHOG_KEY` exists. No-ops silently if missing.
+PostHog initializes on mount if `NEXT_PUBLIC_POSTHOG_KEY` exists. No-ops silently if missing. Jam recorder scripts load before hydration; metadata records the current route only; the site has no authentication or workspace identity source, so example IDs are not used.
 
 ---
 

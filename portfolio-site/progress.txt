@@ -1,3 +1,7 @@
+## 2026-09-13 — Jam recording instrumentation
+- Added Jam team metadata and recorder/capture scripts to the root layout.
+- Jam metadata records the current route only. The app has no user accounts or workspace identity source, so example IDs are not used as production data.
+
 COMPLETED (2026-08-22 session — live Supabase sync execution):
 - Received owner sign-off and executed `sql/2026-08-22_sync_recent_experiences.sql` against production project `cvkcwvmlnghwwvdqudod` via equivalent PostgREST calls.
 - Synced four experiences, bringing `experiences` to 15 rows ordered by `display_order`; inserted 11 new skills, bringing `skills` to 25 rows.
