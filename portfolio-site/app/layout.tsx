@@ -18,8 +18,6 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="jam:team" content="1fa5e16b-202b-4eae-8b03-dbac1fcc4157" />
-      </head>
-      <body className="antialiased min-h-screen">
         <Script
           src="https://js.jam.dev/recorder.js"
           type="module"
@@ -30,6 +28,8 @@ export default function RootLayout({
           type="module"
           strategy="beforeInteractive"
         />
+      </head>
+      <body className="antialiased min-h-screen">
         <JamMetadata />
         <PostHogProvider>{children}</PostHogProvider>
       </body>
