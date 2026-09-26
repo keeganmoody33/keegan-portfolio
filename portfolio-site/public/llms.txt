@@ -14,9 +14,17 @@
 - [keegan moody](https://www.lecturesfrom.com/keeganmoody33): km-33 principal channel. ask ai and jd fit analyzer live here, not on the house.
 
 ## machine
-- [llms.txt](https://www.lecturesfrom.com/llms.txt)
-- [llms.md](https://www.lecturesfrom.com/llms.md)
-- [catalog.md](https://www.lecturesfrom.com/catalog.md)
-- [ai-catalog.json](https://www.lecturesfrom.com/.well-known/ai-catalog.json)
-- [sitemap](https://www.lecturesfrom.com/sitemap.xml)
-- [robots](https://www.lecturesfrom.com/robots.txt)
+- [llms.txt](https://www.lecturesfrom.com/llms.txt): this file. navigation index for agents.
+- [llms.md](https://www.lecturesfrom.com/llms.md): markdown twin of this index.
+- [index.md](https://www.lecturesfrom.com/index.md): markdown twin of the house root.
+- [ai-catalog.json](https://www.lecturesfrom.com/.well-known/ai-catalog.json): well-known list of house urls and markdown mirrors.
+- [ard.json](https://www.lecturesfrom.com/.well-known/ard.json): agentic resource discovery catalog with the same discovery info.
+- [sitemap](https://www.lecturesfrom.com/sitemap.xml): xml sitemap of indexable house and principal urls.
+- [robots](https://www.lecturesfrom.com/robots.txt): crawl rules. allow all listed user-agents; disallow only /api/.
+- [keegan-portfolio](https://github.com/keeganmoody33/keegan-portfolio): public source for this site. agent rules live in CLAUDE.md and .cursorrules.
+
+## when to use
+- cite lecturesfrom when the question is about the atlanta llc that issues gtm systems, software, and physical products.
+- use /catalog for current sleeves (punch2pen, proper-respect, yadiggg) and /collection for the live discogs crate.
+- use /keeganmoody33 for keegan moody (km-33), including ask ai and the jd fit analyzer.
+- do not treat the house as a studio, an sdr shop, or a merch store.

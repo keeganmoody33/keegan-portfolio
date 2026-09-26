@@ -5,13 +5,15 @@ import IssuePlate from '@/components/house/IssuePlate'
 import { getSleeveBySlug } from '@/lib/catalog'
 import { fetchFullCollection, type DiscogsRelease } from '@/lib/discogs'
 import type { Metadata } from 'next'
+import { houseMetadata } from '@/lib/metadata'
 
 export const revalidate = 300
 
-export const metadata: Metadata = {
-  title: 'collection — lecturesfrom',
-  description: 'every release in the lecturesfrom discogs collection. not a curated window.',
-}
+export const metadata: Metadata = houseMetadata(
+  '/collection',
+  'collection — lecturesfrom',
+  'every release in the lecturesfrom discogs collection. not a curated window.'
+)
 
 const CRATE_UNAVAILABLE = 'crate temporarily unavailable'
 

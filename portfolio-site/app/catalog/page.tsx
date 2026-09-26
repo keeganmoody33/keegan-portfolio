@@ -3,11 +3,13 @@ import HouseFooter from '@/components/house/HouseFooter'
 import HouseRail from '@/components/house/HouseRail'
 import HouseShell from '@/components/house/HouseShell'
 import type { Metadata } from 'next'
+import { houseMetadata } from '@/lib/metadata'
 
-export const metadata: Metadata = {
-  title: 'catalog — lecturesfrom',
-  description: 'crate permalink. sleeves issued by lecturesfrom.',
-}
+export const metadata: Metadata = houseMetadata(
+  '/catalog',
+  'catalog — lecturesfrom',
+  'crate permalink. sleeves issued by lecturesfrom.'
+)
 
 export default function CatalogPage() {
   return (

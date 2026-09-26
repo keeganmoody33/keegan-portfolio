@@ -1,34 +1,38 @@
+const GROUP = `Allow: /
+Disallow: /api/`
+
 const BODY = `User-agent: *
-Allow: /
-Disallow: /api/
+${GROUP}
 
 User-agent: GPTBot
-Allow: /
+${GROUP}
 
 User-agent: ClaudeBot
-Allow: /
+${GROUP}
 
 User-agent: Google-Extended
-Allow: /
+${GROUP}
 
 User-agent: CCBot
-Allow: /
+${GROUP}
 
 User-agent: PerplexityBot
-Allow: /
+${GROUP}
 
 User-agent: Googlebot
-Allow: /
+${GROUP}
 
 Sitemap: https://www.lecturesfrom.com/sitemap.xml
 LLMS: https://www.lecturesfrom.com/llms.txt
 `
 
+// Route handler instead of app/robots.ts so the nonstandard LLMS line can be emitted.
 export function GET() {
   return new Response(BODY, {
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
       'Cache-Control': 'public, max-age=3600',
+      Link: '</llms.txt>; rel="describedby"; type="text/plain"',
     },
   })
 }

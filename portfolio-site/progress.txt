@@ -1,3 +1,9 @@
+COMPLETED (2026-09-26 — merged #17 agent-ready + #18 Discogs into house-cut):
+- Real merge of `origin/cursor/agent-ready-e943` onto `cursor/lf-house-cut-4f3b` after #18 (`b765f3a`)
+- Kept house UI, collection ISR fallbacks, `--house-dim`, Phase 2 SUPERSEDED, `/keegan` 301
+- Took agent-ready robots (Disallow `/api/` in every group), proxy Link/markdown negotiation, md mirrors, JSON-LD, well-known, metadata, `/og.jpg` on the person segment only
+- Kept Discogs crawl + tests from #18; `/collection` and `/collection.md` catch throws and show `count unavailable`, never `error.message`
+
 COMPLETED (2026-09-26 — Discogs full live crate):
 - Hardened `lib/discogs.ts`: paginate folder 0 at per_page=100 until `pagination.pages` is exhausted; count must equal `pagination.items`
 - Normalized `{ releases, pagination }` with title/artist/year/thumbnail/cover/format/label/catno/discogsUrl
@@ -5,6 +11,15 @@ COMPLETED (2026-09-26 — Discogs full live crate):
 - User-Agent `lecturesfrom/1.0`; `DISCOGS_TOKEN` optional; no upstream error text to the client
 - `/api/discogs` still returns the recent-5 array for RecentDigs
 - Rate-limit cases covered in `lib/discogs.test.ts` (node:test). Did not edit `app/collection/page.tsx`.
+
+COMPLETED (2026-09-26 — agent-ready for house cut):
+- robots.txt fully open (`*` plus GPTBot, ClaudeBot, Google-Extended, CCBot, PerplexityBot, Googlebot); `Disallow: /api/` repeated in every named group (groups do not stack); Sitemap + LLMS lines
+- sitemap lists `/`, `/catalog`, `/catalog/punch2pen`, `/catalog/proper-respect`, `/catalog/yadiggg`, `/collection`, `/legal`, `/keeganmoody33`
+- `/llms.txt` + markdown mirrors (`/index.md`, `/llms.md`, catalog/sleeve/collection/legal) as `text/markdown; charset=utf-8`
+- Accept: text/markdown on house HTML routes returns the markdown twin with Vary: Accept; unknown paths get a markdown 404
+- Organization JSON-LD on `/` (foundingDate 2025, PostalAddress Atlanta GA 30316 US, four sameAs URLs, founder Person, ItemList); sleeve JSON-LD on catalog pages; no invented contactPoint/offers
+- `/.well-known/ai-catalog.json` and `/.well-known/ard.json`; RFC 8288 Link headers on house pages
+- metadata split: house title `lecturesfrom` + garage one-liner; `/keeganmoody33` keeps `Keegan Moody | lecturesfrom`; canonical and og:type on house; `og:image` (`/og.jpg`) only on the person segment
 
 COMPLETED (2026-09-26 — lecturesfrom house cut):
 - Replaced root `/` turntable + hasVisitedPortfolio redirect with a Server Component title card + crate
