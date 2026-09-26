@@ -344,10 +344,10 @@ All interactions ──→ PostHog (client + server events)
 
 1. Click intercepts client navigation (`onClick` + Next.js `onNavigate`) but the `<a href>` remains for no-JS / crawlers
 2. Module-level controller appends a `position:fixed` overlay to `document.body` (survives the Link unmount; not mounted in `app/layout.tsx`)
-3. First crossing in the tab (`sessionStorage lf-signal-cut-count` 0): 420ms tear → analog snow → black + id line (`km-33 → lf-01` or reverse) → fade. `router.push` at 280ms
-4. Later crossings: 160ms tear + black + id, push at 40ms
+3. First crossing in the tab (`sessionStorage lf-signal-cut-count` 0): 420ms tear → analog snow → black + id line (`km-33 → lf-01` or reverse) → fade. `router.push` as soon as the overlay is fully opaque (snow start, 60ms)
+4. Later crossings: 160ms tear + black + id, push at black (40ms)
 5. `prefers-reduced-motion: reduce`: 80ms black, push immediately, no tear/snow/id/fade
-6. If the destination pathname has not committed by reveal start, hold black (id omitted when reduced) until it does, hard cap 1500ms from click
+6. Phase deadlines are `setTimeout` from click `t0` (snow paint is rAF-only). If the destination pathname has not committed by reveal start, hold black (id omitted when reduced) until it does, hard cap 1500ms from click. No extra quiet-frame wait.
 
 **Success state:** Destination paints under the overlay; overlay removed at end of reveal. CLS 0.
 

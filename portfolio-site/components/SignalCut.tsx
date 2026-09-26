@@ -52,7 +52,7 @@ const PRINT_ORANGE = '#E23D00'
 const TEAR_EASE = 'cubic-bezier(0.7, 0, 0.84, 0)'
 const REVEAL_EASE = 'cubic-bezier(0.2, 0, 0, 1)'
 
-const FIRST = { tear: 60, snow: 280, push: 280, reveal: 360, end: 420, fade: 60 } as const
+const FIRST = { tear: 60, snow: 280, push: 60, reveal: 360, end: 420, fade: 60 } as const
 const REPEAT = { tear: 40, snow: 40, push: 40, reveal: 120, end: 160, fade: 40 } as const
 const REDUCED = { tear: 0, snow: 0, push: 0, reveal: 80, end: 80, fade: 0 } as const
 
@@ -538,32 +538,6 @@ function waitForPathname(href: string, deadline: number, gen: number): Promise<{
   })
 }
 
-function waitForQuietFrame(deadline: number, gen: number): Promise<number> {
-  const started = performance.now()
-  return new Promise((resolve) => {
-    const tick = (before: number) => {
-      if (runtime.generation !== gen) {
-        resolve(performance.now() - started)
-        return
-      }
-      runtime.callbackTicks += 1
-      runtime.waitRaf = window.requestAnimationFrame((after) => {
-        if (runtime.generation !== gen) {
-          resolve(performance.now() - started)
-          return
-        }
-        runtime.callbackTicks += 1
-        if (after - before < 24 || after >= deadline) {
-          resolve(after - started)
-          return
-        }
-        runtime.waitRaf = window.requestAnimationFrame(tick)
-      })
-    }
-    runtime.waitRaf = window.requestAnimationFrame(tick)
-  })
-}
-
 function fallbackNavigate(req: CutRequest) {
   const alreadyPushed = runtime.pushed
   try {
@@ -590,7 +564,6 @@ function fallbackNavigate(req: CutRequest) {
 function pushNow(req: CutRequest) {
   if (runtime.pushed) return
   runtime.pushed = true
-  mark('black-end')
   try {
     req.navigate()
   } catch {
@@ -664,19 +637,19 @@ function playCut(req: CutRequest): boolean {
       },
       { once: true },
     )
-    // Duration from reveal-start, not +1 frame — keeps `end` inside ±20ms when
-    // reveal itself was a frame late.
     const fadeTimer = window.setTimeout(finish, timing.fade)
     runtime.timers.push(fadeTimer)
   }
 
-  const maybeHoldThenReveal = async () => {
-    try {
-      if (runtime.generation !== gen) return
-      const committed = currentPathname() === pathnameOf(req.href)
-      if (!committed) {
-        overlay.dataset.phase = variant === 'reduced' ? 'black' : 'hold'
-        const result = await waitForPathname(req.href, t0 + HARD_CAP_MS, gen)
+  const armReveal = () => {
+    if (runtime.generation !== gen) return
+    if (currentPathname() === pathnameOf(req.href)) {
+      finishReveal()
+      return
+    }
+    overlay.dataset.phase = variant === 'reduced' ? 'black' : 'hold'
+    void waitForPathname(req.href, t0 + HARD_CAP_MS, gen)
+      .then((result) => {
         if (runtime.generation !== gen) return
         if (result.heldMs > 0) {
           try {
@@ -689,21 +662,40 @@ function playCut(req: CutRequest): boolean {
             // ignore
           }
         }
-      }
+        finishReveal()
+      })
+      .catch((error: unknown) => {
+        if (runtime.generation !== gen) return
+        console.error('SignalCut hold failed; tearing down', error)
+        fallbackNavigate(req)
+      })
+  }
+
+  const schedule = (offset: number, fn: () => void) => {
+    const delay = Math.max(0, t0 + offset - performance.now())
+    const id = window.setTimeout(() => {
       if (runtime.generation !== gen) return
-      await waitForQuietFrame(t0 + HARD_CAP_MS, gen)
-      if (runtime.generation !== gen) return
-      finishReveal()
-    } catch (error) {
-      if (runtime.generation !== gen) return
-      console.error('SignalCut hold failed; tearing down', error)
-      fallbackNavigate(req)
+      runtime.callbackTicks += 1
+      fn()
+    }, delay)
+    runtime.timers.push(id)
+  }
+
+  const startSnowLoop = () => {
+    runtime.snowing = true
+    const paint = () => {
+      if (runtime.generation !== gen || !runtime.snowing) return
+      runtime.callbackTicks += 1
+      drawSnowFrame()
+      runtime.clockRaf = window.requestAnimationFrame(paint)
     }
+    runtime.clockRaf = window.requestAnimationFrame(paint)
   }
 
   try {
     if (variant === 'reduced') {
       overlay.dataset.phase = 'black'
+      mark('black-end')
       pushNow(req)
     } else {
       startTear(variant)
@@ -711,64 +703,39 @@ function playCut(req: CutRequest): boolean {
       if (variant === 'first' && canvasEl instanceof HTMLCanvasElement) {
         attachNoise(canvasEl)
       }
-    }
-
-    let tearDone = variant === 'reduced'
-    let snowDone = variant !== 'first'
-    let revealArmed = false
-
-    const tick = (now: number) => {
-      if (runtime.generation !== gen) return
-      runtime.callbackTicks += 1
-      try {
-        const elapsed = now - t0
-
-        if (!tearDone && elapsed >= timing.tear) {
-          tearDone = true
-          revertTear()
-          mark('tear-end')
-          if (variant === 'first') {
-            overlay.dataset.phase = 'snow'
-            runtime.snowing = true
-          } else {
-            overlay.dataset.phase = 'black'
-            pushNow(req)
-          }
-        }
-
-        if (runtime.snowing) drawSnowFrame()
-
-        if (!snowDone && elapsed >= timing.snow) {
-          snowDone = true
-          runtime.snowing = false
-          mark('snow-end')
+      schedule(timing.tear, () => {
+        revertTear()
+        mark('tear-end')
+        if (variant === 'first') {
+          overlay.dataset.phase = 'snow'
+          startSnowLoop()
+          // Overlay is fully opaque at snow start — destination stays covered.
+          pushNow(req)
+        } else {
           overlay.dataset.phase = 'black'
+          mark('black-end')
           pushNow(req)
         }
-
-        if (!revealArmed && elapsed >= timing.reveal) {
-          revealArmed = true
-          void maybeHoldThenReveal()
-          return
-        }
-
-        runtime.clockRaf = window.requestAnimationFrame(tick)
-      } catch (error) {
-        console.error('SignalCut clock failed; tearing down', error)
-        fallbackNavigate(req)
+      })
+      if (variant === 'first') {
+        schedule(timing.snow, () => {
+          runtime.snowing = false
+          stopClock()
+          mark('snow-end')
+          overlay.dataset.phase = 'black'
+          mark('black-end')
+        })
       }
     }
 
+    schedule(timing.reveal, armReveal)
+
     // Hard-cap fallback: setTimeout still fires when rAF is paused in a background
     // tab. Must call teardown (not overlay.remove) so snow cannot paint a detached canvas.
-    const watchdog = window.setTimeout(() => {
-      if (runtime.generation !== gen) return
-      runtime.callbackTicks += 1
+    schedule(HARD_CAP_MS + timing.fade + HARD_CAP_BUFFER_MS, () => {
       fallbackNavigate(req)
-    }, HARD_CAP_MS + timing.fade + HARD_CAP_BUFFER_MS)
-    runtime.timers.push(watchdog)
+    })
 
-    runtime.clockRaf = window.requestAnimationFrame(tick)
     return true
   } catch (error) {
     console.error('SignalCut failed; navigating without overlay', error)

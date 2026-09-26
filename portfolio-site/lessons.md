@@ -95,8 +95,8 @@ Updated: 2026-09-26
 - **The overlay cannot live in React state on the triggering Link.** The triggering link unmounts as soon as the route swaps. Drive one `document.body` node from a module-level controller. Do not mount it in `app/layout.tsx`.
 - **Do not `router.prefetch` synchronously inside the click handler before the overlay is up.** Prefetch on mount/hover/focus/touchstart, start the cut first, then `queueMicrotask` the click prefetch.
 - **Do not set `html { overflow: hidden }` for the tear.** Hiding the scrollbar is a layout shift (CLS). Overlay CLS must stay 0.
-- **Drive phase boundaries from a single rAF clock (`elapsed` vs `t0`), not a chain of `setTimeout`s.** Fade-end is the exception: duration from `reveal-start` via `setTimeout(fadeMs)`, not `fadeMs + 16`.
-- **After pathname commit, wait for one frame under 24ms before revealing** (hard cap still 1500ms). Destination JS can otherwise delay the fade `end` mark.
+- **Drive phase boundaries from `setTimeout` deadlines against click `t0`, not rAF frame counting.** rAF is only for analog snow paint. A rAF clock quantizes every boundary to the next display frame (~+16ms) and stacks.
+- **Hold only when the destination pathname has not committed by reveal-start.** Do not wait for a quiet frame after commit. Destination stays covered until reveal-start; `router.push` may fire once the overlay is fully opaque (snow start at 60ms first, black at 40ms repeat).
 - **API is `direction: "toPerson" | "toHouse"`**, not `fromId`/`toId`. Ids are derived: house→person `lf-01 → km-33`, person→house reverse.
 - **Never remove the overlay without stopping the noise loop.** Copilot 4111027402 on the house-cut first pass: `setTimeout(total + 80)` called `overlay.remove()` but left `noiseTimer` (`setTimeout(paint, 32)`) running, so a background tab kept painting a detached canvas. One idempotent `teardown()` must cancel snow, every timer/rAF, and revert `html` transform. Every abort path calls it — including `visibilitychange` hidden. Do not teardown from the Link's React unmount.
 

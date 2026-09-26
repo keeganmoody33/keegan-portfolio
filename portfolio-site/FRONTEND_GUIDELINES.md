@@ -293,7 +293,7 @@ Animated 60px x 60px grid pattern on body:
 
 Tear easing: `cubic-bezier(0.7, 0, 0.84, 0)`. Reveal easing: `cubic-bezier(0.2, 0, 0, 1)`. Overlay `z-index: 2147483647`, `pointer-events: none`. Id color `#d9d9d9`, arrow `#E23D00`.
 
-`components/SignalCut.tsx` owns the overlay via a module-level `document.body` controller so the animation survives the route change. Do not mount it in `app/layout.tsx`. Teardown is one idempotent function (stops snow, cancels timers/rAF, reverts `html` transform) called from every abort path including `visibilitychange` hidden — never `overlay.remove()` alone (Copilot 4111027402).
+`components/SignalCut.tsx` owns the overlay via a module-level `document.body` controller so the animation survives the route change. Do not mount it in `app/layout.tsx`. Phase deadlines are `setTimeout` from click `t0`; snow paint is rAF. Teardown is one idempotent function (stops snow, cancels timers/rAF, reverts `html` transform) called from every abort path including `visibilitychange` hidden — never `overlay.remove()` alone (Copilot 4111027402). Hold only if the destination pathname is still the origin at reveal-start.
 
 ### Motion Philosophy
 
