@@ -1,7 +1,7 @@
 import HouseFooter from '@/components/house/HouseFooter'
 import HouseRail from '@/components/house/HouseRail'
 import HouseShell from '@/components/house/HouseShell'
-import IssuePlate from '@/components/house/IssuePlate'
+import NoArtTile from '@/components/house/NoArtTile'
 import { getSleeveBySlug } from '@/lib/catalog'
 import { fetchFullCollection, type DiscogsRelease } from '@/lib/discogs'
 import type { Metadata } from 'next'
@@ -80,9 +80,9 @@ export default async function CollectionPage() {
                       decoding="async"
                       className="aspect-square w-full border border-[var(--house-line)] object-cover"
                     />
-                  ) : collectionSleeve ? (
-                    <IssuePlate sleeve={collectionSleeve} />
-                  ) : null}
+                  ) : (
+                    <NoArtTile artist={release.artist} title={release.title} />
+                  )}
                   <p className="mt-2 font-mono text-[11px] leading-snug text-[var(--house-ink)] group-hover:text-[var(--house-orange)]">
                     {release.artist}
                   </p>
