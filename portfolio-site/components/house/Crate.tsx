@@ -68,7 +68,11 @@ export default function Crate() {
 
           return (
             <li key={row.sleeve.slug}>
-              <Link href={row.href} className={className}>
+              <Link
+                href={row.href}
+                prefetch={row.href === '/collection' ? false : undefined}
+                className={className}
+              >
                 {inner}
               </Link>
             </li>

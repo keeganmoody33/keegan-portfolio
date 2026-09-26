@@ -16,7 +16,7 @@ export default function HouseFooter() {
         <Link href="/catalog" className="hover:text-[var(--house-orange)]">
           catalog
         </Link>
-        <Link href="/collection" className="hover:text-[var(--house-orange)]">
+        <Link href="/collection" prefetch={false} className="hover:text-[var(--house-orange)]">
           collection
         </Link>
         <Link href="/legal" className="hover:text-[var(--house-orange)]">
