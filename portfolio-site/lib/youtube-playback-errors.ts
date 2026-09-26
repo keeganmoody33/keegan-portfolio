@@ -229,7 +229,13 @@ export function requestNowPlayingFocusHandoff(playerRoot: Element | null): void 
   const onPlayControl =
     active instanceof HTMLElement &&
     /^(Play|Pause)$/.test(active.getAttribute('aria-label') || '')
-  if (!inPlayer && !onPlayControl) return
+  const lostToBody =
+    !active ||
+    active === document.body ||
+    active === document.documentElement
+  // Body is not a user choice — it is Play disappearing. Do not steal
+  // focus that is already on another control (Ask AI, nav, etc.).
+  if (!inPlayer && !onPlayControl && !lostToBody) return
   pendingNowPlayingFocusHandoff = true
   // Do not flush in a microtask: the dropping slide is still mounted and
   // its Play button would win, then unmount and dump focus to body.
@@ -254,6 +260,8 @@ export function flushNowPlayingFocusHandoff(root?: ParentNode): HTMLElement | nu
     afterUnmount: true,
   })
   if (!target) return null
+  // Focusing inside inert is rejected by the browser and dumps to body.
+  if (target.closest('[inert]')) return null
   pendingNowPlayingFocusHandoff = false
   target.focus()
   return target

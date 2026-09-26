@@ -213,6 +213,12 @@ describe('focus handoff predicates', () => {
     assert.equal(isNowPlayingControl(fakeEl('Play', '[data-now-playing]')), true)
     assert.equal(isNowPlayingControl(fakeEl('GitHub activity, last 14 days')), false)
   })
+
+  it('does not treat a leftover GitHub control as a rotator dot or Play', () => {
+    const leftover = fakeEl('GitHub activity, last 14 days')
+    assert.equal(isBannerDotControl(leftover), false)
+    assert.equal(isNowPlayingControl(leftover), false)
+  })
 })
 
 describe('nowPlayingRecoveryPresentation', () => {
