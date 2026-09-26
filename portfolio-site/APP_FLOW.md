@@ -72,7 +72,7 @@ Top to bottom, this is exactly what renders on the main page:
    └── GitHubActivity               ← Retro bar chart (14 days)
 5. Main Layout Container (flex)
    ├── Navigation Header
-   │   ├── Logo: /lecturesfrom
+   │   ├── Logo: /lecturesfrom (SignalCut link to `/`, direction toHouse)
    │   ├── Links: XP, Projects [P], Contact [C]
    │   └── "Ask AI" button
    ├── Hero Section
@@ -327,6 +327,33 @@ GitHub Public Events API
 
 All interactions ──→ PostHog (client + server events)
 ```
+
+---
+
+### 12. SIGNAL CUT (house <-> person)
+
+**Trigger:** Same-tab unmodified primary click (or Enter) on a `SignalCut`-wrapped `next/link` that crosses house `/` and person `/keeganmoody33` (or `/keegan`).
+
+**Wrapped links (this branch):**
+- Person-page nav wordmark `lecturesfrom` → `/` (`direction="toHouse"`)
+- Crate row 04 `keegan moody` → `/keeganmoody33` is not on this branch; `SignalCut` is a client island ready to drop into a Server Component row later
+
+**Does not play on:** first load, hash changes, back/forward, house <-> house routes, modifier/middle clicks, `target="_blank"`.
+
+**Steps:**
+
+1. Click intercepts client navigation (`onClick` + Next.js `onNavigate`) but the `<a href>` remains for no-JS / crawlers
+2. Module-level controller appends a `position:fixed` overlay to `document.body` (survives the Link unmount; not mounted in `app/layout.tsx`)
+3. First crossing in the tab (`sessionStorage lf-signal-cut-count` 0): 420ms tear → analog snow → black + id line (`km-33 → lf-01` or reverse) → fade. `router.push` at 280ms
+4. Later crossings: 160ms tear + black + id, push at 40ms
+5. `prefers-reduced-motion: reduce`: 80ms black, push immediately, no tear/snow/id/fade
+6. If the destination pathname has not committed by reveal start, hold black (id omitted when reduced) until it does, hard cap 1500ms from click
+
+**Success state:** Destination paints under the overlay; overlay removed at end of reveal. CLS 0.
+
+**Error state:** Overlay tears down and `router.push` / `location.assign` still navigates.
+
+**PostHog events:** `signal_cut_started` (`direction`, `href`)
 
 ---
 

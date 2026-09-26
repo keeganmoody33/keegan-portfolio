@@ -287,6 +287,13 @@ Animated 60px x 60px grid pattern on body:
 | `gridShift` | 8s | linear infinite | Body grid background movement |
 | `sprayStroke` | 0.15s | cubic-bezier(0.25, 0.46, 0.45, 0.94) | Hero name character reveal |
 | `marquee` | 40s | linear infinite | Horizontal ticker scroll |
+| SIGNAL CUT first | 420ms | tear 0–60 / snow 60–280 / black 280–360 / fade 360–420 | House <-> person, first crossing in the tab |
+| SIGNAL CUT repeat | 160ms | tear 0–40 / black 40–120 / fade 120–160 | Later crossings in the same tab |
+| SIGNAL CUT reduced | 80ms | instant black, no tear/snow/id/fade | `prefers-reduced-motion: reduce` |
+
+Tear easing: `cubic-bezier(0.7, 0, 0.84, 0)`. Reveal easing: `cubic-bezier(0.2, 0, 0, 1)`. Overlay `z-index: 2147483647`, `pointer-events: none`. Id color `#d9d9d9`, arrow `#E23D00`.
+
+`components/SignalCut.tsx` owns the overlay via a module-level `document.body` controller so the animation survives the route change. Do not mount it in `app/layout.tsx`.
 
 ### Motion Philosophy
 

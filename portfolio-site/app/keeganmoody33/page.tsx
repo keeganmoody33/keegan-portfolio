@@ -11,8 +11,8 @@ import RecentDigs from '@/components/RecentDigs'
 import GitHubActivity from '@/components/GitHubActivity'
 import YouTubePlayer from '@/components/YouTubePlayer'
 import BannerRotator from '@/components/BannerRotator'
-import posthog from 'posthog-js'
 import SignalCut from '@/components/SignalCut'
+import posthog from 'posthog-js'
 
 /** Error boundary — Discogs API failure never crashes the page */
 class WidgetErrorBoundary extends Component<
@@ -134,10 +134,8 @@ export default function Home() {
               <span className="text-[var(--text-muted)] font-mono text-sm">/</span>
               <SignalCut
                 href="/"
-                fromId="km-33"
-                toId="lf-01"
+                direction="toHouse"
                 className="text-[var(--text-bright)] font-space"
-                aria-label="lecturesfrom"
               >
                 lecturesfrom
               </SignalCut>

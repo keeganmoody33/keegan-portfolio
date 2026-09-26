@@ -182,6 +182,18 @@ PARKING LOT (not in scope yet):
 
 ---
 
+## Saturday, September 26th, 2026 — SIGNAL CUT (person -> house)
+
+- Added `components/SignalCut.tsx`: client island, next/link, module-level body overlay so the cut survives the route change. Not mounted in `app/layout.tsx`.
+- Person-page nav wordmark `lecturesfrom` is now a SignalCut link to `/` (`direction="toHouse"`). No other person-page restyle.
+- Crate row 04 (house -> person) is not on this branch; the component is drop-in ready for a Server Component row.
+- sessionStorage key: `lf-signal-cut-count`. First crossing 420ms, later 160ms, reduced-motion 80ms black.
+- performance.mark: `signalcut:start`, `:tear-end`, `:snow-end`, `:black-end`, `:reveal-start`, `:end`.
+
+**Next:** House crate row 04 will wrap `keegan moody` with `<SignalCut href="/keeganmoody33" direction="toPerson">`.
+
+---
+
 ## Tuesday, February 10th, 2026 — 7:35 PM - US-002: Create YouTube player service for loading page
 - Created lib/youtube-service.ts with full YouTube player service
 - Exports: createPlayer(), playVideo(), saveStateToSession(), destroyPlayer(), etc.
