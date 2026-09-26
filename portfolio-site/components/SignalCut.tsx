@@ -666,8 +666,17 @@ function playCut(req: CutRequest): boolean {
           }
         }
         finishReveal()
-        if (timing.fade > 0) schedule(timing.fade, finish)
-        else finish()
+        // After a hold, fade is duration-from-now, not an offset from t0.
+        if (timing.fade > 0) {
+          const id = window.setTimeout(() => {
+            if (runtime.generation !== gen) return
+            runtime.callbackTicks += 1
+            finish()
+          }, timing.fade)
+          runtime.timers.push(id)
+        } else {
+          finish()
+        }
       })
       .catch((error: unknown) => {
         if (runtime.generation !== gen) return
