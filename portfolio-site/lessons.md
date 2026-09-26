@@ -20,7 +20,6 @@ Updated: 2026-09-26
 - **Route `export const revalidate` must be a numeric literal.** `export const revalidate = DISCOGS_REVALIDATE_SECONDS` fails Next 16 with "Invalid segment configuration export". Use `export const revalidate = 300`.
 - **Next 16 `MetadataRoute.Robots` cannot emit `LLMS:`.** Use `app/robots.txt/route.ts` if the agent file must include that nonstandard line. Do not keep both `app/robots.ts` and `app/robots.txt/route.ts`.
 - **House components are Server Components by default.** The old "all components are `'use client'`" rule is for the person page. Root `/` must stay a Server Component; client islands are SignalCut (and sleeve flip if added).
-- **Do not prefetch `/collection`.** The crate HTML is ~500 KB with hundreds of Discogs `<img>` tags. Next `<Link>` prefetch of that page from HouseFooter/Crate downloads eager covers on unrelated house routes, which sets Cloudflare `__cf_bm` and tanks Lighthouse Best Practices (`third-party-cookies`, `inspector-issues`). Use `prefetch={false}` on every Link whose href is `/collection`. Keep eager/high only for the `/collection` visit itself.
 
 ## Agent-ready
 

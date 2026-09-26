@@ -1,9 +1,3 @@
-COMPLETED (2026-09-26 — #20 collection prefetch leak):
-- HouseFooter and Crate Links to `/collection` now `prefetch={false}`
-- `/collection` stays ~522 KB / 278 covers; first 10 remain eager, first cover fetchPriority=high
-- Visiting other house routes must make 0 `i.discogs.com` requests
-- Did not touch SignalCut, Agent-Ready files, discogs data logic, or /keeganmoody33
-
 COMPLETED (2026-09-26 — house UX F01–F06):
 - Wordmark scales to its container (`min(12rem, 17.2cqi)`); no horizontal clip at 375/768/1024
 - Crate spines keep format / catno at 375 on a second meta line; status column meets the hairline
