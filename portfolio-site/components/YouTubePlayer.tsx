@@ -538,10 +538,12 @@ export default function YouTubePlayer() {
                 className={`
                 w-6 h-6 flex items-center justify-center rounded border
                 transition-colors duration-150
-                ${recovery.ariaDisabled ? 'opacity-40' : ''}
+                ${recovery.ariaDisabled ? 'opacity-40 cursor-not-allowed' : ''}
                 ${playing
                     ? 'border-[var(--accent-lime)] text-[var(--accent-lime)]'
-                    : 'border-[var(--border-dim)] text-[var(--text-muted)] hover:text-[var(--accent-lime)] hover:border-[var(--accent-lime)]'
+                    : recovery.ariaDisabled
+                      ? 'border-[var(--border-dim)] text-[var(--text-muted)]'
+                      : 'border-[var(--border-dim)] text-[var(--text-muted)] hover:text-[var(--accent-lime)] hover:border-[var(--accent-lime)]'
                   }
               `}
                 aria-label={playing ? 'Pause' : 'Play'}
@@ -568,7 +570,7 @@ export default function YouTubePlayer() {
                   {recovery.title ?? (trackTitle || 'Loading playlist...')}
                 </p>
                 <p className="text-[var(--text-muted)] text-[10px] truncate">
-                  {trackAuthor || '\u00A0'}
+                  {recovery.hideAuthor ? '\u00A0' : trackAuthor || '\u00A0'}
                 </p>
               </div>
 

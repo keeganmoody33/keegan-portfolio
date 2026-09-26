@@ -287,21 +287,28 @@ export function resolveFocusAfterNowPlayingDrop(opts: {
 
 let pendingNowPlayingFocusHandoff = false
 
-/** Only records a handoff if focus is inside the player. */
+export const NOW_PLAYING_FOCUS_OPTIONS: FocusOptions = { preventScroll: true }
+
+/** True only when focus is still inside the Now Playing slide. Body is not. */
+export function isFocusInsideNowPlaying(
+  playerRoot: Element | null,
+  active: Element | null
+): boolean {
+  if (!active) return false
+  if (playerRoot && typeof playerRoot.contains === 'function' && playerRoot.contains(active)) {
+    return true
+  }
+  if (typeof (active as { closest?: (sel: string) => Element | null }).closest === 'function') {
+    return !!(active as Element).closest('[data-now-playing]')
+  }
+  return false
+}
+
+/** Only records a handoff if focus is inside the Now Playing slide. */
 export function requestNowPlayingFocusHandoff(playerRoot: Element | null): void {
   if (typeof document === 'undefined') return
   const active = document.activeElement
-  const inPlayer = !!(playerRoot && active && playerRoot.contains(active))
-  const onPlayControl =
-    active instanceof HTMLElement &&
-    /^(Play|Pause)$/.test(active.getAttribute('aria-label') || '')
-  const lostToBody =
-    !active ||
-    active === document.body ||
-    active === document.documentElement
-  // Body is not a user choice — it is Play disappearing. Do not steal
-  // focus that is already on another control (Ask AI, nav, etc.).
-  if (!inPlayer && !onPlayControl && !lostToBody) return
+  if (!isFocusInsideNowPlaying(playerRoot, active)) return
   pendingNowPlayingFocusHandoff = true
   // Do not flush in a microtask: the dropping slide is still mounted and
   // its Play button would win, then unmount and dump focus to body.
@@ -329,7 +336,7 @@ export function flushNowPlayingFocusHandoff(root?: ParentNode): HTMLElement | nu
   // Focusing inside inert is rejected by the browser and dumps to body.
   if (target.closest('[inert]')) return null
   pendingNowPlayingFocusHandoff = false
-  target.focus()
+  target.focus(NOW_PLAYING_FOCUS_OPTIONS)
   return target
 }
 
@@ -342,6 +349,7 @@ export type NowPlayingRecoveryPresentation = {
   ariaDisabled: boolean
   title: string | null
   hideTime: boolean
+  hideAuthor: boolean
 }
 
 export function nowPlayingRecoveryPresentation(
@@ -353,6 +361,7 @@ export function nowPlayingRecoveryPresentation(
       ariaDisabled: false,
       title: null,
       hideTime: false,
+      hideAuthor: false,
     }
   }
   return {
@@ -360,6 +369,7 @@ export function nowPlayingRecoveryPresentation(
     ariaDisabled: true,
     title: YT_RECOVERY_TITLE,
     hideTime: true,
+    hideAuthor: true,
   }
 }
 

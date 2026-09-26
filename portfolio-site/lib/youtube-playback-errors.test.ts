@@ -16,6 +16,10 @@ import {
   nowPlayingRecoveryPresentation,
   isBannerDotControl,
   isNowPlayingControl,
+  isFocusInsideNowPlaying,
+  requestNowPlayingFocusHandoff,
+  flushNowPlayingFocusHandoff,
+  NOW_PLAYING_FOCUS_OPTIONS,
   ytMachineOnError,
   ytMachineOnProgress,
   ytMachineOnTick,
@@ -322,6 +326,7 @@ describe('nowPlayingRecoveryPresentation', () => {
     assert.equal(ui.ariaDisabled, true)
     assert.equal(ui.title, YT_RECOVERY_TITLE)
     assert.equal(ui.hideTime, true)
+    assert.equal(ui.hideAuthor, true)
   })
 
   it('clears recovery chrome when idle', () => {
@@ -330,5 +335,131 @@ describe('nowPlayingRecoveryPresentation', () => {
     assert.equal(ui.ariaDisabled, false)
     assert.equal(ui.title, null)
     assert.equal(ui.hideTime, false)
+    assert.equal(ui.hideAuthor, false)
+  })
+})
+
+describe('isFocusInsideNowPlaying', () => {
+  it('is false for body and documentElement', () => {
+    const play = fakeEl('Play', '[data-now-playing]')
+    const root = {
+      contains: (el: Element) => el === play,
+    } as unknown as Element
+    const body = fakeEl('body')
+    const html = fakeEl('html')
+    assert.equal(isFocusInsideNowPlaying(root, body), false)
+    assert.equal(isFocusInsideNowPlaying(root, html), false)
+    assert.equal(isFocusInsideNowPlaying(root, null), false)
+  })
+
+  it('is true for a descendant of the player root', () => {
+    const play = fakeEl('Play')
+    const root = {
+      contains: (el: Element) => el === play,
+    } as unknown as Element
+    assert.equal(isFocusInsideNowPlaying(root, play), true)
+  })
+
+  it('is true via [data-now-playing] closest when the root is missing', () => {
+    const play = fakeEl('Play', '[data-now-playing]')
+    assert.equal(isFocusInsideNowPlaying(null, play), true)
+  })
+
+  it('is false for another control', () => {
+    const ask = fakeEl('Ask AI')
+    const root = {
+      contains: () => false,
+    } as unknown as Element
+    assert.equal(isFocusInsideNowPlaying(root, ask), false)
+  })
+})
+
+describe('requestNowPlayingFocusHandoff / flush preventScroll', () => {
+  const g = globalThis as typeof globalThis & {
+    document?: Document
+    window?: Window
+  }
+
+  function installDoc(opts: {
+    active: Element
+    body?: Element
+    github?: HTMLElement
+  }) {
+    const body = opts.body ?? fakeEl('body')
+    const github =
+      opts.github ??
+      ({
+        getAttribute: (name: string) => {
+          if (name === 'href') return 'https://github.com/keeganmoody33'
+          if (name === 'aria-label') return 'GitHub activity, last 14 days'
+          return null
+        },
+        closest: () => null,
+        focus: () => undefined,
+      } as unknown as HTMLElement)
+    const nav = {
+      querySelectorAll: () => [github],
+    }
+    const header = {
+      querySelectorAll: () => [],
+      querySelector: () => null,
+    }
+    g.document = {
+      activeElement: opts.active,
+      body,
+      documentElement: fakeEl('html'),
+      querySelector: (sel: string) => {
+        if (sel === 'header') return header
+        if (sel === 'nav') return nav
+        if (sel === '[data-banner-rotator]') return null
+        return null
+      },
+      querySelectorAll: () => [],
+    } as unknown as Document
+    g.window = {
+      setTimeout: () => 0,
+    } as unknown as Window
+    return { github, body }
+  }
+
+  it('does not queue a handoff when activeElement is body', () => {
+    const play = fakeEl('Play', '[data-now-playing]')
+    const root = {
+      contains: (el: Element) => el === play,
+    } as unknown as Element
+    const body = fakeEl('body')
+    const { github } = installDoc({ active: body, body })
+    let focused = false
+    ;(github as HTMLElement).focus = () => {
+      focused = true
+    }
+    requestNowPlayingFocusHandoff(root)
+    assert.equal(flushNowPlayingFocusHandoff(), null)
+    assert.equal(focused, false)
+  })
+
+  it('passes preventScroll: true when flushing a real handoff', () => {
+    const play = fakeEl('Play', '[data-now-playing]')
+    const root = {
+      contains: (el: Element) => el === play,
+    } as unknown as Element
+    const focusCalls: unknown[] = []
+    const github = {
+      getAttribute: (name: string) => {
+        if (name === 'href') return 'https://github.com/keeganmoody33'
+        if (name === 'aria-label') return 'GitHub activity, last 14 days'
+        return null
+      },
+      closest: () => null,
+      focus: (opts?: FocusOptions) => {
+        focusCalls.push(opts)
+      },
+    } as unknown as HTMLElement
+    installDoc({ active: play, github })
+    requestNowPlayingFocusHandoff(root)
+    const landed = flushNowPlayingFocusHandoff()
+    assert.equal(landed, github)
+    assert.deepEqual(NOW_PLAYING_FOCUS_OPTIONS, { preventScroll: true })
+    assert.deepEqual(focusCalls, [{ preventScroll: true }])
   })
 })
