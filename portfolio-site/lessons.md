@@ -98,6 +98,7 @@ Updated: 2026-09-26
 - **Drive phase boundaries from a single rAF clock (`elapsed` vs `t0`), not a chain of `setTimeout`s.** Fade-end is the exception: duration from `reveal-start` via `setTimeout(fadeMs)`, not `fadeMs + 16`.
 - **After pathname commit, wait for one frame under 24ms before revealing** (hard cap still 1500ms). Destination JS can otherwise delay the fade `end` mark.
 - **API is `direction: "toPerson" | "toHouse"`**, not `fromId`/`toId`. Ids are derived: house→person `lf-01 → km-33`, person→house reverse.
+- **Never remove the overlay without stopping the noise loop.** Copilot 4111027402 on the house-cut first pass: `setTimeout(total + 80)` called `overlay.remove()` but left `noiseTimer` (`setTimeout(paint, 32)`) running, so a background tab kept painting a detached canvas. One idempotent `teardown()` must cancel snow, every timer/rAF, and revert `html` transform. Every abort path calls it — including `visibilitychange` hidden. Do not teardown from the Link's React unmount.
 
 ## Descoped Features
 

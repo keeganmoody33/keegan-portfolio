@@ -6,6 +6,9 @@
  * Overlay is driven by a module-level controller that appends one fixed
  * node to document.body. That is intentional: the triggering Link unmounts
  * on the route swap, so React state / layout.tsx cannot own the overlay.
+ *
+ * Teardown is a single idempotent function. Copilot 4111027402: never remove
+ * the overlay without cancelling snow, every timer/rAF, and html transform.
  */
 
 import Link from 'next/link'
@@ -42,6 +45,7 @@ const OVERLAY_ID = 'lf-signal-cut-overlay'
 const STYLE_ID = 'lf-signal-cut-style'
 const Z_INDEX = '2147483647'
 const HARD_CAP_MS = 1500
+const HARD_CAP_BUFFER_MS = 80
 const NOISE_FRAME_COUNT = 6
 const PRINT_ORANGE = '#E23D00'
 
@@ -121,8 +125,21 @@ html.lf-sc-tearing-first{animation-duration:60ms}
 html.lf-sc-tearing-repeat{animation-duration:40ms}
 `
 
+export type SignalCutDebugState = {
+  playing: boolean
+  generation: number
+  overlayConnected: boolean
+  snowing: boolean
+  clockRaf: number
+  waitRaf: number
+  timerCount: number
+  htmlTearing: boolean
+  htmlTransform: string
+}
+
 type Runtime = {
   playing: boolean
+  tearingDown: boolean
   generation: number
   timers: number[]
   clockRaf: number
@@ -135,10 +152,13 @@ type Runtime = {
   snowing: boolean
   pushed: boolean
   tearReverted: boolean
+  listenersBound: boolean
+  callbackTicks: number
 }
 
 const runtime: Runtime = {
   playing: false,
+  tearingDown: false,
   generation: 0,
   timers: [],
   clockRaf: 0,
@@ -151,6 +171,18 @@ const runtime: Runtime = {
   snowing: false,
   pushed: false,
   tearReverted: false,
+  listenersBound: false,
+  callbackTicks: 0,
+}
+
+declare global {
+  interface Window {
+    __lfSignalCut?: {
+      teardown: () => void
+      getState: () => SignalCutDebugState
+      readonly callbackTicks: number
+    }
+  }
 }
 
 function timingsFor(variant: CutVariant) {
@@ -349,9 +381,12 @@ function warmNoise() {
 }
 
 function drawSnowFrame() {
+  // Never paint a detached canvas (Copilot 4111027402: background-tab snow after overlay.remove).
+  if (!runtime.snowing) return
   const canvas = runtime.canvas
+  if (!canvas || !canvas.isConnected) return
   const frames = runtime.noiseFrames
-  if (!canvas || !frames || frames.length === 0) return
+  if (!frames || frames.length === 0) return
   const ctx = canvas.getContext('2d', { alpha: false })
   if (!ctx) return
   const frame = frames[runtime.snowIndex % frames.length]
@@ -368,12 +403,11 @@ function stopClock() {
 }
 
 function revertTear() {
-  if (runtime.tearReverted) return
-  runtime.tearReverted = true
   const root = document.documentElement
   root.classList.remove('lf-sc-tearing', 'lf-sc-tearing-first', 'lf-sc-tearing-repeat')
   root.style.removeProperty('transform')
   root.style.removeProperty('will-change')
+  runtime.tearReverted = true
 }
 
 function clearTimers() {
@@ -386,23 +420,90 @@ function clearTimers() {
   stopClock()
 }
 
-function teardown() {
-  runtime.generation += 1
-  runtime.playing = false
-  clearTimers()
-  revertTear()
-
+function removeOverlay() {
   const overlay = runtime.overlay ?? document.getElementById(OVERLAY_ID)
-  overlay?.parentNode?.removeChild(overlay)
+  if (overlay?.parentNode) overlay.parentNode.removeChild(overlay)
+  // Belt: if removeChild missed a stale node, drop it too.
+  const leftover = document.getElementById(OVERLAY_ID)
+  leftover?.parentNode?.removeChild(leftover)
   runtime.overlay = null
   runtime.canvas = null
-  runtime.pushed = false
+}
+
+/**
+ * Single idempotent teardown. Every abort and completion path calls this:
+ * completion, hard-cap/fallback, slow-destination hold, popstate, pagehide,
+ * visibilitychange (hidden), thrown error, second click (no new loop),
+ * and mid-crossing page unload. Do not call from the triggering Link's
+ * React unmount — that unmount IS the route swap and the overlay must survive.
+ */
+function teardown() {
+  runtime.playing = false
+  runtime.snowing = false
+  if (runtime.tearingDown) {
+    clearTimers()
+    revertTear()
+    removeOverlay()
+    return
+  }
+  runtime.tearingDown = true
+  runtime.generation += 1
+  try {
+    clearTimers()
+    revertTear()
+    removeOverlay()
+    runtime.pushed = false
+  } finally {
+    runtime.tearingDown = false
+  }
+}
+
+function debugState(): SignalCutDebugState {
+  const overlay = runtime.overlay ?? document.getElementById(OVERLAY_ID)
+  const root = document.documentElement
+  return {
+    playing: runtime.playing,
+    generation: runtime.generation,
+    overlayConnected: Boolean(overlay?.isConnected),
+    snowing: runtime.snowing,
+    clockRaf: runtime.clockRaf,
+    waitRaf: runtime.waitRaf,
+    timerCount: runtime.timers.length,
+    htmlTearing: root.classList.contains('lf-sc-tearing'),
+    htmlTransform: root.style.transform,
+  }
+}
+
+function installDebugHook() {
+  if (typeof window === 'undefined') return
+  window.__lfSignalCut = {
+    teardown,
+    getState: debugState,
+    get callbackTicks() {
+      return runtime.callbackTicks
+    },
+  }
+}
+
+function abortIfHidden() {
+  if (runtime.playing || runtime.overlay || document.getElementById(OVERLAY_ID)) {
+    teardown()
+  }
+}
+
+function bindGlobalGuards() {
+  if (runtime.listenersBound || typeof window === 'undefined') return
+  runtime.listenersBound = true
+  window.addEventListener('popstate', abortIfHidden)
+  window.addEventListener('pagehide', abortIfHidden)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' || document.hidden) abortIfHidden()
+  })
 }
 
 if (typeof window !== 'undefined') {
-  window.addEventListener('popstate', () => {
-    if (runtime.playing) teardown()
-  })
+  bindGlobalGuards()
+  installDebugHook()
 }
 
 function waitForPathname(href: string, deadline: number, gen: number): Promise<{
@@ -421,6 +522,7 @@ function waitForPathname(href: string, deadline: number, gen: number): Promise<{
         resolve({ timedOut: false, heldMs: performance.now() - started })
         return
       }
+      runtime.callbackTicks += 1
       const now = performance.now()
       if (currentPathname() === target) {
         resolve({ timedOut: false, heldMs: now - started })
@@ -444,11 +546,13 @@ function waitForQuietFrame(deadline: number, gen: number): Promise<number> {
         resolve(performance.now() - started)
         return
       }
+      runtime.callbackTicks += 1
       runtime.waitRaf = window.requestAnimationFrame((after) => {
         if (runtime.generation !== gen) {
           resolve(performance.now() - started)
           return
         }
+        runtime.callbackTicks += 1
         if (after - before < 24 || after >= deadline) {
           resolve(after - started)
           return
@@ -461,13 +565,23 @@ function waitForQuietFrame(deadline: number, gen: number): Promise<number> {
 }
 
 function fallbackNavigate(req: CutRequest) {
+  const alreadyPushed = runtime.pushed
   try {
     teardown()
   } catch {
     runtime.playing = false
+    runtime.snowing = false
+    try {
+      revertTear()
+      clearTimers()
+      removeOverlay()
+    } catch {
+      // last-resort cleanup
+    }
   }
+  if (alreadyPushed) return
   try {
-    if (!runtime.pushed) req.navigate()
+    req.navigate()
   } catch {
     window.location.assign(req.href)
   }
@@ -495,15 +609,21 @@ function startTear(variant: CutVariant) {
 
 function playCut(req: CutRequest): boolean {
   if (typeof document === 'undefined' || !document.body) return false
+  bindGlobalGuards()
+  installDebugHook()
+  // Second click during a crossing: swallow, do not start another loop.
+  // The in-flight cut already owns timers/rAF; its teardown path will clear them.
   if (runtime.playing) return true
 
   runtime.playing = true
+  runtime.tearingDown = false
   runtime.generation += 1
   const gen = runtime.generation
   runtime.pushed = false
   runtime.tearReverted = false
   runtime.snowIndex = 0
   runtime.snowing = false
+  runtime.callbackTicks = 0
   clearTimers()
 
   const reduced = prefersReducedMotion()
@@ -532,6 +652,7 @@ function playCut(req: CutRequest): boolean {
     let ended = false
     const finish = () => {
       if (ended || runtime.generation !== gen) return
+      runtime.callbackTicks += 1
       ended = true
       mark('end')
       teardown()
@@ -550,28 +671,34 @@ function playCut(req: CutRequest): boolean {
   }
 
   const maybeHoldThenReveal = async () => {
-    if (runtime.generation !== gen) return
-    const committed = currentPathname() === pathnameOf(req.href)
-    if (!committed) {
-      overlay.dataset.phase = variant === 'reduced' ? 'black' : 'hold'
-      const result = await waitForPathname(req.href, t0 + HARD_CAP_MS, gen)
+    try {
       if (runtime.generation !== gen) return
-      if (result.heldMs > 0) {
-        try {
-          console.info('signalcut:hold', {
-            heldMs: Math.round(result.heldMs),
-            timedOut: result.timedOut,
-            href: req.href,
-          })
-        } catch {
-          // ignore
+      const committed = currentPathname() === pathnameOf(req.href)
+      if (!committed) {
+        overlay.dataset.phase = variant === 'reduced' ? 'black' : 'hold'
+        const result = await waitForPathname(req.href, t0 + HARD_CAP_MS, gen)
+        if (runtime.generation !== gen) return
+        if (result.heldMs > 0) {
+          try {
+            console.info('signalcut:hold', {
+              heldMs: Math.round(result.heldMs),
+              timedOut: result.timedOut,
+              href: req.href,
+            })
+          } catch {
+            // ignore
+          }
         }
       }
+      if (runtime.generation !== gen) return
+      await waitForQuietFrame(t0 + HARD_CAP_MS, gen)
+      if (runtime.generation !== gen) return
+      finishReveal()
+    } catch (error) {
+      if (runtime.generation !== gen) return
+      console.error('SignalCut hold failed; tearing down', error)
+      fallbackNavigate(req)
     }
-    if (runtime.generation !== gen) return
-    await waitForQuietFrame(t0 + HARD_CAP_MS, gen)
-    if (runtime.generation !== gen) return
-    finishReveal()
   }
 
   try {
@@ -592,39 +719,54 @@ function playCut(req: CutRequest): boolean {
 
     const tick = (now: number) => {
       if (runtime.generation !== gen) return
-      const elapsed = now - t0
+      runtime.callbackTicks += 1
+      try {
+        const elapsed = now - t0
 
-      if (!tearDone && elapsed >= timing.tear) {
-        tearDone = true
-        revertTear()
-        mark('tear-end')
-        if (variant === 'first') {
-          overlay.dataset.phase = 'snow'
-          runtime.snowing = true
-        } else {
+        if (!tearDone && elapsed >= timing.tear) {
+          tearDone = true
+          revertTear()
+          mark('tear-end')
+          if (variant === 'first') {
+            overlay.dataset.phase = 'snow'
+            runtime.snowing = true
+          } else {
+            overlay.dataset.phase = 'black'
+            pushNow(req)
+          }
+        }
+
+        if (runtime.snowing) drawSnowFrame()
+
+        if (!snowDone && elapsed >= timing.snow) {
+          snowDone = true
+          runtime.snowing = false
+          mark('snow-end')
           overlay.dataset.phase = 'black'
           pushNow(req)
         }
+
+        if (!revealArmed && elapsed >= timing.reveal) {
+          revealArmed = true
+          void maybeHoldThenReveal()
+          return
+        }
+
+        runtime.clockRaf = window.requestAnimationFrame(tick)
+      } catch (error) {
+        console.error('SignalCut clock failed; tearing down', error)
+        fallbackNavigate(req)
       }
-
-      if (runtime.snowing) drawSnowFrame()
-
-      if (!snowDone && elapsed >= timing.snow) {
-        snowDone = true
-        runtime.snowing = false
-        mark('snow-end')
-        overlay.dataset.phase = 'black'
-        pushNow(req)
-      }
-
-      if (!revealArmed && elapsed >= timing.reveal) {
-        revealArmed = true
-        void maybeHoldThenReveal()
-        return
-      }
-
-      runtime.clockRaf = window.requestAnimationFrame(tick)
     }
+
+    // Hard-cap fallback: setTimeout still fires when rAF is paused in a background
+    // tab. Must call teardown (not overlay.remove) so snow cannot paint a detached canvas.
+    const watchdog = window.setTimeout(() => {
+      if (runtime.generation !== gen) return
+      runtime.callbackTicks += 1
+      fallbackNavigate(req)
+    }, HARD_CAP_MS + timing.fade + HARD_CAP_BUFFER_MS)
+    runtime.timers.push(watchdog)
 
     runtime.clockRaf = window.requestAnimationFrame(tick)
     return true
@@ -675,6 +817,9 @@ export default function SignalCut({
   useEffect(() => {
     prefetch()
     // Warm destination + noise so the click path does not parse the bundle during snow.
+    // Do NOT teardown on this effect's cleanup: the triggering Link unmounts on the
+    // route swap and the overlay must outlive that unmount. Pagehide / visibility /
+    // popstate / hard-cap / completion own teardown instead.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [href])
 
@@ -697,6 +842,7 @@ export default function SignalCut({
       return started
     } catch (error) {
       console.error('SignalCut gesture failed', error)
+      teardown()
       return false
     }
   }

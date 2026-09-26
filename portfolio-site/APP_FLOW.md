@@ -351,7 +351,7 @@ All interactions ──→ PostHog (client + server events)
 
 **Success state:** Destination paints under the overlay; overlay removed at end of reveal. CLS 0.
 
-**Error state:** Overlay tears down and `router.push` / `location.assign` still navigates.
+**Error / abort state:** One idempotent `teardown()` (Copilot review comment 4111027402). It stops snow, cancels every timeout and rAF, reverts `document.documentElement` transform/classes, and removes the overlay. Called from completion, hard-cap fallback (`setTimeout(1500 + fade + 80)`), slow-destination hold, popstate, pagehide, `visibilitychange` hidden, thrown errors, and a second click (swallowed so no second loop). The triggering Link's React unmount is **not** a teardown path — that unmount is the route swap. Hidden-tab abort does not navigate if `router.push` has not already run.
 
 **PostHog events:** `signal_cut_started` (`direction`, `href`)
 
