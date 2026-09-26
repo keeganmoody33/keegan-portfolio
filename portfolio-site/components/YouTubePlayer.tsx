@@ -1,14 +1,20 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, useId } from 'react'
+import { createPortal } from 'react-dom'
 import Script from 'next/script'
 import posthog from 'posthog-js'
 import { useBannerAvailability, useBannerPanelPad } from '@/components/BannerRotator'
 import {
+  createYtErrorMachine,
+  moveFocusAfterNowPlayingDrop,
   playlistLengthFromPlayer,
-  recordPlaybackError,
-  skipRecovered,
-  YT_SKIP_RECOVERY_MS,
+  ytMachineOnError,
+  ytMachineOnProgress,
+  ytMachineOnStall,
+  YT_STALL_TIMEOUT_MS,
+  type YtErrorMachineState,
+  type YtProgressKind,
 } from '@/lib/youtube-playback-errors'
 
 // ── Constants ──────────────────────────────────────────────────
@@ -58,22 +64,18 @@ export default function YouTubePlayer() {
   const playerRef = useRef<YT.Player | null>(null)
   const containerRef = useRef<string>(`yt-player-${reactId.replace(/:/g, '')}`)
   const wrapperRef = useRef<HTMLDivElement>(null)
+  const playerRootRef = useRef<HTMLDivElement>(null)
   const progressInterval = useRef<ReturnType<typeof setInterval> | null>(null)
-  const playbackErrorStreak = useRef(0)
-  const skipRecoveryTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const skipRecoveryGen = useRef(0)
-
-  const clearSkipRecovery = useCallback(() => {
-    if (skipRecoveryTimer.current !== null) {
-      clearTimeout(skipRecoveryTimer.current)
-      skipRecoveryTimer.current = null
-    }
-    skipRecoveryGen.current += 1
-  }, [])
+  const errorMachine = useRef(createYtErrorMachine())
+  const lastVideoId = useRef('')
+  const stallTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const stallGen = useRef(0)
+  const droppedRef = useRef(false)
 
   const [isReady, setIsReady] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [dropAnnouncement, setDropAnnouncement] = useState('')
   const [playing, setPlaying] = useState(false)
   const [trackTitle, setTrackTitle] = useState('')
   const [trackAuthor, setTrackAuthor] = useState('')
@@ -86,6 +88,52 @@ export default function YouTubePlayer() {
   // Derives playing from player.getPlayerState() instead of React state
   // to avoid stale closure when called from onStateChange (React state
   // updates are async, but getPlayerState() is synchronous and always current).
+  const clearStallTimer = useCallback(() => {
+    if (stallTimer.current !== null) {
+      clearTimeout(stallTimer.current)
+      stallTimer.current = null
+    }
+    stallGen.current += 1
+  }, [])
+
+  const dropNowPlaying = useCallback(() => {
+    if (droppedRef.current) return
+    droppedRef.current = true
+    clearStallTimer()
+    moveFocusAfterNowPlayingDrop(playerRootRef.current)
+    setDropAnnouncement('Now Playing unavailable')
+    setError(true)
+    setIsLoading(false)
+  }, [clearStallTimer])
+
+  const applyMachine = useCallback(
+    (next: YtErrorMachineState) => {
+      errorMachine.current = next
+      if (next.dropped) {
+        dropNowPlaying()
+        return
+      }
+      if (!next.stallArmed) clearStallTimer()
+    },
+    [clearStallTimer, dropNowPlaying]
+  )
+
+  const noteProgress = useCallback(
+    (kind: YtProgressKind) => {
+      applyMachine(ytMachineOnProgress(errorMachine.current, kind))
+    },
+    [applyMachine]
+  )
+
+  const armStallTimer = useCallback(() => {
+    clearStallTimer()
+    const gen = ++stallGen.current
+    stallTimer.current = setTimeout(() => {
+      if (gen !== stallGen.current) return
+      applyMachine(ytMachineOnStall(errorMachine.current))
+    }, YT_STALL_TIMEOUT_MS)
+  }, [applyMachine, clearStallTimer])
+
   const persistState = useCallback(() => {
     const player = playerRef.current
     if (!player) return
@@ -176,8 +224,7 @@ export default function YouTubePlayer() {
         onReady: (event: YT.PlayerEvent) => {
           const p = event.target
           playerRef.current = p
-          playbackErrorStreak.current = 0
-          clearSkipRecovery()
+          noteProgress('ready')
 
           // Hidden iframe must stay mounted for audio, but it is not a
           // control. tabindex=-1 is a second guard behind wrapper `inert`.
@@ -217,8 +264,7 @@ export default function YouTubePlayer() {
           const state = event.data
 
           if (state === YT.PlayerState.PLAYING) {
-            playbackErrorStreak.current = 0
-            clearSkipRecovery()
+            noteProgress('playing')
             setPlaying(true)
             syncTrackInfo()
 
@@ -228,6 +274,24 @@ export default function YouTubePlayer() {
               track_author: data?.author,
               playlist_index: event.target.getPlaylistIndex(),
             })
+          }
+
+          if (state === YT.PlayerState.BUFFERING) {
+            noteProgress('buffering')
+          }
+
+          if (state === YT.PlayerState.CUED) {
+            noteProgress('cued')
+          }
+
+          try {
+            const videoId = event.target.getVideoData()?.video_id || ''
+            if (videoId && videoId !== lastVideoId.current) {
+              lastVideoId.current = videoId
+              noteProgress('new_video_id')
+            }
+          } catch {
+            // playlist metadata may not be ready
           }
 
           if (state === YT.PlayerState.PAUSED) {
@@ -252,82 +316,40 @@ export default function YouTubePlayer() {
         onError: (event: YT.OnErrorEvent) => {
           console.error('YouTubePlayer: playback error', event.data)
           // Keep the embed mounted for skip attempts; tabindex=-1 stays
-          // a second guard behind wrapper `inert`. After N skippable
-          // errors (3, or playlist length if shorter) drop the slide.
-          // Restricted networks often emit 150 only once — if nextVideo
-          // does not recover, count that toward the same streak.
+          // a second guard behind wrapper `inert`. Only a real onError
+          // increments the streak. After N skippable errors (3, or
+          // playlist length if shorter) drop the slide. A single 10s
+          // stall window covers the VM case where 150 fires once.
           try {
             event.target.getIframe().tabIndex = -1
           } catch {
-            setError(true)
+            dropNowPlaying()
             return
           }
 
-          const applySkippableError = (player: YT.Player, code: number) => {
-            const result = recordPlaybackError(
-              code,
-              playbackErrorStreak.current,
-              playlistLengthFromPlayer(player)
-            )
-            playbackErrorStreak.current = result.streak
-            if (result.shouldDrop) {
-              clearSkipRecovery()
-              setError(true)
-              return
-            }
-            if (!result.shouldSkip) return
+          const next = ytMachineOnError(
+            errorMachine.current,
+            event.data,
+            playlistLengthFromPlayer(event.target)
+          )
+          applyMachine(next)
+          if (next.dropped || !next.stallArmed) return
 
-            let failedVideoId = ''
-            try {
-              failedVideoId = player.getVideoData()?.video_id || ''
-            } catch {
-              failedVideoId = ''
-            }
-            try {
-              player.nextVideo()
-            } catch {
-              setError(true)
-              return
-            }
-
-            if (skipRecoveryTimer.current !== null) {
-              clearTimeout(skipRecoveryTimer.current)
-              skipRecoveryTimer.current = null
-            }
-            const gen = ++skipRecoveryGen.current
-            skipRecoveryTimer.current = setTimeout(() => {
-              if (gen !== skipRecoveryGen.current) return
-              let playerState: number | null = null
-              let currentVideoId = ''
-              try {
-                playerState = player.getPlayerState()
-                currentVideoId = player.getVideoData()?.video_id || ''
-              } catch {
-                // still treat as not recovered
-              }
-              if (
-                skipRecovered({
-                  playerState,
-                  playingState: YT.PlayerState.PLAYING,
-                  bufferingState: YT.PlayerState.BUFFERING,
-                  currentVideoId,
-                  failedVideoId,
-                })
-              ) {
-                playbackErrorStreak.current = 0
-                return
-              }
-              applySkippableError(player, code)
-            }, YT_SKIP_RECOVERY_MS)
+          try {
+            event.target.nextVideo()
+          } catch {
+            dropNowPlaying()
+            return
           }
-
-          applySkippableError(event.target, event.data)
+          // nextVideo() can fire BUFFERING/CUED synchronously — only
+          // arm the stall if progress did not already cancel it.
+          if (errorMachine.current.stallArmed) armStallTimer()
         },
       },
     })
 
     playerRef.current = player
-  }, [syncTrackInfo, persistState, clearSkipRecovery])
+  }, [syncTrackInfo, persistState, noteProgress, applyMachine, armStallTimer, dropNowPlaying])
 
   // ── Hook into the global callback ────────────────────────
   useEffect(() => {
@@ -347,7 +369,7 @@ export default function YouTubePlayer() {
     return () => {
       // Cleanup on unmount
       if (progressInterval.current) clearInterval(progressInterval.current)
-      clearSkipRecovery()
+      clearStallTimer()
       try {
         const p = playerRef.current
         playerRef.current = null      // clear ref BEFORE destroy so re-init isn't blocked
@@ -365,12 +387,11 @@ export default function YouTubePlayer() {
     const timer = window.setTimeout(() => {
       if (!playerRef.current) {
         console.error('YouTubePlayer: iframe API timed out')
-        setError(true)
-        setIsLoading(false)
+        dropNowPlaying()
       }
     }, 10_000)
     return () => window.clearTimeout(timer)
-  }, [])
+  }, [dropNowPlaying])
 
   // ── Script onLoad fallback — covers the race where the
   //    <Script> fires before the useEffect sets the callback ─
@@ -443,22 +464,33 @@ export default function YouTubePlayer() {
 
   const handleScriptError = useCallback(() => {
     console.error('YouTubePlayer: iframe API failed to load')
-    setError(true)
-    setIsLoading(false)
-  }, [])
+    dropNowPlaying()
+  }, [dropNowPlaying])
 
   // Report before any null return so BannerRotator can drop this slide
   useBannerAvailability(!error)
   const panelPad = useBannerPanelPad()
 
+  const liveRegion =
+    typeof document !== 'undefined'
+      ? createPortal(
+          <div role="status" aria-live="polite" className="sr-only">
+            {dropAnnouncement}
+          </div>,
+          document.body
+        )
+      : null
+
   // ── Error → graceful hide ────────────────────────────────
-  if (error) return null
+  if (error) return liveRegion
 
   // ── Render ───────────────────────────────────────────────
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
 
   return (
     <>
+      {liveRegion}
+      <div ref={playerRootRef} className="contents">
       {/* Load YouTube IFrame API — must always render, even during loading,
           otherwise the script never loads and isLoading never clears (deadlock) */}
       <Script
@@ -618,6 +650,7 @@ export default function YouTubePlayer() {
           </div>
         </div>
       )}
+      </div>
     </>
   )
 }

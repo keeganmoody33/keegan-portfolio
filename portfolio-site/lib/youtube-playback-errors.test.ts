@@ -8,12 +8,16 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  createYtErrorMachine,
   isSkippablePlaybackError,
   playbackErrorSkipLimit,
   playlistLengthFromPlayer,
   recordPlaybackError,
-  skipRecovered,
+  ytMachineOnError,
+  ytMachineOnProgress,
+  ytMachineOnStall,
   YT_ERROR_SKIP_LIMIT,
+  YT_STALL_TIMEOUT_MS,
 } from './youtube-playback-errors.ts'
 
 describe('isSkippablePlaybackError', () => {
@@ -94,11 +98,6 @@ describe('recordPlaybackError', () => {
     })
   })
 
-  it('resets when the caller starts the streak at 0 after PLAYING', () => {
-    const afterPlay = recordPlaybackError(150, 0, null)
-    assert.deepEqual(afterPlay, { streak: 1, shouldDrop: false, shouldSkip: true })
-  })
-
   it('does not increment or skip on an unknown error code', () => {
     assert.deepEqual(recordPlaybackError(99, 2, null), {
       streak: 2,
@@ -113,62 +112,58 @@ describe('recordPlaybackError', () => {
   })
 })
 
-describe('skipRecovered', () => {
-  const playing = 1
-  const buffering = 3
+describe('yt error machine', () => {
+  it('2b: one 150, BUFFERING at 2500ms, slide stays', () => {
+    assert.equal(YT_STALL_TIMEOUT_MS, 10_000)
+    let state = createYtErrorMachine()
+    state = ytMachineOnError(state, 150, 12)
+    assert.deepEqual(state, { streak: 1, stallArmed: true, dropped: false })
 
-  it('treats PLAYING or BUFFERING as recovered', () => {
-    assert.equal(
-      skipRecovered({
-        playerState: playing,
-        playingState: playing,
-        bufferingState: buffering,
-      }),
-      true
-    )
-    assert.equal(
-      skipRecovered({
-        playerState: buffering,
-        playingState: playing,
-        bufferingState: buffering,
-      }),
-      true
-    )
+    // BUFFERING at 2500ms — well inside the 10s stall window
+    state = ytMachineOnProgress(state, 'buffering')
+    assert.deepEqual(state, { streak: 1, stallArmed: false, dropped: false })
+
+    // A cancelled stall must not drop if it later fires
+    state = ytMachineOnStall(state)
+    assert.equal(state.dropped, false)
+    assert.equal(state.streak, 1)
   })
 
-  it('treats a new video id as recovered', () => {
-    assert.equal(
-      skipRecovered({
-        playerState: -1,
-        playingState: playing,
-        bufferingState: buffering,
-        currentVideoId: 'b',
-        failedVideoId: 'a',
-      }),
-      true
-    )
+  it('one 150, then silence for 10s, drops', () => {
+    let state = createYtErrorMachine()
+    state = ytMachineOnError(state, 150, 12)
+    assert.equal(state.stallArmed, true)
+    state = ytMachineOnStall(state)
+    assert.deepEqual(state, { streak: 1, stallArmed: false, dropped: true })
   })
 
-  it('does not recover when state is dead and the video id is empty or unchanged', () => {
-    assert.equal(
-      skipRecovered({
-        playerState: -1,
-        playingState: playing,
-        bufferingState: buffering,
-        currentVideoId: '',
-        failedVideoId: '',
-      }),
-      false
-    )
-    assert.equal(
-      skipRecovered({
-        playerState: 5,
-        playingState: playing,
-        bufferingState: buffering,
-        currentVideoId: 'a',
-        failedVideoId: 'a',
-      }),
-      false
-    )
+  it('3 real errors, drops', () => {
+    let state = createYtErrorMachine()
+    state = ytMachineOnError(state, 150, 12)
+    state = ytMachineOnError(state, 101, 12)
+    state = ytMachineOnError(state, 100, 12)
+    assert.deepEqual(state, { streak: 3, stallArmed: false, dropped: true })
+  })
+
+  it('error, PLAYING, 2 errors, stays', () => {
+    let state = createYtErrorMachine()
+    state = ytMachineOnError(state, 150, 12)
+    state = ytMachineOnProgress(state, 'playing')
+    assert.deepEqual(state, { streak: 0, stallArmed: false, dropped: false })
+    state = ytMachineOnError(state, 150, 12)
+    state = ytMachineOnError(state, 150, 12)
+    assert.deepEqual(state, { streak: 2, stallArmed: true, dropped: false })
+  })
+
+  it('does not increment the streak on a stall timeout', () => {
+    let state = ytMachineOnError(createYtErrorMachine(), 150, 12)
+    const streakBefore = state.streak
+    state = ytMachineOnStall(state)
+    assert.equal(state.streak, streakBefore)
+  })
+
+  it('still drops immediately on the first 150 when the playlist has one video', () => {
+    const state = ytMachineOnError(createYtErrorMachine(), 150, 1)
+    assert.deepEqual(state, { streak: 1, stallArmed: false, dropped: true })
   })
 })

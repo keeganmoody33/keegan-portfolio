@@ -209,7 +209,7 @@ All banner widgets follow the same compact pattern:
 - **Layout:** Single-row flex (`flex items-center gap-4`)
 - **Border:** `border-b border-[var(--border-dim)]` between each layer
 - **Chart (GitHubActivity):** `h-[24px]` bar chart, `flex-1` fills available space
-- **Player (YouTubePlayer):** `w-6 h-6` play button, track info truncated, expand-on-hover for prev/next/volume. Hidden iframe wrapper is `inert` + `aria-hidden`; `onReady` sets `getIframe().tabIndex = -1`. Visible controls stay outside that wrapper. Skippable playback errors (2/5/100/101/150) advance with `nextVideo()`; three in a row (or playlist length if shorter) drop the slide. A skip that never reaches PLAYING/BUFFERING or a new video id counts toward that streak.
+- **Player (YouTubePlayer):** `w-6 h-6` play button, track info truncated, expand-on-hover for prev/next/volume. Hidden iframe wrapper is `inert` + `aria-hidden`; `onReady` sets `getIframe().tabIndex = -1`. Visible controls stay outside that wrapper. Skippable playback errors (2/5/100/101/150) advance with `nextVideo()`; only a real `onError` increments the streak. Three in a row (or playlist length if shorter) drop the slide. BUFFERING/CUED/PLAYING or a new video id cancel a 10s stall timer; silence for 10s after an error-triggered skip drops without incrementing. On drop, move focus out of the player and announce "Now Playing unavailable" via a polite live region.
 - **Min height:** `min-h-12` on every banner panel so rotation does not shift content
 
 ### Grid Background
@@ -388,7 +388,7 @@ Person-page components render the same layout across breakpoints.
 - No skip-to-content link
 - No focus visible indicators beyond browser defaults
 - Hover-only interactions on Publications (no keyboard alternative)
-- No `aria-live` regions for dynamic content (chat messages, analysis results)
+- No `aria-live` regions for dynamic content (chat messages, analysis results). Exception: YouTubePlayer portals a visually hidden polite live region that announces "Now Playing unavailable" when that slide drops.
 - Activity sidebar: no keyboard trigger, no escape-to-close
 - Color contrast may not meet WCAG AA in light mode (needs audit)
 
