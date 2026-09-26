@@ -4,9 +4,10 @@ Updated: 2026-09-26
 
 ## House logo / lockup (2026-09-26)
 
-- **House wordmark must fit its slot.** Resting `scrollWidth` stays inside the slot at 320–1440. Cap at `12rem` on desktop; use `cqi`/`clamp` below that. Do not clip the last glyph. Keep a plain-text `h1` so rest matches the base (per-glyph `inline-block` spans drop kerning by 3–11px). The entrance is 700ms opacity + `letter-spacing`; cap the start at `min(0.28em, −0.045em + (100cqi − rest − 2px) / 12)` because letter-spacing trails the last glyph. Uncapped `0.28em` plus `overflow-x: clip` cut trailing glyphs ("lecturesfrc"). Relayout stays in the slot: one line, first visit, inline-size container.
-- **`/og.jpg` is the GTM certificate on the person segment only.** House share images are the generated mark (`app/(house)/opengraph-image.png` + `twitter-image.png`). Do not put `opengraph-image` at `app/` root or it inherits onto `/keeganmoody33` and replaces `/og.jpg`. Do not add `images` to `houseMetadata()`.
-- **Title-card LogoMark is `aria-hidden`.** The `h1` wordmark is the name. Do not also `aria-label` the SVG next to it. Keep `#lf-ring` / `#lf-core` ids; Motion wraps `layer="ring"` + `layer="core"`, it does not rewrite the geometry. Globe pause is CSS on `html[data-lf-signal-cut="active"]`, never `window.__lfSignalCut`.
+- **House wordmark must fit its slot.** Resting `scrollWidth` stays inside the slot at 320–1440. Cap at `12rem` on desktop; use `cqi`/`clamp` below that. Do not clip the last glyph. Keep a plain-text `h1` so rest matches the base.
+- **Title-card LogoMark is `aria-hidden`.** The `h1` wordmark is the name. Do not also `aria-label` the SVG next to it. Keep `#lf-ring` / `#lf-core` ids; `LogoGlobe` wraps `layer="ring"` + `layer="core"`. Globe core ships `animation: none` (house spec: no 3D); keep the layers and SignalCut flag so restoring spin is a one-line CSS revert.
+- **House wordmark entrance is opacity only.** `houseLockup` is 700ms `opacity: 0 → 1`. Do not animate `letter-spacing` — tracking-in only happened at 1440+. Resting tracking stays `-0.045em`. Instant under `prefers-reduced-motion`.
+- **`houseMetadata()` must set `openGraph.images`.** Nested house routes replace the inherited `openGraph` object, which drops the file-convention `og:image`. Point `images` at `/opengraph-image`. Do not put `opengraph-image` at `app/` root or it inherits onto `/keeganmoody33`. Person stays `/og.jpg`.
 
 ## Schema
 
