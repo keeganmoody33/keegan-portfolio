@@ -219,6 +219,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 .house-wordmark-slot {
   container-type: inline-size;
   width: 100%;
+  overflow-x: clip;
 }
 
 .house-wordmark {
