@@ -51,8 +51,7 @@ export default function Crate() {
               <li key={row.row.slug}>
                 <SignalCut
                   href={row.href}
-                  fromId="lf-01"
-                  toId="km-33"
+                  direction="toPerson"
                   className={className}
                   aria-label="keegan moody, principal channel"
                 >

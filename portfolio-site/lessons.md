@@ -90,6 +90,16 @@ Updated: 2026-09-26
 - **Supabase MCP `project_ref` must match `.env.local`.** The Cursor MCP config (`~/.cursor/mcp.json`) had `project_ref=krywcgrrrdpudysphgbp` while the actual project was `cvkcwvmlnghwwvdqudod`. This caused "Connection timeout" on SQL queries and "Project not found" on every other MCP call. The error messages gave no hint that the project ref was wrong — it looked like a network issue. When Supabase MCP fails, check `project_ref` in `~/.cursor/mcp.json` against `NEXT_PUBLIC_SUPABASE_URL` in `.env.local` first.
 - **Set `read_only=false` in the MCP URL if you need to write SQL.** The default Supabase MCP setup URL uses `read_only=true`, which silently blocks mutations. If you're planning to run INSERT/UPDATE/DELETE via MCP, flip it before you start.
 
+## SIGNAL CUT
+
+- **The overlay cannot live in React state on the triggering Link.** The triggering link unmounts as soon as the route swaps. Drive one `document.body` node from a module-level controller. Do not mount it in `app/layout.tsx`.
+- **Do not `router.prefetch` synchronously inside the click handler before the overlay is up.** Prefetch on mount/hover/focus/touchstart, start the cut first, then `queueMicrotask` the click prefetch.
+- **Do not set `html { overflow: hidden }` for the tear.** Hiding the scrollbar is a layout shift (CLS). Overlay CLS must stay 0.
+- **Drive phase boundaries from `setTimeout` deadlines against click `t0`, not rAF frame counting.** rAF is only for analog snow paint. A rAF clock quantizes every boundary to the next display frame (~+16ms) and stacks.
+- **Hold only when the destination pathname has not committed by reveal-start.** Do not wait for a quiet frame after commit. Destination stays covered until reveal-start; `router.push` may fire once the overlay is fully opaque (snow start at 60ms first, black at 40ms repeat).
+- **API is `direction: "toPerson" | "toHouse"`**, not `fromId`/`toId`. Ids are derived: house→person `lf-01 → km-33`, person→house reverse.
+- **Never remove the overlay without stopping the noise loop.** Copilot 4111027402 on the house-cut first pass: `setTimeout(total + 80)` called `overlay.remove()` but left `noiseTimer` (`setTimeout(paint, 32)`) running, so a background tab kept painting a detached canvas. One idempotent `teardown()` must cancel snow, every timer/rAF, and revert `html` transform. Every abort path calls it — including `visibilitychange` hidden. Do not teardown from the Link's React unmount.
+
 ## Descoped Features
 
 - Worthy Reads widget and Alan Iverson chat persona were cancelled on 2026-07-24. Both have been removed from all planning docs. Do not reintroduce them without explicit request.

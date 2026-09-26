@@ -1,3 +1,14 @@
+COMPLETED (2026-09-26 — SignalCut warm-path timing):
+- Phase boundaries are `setTimeout` from click `t0` (not rAF frame counting); snow paint stays on rAF
+- Hold only if pathname has not committed at reveal-start; quiet-frame wait removed
+- `router.push` as soon as overlay is fully opaque (first: snow start 60ms; repeat: black 40ms)
+
+COMPLETED (2026-09-26 — SignalCut teardown vs Copilot 4111027402):
+- One idempotent `teardown()` on completion, hard-cap fallback, hold, popstate, pagehide, visibilitychange hidden, thrown error, second click (swallowed)
+- Fallback no longer removes the overlay without stopping snow / timers / rAF / html transform
+- `drawSnowFrame` no-ops when not snowing or canvas is detached
+- Playwright hide + fallback leak check: overlay gone, callbackTicks stable, html not tearing
+
 COMPLETED (2026-09-26 — merged #17 agent-ready + #18 Discogs into house-cut):
 - Real merge of `origin/cursor/agent-ready-e943` onto `cursor/lf-house-cut-4f3b` after #18 (`b765f3a`)
 - Kept house UI, collection ISR fallbacks, `--house-dim`, Phase 2 SUPERSEDED, `/keegan` 301
@@ -179,6 +190,19 @@ PARKING LOT (not in scope yet):
 - Vinyl grid overlay / Stack of Wax (Phase 4)
 - Easter eggs (Konami code, hidden /practice route)
 - Console.log personality messages
+
+---
+
+## Saturday, September 26th, 2026 — SIGNAL CUT (person -> house)
+
+- Added `components/SignalCut.tsx`: client island, next/link, module-level body overlay so the cut survives the route change. Not mounted in `app/layout.tsx`.
+- Person-page nav wordmark `lecturesfrom` is now a SignalCut link to `/` (`direction="toHouse"`). No other person-page restyle.
+- Crate row 04 `keegan moody` wraps `<SignalCut href="/keeganmoody33" direction="toPerson">`. Other crate rows stay ordinary `Link`s.
+- sessionStorage key: `lf-signal-cut-count`. First crossing 420ms, later 160ms, reduced-motion 80ms black.
+- performance.mark: `signalcut:start`, `:tear-end`, `:snow-end`, `:black-end`, `:reveal-start`, `:end`.
+- Scheduler: unified rAF clock for tear/snow/push/reveal; fade-end via `setTimeout(fadeMs)` from reveal-start. After pathname commit, wait for one frame < 24ms (capped at 1500ms) so destination hydration does not stretch the fade mark. Prefetch on mount/hover/focus, not before overlay on click. No `html overflow:hidden` (scrollbar CLS).
+
+**Next:** Keep house/person SignalCut call sites to these two links only.
 
 ---
 
