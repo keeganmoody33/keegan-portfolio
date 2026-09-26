@@ -1,34 +1,6 @@
 # Lessons Learned
 
-Updated: 2026-09-26
-
-## House cut (2026-09-26)
-
-- **Never restore `hasVisitedPortfolio`.** The old root wrote that localStorage key and `router.replace('/keeganmoody33')` on return visits. The house root must stay on `/` even if that key is still set in a visitor's browser. Grep new code paths for `hasVisitedPortfolio` and `router.replace` before shipping.
-- **House `/` must be a Server Component.** Title card copy (`lecturesfrom`, `not a studio`, sleeve names) has to be in the first HTML response. A client-only root scores empty for agents (Ora). Optional lockup animation is CSS on server-rendered text.
-- **House wordmark must fit its slot.** `scrollWidth <= innerWidth` at 320–1440. Cap at `12rem` on desktop; use `cqi`/`clamp` below that. Do not clip the last glyph.
-- **Spine grid tracks must match visible cells.** Hidden format/catno columns still consume `gap`, which pulls the status column off the hairline. Below `sm` use three columns and a second meta line.
-
-- **Never cache a failed Discogs `/collection` render.** Catch only during `next build` (`NEXT_PHASE === 'phase-production-build'`) so the build can succeed. At runtime, rethrow so ISR keeps the last good HTML. Never print `error.message` to visitors; never show `0 releases` when the count is unknown.
-- **`--house-dim` must stay WCAG AA on `#0a0a0a`.** Floor is `#7a7a7a` (~4.5:1). Keep it darker than `--house-muted` (`#8a8a8a`). Parked spines still dim via opacity, not a darker token.
-- **SignalCut is not a layout animation.** Mount it only on the two boundary links (crate row 04, person wordmark). `sessionStorage` key is `lf-signal-cut-count`. 2D canvas/CSS noise only — no three.js, no video.
-- **Two dialects.** Do not restyle the person page when adding house chrome. Print orange `#E23D00` on the house; lime stays on `/keeganmoody33`.
-- **Discogs has two modes.** `/api/discogs` stays recent-5 for RecentDigs. `/api/discogs/collection` paginates the full crate. Do not collapse them.
-- **Never cache a failed or partial Discogs crawl as last-good.** Last-good is only a complete crawl whose `releases.length` equals Discogs `pagination.items`. 429 / exhausted `X-Discogs-Ratelimit-Remaining` mid-paginate: serve last-good, or HTTP 429 + `Retry-After`. Put `Cache-Control: no-store` on error responses — route `revalidate = 300` will otherwise ISR-cache a 429 for five minutes.
-- **Never leak Discogs bodies** to the client, rendered page errors, or PostHog `error_message`. Map to generic `Too many requests` / `Failed to fetch from Discogs`.
-- **`DISCOGS_TOKEN` is optional** for the public `lecturesfrom` collection. Requiring it 500s Recent Digs and `/collection` in previews that lack the env. User-Agent must be `lecturesfrom/1.0` on every Discogs request.
-- **Route `export const revalidate` must be a numeric literal.** `export const revalidate = DISCOGS_REVALIDATE_SECONDS` fails Next 16 with "Invalid segment configuration export". Use `export const revalidate = 300`.
-- **Next 16 `MetadataRoute.Robots` cannot emit `LLMS:`.** Use `app/robots.txt/route.ts` if the agent file must include that nonstandard line. Do not keep both `app/robots.ts` and `app/robots.txt/route.ts`.
-- **House components are Server Components by default.** The old "all components are `'use client'`" rule is for the person page. Root `/` must stay a Server Component; client islands are SignalCut (and sleeve flip if added).
-
-## Agent-ready
-
-- Next.js `app/robots.ts` (`MetadataRoute.Robots`) cannot emit a custom `LLMS:` line. Serve `/robots.txt` from `app/robots.txt/route.ts` when the brief requires that line.
-- **robots.txt groups do not stack.** A named `User-agent:` group does not inherit `Disallow` from `*`. Repeat `Disallow: /api/` in every named group (GPTBot, ClaudeBot, Google-Extended, CCBot, PerplexityBot, Googlebot) or those bots can crawl `/api/`.
-- **Markdown mirrors are required.** Keep `/llms.md`, `/index.md`, `/catalog.md`, `/catalog/punch2pen.md`, `/catalog/proper-respect.md`, `/catalog/yadiggg.md`, and `/collection.md` as `text/markdown` with the same facts as the HTML. `/collection.md` is a count plus the Discogs endpoint, not a crate dump. Do not delete them because a review called them optional.
-- Markdown negotiation belongs in `proxy.ts` (Next 16 renamed middleware → proxy). Rewrite house HTML to `/md/...`; return a markdown 404 for unknown `Accept: text/markdown` requests. Do not put Discogs fetches in the proxy; keep those on the Node route handler.
-- Do not invent Organization `contactPoint`, `sameAs`, offers, or prices. If no email exists in the brief or the live site, omit contactPoint.
-- **`/og.jpg` is the GTM certificate.** Keep it off house routes (`/`, `/catalog`, sleeves, `/collection`, `/legal`, root layout). No `og:image` or `twitter:image` on the house. Leave the file for `/keeganmoody33` only. Do not generate a house brand still.
+Updated: 2026-08-22
 
 ## Schema
 
@@ -92,17 +64,6 @@ Updated: 2026-09-26
 
 - **Supabase MCP `project_ref` must match `.env.local`.** The Cursor MCP config (`~/.cursor/mcp.json`) had `project_ref=krywcgrrrdpudysphgbp` while the actual project was `cvkcwvmlnghwwvdqudod`. This caused "Connection timeout" on SQL queries and "Project not found" on every other MCP call. The error messages gave no hint that the project ref was wrong — it looked like a network issue. When Supabase MCP fails, check `project_ref` in `~/.cursor/mcp.json` against `NEXT_PUBLIC_SUPABASE_URL` in `.env.local` first.
 - **Set `read_only=false` in the MCP URL if you need to write SQL.** The default Supabase MCP setup URL uses `read_only=true`, which silently blocks mutations. If you're planning to run INSERT/UPDATE/DELETE via MCP, flip it before you start.
-
-## SIGNAL CUT
-
-- **The overlay cannot live in React state on the triggering Link.** The triggering link unmounts as soon as the route swaps. Drive one `document.body` node from a module-level controller. Do not mount it in `app/layout.tsx`.
-- **Do not `router.prefetch` synchronously inside the click handler before the overlay is up.** Prefetch on mount/hover/focus/touchstart, start the cut first, then `queueMicrotask` the click prefetch.
-- **Do not set `html { overflow: hidden }` for the tear.** Hiding the scrollbar is a layout shift (CLS). Overlay CLS must stay 0.
-- **Drive phase boundaries from `setTimeout` deadlines against click `t0`, not rAF frame counting.** rAF is only for analog snow paint. A rAF clock quantizes every boundary to the next display frame (~+16ms) and stacks.
-- **Hold only when the destination pathname has not committed by reveal-start.** Do not wait for a quiet frame after commit. Destination stays covered until reveal-start. First crossing pushes at snow-end (280ms) so person-page hydration does not starve snow timers; repeat pushes at black (40ms). Overlay is already opaque from snow start / black.
-- **After a hold, fade duration is from now, not from click t0.** `schedule(fadeMs, finish)` uses `t0 + fadeMs`, which is already in the past, so the overlay would skip the reveal fade and tear down immediately.
-- **API is `direction: "toPerson" | "toHouse"`**, not `fromId`/`toId`. Ids are derived: house→person `lf-01 → km-33`, person→house reverse.
-- **Never remove the overlay without stopping the noise loop.** Copilot 4111027402 on the house-cut first pass: `setTimeout(total + 80)` called `overlay.remove()` but left `noiseTimer` (`setTimeout(paint, 32)`) running, so a background tab kept painting a detached canvas. One idempotent `teardown()` must cancel snow, every timer/rAF, and revert `html` transform. Every abort path calls it — including `visibilitychange` hidden. Do not teardown from the Link's React unmount.
 
 ## Descoped Features
 
