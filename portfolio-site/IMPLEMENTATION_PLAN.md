@@ -237,7 +237,7 @@ Phases 1 and 4 can run in parallel after Phase 0. Phase 3 is cancelled.
 ### House brand mark (DONE — this PR)
 
 - **Output:** `components/house/LogoMark.tsx` on the root title card; `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`; house `opengraph-image` / `twitter-image` from `brand/house-share.png`.
-- **Out of scope:** globe spin and entrance-lockup fix (Motion PR into this branch).
+- **Globe:** `LogoGlobe` layers stay; core ships `animation: none` (house spec: no 3D). Keyframes kept for a one-line restore.
 - **Validation:** lint / typecheck / build; `/keeganmoody33` `og:image` stays `/og.jpg`.
 
 ---

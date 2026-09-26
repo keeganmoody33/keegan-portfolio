@@ -248,7 +248,7 @@ Animated 60px x 60px grid pattern on body:
 | `.log-info` | Muted log entry | `color: var(--text-muted)` |
 | `.house-meta` | House metadata | Roboto Mono, 0.625rem, 0.22em tracking, uppercase |
 | `.house-rail` | House top rail | Three columns; atl / issue / year always visible; gutters `px-6 sm:px-10` |
-| `.house-wordmark` | Root lockup | `min(12rem, 17.2cqi)` so `lecturesfrom` fits its slot; 12rem cap on desktop. Entrance is 700ms opacity + `letter-spacing` from `min(0.28em, −0.045em + (100cqi − rest − 2px) / 12)` to `-0.045em`. Resting tracking stays `-0.045em` on a plain-text `h1`. Slot `overflow-x: clip`. |
+| `.house-wordmark` | Root lockup | `min(12rem, 17.2cqi)` so `lecturesfrom` fits its slot; 12rem cap on desktop. Entrance is a 700ms opacity fade (`houseLockup`). Resting tracking stays `-0.045em` on a plain-text `h1`. Instant under `prefers-reduced-motion`. Slot `overflow-x: clip`. |
 | `.house-logo-mark` | Root mark box | `2rem` square, `aspect-ratio: 1`, reserves size before paint |
 | `.lf-logo-globe` | Logo globe | Square `aspect-ratio: 1`; ring + core layers. Core ships `animation: none` (face-on; house spec: no 3D). Keyframes kept for a one-line restore. Pause hook `html[data-lf-signal-cut="active"]` remains. Title card wraps `LogoMark` `layer="ring"` + `layer="core"`. |
 | `.house-spine` | Crate row | 3 columns below `sm` (format/catno on a second title line); 5 columns from `md` |
@@ -294,6 +294,7 @@ Animated 60px x 60px grid pattern on body:
 | `gridShift` | 8s | linear infinite | Body grid background movement |
 | `sprayStroke` | 0.15s | cubic-bezier(0.25, 0.46, 0.45, 0.94) | Hero name character reveal |
 | `marquee` | 40s | linear infinite | Horizontal ticker scroll |
+| `houseLockup` | 700ms | ease-out both | Root wordmark opacity fade (`0` → `1`). No letter-spacing. Instant under `prefers-reduced-motion`. |
 | SIGNAL CUT first | 420ms | tear 0–60 / snow 60–280 / black 280–360 / fade 360–420 | House <-> person, first crossing in the tab |
 | SIGNAL CUT repeat | 160ms | tear 0–40 / black 40–120 / fade 120–160 | Later crossings in the same tab |
 | SIGNAL CUT reduced | 80ms | instant black, no tear/snow/id/fade | `prefers-reduced-motion: reduce` |
