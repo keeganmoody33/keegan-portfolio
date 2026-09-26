@@ -367,8 +367,11 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   transform-origin: 50% 50%;
   transform-style: flat;
   backface-visibility: visible;
-  will-change: transform;
-  animation: lf-logo-globe-spin 24s linear infinite;
+  transform: none;
+  will-change: auto;
+  /* House spec: no 3D. One-line restore:
+     animation: lf-logo-globe-spin 24s linear infinite; will-change: transform; */
+  animation: none;
 }
 
 @keyframes lf-logo-globe-spin {

@@ -45,9 +45,11 @@ function cloneLayer(svg: LogoGlobeSvg, extra: string): LogoGlobeSvg {
 }
 
 /**
- * Lecturesfrom logo globe. The ring stays still. The core turns west→east
- * with CSS `rotateY(360deg)` (24s linear infinite). Pause is CSS-only via
- * `html[data-lf-signal-cut="active"]` — never the SignalCut debug hook.
+ * Lecturesfrom logo globe. Ring and core stay stacked. The core ships
+ * static (`animation: none`, face-on) per house spec (no 3D). Keyframes
+ * stay in globals.css so restoring 24s `rotateY` is a one-line CSS revert.
+ * Pause is CSS-only via `html[data-lf-signal-cut="active"]` — never the
+ * SignalCut debug hook.
  *
  * Server Component. No JS animation loop. Title-card placement wraps
  * LogoMark `layer="ring"` + `layer="core"` at the mark's existing size.
