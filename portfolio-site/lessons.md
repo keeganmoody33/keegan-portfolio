@@ -11,6 +11,10 @@ Updated: 2026-09-26
 - **SignalCut is not a layout animation.** Mount it only on the two boundary links (crate row 04, person wordmark). `sessionStorage` key is `lf-signal-cut-count`. 2D canvas/CSS noise only — no three.js, no video.
 - **Two dialects.** Do not restyle the person page when adding house chrome. Print orange `#E23D00` on the house; lime stays on `/keeganmoody33`.
 - **Discogs has two modes.** `/api/discogs` stays recent-5 for RecentDigs. `/api/discogs/collection` paginates the full crate. Do not collapse them.
+- **Never cache a failed or partial Discogs crawl as last-good.** Last-good is only a complete crawl whose `releases.length` equals Discogs `pagination.items`. 429 / exhausted `X-Discogs-Ratelimit-Remaining` mid-paginate: serve last-good, or HTTP 429 + `Retry-After`. Put `Cache-Control: no-store` on error responses — route `revalidate = 300` will otherwise ISR-cache a 429 for five minutes.
+- **Never leak Discogs bodies** to the client, rendered page errors, or PostHog `error_message`. Map to generic `Too many requests` / `Failed to fetch from Discogs`.
+- **`DISCOGS_TOKEN` is optional** for the public `lecturesfrom` collection. Requiring it 500s Recent Digs and `/collection` in previews that lack the env. User-Agent must be `lecturesfrom/1.0` on every Discogs request.
+- **Route `export const revalidate` must be a numeric literal.** `export const revalidate = DISCOGS_REVALIDATE_SECONDS` fails Next 16 with "Invalid segment configuration export". Use `export const revalidate = 300`.
 - **Next 16 `MetadataRoute.Robots` cannot emit `LLMS:`.** Use `app/robots.txt/route.ts` if the agent file must include that nonstandard line. Do not keep both `app/robots.ts` and `app/robots.txt/route.ts`.
 - **House components are Server Components by default.** The old "all components are `'use client'`" rule is for the person page. Root `/` must stay a Server Component; client islands are SignalCut (and sleeve flip if added).
 

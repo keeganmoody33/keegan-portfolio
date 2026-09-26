@@ -1,7 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPostHogClient } from '@/lib/posthog-server'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { fetchFullCollection, peekLastGoodCollection } from '@/lib/discogs'
+import {
+  discogsErrorHttp,
+  fetchFullCollection,
+  peekLastGoodCollection,
+} from '@/lib/discogs'
+
+export const revalidate = 300
+
+function clientIp(request: NextRequest): string {
+  return (
+    (request as NextRequest & { ip?: string }).ip ||
+    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+    'unknown'
+  )
+}
 
 export async function GET(request: NextRequest) {
   const posthog = getPostHogClient()
@@ -15,20 +29,23 @@ export async function GET(request: NextRequest) {
       event: 'api_rate_limited',
       properties: {
         route: 'api/discogs/collection',
-        ip:
-          (request as NextRequest & { ip?: string }).ip ||
-          request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
-          'unknown',
+        ip: clientIp(request),
       },
     })
     if (cached) {
       return NextResponse.json(cached, {
-        headers: { 'Retry-After': String(rateLimit.retryAfter) },
+        headers: { 'Cache-Control': 'no-store' },
       })
     }
     return NextResponse.json(
       { error: 'Too many requests' },
-      { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfter) } }
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(rateLimit.retryAfter),
+          'Cache-Control': 'no-store',
+        },
+      }
     )
   }
 
@@ -44,35 +61,23 @@ export async function GET(request: NextRequest) {
     })
     return NextResponse.json(collection)
   } catch (error) {
-    const status = (error as Error & { status?: number }).status
-    const retryAfter = (error as Error & { retryAfter?: string }).retryAfter
-    const cached = peekLastGoodCollection()
+    const mapped = discogsErrorHttp(error)
 
     posthog.capture({
       distinctId,
       event: 'api_discogs_error',
       properties: {
-        error_type: status === 429 ? 'discogs_rate_limited' : 'internal_error',
-        error_message: error instanceof Error ? error.message : 'Unknown error',
+        error_type:
+          mapped.status === 429 ? 'discogs_rate_limited' : 'internal_error',
+        error_message: mapped.body.error,
         route: 'api/discogs/collection',
+        status_code: mapped.status,
       },
     })
 
-    if (cached) {
-      return NextResponse.json(cached)
-    }
-
-    if (status === 429) {
-      return NextResponse.json(
-        { error: 'Too many requests' },
-        { status: 429, headers: { 'Retry-After': retryAfter ?? '60' } }
-      )
-    }
-
-    if (error instanceof Error && error.message.includes('DISCOGS_TOKEN')) {
-      return NextResponse.json({ error: 'DISCOGS_TOKEN not configured' }, { status: 500 })
-    }
-
-    return NextResponse.json({ error: 'Failed to fetch from Discogs' }, { status: 502 })
+    return NextResponse.json(mapped.body, {
+      status: mapped.status,
+      headers: mapped.headers,
+    })
   }
 }
