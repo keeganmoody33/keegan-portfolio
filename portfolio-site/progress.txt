@@ -186,12 +186,12 @@ PARKING LOT (not in scope yet):
 
 - Added `components/SignalCut.tsx`: client island, next/link, module-level body overlay so the cut survives the route change. Not mounted in `app/layout.tsx`.
 - Person-page nav wordmark `lecturesfrom` is now a SignalCut link to `/` (`direction="toHouse"`). No other person-page restyle.
-- Crate row 04 (house -> person) is not on this branch; the component is drop-in ready for a Server Component row.
+- Crate row 04 `keegan moody` wraps `<SignalCut href="/keeganmoody33" direction="toPerson">`. Other crate rows stay ordinary `Link`s.
 - sessionStorage key: `lf-signal-cut-count`. First crossing 420ms, later 160ms, reduced-motion 80ms black.
 - performance.mark: `signalcut:start`, `:tear-end`, `:snow-end`, `:black-end`, `:reveal-start`, `:end`.
 - Scheduler: unified rAF clock for tear/snow/push/reveal; fade-end via `setTimeout(fadeMs)` from reveal-start. After pathname commit, wait for one frame < 24ms (capped at 1500ms) so destination hydration does not stretch the fade mark. Prefetch on mount/hover/focus, not before overlay on click. No `html overflow:hidden` (scrollbar CLS).
 
-**Next:** House crate row 04 will wrap `keegan moody` with `<SignalCut href="/keeganmoody33" direction="toPerson">`.
+**Next:** Keep house/person SignalCut call sites to these two links only.
 
 ---
 

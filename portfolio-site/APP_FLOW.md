@@ -336,7 +336,7 @@ All interactions ──→ PostHog (client + server events)
 
 **Wrapped links (this branch):**
 - Person-page nav wordmark `lecturesfrom` → `/` (`direction="toHouse"`)
-- Crate row 04 `keegan moody` → `/keeganmoody33` is not on this branch; `SignalCut` is a client island ready to drop into a Server Component row later
+- Crate row 04 `keegan moody` → `/keeganmoody33` (`direction="toPerson"`)
 
 **Does not play on:** first load, hash changes, back/forward, house <-> house routes, modifier/middle clicks, `target="_blank"`.
 
