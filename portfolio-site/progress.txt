@@ -1,3 +1,9 @@
+COMPLETED (2026-09-26 — UX P1-B / P2-H / P2-I drop scroll + recovery chrome):
+- Focus handoff only when `document.activeElement` is inside `[data-now-playing]` / the player root. Body is not a lost-Play signal — a mouse user who clicks Play then scrolls must keep scrollY
+- Every post-drop `focus()` uses `{ preventScroll: true }`
+- Recovering Play drops `hover:` lime and uses `cursor-not-allowed`
+- Author is blank while recovering; PLAYING restores it
+
 COMPLETED (2026-09-26 — UX P1-A / P2-D/E/F/G around the stall):
 - Tailwind content includes `./lib/**` (and safelists `sr-only`) so the live region is visually hidden in the production CSS
 - `#yt-now-playing-live` is an empty React region on the career page at load; drop only writes the text
