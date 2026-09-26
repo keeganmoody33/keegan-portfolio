@@ -90,6 +90,14 @@ Updated: 2026-09-26
 - **Supabase MCP `project_ref` must match `.env.local`.** The Cursor MCP config (`~/.cursor/mcp.json`) had `project_ref=krywcgrrrdpudysphgbp` while the actual project was `cvkcwvmlnghwwvdqudod`. This caused "Connection timeout" on SQL queries and "Project not found" on every other MCP call. The error messages gave no hint that the project ref was wrong — it looked like a network issue. When Supabase MCP fails, check `project_ref` in `~/.cursor/mcp.json` against `NEXT_PUBLIC_SUPABASE_URL` in `.env.local` first.
 - **Set `read_only=false` in the MCP URL if you need to write SQL.** The default Supabase MCP setup URL uses `read_only=true`, which silently blocks mutations. If you're planning to run INSERT/UPDATE/DELETE via MCP, flip it before you start.
 
+## SIGNAL CUT
+
+- **The overlay cannot live in React state on the triggering Link.** The person-page wordmark unmounts as soon as the route swaps. Drive one `document.body` node from a module-level controller. Do not mount it in `app/layout.tsx`.
+- **Do not `router.prefetch` synchronously inside the click handler before the overlay is up.** Prefetching `/` on this main branch parses the R3F turntable bundle and created >50ms long tasks during snow. Prefetch on mount/hover/focus/touchstart, start the cut first, then `queueMicrotask` the click prefetch.
+- **Do not set `html { overflow: hidden }` for the tear.** Hiding the scrollbar is a layout shift (CLS). The spec requires CLS 0 from the overlay itself; destination `/` on main is still the 3D turntable and may shift on commit.
+- **Drive phase boundaries from a single rAF clock (`elapsed` vs `t0`), not a chain of `setTimeout`s.** Timer drift stacked past ±20ms. Fade-end is the exception: duration from `reveal-start` via `setTimeout(fadeMs)`, not `fadeMs + 16`, or `end` overshoots when reveal was already a frame late.
+- **Destination `/` on main redirects returning visitors** via `localStorage hasVisitedPortfolio`. Clear it in measurements or the house crossing is not observable.
+
 ## Descoped Features
 
 - Worthy Reads widget and Alan Iverson chat persona were cancelled on 2026-07-24. Both have been removed from all planning docs. Do not reintroduce them without explicit request.

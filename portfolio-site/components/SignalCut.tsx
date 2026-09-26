@@ -17,6 +17,7 @@ import {
   type MouseEvent,
   type ReactNode,
   type TouchEvent,
+  useEffect,
 } from 'react'
 
 export type SignalCutDirection = 'toPerson' | 'toHouse'
@@ -54,7 +55,7 @@ const REDUCED = { tear: 0, snow: 0, push: 0, reveal: 80, end: 80, fade: 0 } as c
 const STYLE_TEXT = `
 #${OVERLAY_ID}{
   position:fixed;inset:0;z-index:${Z_INDEX};pointer-events:none;
-  contain:strict;opacity:1;background:transparent;
+  contain:strict;opacity:1;background:transparent;overflow:hidden;
 }
 #${OVERLAY_ID} .lf-sc-layer{position:absolute;inset:0;visibility:hidden}
 #${OVERLAY_ID} .lf-sc-canvas{
@@ -124,13 +125,14 @@ type Runtime = {
   playing: boolean
   generation: number
   timers: number[]
-  snowRaf: number
+  clockRaf: number
   waitRaf: number
   overlay: HTMLDivElement | null
   canvas: HTMLCanvasElement | null
   noiseFrames: HTMLCanvasElement[] | null
   noiseSize: { w: number; h: number } | null
-  savedOverflow: string | null
+  snowIndex: number
+  snowing: boolean
   pushed: boolean
   tearReverted: boolean
 }
@@ -139,13 +141,14 @@ const runtime: Runtime = {
   playing: false,
   generation: 0,
   timers: [],
-  snowRaf: 0,
+  clockRaf: 0,
   waitRaf: 0,
   overlay: null,
   canvas: null,
   noiseFrames: null,
   noiseSize: null,
-  savedOverflow: null,
+  snowIndex: 0,
+  snowing: false,
   pushed: false,
   tearReverted: false,
 }
@@ -334,28 +337,34 @@ function prepareNoise(canvas: HTMLCanvasElement): HTMLCanvasElement[] {
   return frames
 }
 
-function startSnow() {
-  const canvas = runtime.canvas
-  if (!canvas) return
-  const frames = prepareNoise(canvas)
-  const ctx = canvas.getContext('2d', { alpha: false })
-  if (!ctx || frames.length === 0) return
-
-  let index = 0
-  const loop = () => {
-    const frame = frames[index % frames.length]
-    if (frame) ctx.drawImage(frame, 0, 0)
-    index += 1
-    runtime.snowRaf = window.requestAnimationFrame(loop)
-  }
-  loop()
+function attachNoise(canvas: HTMLCanvasElement): HTMLCanvasElement[] {
+  return prepareNoise(canvas)
 }
 
-function stopSnow() {
-  if (runtime.snowRaf !== 0) {
-    window.cancelAnimationFrame(runtime.snowRaf)
-    runtime.snowRaf = 0
+function warmNoise() {
+  if (typeof document === 'undefined') return
+  ensureStyle()
+  const probe = document.createElement('canvas')
+  prepareNoise(probe)
+}
+
+function drawSnowFrame() {
+  const canvas = runtime.canvas
+  const frames = runtime.noiseFrames
+  if (!canvas || !frames || frames.length === 0) return
+  const ctx = canvas.getContext('2d', { alpha: false })
+  if (!ctx) return
+  const frame = frames[runtime.snowIndex % frames.length]
+  if (frame) ctx.drawImage(frame, 0, 0)
+  runtime.snowIndex += 1
+}
+
+function stopClock() {
+  if (runtime.clockRaf !== 0) {
+    window.cancelAnimationFrame(runtime.clockRaf)
+    runtime.clockRaf = 0
   }
+  runtime.snowing = false
 }
 
 function revertTear() {
@@ -374,21 +383,14 @@ function clearTimers() {
     window.cancelAnimationFrame(runtime.waitRaf)
     runtime.waitRaf = 0
   }
+  stopClock()
 }
 
 function teardown() {
   runtime.generation += 1
   runtime.playing = false
   clearTimers()
-  stopSnow()
   revertTear()
-
-  const root = document.documentElement
-  if (runtime.savedOverflow != null) {
-    if (runtime.savedOverflow === '') root.style.removeProperty('overflow')
-    else root.style.overflow = runtime.savedOverflow
-    runtime.savedOverflow = null
-  }
 
   const overlay = runtime.overlay ?? document.getElementById(OVERLAY_ID)
   overlay?.parentNode?.removeChild(overlay)
@@ -401,15 +403,6 @@ if (typeof window !== 'undefined') {
   window.addEventListener('popstate', () => {
     if (runtime.playing) teardown()
   })
-}
-
-function after(t0: number, delay: number, gen: number, fn: () => void) {
-  const remaining = delay - (performance.now() - t0)
-  const id = window.setTimeout(() => {
-    if (runtime.generation !== gen) return
-    fn()
-  }, Math.max(0, remaining))
-  runtime.timers.push(id)
 }
 
 function waitForPathname(href: string, deadline: number, gen: number): Promise<{
@@ -443,16 +436,6 @@ function waitForPathname(href: string, deadline: number, gen: number): Promise<{
   })
 }
 
-function waitForPaint(gen: number): Promise<void> {
-  return new Promise((resolve) => {
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        if (runtime.generation === gen) resolve()
-      })
-    })
-  })
-}
-
 function fallbackNavigate(req: CutRequest) {
   try {
     teardown()
@@ -480,8 +463,6 @@ function pushNow(req: CutRequest) {
 function startTear(variant: CutVariant) {
   const root = document.documentElement
   runtime.tearReverted = false
-  runtime.savedOverflow = root.style.overflow
-  root.style.overflow = 'hidden'
   root.classList.add(
     'lf-sc-tearing',
     variant === 'first' ? 'lf-sc-tearing-first' : 'lf-sc-tearing-repeat',
@@ -497,8 +478,9 @@ function playCut(req: CutRequest): boolean {
   const gen = runtime.generation
   runtime.pushed = false
   runtime.tearReverted = false
+  runtime.snowIndex = 0
+  runtime.snowing = false
   clearTimers()
-  stopSnow()
 
   const reduced = prefersReducedMotion()
   const prior = readCount()
@@ -521,12 +503,25 @@ function playCut(req: CutRequest): boolean {
       return
     }
     overlay.style.transition = `opacity ${timing.fade}ms ${REVEAL_EASE}`
-    void overlay.offsetWidth
     overlay.style.opacity = '0'
-    after(performance.now(), timing.fade, gen, () => {
+    let ended = false
+    const finish = () => {
+      if (ended || runtime.generation !== gen) return
+      ended = true
       mark('end')
       teardown()
-    })
+    }
+    overlay.addEventListener(
+      'transitionend',
+      (event) => {
+        if (event.propertyName === 'opacity') finish()
+      },
+      { once: true },
+    )
+    // Duration from reveal-start, not +1 frame — keeps `end` inside ±20ms when
+    // reveal itself was a frame late.
+    const fadeTimer = window.setTimeout(finish, timing.fade)
+    runtime.timers.push(fadeTimer)
   }
 
   const maybeHoldThenReveal = async () => {
@@ -548,7 +543,6 @@ function playCut(req: CutRequest): boolean {
         }
       }
     }
-    if (variant === 'reduced') await waitForPaint(gen)
     if (runtime.generation !== gen) return
     finishReveal()
   }
@@ -557,43 +551,59 @@ function playCut(req: CutRequest): boolean {
     if (variant === 'reduced') {
       overlay.dataset.phase = 'black'
       pushNow(req)
-      after(t0, timing.reveal, gen, () => {
-        void maybeHoldThenReveal()
-      })
-      return true
-    }
-
-    startTear(variant)
-    const canvasEl = overlay.querySelector('canvas')
-    if (variant === 'first' && canvasEl instanceof HTMLCanvasElement) {
-      prepareNoise(canvasEl)
-    }
-
-    after(t0, timing.tear, gen, () => {
-      revertTear()
-      mark('tear-end')
-      if (variant === 'first') {
-        overlay.dataset.phase = 'snow'
-        startSnow()
-      } else {
-        overlay.dataset.phase = 'black'
-        pushNow(req)
+    } else {
+      startTear(variant)
+      const canvasEl = overlay.querySelector('canvas')
+      if (variant === 'first' && canvasEl instanceof HTMLCanvasElement) {
+        attachNoise(canvasEl)
       }
-    })
+    }
 
-    if (variant === 'first') {
-      after(t0, timing.snow, gen, () => {
-        stopSnow()
+    let tearDone = variant === 'reduced'
+    let snowDone = variant !== 'first'
+    let revealArmed = false
+
+    const tick = (now: number) => {
+      if (runtime.generation !== gen) return
+      const elapsed = now - t0
+
+      if (!tearDone && elapsed >= timing.tear) {
+        tearDone = true
+        revertTear()
+        mark('tear-end')
+        if (variant === 'first') {
+          overlay.dataset.phase = 'snow'
+          runtime.snowing = true
+        } else {
+          overlay.dataset.phase = 'black'
+          pushNow(req)
+        }
+      }
+
+      if (runtime.snowing) drawSnowFrame()
+
+      if (!snowDone && elapsed >= timing.snow) {
+        snowDone = true
+        runtime.snowing = false
         mark('snow-end')
         overlay.dataset.phase = 'black'
         pushNow(req)
-      })
+      }
+
+      if (!revealArmed && elapsed >= timing.reveal) {
+        revealArmed = true
+        if (currentPathname() === pathnameOf(req.href)) {
+          finishReveal()
+        } else {
+          void maybeHoldThenReveal()
+        }
+        return
+      }
+
+      runtime.clockRaf = window.requestAnimationFrame(tick)
     }
 
-    after(t0, timing.reveal, gen, () => {
-      void maybeHoldThenReveal()
-    })
-
+    runtime.clockRaf = window.requestAnimationFrame(tick)
     return true
   } catch (error) {
     console.error('SignalCut failed; navigating without overlay', error)
@@ -632,24 +642,36 @@ export default function SignalCut({
     } catch {
       // prefetch is best-effort
     }
+    try {
+      warmNoise()
+    } catch {
+      // noise warmup is best-effort
+    }
   }
+
+  useEffect(() => {
+    prefetch()
+    // Warm destination + noise so the click path does not parse the bundle during snow.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [href])
 
   const startFromGesture = (): boolean => {
     if (runtime.playing) return true
     try {
-      prefetch()
       try {
         posthog.capture('signal_cut_started', { direction, href })
       } catch {
         // analytics must never block navigation
       }
-      return playCut({
+      const started = playCut({
         href,
         direction,
         navigate: () => {
           router.push(hrefForRouter(href))
         },
       })
+      queueMicrotask(() => prefetch())
+      return started
     } catch (error) {
       console.error('SignalCut gesture failed', error)
       return false
