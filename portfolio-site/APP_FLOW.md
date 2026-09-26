@@ -230,7 +230,7 @@ Land on /keeganmoody33
 
 **Success state:** Player shows track title, play/pause controls (w-6 h-6). Hover reveals full controls. Music plays from YouTube playlist.
 
-**Error state:** Component returns `null` (graceful failure) and reports `useBannerAvailability(false)` so the rotator drops the slide and its dot. Script `onError` and a 10s API timeout also set this path. Wrapped in `WidgetErrorBoundary`, which reports unavailable if the widget throws.
+**Error state:** Component returns `null` (graceful failure) and reports `useBannerAvailability(false)` so the rotator drops the slide and its dot. Script `onError` and a 10s timeout **started on mount** also set this path (a stalled script must not wait to `onLoad` before the clock starts). Wrapped in `WidgetErrorBoundary`, which reports unavailable if the widget throws. If GitHub has already failed, the header stays at the skeleton height until this timeout, then collapses — no blank frame in between.
 
 **Empty state:** Compact loading skeleton (py-2, inline layout) while IFrame API loads.
 
@@ -251,8 +251,8 @@ Land on /keeganmoody33
 
 1. Each widget reports `useBannerAvailability(true|false)`
 2. Failed, empty, or error-boundary panels are removed from rotation and from the dots
-3. Two or more available panels: 8s auto-rotate (skipped under `prefers-reduced-motion: reduce`); dots stay for manual switching
-4. One available panel: show it statically, no dots
+3. Two or more available panels: 8s auto-rotate (skipped under `prefers-reduced-motion: reduce`); dots stay for manual switching. Inactive panels get `aria-hidden` + `inert` so tab focus cannot land on invisible controls. Content uses `pr-12` so `/ 7d` clears the dots; the bar itself is full-bleed.
+4. One available panel: show it statically, no dots, no extra `pr-12`
 5. Zero available panels: rotator returns `null` — the banner row collapses; Marquee remains
 
 **GitHub Activity error:** `/api/github` 5xx (including GitHub's unauthenticated 60/hr 502) → component returns `null` and reports unavailable. No blank 8s slot.
@@ -288,7 +288,7 @@ Land on /keeganmoody33
 |---------|---------|--------|
 | Chat modal | Overlay on page | Same (full overlay) |
 | Navigation | Horizontal top bar | Same; items `whitespace-nowrap`, right group `gap-x-3 gap-y-2` |
-| BannerRotator | `md:pr-4` | `pr-12` so dots do not cover `/ 7d` |
+| BannerRotator | Full-bleed bar; `pr-12` on content only when dots show | Same |
 | Timeline | Full-width cards | Same layout (no responsive changes) |
 | JD Analyzer | Full-width textarea | Same layout |
 

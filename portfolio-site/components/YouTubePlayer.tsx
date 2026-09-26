@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useId } from 'react'
 import Script from 'next/script'
 import posthog from 'posthog-js'
-import { useBannerAvailability } from '@/components/BannerRotator'
+import { useBannerAvailability, useBannerPanelPad } from '@/components/BannerRotator'
 
 // ── Constants ──────────────────────────────────────────────────
 const PLAYLIST_ID = 'PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk'
@@ -259,6 +259,19 @@ export default function YouTubePlayer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Drop the slide if the IFrame API never appears. Starts on mount so a
+  // stalled <Script> cannot leave the skeleton rotating indefinitely.
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (!playerRef.current) {
+        console.error('YouTubePlayer: iframe API timed out')
+        setError(true)
+        setIsLoading(false)
+      }
+    }, 10_000)
+    return () => window.clearTimeout(timer)
+  }, [])
+
   // ── Script onLoad fallback — covers the race where the
   //    <Script> fires before the useEffect sets the callback ─
   const handleScriptLoad = useCallback(() => {
@@ -269,15 +282,7 @@ export default function YouTubePlayer() {
         initPlayer()
       }
     }, 100)
-    // Safety cap — if the API never appears, drop this panel
-    setTimeout(() => {
-      clearInterval(poll)
-      if (!playerRef.current) {
-        console.error('YouTubePlayer: iframe API timed out')
-        setError(true)
-        setIsLoading(false)
-      }
-    }, 10_000)
+    setTimeout(() => clearInterval(poll), 10_000)
   }, [initPlayer])
 
   // ── Controls ─────────────────────────────────────────────
@@ -344,6 +349,7 @@ export default function YouTubePlayer() {
 
   // Report before any null return so BannerRotator can drop this slide
   useBannerAvailability(!error)
+  const panelPad = useBannerPanelPad()
 
   // ── Error → graceful hide ────────────────────────────────
   if (error) return null
@@ -375,7 +381,7 @@ export default function YouTubePlayer() {
       {/* Loading skeleton */}
       {isLoading ? (
         <div className="min-h-12 w-full border-b border-[var(--border-dim)] bg-[var(--bg-surface)] font-mono">
-          <div className="max-w-7xl mx-auto px-4 py-2">
+          <div className={panelPad}>
             <div className="flex items-center gap-3">
               {/* Play button skeleton */}
               <div className="w-6 h-6 rounded bg-[var(--bg-body)] border border-[var(--border-dim)] animate-pulse" />
@@ -395,7 +401,7 @@ export default function YouTubePlayer() {
           onMouseEnter={() => setExpanded(true)}
           onMouseLeave={() => setExpanded(false)}
         >
-          <div className="max-w-7xl mx-auto px-4 py-2">
+          <div className={panelPad}>
             <div className="flex items-center gap-3">
               {/* Play / Pause */}
               <button

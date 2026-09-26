@@ -194,9 +194,9 @@ The two widget layers (YouTubePlayer, GitHubActivity) live inside a `BannerRotat
 - **Component:** `components/BannerRotator.tsx`
 - **Rotation:** 8-second auto-cycle, crossfade (500ms `transition-opacity`). Skipped when `prefers-reduced-motion: reduce` or when fewer than two panels are available.
 - **Interaction:** Pauses on hover; dot indicators at right edge for manual switching. Dots stay usable under reduced motion.
-- **Mounting:** All children stay mounted (critical for YouTubePlayer iframe audio continuity); inactive panels get `opacity-0 absolute pointer-events-none`
+- **Mounting:** All children stay mounted (critical for YouTubePlayer iframe audio continuity); inactive panels get `opacity-0 absolute pointer-events-none`, `aria-hidden`, and `inert` so keyboard focus cannot land on invisible controls
 - **Height:** Every available panel wrapper is `min-h-12` so YouTube (41px) and GitHub (48px) do not shift the page when they swap.
-- **Mobile padding:** Rotator root is `pr-12 md:pr-4` so dots do not cover GitHub's `/ 7d` below 768px.
+- **Padding:** Rotator root has no horizontal padding so the widget bar/border is full-bleed. When dots are shown, panel *content* uses `pr-12` (`useBannerPanelPad`) so `/ 7d` clears the 32px dots at every width. One panel / no dots → no extra pad.
 - **Failures:** Widgets call `useBannerAvailability`. A null/error/empty render drops that slide and its dot. One panel left → static, no dots. Zero panels left → rotator returns `null` (banner row collapses). `WidgetErrorBoundary` also reports unavailable on catch.
 - **PostHog:** Fires `banner_panel_switched` on manual dot clicks with `from`/`to` labels
 
@@ -357,7 +357,7 @@ Person-page components render the same layout across breakpoints.
 | Component | Mobile | Desktop (md+) |
 |-----------|--------|----------------|
 | Career nav items | `whitespace-nowrap`; right group `gap-x-3 gap-y-2` | `sm:gap-x-8` |
-| BannerRotator | `pr-12` so dots miss `/ 7d` | `md:pr-4` |
+| BannerRotator | Full-bleed bar; `pr-12` on content only when dots show | Same |
 | All person-page components | Same layout | Same layout |
 
 ### Responsive Priorities (future)

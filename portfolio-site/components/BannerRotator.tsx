@@ -16,6 +16,8 @@ export const BannerAvailabilityContext = createContext<
   (available: boolean) => void
 >(() => undefined)
 
+const BannerChromeContext = createContext({ showDots: false })
+
 /** Widgets call this so a null/error render drops their slide and dot. */
 export function useBannerAvailability(available: boolean) {
   const report = useContext(BannerAvailabilityContext)
@@ -25,6 +27,14 @@ export function useBannerAvailability(available: boolean) {
       report(false)
     }
   }, [available, report])
+}
+
+/** Inner content pad: `pr-12` only when dots are visible so the bar stays full-bleed. */
+export function useBannerPanelPad() {
+  const { showDots } = useContext(BannerChromeContext)
+  return showDots
+    ? 'max-w-7xl mx-auto py-2 pl-4 pr-12'
+    : 'max-w-7xl mx-auto px-4 py-2'
 }
 
 function BannerSlot({
@@ -150,61 +160,65 @@ export default function BannerRotator({
   }
 
   return (
-    <div
-      className="relative w-full pr-12 md:pr-4"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-    >
-      {panels.map((child, i) => {
-        const isAvailable = available[i] !== false
-        const isActive = i === activeIndex
+    <BannerChromeContext.Provider value={{ showDots }}>
+      <div
+        className="relative w-full"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+      >
+        {panels.map((child, i) => {
+          const isAvailable = available[i] !== false
+          const isActive = i === activeIndex
+          const suppress = !isAvailable || !isActive
 
-        return (
-          <BannerSlot key={i} index={i} onAvailability={onAvailability}>
-            <div
-              className={
-                !isAvailable
-                  ? 'hidden'
-                  : `
-                    min-h-12
-                    transition-opacity duration-500 ease-in-out
-                    ${isActive
-                      ? 'relative opacity-100 z-10'
-                      : 'absolute top-0 left-0 right-0 opacity-0 z-0 pointer-events-none'
+          return (
+            <BannerSlot key={i} index={i} onAvailability={onAvailability}>
+              <div
+                className={
+                  !isAvailable
+                    ? 'hidden'
+                    : `
+                      min-h-12
+                      transition-opacity duration-500 ease-in-out
+                      ${isActive
+                        ? 'relative opacity-100 z-10'
+                        : 'absolute top-0 left-0 right-0 opacity-0 z-0 pointer-events-none'
+                      }
+                    `
+                }
+                aria-hidden={suppress}
+                {...(suppress ? { inert: true } : {})}
+              >
+                {child}
+              </div>
+            </BannerSlot>
+          )
+        })}
+
+        {showDots && (
+          <div className="absolute right-4 top-1/2 z-20 flex -translate-y-1/2 items-center gap-1">
+            {visibleIndices.map((i) => (
+              <button
+                key={i}
+                onClick={() => goTo(i)}
+                className="p-1.5 -m-0.5"
+                aria-label={labels[i] ? `Switch to ${labels[i]}` : `Switch to banner ${i + 1}`}
+                title={labels[i] || undefined}
+              >
+                <span
+                  className={`
+                    block h-1.5 w-1.5 rounded-full transition-all duration-200
+                    ${i === activeIndex
+                      ? 'bg-[var(--accent-lime)]'
+                      : 'bg-[var(--border-dim)] hover:bg-[var(--text-muted)]'
                     }
-                  `
-              }
-              aria-hidden={!isAvailable || !isActive}
-            >
-              {child}
-            </div>
-          </BannerSlot>
-        )
-      })}
-
-      {showDots && (
-        <div className="absolute right-4 top-1/2 z-20 flex -translate-y-1/2 items-center gap-1">
-          {visibleIndices.map((i) => (
-            <button
-              key={i}
-              onClick={() => goTo(i)}
-              className="p-1.5 -m-0.5"
-              aria-label={labels[i] ? `Switch to ${labels[i]}` : `Switch to banner ${i + 1}`}
-              title={labels[i] || undefined}
-            >
-              <span
-                className={`
-                  block h-1.5 w-1.5 rounded-full transition-all duration-200
-                  ${i === activeIndex
-                    ? 'bg-[var(--accent-lime)]'
-                    : 'bg-[var(--border-dim)] hover:bg-[var(--text-muted)]'
-                  }
-                `}
-              />
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+                  `}
+                />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </BannerChromeContext.Provider>
   )
 }

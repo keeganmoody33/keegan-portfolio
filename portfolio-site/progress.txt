@@ -1,3 +1,9 @@
+COMPLETED (2026-09-26 — banner inert + full-bleed + YT mount timeout):
+- Inactive/hidden BannerRotator panels get `inert` with `aria-hidden` (axe aria-hidden-focus)
+- Rotator root is unpadded; `pr-12` is on panel content only when dots show
+- YouTube 10s timeout starts on mount so a stalled script drops the slide
+- If GitHub already failed, header stays on the YouTube skeleton until that timeout, then collapses (no blank frame)
+
 COMPLETED (2026-09-26 — QA Gate landmark + docs):
 - `/keeganmoody33` footer is a sibling of `<main>` (one main landmark), matching house 404
 - `IMPLEMENTATION_PLAN.md` Step 4.4 no longer points at the removed career `/api/discogs` route
