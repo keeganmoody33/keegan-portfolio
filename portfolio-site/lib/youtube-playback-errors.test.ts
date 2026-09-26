@@ -14,6 +14,8 @@ import {
   playlistLengthFromPlayer,
   recordPlaybackError,
   nowPlayingRecoveryPresentation,
+  isBannerDotControl,
+  isNowPlayingControl,
   ytMachineOnError,
   ytMachineOnProgress,
   ytMachineOnStall,
@@ -21,6 +23,13 @@ import {
   YT_RECOVERY_TITLE,
   YT_STALL_TIMEOUT_MS,
 } from './youtube-playback-errors.ts'
+
+function fakeEl(label: string, closestSel: string | null = null): Element {
+  return {
+    getAttribute: (name: string) => (name === 'aria-label' ? label : null),
+    closest: (sel: string) => (closestSel === sel ? {} : null),
+  } as unknown as Element
+}
 
 describe('isSkippablePlaybackError', () => {
   it('treats 2, 5, 100, 101, and 150 as skippable', () => {
@@ -188,6 +197,21 @@ describe('yt error machine', () => {
     state = ytMachineOnProgress(state, 'new_video_id')
     assert.equal(state.stallArmed, true)
     assert.equal(state.dropped, false)
+  })
+})
+
+describe('focus handoff predicates', () => {
+  it('treats rotator dots as non-targets', () => {
+    assert.equal(isBannerDotControl(fakeEl('Switch to Now Playing')), true)
+    assert.equal(isBannerDotControl(fakeEl('GitHub activity', '[data-banner-dots]')), true)
+    assert.equal(isBannerDotControl(fakeEl('GitHub activity, last 14 days')), false)
+  })
+
+  it('treats Play/Pause as the dropping slide, not a landing target', () => {
+    assert.equal(isNowPlayingControl(fakeEl('Play')), true)
+    assert.equal(isNowPlayingControl(fakeEl('Pause')), true)
+    assert.equal(isNowPlayingControl(fakeEl('Play', '[data-now-playing]')), true)
+    assert.equal(isNowPlayingControl(fakeEl('GitHub activity, last 14 days')), false)
   })
 })
 

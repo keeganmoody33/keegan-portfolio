@@ -133,12 +133,20 @@ export function isBannerDotControl(el: Element): boolean {
   return label.startsWith('Switch to')
 }
 
+/** Play/Pause lives in the dropping slide — never a post-drop target. */
+export function isNowPlayingControl(el: Element): boolean {
+  if (el.closest('[data-now-playing]')) return true
+  const label = el.getAttribute('aria-label') || ''
+  return label === 'Play' || label === 'Pause'
+}
+
 export function firstFocusableIn(root: ParentNode): HTMLElement | null {
   const nodes = root.querySelectorAll<HTMLElement>(FOCUSABLE)
   for (const el of nodes) {
     if (el.closest('[inert]')) continue
     if (el.getAttribute('aria-hidden') === 'true') continue
     if (isBannerDotControl(el)) continue
+    if (isNowPlayingControl(el)) continue
     return el
   }
   return null
@@ -166,15 +174,42 @@ export function resolveFocusAfterNowPlayingDrop(opts: {
     playerRoot?.closest('header') ??
     (root as Document).querySelector?.('header') ??
     null
-  const panels = header?.querySelectorAll('[data-banner-panel]') ?? []
+  const panels = [...(header?.querySelectorAll('[data-banner-panel]') ?? [])].filter(
+    (panel): panel is HTMLElement => panel instanceof HTMLElement
+  )
+
+  const pickFromPanel = (panel: HTMLElement, ignoreInert: boolean): HTMLElement | null => {
+    if (playerRoot && panel.contains(playerRoot)) return null
+    if (panel.querySelector('[data-now-playing]')) return null
+    if (panel.classList.contains('hidden')) return null
+    if (!ignoreInert) {
+      if (panel.getAttribute('aria-hidden') === 'true') return null
+      if (panel.hasAttribute('inert')) return null
+    }
+    if (ignoreInert) {
+      const nodes = panel.querySelectorAll<HTMLElement>(FOCUSABLE)
+      for (const el of nodes) {
+        if (isBannerDotControl(el)) continue
+        if (isNowPlayingControl(el)) continue
+        if (el.getAttribute('aria-hidden') === 'true') continue
+        return el
+      }
+      return null
+    }
+    return firstFocusableIn(panel)
+  }
+
   for (const panel of panels) {
-    if (!(panel instanceof HTMLElement)) continue
-    if (playerRoot && panel.contains(playerRoot)) continue
-    if (panel.classList.contains('hidden')) continue
-    if (panel.getAttribute('aria-hidden') === 'true') continue
-    if (panel.hasAttribute('inert')) continue
-    const focusable = firstFocusableIn(panel)
+    const focusable = pickFromPanel(panel, false)
     if (focusable) return focusable
+  }
+
+  // After unmount the remaining slide may still be inert for one frame.
+  if (afterUnmount) {
+    for (const panel of panels) {
+      const focusable = pickFromPanel(panel, true)
+      if (focusable) return focusable
+    }
   }
 
   const nav =
@@ -190,21 +225,37 @@ let pendingNowPlayingFocusHandoff = false
 export function requestNowPlayingFocusHandoff(playerRoot: Element | null): void {
   if (typeof document === 'undefined') return
   const active = document.activeElement
-  if (!playerRoot || !active || !playerRoot.contains(active)) return
+  const inPlayer = !!(playerRoot && active && playerRoot.contains(active))
+  const onPlayControl =
+    active instanceof HTMLElement &&
+    /^(Play|Pause)$/.test(active.getAttribute('aria-label') || '')
+  if (!inPlayer && !onPlayControl) return
   pendingNowPlayingFocusHandoff = true
+  // Do not flush in a microtask: the dropping slide is still mounted and
+  // its Play button would win, then unmount and dump focus to body.
+  // BannerRotator flushes after visibleIndices updates; these retries
+  // cover the frame after that paint.
+  const retry = () => {
+    flushNowPlayingFocusHandoff()
+  }
+  window.setTimeout(retry, 0)
+  window.setTimeout(retry, 32)
+  window.setTimeout(retry, 100)
+  window.setTimeout(retry, 250)
 }
 
 export function flushNowPlayingFocusHandoff(root?: ParentNode): HTMLElement | null {
   if (!pendingNowPlayingFocusHandoff) return null
   if (typeof document === 'undefined') return null
-  pendingNowPlayingFocusHandoff = false
   const target = resolveFocusAfterNowPlayingDrop({
     playerRoot: null,
     activeElement: null,
     root: root ?? document,
     afterUnmount: true,
   })
-  target?.focus()
+  if (!target) return null
+  pendingNowPlayingFocusHandoff = false
+  target.focus()
   return target
 }
 

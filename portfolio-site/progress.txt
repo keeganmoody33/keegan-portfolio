@@ -1,7 +1,7 @@
 COMPLETED (2026-09-26 — UX P1-A / P2-D/E/F/G around the stall):
 - Tailwind content includes `./lib/**` (and safelists `sr-only`) so the live region is visually hidden in the production CSS
 - `#yt-now-playing-live` is an empty React region on the career page at load; drop only writes the text
-- Focus handoff skips rotator dots; BannerRotator flushes after the slide count updates, to `[data-banner-panel]` or nav
+- Focus handoff skips rotator dots and `[data-now-playing]` / Play / Pause; BannerRotator flushes after the slide count updates, to leftover `[data-banner-panel]` or nav. Pending stays until a target exists (GitHub-up must not dump to body)
 - Recovery chrome while the stall is armed: aria-busy/aria-disabled Play, "Track unavailable, skipping…", no time
 - BUFFERING / CUED / new video id restart the 10s stall; only PLAYING clears it (2b still stays)
 

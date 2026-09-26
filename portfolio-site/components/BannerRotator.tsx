@@ -138,7 +138,7 @@ export default function BannerRotator({
 
   useEffect(() => {
     flushNowPlayingFocusHandoff()
-  }, [visibleIndices])
+  }, [visibleIndices, resolvedActiveIndex])
 
   useEffect(() => {
     if (paused || reduceMotion || visibleIndices.length <= 1) return

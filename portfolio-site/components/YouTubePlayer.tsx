@@ -481,7 +481,7 @@ export default function YouTubePlayer() {
 
   return (
     <>
-      <div ref={playerRootRef} className="contents">
+      <div ref={playerRootRef} data-now-playing="" className="contents">
       {/* Load YouTube IFrame API — must always render, even during loading,
           otherwise the script never loads and isLoading never clears (deadlock) */}
       <Script
