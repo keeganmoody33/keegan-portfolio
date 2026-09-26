@@ -191,12 +191,26 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   color: var(--house-muted);
 }
 
+.house-wordmark-slot {
+  container-type: inline-size;
+  width: 100%;
+}
+
 .house-wordmark {
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 600;
   letter-spacing: -0.045em;
   line-height: 0.85;
+  white-space: nowrap;
+  /* 12rem on wide desktops; scale to the slot so 12 glyphs never overflow. */
+  font-size: clamp(2.5rem, 14.8vw, 12rem);
   animation: houseLockup 700ms ease-out both;
+}
+
+@supports (font-size: 1cqi) {
+  .house-wordmark {
+    font-size: min(12rem, 17.2cqi);
+  }
 }
 
 @keyframes houseLockup {
