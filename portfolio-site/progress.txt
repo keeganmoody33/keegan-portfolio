@@ -5,7 +5,7 @@ COMPLETED (2026-09-26 — agent-ready for house cut):
 - Accept: text/markdown on house HTML routes returns the markdown twin with Vary: Accept; unknown paths get a markdown 404
 - Organization JSON-LD on `/` (foundingDate 2025, PostalAddress Atlanta GA 30316 US, four sameAs URLs, founder Person, ItemList); sleeve JSON-LD on catalog pages; no invented contactPoint/offers
 - `/.well-known/ai-catalog.json` and `/.well-known/ard.json`; RFC 8288 Link headers on house pages
-- metadata split: house title `lecturesfrom` + garage one-liner; `/keeganmoody33` keeps `Keegan Moody | lecturesfrom`; canonical, og:type, og:image per route
+- metadata split: house title `lecturesfrom` + garage one-liner; `/keeganmoody33` keeps `Keegan Moody | lecturesfrom`; canonical and og:type on house; `og:image` (`/og.jpg`) only on the person segment
 
 COMPLETED (2026-09-26 — lecturesfrom house cut):
 - Replaced root `/` turntable + hasVisitedPortfolio redirect with a Server Component title card + crate

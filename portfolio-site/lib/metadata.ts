@@ -34,14 +34,6 @@ export function houseMetadata(path: string, title: string, description: string):
       siteName: HOUSE_TITLE,
       title,
       description,
-      images: [
-        {
-          url: OG_IMAGE_PATH,
-          alt: HOUSE_TITLE,
-          width: 800,
-          height: 478,
-        },
-      ],
     },
   }
 }
