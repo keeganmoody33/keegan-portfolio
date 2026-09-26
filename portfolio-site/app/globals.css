@@ -253,13 +253,25 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 
 .house-spine {
   display: grid;
-  grid-template-columns: 2.5rem 1fr auto auto auto;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
   gap: 1rem;
   align-items: baseline;
   border-top: 1px solid var(--house-line);
   padding: 0.7rem 0;
   color: inherit;
   text-decoration: none;
+}
+
+@media (min-width: 640px) {
+  .house-spine {
+    grid-template-columns: 2.5rem minmax(0, 1fr) auto auto;
+  }
+}
+
+@media (min-width: 768px) {
+  .house-spine {
+    grid-template-columns: 2.5rem minmax(0, 1fr) auto auto auto;
+  }
 }
 
 .house-spine:last-child {
