@@ -9,6 +9,31 @@ export const YT_SKIPPABLE_ERROR_CODES: readonly number[] = [2, 5, 100, 101, 150]
 
 export const YT_ERROR_SKIP_LIMIT = 3
 
+/** How long to wait after nextVideo() before counting another failed skip. */
+export const YT_SKIP_RECOVERY_MS = 1200
+
+/**
+ * The IFrame API often emits 150 only once on restricted networks.
+ * A skip recovered if the player is playing/buffering, or the video id changed.
+ */
+export function skipRecovered(opts: {
+  playerState: number | null | undefined
+  playingState: number
+  bufferingState: number
+  currentVideoId?: string | null
+  failedVideoId?: string | null
+}): boolean {
+  if (
+    opts.playerState === opts.playingState ||
+    opts.playerState === opts.bufferingState
+  ) {
+    return true
+  }
+  const current = opts.currentVideoId || ''
+  const failed = opts.failedVideoId || ''
+  return current.length > 0 && current !== failed
+}
+
 export function isSkippablePlaybackError(code: number): boolean {
   return YT_SKIPPABLE_ERROR_CODES.includes(code)
 }

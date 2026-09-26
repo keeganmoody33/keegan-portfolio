@@ -7,6 +7,8 @@ import { useBannerAvailability, useBannerPanelPad } from '@/components/BannerRot
 import {
   playlistLengthFromPlayer,
   recordPlaybackError,
+  skipRecovered,
+  YT_SKIP_RECOVERY_MS,
 } from '@/lib/youtube-playback-errors'
 
 // ── Constants ──────────────────────────────────────────────────
@@ -58,6 +60,16 @@ export default function YouTubePlayer() {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const progressInterval = useRef<ReturnType<typeof setInterval> | null>(null)
   const playbackErrorStreak = useRef(0)
+  const skipRecoveryTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const skipRecoveryGen = useRef(0)
+
+  const clearSkipRecovery = useCallback(() => {
+    if (skipRecoveryTimer.current !== null) {
+      clearTimeout(skipRecoveryTimer.current)
+      skipRecoveryTimer.current = null
+    }
+    skipRecoveryGen.current += 1
+  }, [])
 
   const [isReady, setIsReady] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -165,6 +177,7 @@ export default function YouTubePlayer() {
           const p = event.target
           playerRef.current = p
           playbackErrorStreak.current = 0
+          clearSkipRecovery()
 
           // Hidden iframe must stay mounted for audio, but it is not a
           // control. tabindex=-1 is a second guard behind wrapper `inert`.
@@ -205,6 +218,7 @@ export default function YouTubePlayer() {
 
           if (state === YT.PlayerState.PLAYING) {
             playbackErrorStreak.current = 0
+            clearSkipRecovery()
             setPlaying(true)
             syncTrackInfo()
 
@@ -240,35 +254,80 @@ export default function YouTubePlayer() {
           // Keep the embed mounted for skip attempts; tabindex=-1 stays
           // a second guard behind wrapper `inert`. After N skippable
           // errors (3, or playlist length if shorter) drop the slide.
+          // Restricted networks often emit 150 only once — if nextVideo
+          // does not recover, count that toward the same streak.
           try {
             event.target.getIframe().tabIndex = -1
           } catch {
             setError(true)
             return
           }
-          const result = recordPlaybackError(
-            event.data,
-            playbackErrorStreak.current,
-            playlistLengthFromPlayer(event.target)
-          )
-          playbackErrorStreak.current = result.streak
-          if (result.shouldDrop) {
-            setError(true)
-            return
-          }
-          if (result.shouldSkip) {
+
+          const applySkippableError = (player: YT.Player, code: number) => {
+            const result = recordPlaybackError(
+              code,
+              playbackErrorStreak.current,
+              playlistLengthFromPlayer(player)
+            )
+            playbackErrorStreak.current = result.streak
+            if (result.shouldDrop) {
+              clearSkipRecovery()
+              setError(true)
+              return
+            }
+            if (!result.shouldSkip) return
+
+            let failedVideoId = ''
             try {
-              event.target.nextVideo()
+              failedVideoId = player.getVideoData()?.video_id || ''
+            } catch {
+              failedVideoId = ''
+            }
+            try {
+              player.nextVideo()
             } catch {
               setError(true)
+              return
             }
+
+            if (skipRecoveryTimer.current !== null) {
+              clearTimeout(skipRecoveryTimer.current)
+              skipRecoveryTimer.current = null
+            }
+            const gen = ++skipRecoveryGen.current
+            skipRecoveryTimer.current = setTimeout(() => {
+              if (gen !== skipRecoveryGen.current) return
+              let playerState: number | null = null
+              let currentVideoId = ''
+              try {
+                playerState = player.getPlayerState()
+                currentVideoId = player.getVideoData()?.video_id || ''
+              } catch {
+                // still treat as not recovered
+              }
+              if (
+                skipRecovered({
+                  playerState,
+                  playingState: YT.PlayerState.PLAYING,
+                  bufferingState: YT.PlayerState.BUFFERING,
+                  currentVideoId,
+                  failedVideoId,
+                })
+              ) {
+                playbackErrorStreak.current = 0
+                return
+              }
+              applySkippableError(player, code)
+            }, YT_SKIP_RECOVERY_MS)
           }
+
+          applySkippableError(event.target, event.data)
         },
       },
     })
 
     playerRef.current = player
-  }, [syncTrackInfo, persistState])
+  }, [syncTrackInfo, persistState, clearSkipRecovery])
 
   // ── Hook into the global callback ────────────────────────
   useEffect(() => {
@@ -288,6 +347,7 @@ export default function YouTubePlayer() {
     return () => {
       // Cleanup on unmount
       if (progressInterval.current) clearInterval(progressInterval.current)
+      clearSkipRecovery()
       try {
         const p = playerRef.current
         playerRef.current = null      // clear ref BEFORE destroy so re-init isn't blocked

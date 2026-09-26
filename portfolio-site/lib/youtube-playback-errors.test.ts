@@ -12,6 +12,7 @@ import {
   playbackErrorSkipLimit,
   playlistLengthFromPlayer,
   recordPlaybackError,
+  skipRecovered,
   YT_ERROR_SKIP_LIMIT,
 } from './youtube-playback-errors.ts'
 
@@ -109,5 +110,65 @@ describe('recordPlaybackError', () => {
   it('treats error 2 and 5 the same as 150', () => {
     assert.equal(recordPlaybackError(2, 0, null).shouldSkip, true)
     assert.equal(recordPlaybackError(5, 2, null).shouldDrop, true)
+  })
+})
+
+describe('skipRecovered', () => {
+  const playing = 1
+  const buffering = 3
+
+  it('treats PLAYING or BUFFERING as recovered', () => {
+    assert.equal(
+      skipRecovered({
+        playerState: playing,
+        playingState: playing,
+        bufferingState: buffering,
+      }),
+      true
+    )
+    assert.equal(
+      skipRecovered({
+        playerState: buffering,
+        playingState: playing,
+        bufferingState: buffering,
+      }),
+      true
+    )
+  })
+
+  it('treats a new video id as recovered', () => {
+    assert.equal(
+      skipRecovered({
+        playerState: -1,
+        playingState: playing,
+        bufferingState: buffering,
+        currentVideoId: 'b',
+        failedVideoId: 'a',
+      }),
+      true
+    )
+  })
+
+  it('does not recover when state is dead and the video id is empty or unchanged', () => {
+    assert.equal(
+      skipRecovered({
+        playerState: -1,
+        playingState: playing,
+        bufferingState: buffering,
+        currentVideoId: '',
+        failedVideoId: '',
+      }),
+      false
+    )
+    assert.equal(
+      skipRecovered({
+        playerState: 5,
+        playingState: playing,
+        bufferingState: buffering,
+        currentVideoId: 'a',
+        failedVideoId: 'a',
+      }),
+      false
+    )
   })
 })
