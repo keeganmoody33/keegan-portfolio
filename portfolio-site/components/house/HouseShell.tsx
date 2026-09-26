@@ -20,8 +20,12 @@ export default function HouseShell({ children }: { children: ReactNode }) {
       after.push(child)
       return
     }
-    if (isElementOf(child, TitleCard) || isElementOf(child, HouseRail)) {
+    if (isElementOf(child, TitleCard)) {
       before.push(child)
+      return
+    }
+    if (isElementOf(child, HouseRail)) {
+      before.push(<header>{child}</header>)
       return
     }
     content.push(child)
