@@ -1,3 +1,10 @@
+COMPLETED (2026-09-26 — career Discogs removal):
+- Removed Recent Digs from `/keeganmoody33` (`BannerRotator` now YouTube + GitHub only)
+- Deleted unused `components/RecentDigs.tsx` and career-only `app/api/discogs/route.ts`
+- Left house `/collection`, `/api/discogs/collection`, `lib/discogs.ts`, and Discogs tests untouched
+- No career-only records route existed; no new redirect added
+- Ask AI / JD Fit Analyzer / chat / github APIs / `/og.jpg` untouched
+
 COMPLETED (2026-09-26 — house UX F01–F06):
 - Wordmark scales to its container (`min(12rem, 17.2cqi)`); no horizontal clip at 375/768/1024
 - Crate spines keep format / catno at 375 on a second meta line; status column meets the hairline

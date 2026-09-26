@@ -18,7 +18,7 @@
 - AI Chat via Supabase Edge Functions + Claude API
 - JD Fit Analyzer with Firecrawl URL scraping
 - Marquee ticker
-- Recent Digs (Discogs) banner widget
+- Recent Digs (Discogs) banner widget — **removed from `/keeganmoody33`**; crate lives at house `/collection`
 - Activity Stream sidebar with theme toggle
 - Publications section (inside Timeline)
 - PostHog analytics (client + server)
@@ -60,9 +60,9 @@
 
 ### Step 1.4 — Banner Section Layout (DONE)
 
-- **Status:** Completed — shipped via `BannerRotator` with 3 widgets (YouTube, RecentDigs, GitHub)
+- **Status:** Completed — `BannerRotator` on `/keeganmoody33` now cycles YouTube + GitHub. Recent Digs removed; crate lives at house `/collection`.
 - **Output:** `components/BannerRotator.tsx` composes widgets in a single rotating slot below Marquee — 8s auto-rotate, pause-on-hover, dot indicators
-- **Validation:** All 3 widgets visible on desktop and mobile, hover pauses rotation
+- **Validation:** Remaining widgets visible on desktop and mobile, hover pauses rotation
 
 ---
 

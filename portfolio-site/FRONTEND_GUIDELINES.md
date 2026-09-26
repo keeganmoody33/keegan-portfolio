@@ -190,7 +190,7 @@ Single-page app. All content on one route (`/`). No multi-page navigation curren
 
 ### Banner Rotator
 
-The three widget layers (YouTubePlayer, RecentDigs, GitHubActivity) live inside a `BannerRotator` that shows one at a time:
+The two widget layers (YouTubePlayer, GitHubActivity) live inside a `BannerRotator` that shows one at a time:
 - **Component:** `components/BannerRotator.tsx`
 - **Rotation:** 8-second auto-cycle, crossfade (500ms `transition-opacity`)
 - **Interaction:** Pauses on hover; dot indicators at right edge for manual switching
@@ -205,7 +205,6 @@ All banner widgets follow the same compact pattern:
 - **Container:** `max-w-7xl mx-auto px-4`
 - **Layout:** Single-row flex (`flex items-center gap-4`)
 - **Border:** `border-b border-[var(--border-dim)]` between each layer
-- **Covers (RecentDigs):** Fixed width `w-[72px]` desktop / `w-[60px]` mobile, no metadata text (title via `title` attr on hover)
 - **Chart (GitHubActivity):** `h-[24px]` bar chart, `flex-1` fills available space
 - **Player (YouTubePlayer):** `w-6 h-6` play button, track info truncated, expand-on-hover for prev/next/volume
 
@@ -347,13 +346,11 @@ Two dialects. House pages (`/`, `/catalog`, sleeves, `/collection`, `/legal`) sh
 ### Current Responsive Rules
 
 
-Only `RecentDigs.tsx` has dedicated mobile/desktop handling. All other components render identically across breakpoints.
+Person-page components render the same layout across breakpoints.
 
 | Component | Mobile | Desktop (md+) |
 |-----------|--------|----------------|
-| Recent Digs | Horizontal scroll, `w-[140px]` items, snap points | Flex row, `flex-1` items |
-| Recent Digs loading | Scroll skeleton | Row skeleton |
-| All other components | Same layout | Same layout |
+| All person-page components | Same layout | Same layout |
 
 ### Responsive Priorities (future)
 
@@ -368,7 +365,7 @@ Only `RecentDigs.tsx` has dedicated mobile/desktop handling. All other component
 
 ### What Exists
 
-- Images have `alt` attributes (Recent Digs: `${artist} — ${title}`)
+- Images have `alt` attributes
 - External links have `target="_blank"` and `rel="noopener noreferrer"`
 - Form submission via Enter key (Chat)
 - Disabled states on buttons during loading

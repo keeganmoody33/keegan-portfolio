@@ -35,7 +35,6 @@
 | Route | Method | File | Purpose |
 |-------|--------|------|---------|
 | `/api/chat` | POST | `app/api/chat/route.ts` | Proxy to Supabase `chat` Edge Function |
-| `/api/discogs` | GET | `app/api/discogs/route.ts` | Recent-5 Discogs list for person-page RecentDigs |
 | `/api/discogs/collection` | GET | `app/api/discogs/collection/route.ts` | Full paginated Discogs crate (`revalidate: 300`) |
 | `/api/github` | GET | `app/api/github/route.ts` | Proxy to GitHub public events API |
 | `/api/jd-analyzer` | POST | `app/api/jd-analyzer/route.ts` | Proxy to Supabase `jd-analyzer` Edge Function |
@@ -67,8 +66,6 @@ Top to bottom, this is exactly what renders on the main page:
 2. WidgetErrorBoundary
    └── YouTubePlayer                ← Persistent music player (YouTube IFrame API, playlist)
 3. WidgetErrorBoundary
-   └── RecentDigs                   ← Discogs widget (5 records)
-4. WidgetErrorBoundary
    └── GitHubActivity               ← Retro bar chart (14 days)
 5. Main Layout Container (flex)
    ├── Navigation Header
@@ -112,8 +109,6 @@ Land on /keeganmoody33
     ├─→ Click play on YouTube Player → Music starts from playlist
     │       ├─→ Hover → Reveals next/prev, progress, volume
     │       └─→ Click next/prev → Changes track
-    │
-    ├─→ Click record in Recent Digs → Opens Discogs page (new tab)
     │
     └─→ Click footer social links (LinkedIn, X, Substack, GitHub, Discord, Bluesky) → Opens external profiles (new tab)
 ```
@@ -170,28 +165,7 @@ Land on /keeganmoody33
 
 ---
 
-### 3. Recent Digs (Discogs Widget)
-
-**Trigger:** Page load (automatic)
-
-**Steps:**
-
-1. Component mounts, fires GET `/api/discogs`
-2. Loading skeleton renders (5 pulsing items)
-3. Data returns: 5 records with cover art, title, artist
-4. Each record links to Discogs release page
-
-**Success state:** 5 records displayed. Desktop: horizontal row. Mobile: horizontal scroll with snap points.
-
-**Error state:** Component returns `null` (graceful failure -- widget disappears, page unaffected). Wrapped in `WidgetErrorBoundary`.
-
-**Empty state:** Component returns `null` if no releases returned.
-
-**PostHog events:** `recent_digs_record_clicked` (includes `title`, `artist`, `discogsUrl`)
-
----
-
-### 4. Career Timeline
+### 3. Career Timeline
 
 **Trigger:** Page load (data fetched from Supabase on mount in page.tsx)
 
@@ -292,14 +266,10 @@ Land on /keeganmoody33
 
 | Element | Desktop | Mobile |
 |---------|---------|--------|
-| Recent Digs | Horizontal row (`flex`) | Horizontal scroll with snap points (`snap-x`) |
-| Recent Digs items | `flex-1` fill available space | Fixed `w-[140px]` with `touch-pan-x` |
 | Chat modal | Overlay on page | Same (full overlay) |
 | Navigation | Horizontal top bar | Same (no hamburger menu currently) |
 | Timeline | Full-width cards | Same layout (no responsive changes) |
 | JD Analyzer | Full-width textarea | Same layout |
-
-**Note:** Most components lack dedicated mobile responsive handling beyond Recent Digs. This is a known area for improvement.
 
 ---
 
@@ -316,7 +286,7 @@ Supabase DB
     │   └── jd-analyzer/index.ts ──→ /api/jd-analyzer ──→ JDAnalyzer component
     │
 Discogs API
-    └── /api/discogs ──→ RecentDigs component
+    └── /api/discogs/collection ──→ house `/collection` (not the person page)
 
 YouTube IFrame API (client-side, no proxy)
     └── youtube.com/iframe_api ──→ YouTubePlayer component
