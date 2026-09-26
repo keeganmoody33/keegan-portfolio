@@ -52,7 +52,7 @@ const PRINT_ORANGE = '#E23D00'
 const TEAR_EASE = 'cubic-bezier(0.7, 0, 0.84, 0)'
 const REVEAL_EASE = 'cubic-bezier(0.2, 0, 0, 1)'
 
-const FIRST = { tear: 60, snow: 280, push: 60, reveal: 360, end: 420, fade: 60 } as const
+const FIRST = { tear: 60, snow: 280, push: 280, reveal: 360, end: 420, fade: 60 } as const
 const REPEAT = { tear: 40, snow: 40, push: 40, reveal: 120, end: 160, fade: 40 } as const
 const REDUCED = { tear: 0, snow: 0, push: 0, reveal: 80, end: 80, fade: 0 } as const
 
@@ -615,30 +615,32 @@ function playCut(req: CutRequest): boolean {
     mark('reveal-start')
     overlay.dataset.phase = 'reveal'
     if (timing.fade <= 0) {
-      mark('end')
-      teardown()
+      finish()
       return
     }
     overlay.style.transition = `opacity ${timing.fade}ms ${REVEAL_EASE}`
     void overlay.offsetWidth
     overlay.style.opacity = '0'
-    let ended = false
-    const finish = () => {
-      if (ended || runtime.generation !== gen) return
+  }
+
+  let ended = false
+  let holding = false
+  const finish = () => {
+    if (ended || runtime.generation !== gen) return
+    ended = true
+    runtime.callbackTicks += 1
+    mark('end')
+    teardown()
+  }
+
+  const schedule = (offset: number, fn: () => void) => {
+    const delay = Math.max(0, t0 + offset - performance.now())
+    const id = window.setTimeout(() => {
+      if (runtime.generation !== gen) return
       runtime.callbackTicks += 1
-      ended = true
-      mark('end')
-      teardown()
-    }
-    overlay.addEventListener(
-      'transitionend',
-      (event) => {
-        if (event.propertyName === 'opacity') finish()
-      },
-      { once: true },
-    )
-    const fadeTimer = window.setTimeout(finish, timing.fade)
-    runtime.timers.push(fadeTimer)
+      fn()
+    }, delay)
+    runtime.timers.push(id)
   }
 
   const armReveal = () => {
@@ -647,6 +649,7 @@ function playCut(req: CutRequest): boolean {
       finishReveal()
       return
     }
+    holding = true
     overlay.dataset.phase = variant === 'reduced' ? 'black' : 'hold'
     void waitForPathname(req.href, t0 + HARD_CAP_MS, gen)
       .then((result) => {
@@ -663,22 +666,14 @@ function playCut(req: CutRequest): boolean {
           }
         }
         finishReveal()
+        if (timing.fade > 0) schedule(timing.fade, finish)
+        else finish()
       })
       .catch((error: unknown) => {
         if (runtime.generation !== gen) return
         console.error('SignalCut hold failed; tearing down', error)
         fallbackNavigate(req)
       })
-  }
-
-  const schedule = (offset: number, fn: () => void) => {
-    const delay = Math.max(0, t0 + offset - performance.now())
-    const id = window.setTimeout(() => {
-      if (runtime.generation !== gen) return
-      runtime.callbackTicks += 1
-      fn()
-    }, delay)
-    runtime.timers.push(id)
   }
 
   const startSnowLoop = () => {
@@ -709,8 +704,6 @@ function playCut(req: CutRequest): boolean {
         if (variant === 'first') {
           overlay.dataset.phase = 'snow'
           startSnowLoop()
-          // Overlay is fully opaque at snow start — destination stays covered.
-          pushNow(req)
         } else {
           overlay.dataset.phase = 'black'
           mark('black-end')
@@ -724,11 +717,20 @@ function playCut(req: CutRequest): boolean {
           mark('snow-end')
           overlay.dataset.phase = 'black'
           mark('black-end')
+          // Person-page hydration during snow starves the 280ms deadline.
+          // Overlay has been opaque since snow start, so push here is still covered.
+          pushNow(req)
         })
       }
     }
 
     schedule(timing.reveal, armReveal)
+    if (timing.fade > 0) {
+      schedule(timing.end, () => {
+        if (holding) return
+        finish()
+      })
+    }
 
     // Hard-cap fallback: setTimeout still fires when rAF is paused in a background
     // tab. Must call teardown (not overlay.remove) so snow cannot paint a detached canvas.
