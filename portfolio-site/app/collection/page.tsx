@@ -61,8 +61,9 @@ export default async function CollectionPage() {
         )}
 
         <ul className="mt-10 grid list-none grid-cols-2 gap-4 p-0 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {releases.map((release) => {
+          {releases.map((release, index) => {
             const src = release.thumbnail || release.cover
+            const eager = index < 10
             return (
               <li key={release.discogsUrl}>
                 <a
@@ -76,7 +77,8 @@ export default async function CollectionPage() {
                     <img
                       src={src}
                       alt={`${release.artist} — ${release.title}`}
-                      loading="lazy"
+                      loading={eager ? 'eager' : 'lazy'}
+                      fetchPriority={index === 0 ? 'high' : undefined}
                       decoding="async"
                       className="aspect-square w-full border border-[var(--house-line)] object-cover"
                     />
