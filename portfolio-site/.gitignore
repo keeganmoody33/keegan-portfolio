@@ -25,6 +25,9 @@ yarn-error.log*
 # Local env files
 .env*.local
 
+# Local motion harness — never commit
+app/__logo-globe-harness/
+
 # Vercel
 .vercel
 

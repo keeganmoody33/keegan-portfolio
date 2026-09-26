@@ -1,4 +1,5 @@
 import HouseRail from '@/components/house/HouseRail'
+import LogoGlobe from '@/components/house/LogoGlobe'
 import LogoMark from '@/components/house/LogoMark'
 
 export default function TitleCard() {
@@ -7,7 +8,12 @@ export default function TitleCard() {
       <HouseRail />
       <div className="mt-16 px-6 sm:mt-24 sm:px-10">
         {/* decorative: the h1 wordmark is the accessible name. Do not add aria-label. */}
-        <LogoMark decorative className="mb-6" />
+        <LogoGlobe
+          className="house-logo-mark mb-6"
+          decorative
+          ring={<LogoMark decorative layer="ring" />}
+          core={<LogoMark decorative layer="core" />}
+        />
         <div className="house-wordmark-slot">
           <h1 className="house-wordmark">lecturesfrom</h1>
         </div>

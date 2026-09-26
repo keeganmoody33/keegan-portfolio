@@ -1,0 +1,97 @@
+import {
+  cloneElement,
+  isValidElement,
+  type CSSProperties,
+  type ReactElement,
+  type ReactNode,
+  type SVGProps,
+} from 'react'
+
+export type LogoGlobeSvg = ReactElement<SVGProps<SVGSVGElement>>
+
+export type LogoGlobeProps = {
+  className?: string
+  style?: CSSProperties
+  /** Explicit square size. Omit to fill the parent width with aspect-ratio 1. */
+  size?: number | string
+  /**
+   * When true (title card next to the wordmark), no img role or name.
+   * Standalone marks keep `role="img"` and `aria-label="lecturesfrom"`.
+   */
+  decorative?: boolean
+  /**
+   * One square-viewBox SVG with `<g id="lf-ring">` (outer circle) and
+   * `<g id="lf-core">` (everything else). Rendered twice; each layer hides
+   * the other group. Prefer `ring` + `core` when those nodes already exist.
+   */
+  children?: LogoGlobeSvg
+  ring?: ReactNode
+  core?: ReactNode
+}
+
+function layerClassName(svg: LogoGlobeSvg, extra: string): string {
+  const prev = svg.props.className
+  return [typeof prev === 'string' ? prev : undefined, 'lf-logo-globe-svg', extra]
+    .filter(Boolean)
+    .join(' ')
+}
+
+function cloneLayer(svg: LogoGlobeSvg, extra: string): LogoGlobeSvg {
+  return cloneElement(svg, {
+    className: layerClassName(svg, extra),
+    'aria-hidden': true,
+    focusable: 'false',
+  })
+}
+
+/**
+ * Lecturesfrom logo globe. The ring stays still. The core turns west→east
+ * with CSS `rotateY` (24s linear infinite). Pause is CSS-only via
+ * `html[data-lf-signal-cut="active"]` — never the SignalCut debug hook.
+ *
+ * Server Component. No JS animation loop. Title-card placement wraps
+ * LogoMark `layer="ring"` + `layer="core"` at the mark's existing size.
+ */
+export default function LogoGlobe({
+  className,
+  style,
+  size,
+  decorative = false,
+  children,
+  ring,
+  core,
+}: LogoGlobeProps) {
+  const boxStyle: CSSProperties = { ...style }
+  if (size != null) {
+    const length = typeof size === 'number' ? `${size}px` : size
+    boxStyle.width = length
+    boxStyle.height = length
+  }
+
+  let ringNode: ReactNode = ring
+  let coreNode: ReactNode = core
+
+  if ((ringNode == null || coreNode == null) && isValidElement(children)) {
+    ringNode = cloneLayer(children, 'lf-logo-globe-svg-ring')
+    coreNode = cloneLayer(children, 'lf-logo-globe-svg-core')
+  }
+
+  if (ringNode == null || coreNode == null) return null
+
+  return (
+    <div
+      className={['lf-logo-globe', className].filter(Boolean).join(' ')}
+      style={boxStyle}
+      role={decorative ? undefined : 'img'}
+      aria-label={decorative ? undefined : 'lecturesfrom'}
+      aria-hidden={decorative ? true : undefined}
+    >
+      <div className="lf-logo-globe-layer lf-logo-globe-ring" aria-hidden="true">
+        {ringNode}
+      </div>
+      <div className="lf-logo-globe-layer lf-logo-globe-core" aria-hidden="true">
+        {coreNode}
+      </div>
+    </div>
+  )
+}

@@ -402,6 +402,14 @@ function stopClock() {
   runtime.snowing = false
 }
 
+function setCrossingFlag() {
+  document.documentElement.setAttribute('data-lf-signal-cut', 'active')
+}
+
+function clearCrossingFlag() {
+  document.documentElement.removeAttribute('data-lf-signal-cut')
+}
+
 function revertTear() {
   const root = document.documentElement
   root.classList.remove('lf-sc-tearing', 'lf-sc-tearing-first', 'lf-sc-tearing-repeat')
@@ -443,6 +451,7 @@ function teardown() {
   if (runtime.tearingDown) {
     clearTimers()
     revertTear()
+    clearCrossingFlag()
     removeOverlay()
     return
   }
@@ -451,6 +460,7 @@ function teardown() {
   try {
     clearTimers()
     revertTear()
+    clearCrossingFlag()
     removeOverlay()
     runtime.pushed = false
   } finally {
@@ -592,6 +602,7 @@ function playCut(req: CutRequest): boolean {
   runtime.tearingDown = false
   runtime.generation += 1
   const gen = runtime.generation
+  setCrossingFlag()
   runtime.pushed = false
   runtime.tearReverted = false
   runtime.snowIndex = 0

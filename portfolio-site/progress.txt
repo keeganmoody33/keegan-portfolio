@@ -1,10 +1,15 @@
+COMPLETED (2026-09-26 — LogoGlobe + lockup clip):
+- Entrance lockup is 700ms opacity + `scaleX` from the left; resting letter-spacing stays `-0.045em`. Slot overflow is visible so no glyph clips at 320–1440.
+- `LogoGlobe` Server Component: static ring, core `rotateY` 24s linear infinite, perspective 4× box, paused via `html[data-lf-signal-cut="active"]`. Title card wraps existing `LogoMark` `layer="ring"` + `layer="core"` without changing mark size or placement.
+- SignalCut sets `data-lf-signal-cut="active"` for the whole crossing and removes it in `teardown()`. Pause is CSS-only, never `window.__lfSignalCut`.
+
 COMPLETED (2026-09-26 — lecturesfrom logo mark):
 - Server Component `components/house/LogoMark.tsx` on the root title card (decorative, 2rem, outside the wordmark clip slot)
 - Groups `#lf-ring` / `#lf-core` locked; `layer` prop for Motion's stacked globe wrappers
 - Favicon/app icon from the same SVG: `app/icon.svg` (prefers-color-scheme), `app/favicon.ico` 16/32/48, `app/apple-icon.png` 180
 - House OG/twitter still (1200×630) in `app/(house)/` so `/keeganmoody33` keeps `/og.jpg`
 - Canonical vector: `brand/lecturesfrom-mark.svg`; regenerate with `npm run generate:brand`
-- Did not implement globe spin or the entrance-lockup fix
+
 
 COMPLETED (2026-09-26 — house UX F01–F06):
 - Wordmark scales to its container (`min(12rem, 17.2cqi)`); no horizontal clip at 375/768/1024

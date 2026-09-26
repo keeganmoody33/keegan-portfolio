@@ -233,7 +233,9 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 .house-wordmark-slot {
   container-type: inline-size;
   width: 100%;
-  overflow-x: clip;
+  /* Transform lockup never expands layout. Visible overflow so a scaleX
+     entrance cannot clip glyphs the way letter-spacing + overflow-x: clip did. */
+  overflow-x: visible;
 }
 
 .house-wordmark {
@@ -244,6 +246,10 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   white-space: nowrap;
   /* 12rem on wide desktops; scale to the slot so 12 glyphs never overflow. */
   font-size: clamp(2.5rem, 14.8vw, 12rem);
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  transform-origin: 0% 50%;
   animation: houseLockup 700ms ease-out both;
 }
 
@@ -254,12 +260,22 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 }
 
 @keyframes houseLockup {
-  from { opacity: 0; letter-spacing: 0.28em; }
-  to { opacity: 1; letter-spacing: -0.045em; }
+  from {
+    opacity: 0;
+    transform: scaleX(1.325);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .house-wordmark { animation: none; }
+  .house-wordmark {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .house-hairline {
@@ -303,4 +319,75 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 
 .house-spine-parked:hover {
   opacity: 1;
+}
+
+/*
+ * LogoGlobe — ring static, core rotateY. SVG contract: square viewBox,
+ * <g id="lf-ring"> outer circle, <g id="lf-core"> everything else,
+ * strokes currentColor. Duplicate the SVG once per layer.
+ */
+.lf-logo-globe {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+  container-type: size;
+  perspective: 400cqw;
+  perspective-origin: 50% 50%;
+}
+
+/* Keep the title-card mark at 2rem when LogoGlobe also carries .house-logo-mark. */
+.lf-logo-globe.house-logo-mark {
+  width: 2rem;
+  height: 2rem;
+}
+
+.lf-logo-globe-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.lf-logo-globe-layer .house-logo-mark {
+  width: 100%;
+  height: 100%;
+}
+
+.lf-logo-globe-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.lf-logo-globe-ring [id='lf-core'] {
+  visibility: hidden;
+}
+
+.lf-logo-globe-core [id='lf-ring'] {
+  visibility: hidden;
+}
+
+.lf-logo-globe-core {
+  transform-origin: 50% 50%;
+  transform-style: flat;
+  backface-visibility: visible;
+  will-change: transform;
+  animation: lf-logo-globe-spin 24s linear infinite;
+}
+
+@keyframes lf-logo-globe-spin {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(-360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lf-logo-globe-core {
+    animation: none;
+    will-change: auto;
+    transform: none;
+  }
+}
+
+html[data-lf-signal-cut='active'] .lf-logo-globe-core {
+  animation-play-state: paused;
 }
