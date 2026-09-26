@@ -1,3 +1,9 @@
+COMPLETED (2026-09-26 — QA Gate tap targets):
+- Nav Ask AI is `inline-flex min-h-11 items-center` (44px tall; look unchanged beyond height)
+- Banner rotator dots keep a 6px visible span inside a 24×24 (`h-6 w-6`) hit box; no negative margin
+- Dotted panel content pad is `pr-16` so two 24×24 hits at `right-3` + `gap-1` stay in the gutter and miss `/ 7d`
+- Career nav at 320 still wraps into rows (`flex-wrap` + `whitespace-nowrap`); do not force one row
+
 COMPLETED (2026-09-26 — banner inert + full-bleed + YT mount timeout):
 - Inactive/hidden BannerRotator panels get `inert` with `aria-hidden` (axe aria-hidden-focus)
 - Rotator root is unpadded; `pr-12` is on panel content only when dots show

@@ -72,7 +72,7 @@ Top to bottom, this is exactly what renders on the main page:
    ├── Navigation Header
    │   ├── Logo: /lecturesfrom (SignalCut link to `/`, direction toHouse)
    │   ├── Links: XP, Projects [P], Contact [C] (whitespace-nowrap; right group gap-x-3 gap-y-2)
-   │   └── "Ask AI" button
+   │   └── "Ask AI" button (`min-h-11`, 44px tap target)
    ├── Hero Section
    │   ├── Tagline lines (3)
    │   ├── SprayText (first name, lime)
@@ -251,8 +251,8 @@ Land on /keeganmoody33
 
 1. Each widget reports `useBannerAvailability(true|false)`
 2. Failed, empty, or error-boundary panels are removed from rotation and from the dots
-3. Two or more available panels: 8s auto-rotate (skipped under `prefers-reduced-motion: reduce`); dots stay for manual switching. Inactive panels get `aria-hidden` + `inert` so tab focus cannot land on invisible controls. Content uses `pr-12` so `/ 7d` clears the dots; the bar itself is full-bleed.
-4. One available panel: show it statically, no dots, no extra `pr-12`
+3. Two or more available panels: 8s auto-rotate (skipped under `prefers-reduced-motion: reduce`); dots stay for manual switching. Inactive panels get `aria-hidden` + `inert` so tab focus cannot land on invisible controls. Content uses `pr-16` so `/ 7d` clears the 24×24 dot hit areas; the bar itself is full-bleed.
+4. One available panel: show it statically, no dots, no extra `pr-16`
 5. Zero available panels: rotator returns `null` — the banner row collapses; Marquee remains
 
 **GitHub Activity error:** `/api/github` 5xx (including GitHub's unauthenticated 60/hr 502) → component returns `null` and reports unavailable. No blank 8s slot.
@@ -288,7 +288,7 @@ Land on /keeganmoody33
 |---------|---------|--------|
 | Chat modal | Overlay on page | Same (full overlay) |
 | Navigation | Horizontal top bar | Same; items `whitespace-nowrap`, right group `gap-x-3 gap-y-2` |
-| BannerRotator | Full-bleed bar; `pr-12` on content only when dots show | Same |
+| BannerRotator | Full-bleed bar; `pr-16` on content only when dots show | Same |
 | Timeline | Full-width cards | Same layout (no responsive changes) |
 | JD Analyzer | Full-width textarea | Same layout |
 

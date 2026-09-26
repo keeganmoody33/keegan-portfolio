@@ -196,7 +196,7 @@ The two widget layers (YouTubePlayer, GitHubActivity) live inside a `BannerRotat
 - **Interaction:** Pauses on hover; dot indicators at right edge for manual switching. Dots stay usable under reduced motion.
 - **Mounting:** All children stay mounted (critical for YouTubePlayer iframe audio continuity); inactive panels get `opacity-0 absolute pointer-events-none`, `aria-hidden`, and `inert` so keyboard focus cannot land on invisible controls
 - **Height:** Every available panel wrapper is `min-h-12` so YouTube (41px) and GitHub (48px) do not shift the page when they swap.
-- **Padding:** Rotator root has no horizontal padding so the widget bar/border is full-bleed. When dots are shown, panel *content* uses `pr-12` (`useBannerPanelPad`) so `/ 7d` clears the 32px dots at every width. One panel / no dots → no extra pad.
+- **Padding:** Rotator root has no horizontal padding so the widget bar/border is full-bleed. When dots are shown, panel *content* uses `pr-16` (`useBannerPanelPad`) so `/ 7d` clears the 24×24 dot hit areas (`right-3` + 24 + 4 + 24 = 64px). Visible dots stay `h-1.5 w-1.5`. One panel / no dots → no extra pad.
 - **Failures:** Widgets call `useBannerAvailability`. A null/error/empty render drops that slide and its dot. One panel left → static, no dots. Zero panels left → rotator returns `null` (banner row collapses). `WidgetErrorBoundary` also reports unavailable on catch.
 - **PostHog:** Fires `banner_panel_switched` on manual dot clicks with `from`/`to` labels
 
@@ -265,6 +265,7 @@ Animated 60px x 60px grid pattern on body:
 **Ask AI (Orange CTA):**
 - `border: 2px dashed var(--accent-orange)`, `bg` transparent
 - Hover: fills with orange, border becomes solid
+- Nav control is `inline-flex min-h-11 items-center` so the tap target is at least 44px without changing padding or type
 
 **Ghost (Secondary):**
 - `bg` transparent, `border` dim
@@ -357,7 +358,7 @@ Person-page components render the same layout across breakpoints.
 | Component | Mobile | Desktop (md+) |
 |-----------|--------|----------------|
 | Career nav items | `whitespace-nowrap`; right group `gap-x-3 gap-y-2` | `sm:gap-x-8` |
-| BannerRotator | Full-bleed bar; `pr-12` on content only when dots show | Same |
+| BannerRotator | Full-bleed bar; `pr-16` on content only when dots show | Same |
 | All person-page components | Same layout | Same layout |
 
 ### Responsive Priorities (future)

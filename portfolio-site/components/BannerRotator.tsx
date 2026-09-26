@@ -29,11 +29,11 @@ export function useBannerAvailability(available: boolean) {
   }, [available, report])
 }
 
-/** Inner content pad: `pr-12` only when dots are visible so the bar stays full-bleed. */
+/** Inner content pad: `pr-16` only when dots are visible so the bar stays full-bleed. */
 export function useBannerPanelPad() {
   const { showDots } = useContext(BannerChromeContext)
   return showDots
-    ? 'max-w-7xl mx-auto py-2 pl-4 pr-12'
+    ? 'max-w-7xl mx-auto py-2 pl-4 pr-16'
     : 'max-w-7xl mx-auto px-4 py-2'
 }
 
@@ -196,18 +196,18 @@ export default function BannerRotator({
         })}
 
         {showDots && (
-          <div className="absolute right-4 top-1/2 z-20 flex -translate-y-1/2 items-center gap-1">
+          <div className="absolute right-3 top-1/2 z-20 flex -translate-y-1/2 items-center gap-1">
             {visibleIndices.map((i) => (
               <button
                 key={i}
                 onClick={() => goTo(i)}
-                className="p-1.5 -m-0.5"
+                className="relative flex h-6 w-6 shrink-0 items-center justify-center"
                 aria-label={labels[i] ? `Switch to ${labels[i]}` : `Switch to banner ${i + 1}`}
                 title={labels[i] || undefined}
               >
                 <span
                   className={`
-                    block h-1.5 w-1.5 rounded-full transition-all duration-200
+                    pointer-events-none block h-1.5 w-1.5 rounded-full transition-all duration-200
                     ${i === activeIndex
                       ? 'bg-[var(--accent-lime)]'
                       : 'bg-[var(--border-dim)] hover:bg-[var(--text-muted)]'

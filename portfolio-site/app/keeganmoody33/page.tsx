@@ -154,7 +154,7 @@ export default function Home() {
               <button
                 onClick={handleOpenChat}
                 aria-label="Ask AI"
-                className="ask-ai-btn whitespace-nowrap px-3 py-2 sm:px-4 font-mono text-sm"
+                className="ask-ai-btn inline-flex min-h-11 items-center whitespace-nowrap px-3 py-2 sm:px-4 font-mono text-sm"
               >
                 Ask AI
               </button>
