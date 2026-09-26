@@ -46,7 +46,7 @@ function cloneLayer(svg: LogoGlobeSvg, extra: string): LogoGlobeSvg {
 
 /**
  * Lecturesfrom logo globe. The ring stays still. The core turns west→east
- * with CSS `rotateY` (24s linear infinite). Pause is CSS-only via
+ * with CSS `rotateY(360deg)` (24s linear infinite). Pause is CSS-only via
  * `html[data-lf-signal-cut="active"]` — never the SignalCut debug hook.
  *
  * Server Component. No JS animation loop. Title-card placement wraps

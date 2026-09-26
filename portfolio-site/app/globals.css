@@ -412,7 +412,8 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 
 @keyframes lf-logo-globe-spin {
   from { transform: rotateY(0deg); }
-  to { transform: rotateY(-360deg); }
+  /* Positive rotateY: near half of the plane moves left → right (west → east). */
+  to { transform: rotateY(360deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
