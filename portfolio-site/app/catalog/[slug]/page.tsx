@@ -5,6 +5,7 @@ import HouseShell from '@/components/house/HouseShell'
 import Sleeve from '@/components/house/Sleeve'
 import { getCatalogPageSleeves, getSleeveBySlug } from '@/lib/catalog'
 import { JsonLd, sleeveJsonLd } from '@/lib/jsonld'
+import { houseMetadata } from '@/lib/metadata'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
@@ -24,10 +25,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!sleeve || sleeve.slug === 'collection') {
     return { title: 'not found — lecturesfrom' }
   }
-  return {
-    title: `${sleeve.title} — lecturesfrom`,
-    description: sleeve.aside,
-  }
+  return houseMetadata(`/catalog/${sleeve.slug}`, `${sleeve.title} — lecturesfrom`, sleeve.aside)
 }
 
 export default async function SleevePage({ params }: PageProps) {

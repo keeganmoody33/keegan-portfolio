@@ -2,11 +2,13 @@ import HouseFooter from '@/components/house/HouseFooter'
 import HouseRail from '@/components/house/HouseRail'
 import HouseShell from '@/components/house/HouseShell'
 import type { Metadata } from 'next'
+import { houseMetadata } from '@/lib/metadata'
 
-export const metadata: Metadata = {
-  title: 'legal — lecturesfrom',
-  description: 'lecturesfrom LLC. Atlanta, Georgia. a garage, not a studio.',
-}
+export const metadata: Metadata = houseMetadata(
+  '/legal',
+  'legal — lecturesfrom',
+  'lecturesfrom LLC. Atlanta, Georgia. a garage, not a studio.'
+)
 
 export default function LegalPage() {
   return (

@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
-import { aiCatalogJson } from '@/lib/markdown'
+import { discoveryDocument } from '@/lib/markdown'
 
 export function GET() {
-  return NextResponse.json(aiCatalogJson())
+  return NextResponse.json(discoveryDocument(), {
+    headers: {
+      'Cache-Control': 'public, max-age=3600',
+    },
+  })
 }

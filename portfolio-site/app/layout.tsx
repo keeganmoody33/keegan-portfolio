@@ -1,12 +1,9 @@
 import type { Metadata } from 'next'
 import { PostHogProvider } from './providers'
-import { HOUSE_DESCRIPTION, HOUSE_TITLE } from '@/lib/site'
+import { rootHouseMetadata } from '@/lib/metadata'
 import './globals.css'
 
-export const metadata: Metadata = {
-  title: HOUSE_TITLE,
-  description: HOUSE_DESCRIPTION,
-}
+export const metadata: Metadata = rootHouseMetadata()
 
 export default function RootLayout({
   children,

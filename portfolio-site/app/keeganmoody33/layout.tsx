@@ -1,10 +1,7 @@
 import type { Metadata } from 'next'
-import { PERSON_DESCRIPTION, PERSON_TITLE } from '@/lib/site'
+import { personMetadata } from '@/lib/metadata'
 
-export const metadata: Metadata = {
-  title: PERSON_TITLE,
-  description: PERSON_DESCRIPTION,
-}
+export const metadata: Metadata = personMetadata()
 
 export default function PersonLayout({
   children,

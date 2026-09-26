@@ -1,14 +1,22 @@
-import { SITE_URL } from '@/lib/site'
+import { SITE_URL, HOUSE_SAME_AS } from '@/lib/site'
 import { getCatalogPageSleeves, sleeves } from '@/lib/catalog'
+
+const organizationId = `${SITE_URL}/#organization`
 
 export function houseOrganizationJsonLd() {
   const works = sleeves.map((sleeve) => ({
-    '@type': sleeve.format === 'physical' ? 'Product' : sleeve.format === 'software' ? 'SoftwareApplication' : 'CreativeWork',
+    '@type':
+      sleeve.format === 'physical'
+        ? 'Product'
+        : sleeve.format === 'software'
+          ? 'SoftwareApplication'
+          : 'CreativeWork',
     name: sleeve.title,
     url:
       sleeve.slug === 'collection'
         ? `${SITE_URL}/collection`
         : `${SITE_URL}/catalog/${sleeve.slug}`,
+    isPartOf: { '@id': organizationId },
   }))
 
   return {
@@ -16,22 +24,19 @@ export function houseOrganizationJsonLd() {
     '@graph': [
       {
         '@type': 'Organization',
+        '@id': organizationId,
         name: 'lecturesfrom',
         legalName: 'lecturesfrom LLC',
         url: SITE_URL,
+        foundingDate: '2025',
         address: {
           '@type': 'PostalAddress',
           addressLocality: 'Atlanta',
-          addressRegion: 'Georgia',
+          addressRegion: 'GA',
           postalCode: '30316',
           addressCountry: 'US',
         },
-        sameAs: [
-          'https://x.com/lecturesfrom',
-          'https://github.com/lecturesfrom',
-          'https://github.com/keeganmoody33',
-          'https://www.linkedin.com/company/lecturesfrom',
-        ],
+        sameAs: [...HOUSE_SAME_AS],
         founder: {
           '@type': 'Person',
           name: 'Keegan Moody',
@@ -75,6 +80,7 @@ export function sleeveJsonLd(slug: string) {
     url: `${SITE_URL}/catalog/${sleeve.slug}`,
     isPartOf: {
       '@type': 'Organization',
+      '@id': organizationId,
       name: 'lecturesfrom',
       url: SITE_URL,
     },

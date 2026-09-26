@@ -24,6 +24,7 @@ Sitemap: https://www.lecturesfrom.com/sitemap.xml
 LLMS: https://www.lecturesfrom.com/llms.txt
 `
 
+// Route handler instead of app/robots.ts so the nonstandard LLMS line can be emitted.
 export function GET() {
   return new Response(BODY, {
     headers: {
