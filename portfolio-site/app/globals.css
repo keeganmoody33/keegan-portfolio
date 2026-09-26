@@ -216,6 +216,20 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   }
 }
 
+.house-logo-mark {
+  width: 2rem;
+  height: 2rem;
+  aspect-ratio: 1;
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.house-logo-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .house-wordmark-slot {
   container-type: inline-size;
   width: 100%;

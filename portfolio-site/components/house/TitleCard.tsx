@@ -1,10 +1,13 @@
 import HouseRail from '@/components/house/HouseRail'
+import LogoMark from '@/components/house/LogoMark'
 
 export default function TitleCard() {
   return (
     <header className="pb-8">
       <HouseRail />
       <div className="mt-16 px-6 sm:mt-24 sm:px-10">
+        {/* decorative: the h1 wordmark is the accessible name. Do not add aria-label. */}
+        <LogoMark decorative className="mb-6" />
         <div className="house-wordmark-slot">
           <h1 className="house-wordmark">lecturesfrom</h1>
         </div>
