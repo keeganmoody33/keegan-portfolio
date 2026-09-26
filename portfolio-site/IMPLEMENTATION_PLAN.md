@@ -1,7 +1,7 @@
 # Implementation Plan — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-07-24
-**Status:** Phase 0 complete (MVP shipped). Phases 1-5 sequenced below.
+**Last Updated:** 2026-09-26
+**Status:** House cut implemented (title card, sleeves, full crate, signal cut, agent files). Person page frozen except wordmark.
 **Previous plan:** `IMPLEMENTATION_PLAN_DISCOGS_ARCHIVED.md` (completed Discogs widget build)
 
 ---

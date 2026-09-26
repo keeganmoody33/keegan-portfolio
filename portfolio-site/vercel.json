@@ -9,6 +9,11 @@
       "source": "/keeganMoody33",
       "destination": "/keeganmoody33",
       "permanent": true
+    },
+    {
+      "source": "/keegan",
+      "destination": "/keeganmoody33",
+      "statusCode": 301
     }
   ]
 }

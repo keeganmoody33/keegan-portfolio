@@ -1,6 +1,16 @@
 # Lessons Learned
 
-Updated: 2026-08-22
+Updated: 2026-09-26
+
+## House cut (2026-09-26)
+
+- **Never restore `hasVisitedPortfolio`.** The old root wrote that localStorage key and `router.replace('/keeganmoody33')` on return visits. The house root must stay on `/` even if that key is still set in a visitor's browser. Grep new code paths for `hasVisitedPortfolio` and `router.replace` before shipping.
+- **House `/` must be a Server Component.** Title card copy (`lecturesfrom`, `not a studio`, sleeve names) has to be in the first HTML response. A client-only root scores empty for agents (Ora). Optional lockup animation is CSS on server-rendered text.
+- **SignalCut is not a layout animation.** Mount it only on the two boundary links (crate row 04, person wordmark). `sessionStorage` key is `lf-signal-cut-count`. 2D canvas/CSS noise only — no three.js, no video.
+- **Two dialects.** Do not restyle the person page when adding house chrome. Print orange `#E23D00` on the house; lime stays on `/keeganmoody33`.
+- **Discogs has two modes.** `/api/discogs` stays recent-5 for RecentDigs. `/api/discogs/collection` paginates the full crate. Do not collapse them.
+- **Next 16 `MetadataRoute.Robots` cannot emit `LLMS:`.** Use `app/robots.txt/route.ts` if the agent file must include that nonstandard line. Do not keep both `app/robots.ts` and `app/robots.txt/route.ts`.
+- **House components are Server Components by default.** The old "all components are `'use client'`" rule is for the person page. Root `/` must stay a Server Component; client islands are SignalCut (and sleeve flip if added).
 
 ## Schema
 

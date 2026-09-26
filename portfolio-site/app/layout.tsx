@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
-import './globals.css'
 import { PostHogProvider } from './providers'
+import { HOUSE_DESCRIPTION, HOUSE_TITLE } from '@/lib/site'
+import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Keegan Moody | lecturesfrom',
-  description: 'GTM Engineer. I build go-to-market infrastructure from scratch. Query the system directly.',
+  title: HOUSE_TITLE,
+  description: HOUSE_DESCRIPTION,
 }
 
 export default function RootLayout({

@@ -1,25 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPostHogClient } from '@/lib/posthog-server'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { fetchRecentReleases } from '@/lib/discogs'
+import { fetchFullCollection, peekLastGoodCollection } from '@/lib/discogs'
 
 export async function GET(request: NextRequest) {
   const posthog = getPostHogClient()
   const distinctId = request.headers.get('X-POSTHOG-DISTINCT-ID') || 'anonymous_server'
 
-  const rateLimit = checkRateLimit(request, 'api/discogs', 30, 60 * 1000)
+  const rateLimit = checkRateLimit(request, 'api/discogs/collection', 30, 60 * 1000)
   if (!rateLimit.success) {
+    const cached = peekLastGoodCollection()
     posthog.capture({
       distinctId,
       event: 'api_rate_limited',
       properties: {
-        route: 'api/discogs',
+        route: 'api/discogs/collection',
         ip:
           (request as NextRequest & { ip?: string }).ip ||
           request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
           'unknown',
       },
     })
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: { 'Retry-After': String(rateLimit.retryAfter) },
+      })
+    }
     return NextResponse.json(
       { error: 'Too many requests' },
       { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfter) } }
@@ -27,43 +33,34 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const collection = await fetchFullCollection()
     posthog.capture({
       distinctId,
-      event: 'api_discogs_request',
+      event: 'api_discogs_collection_request',
       properties: {
         source: 'api_route',
+        items: collection.pagination.items,
       },
     })
-
-    const releases = await fetchRecentReleases(5)
-
-    return NextResponse.json(
-      releases.map((release) => ({
-        title: release.title,
-        artist: release.artist,
-        year: release.year,
-        thumbnail: release.thumbnail,
-        discogsUrl: release.discogsUrl,
-      }))
-    )
+    return NextResponse.json(collection)
   } catch (error) {
     const status = (error as Error & { status?: number }).status
     const retryAfter = (error as Error & { retryAfter?: string }).retryAfter
+    const cached = peekLastGoodCollection()
 
     posthog.capture({
       distinctId,
       event: 'api_discogs_error',
       properties: {
-        error_type:
-          error instanceof Error && error.message.includes('DISCOGS_TOKEN')
-            ? 'configuration_missing'
-            : status === 429
-              ? 'discogs_rate_limited'
-              : 'discogs_api_error',
+        error_type: status === 429 ? 'discogs_rate_limited' : 'internal_error',
         error_message: error instanceof Error ? error.message : 'Unknown error',
-        status_code: status,
+        route: 'api/discogs/collection',
       },
     })
+
+    if (cached) {
+      return NextResponse.json(cached)
+    }
 
     if (status === 429) {
       return NextResponse.json(

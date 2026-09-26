@@ -1,6 +1,6 @@
 # App Flow — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-07-22
+**Last Updated:** 2026-09-26
 **Framework:** Next.js (App Router)
 **Deployment:** Vercel (auto-deploy on push to main)
 
@@ -12,8 +12,13 @@
 
 | Route            | File                         | What It Shows                                                   |
 |------------------|------------------------------|-----------------------------------------------------------------|
-| `/`              | `app/page.tsx`               | Turntable loading gate — click tonearm to start music and enter |
-| `/keeganmoody33` | `app/keeganmoody33/page.tsx` | Main portfolio page (all content on one page)                   |
+| `/`              | `app/page.tsx`               | House title card + crate (Server Component). No turntable. No return-visit redirect. |
+| `/catalog`       | `app/catalog/page.tsx`       | Crate permalink (same spines as `/`)                            |
+| `/catalog/[slug]`| `app/catalog/[slug]/page.tsx`| Sleeve (cover, liner, tracks). Unknown slugs 404.               |
+| `/collection`    | `app/collection/page.tsx`    | Full live Discogs crate                                         |
+| `/legal`         | `app/legal/page.tsx`         | Entity + long about                                             |
+| `/keeganmoody33` | `app/keeganmoody33/page.tsx` | Principal / person page (Ask AI, JD Fit Analyzer, timeline)     |
+| `/keegan`        | next.config + vercel.json    | 301 → `/keeganmoody33`                                          |
 
 ### Vercel Routing Rules (vercel.json)
 
@@ -21,15 +26,17 @@
 |----------------|------------------|------------------|---------------------|
 | Redirect (301) | `/KeeganMoody33` | `/keeganmoody33` | Case normalization  |
 | Redirect (301) | `/keeganMoody33` | `/keeganmoody33` | Case normalization  |
+| Redirect (301) | `/keegan`        | `/keeganmoody33` | Short alias         |
 
-**Result:** Visitors land on `lecturesfrom.com` and see the turntable gate. After the needle drop they are routed to `lecturesfrom.com/keeganmoody33`, the portfolio.
+**Result:** Visitors land on `lecturesfrom.com` and see the house title card + crate. `/` never redirects to the person page. The person page is at `/keeganmoody33`. House ↔ person crossings use `SignalCut` (not a global layout animation). Ask AI and JD Fit Analyzer stay on the person page only.
 
 ### API Routes
 
 | Route | Method | File | Purpose |
 |-------|--------|------|---------|
 | `/api/chat` | POST | `app/api/chat/route.ts` | Proxy to Supabase `chat` Edge Function |
-| `/api/discogs` | GET | `app/api/discogs/route.ts` | Proxy to Discogs API |
+| `/api/discogs` | GET | `app/api/discogs/route.ts` | Recent-5 Discogs list for person-page RecentDigs |
+| `/api/discogs/collection` | GET | `app/api/discogs/collection/route.ts` | Full paginated Discogs crate (`revalidate: 300`) |
 | `/api/github` | GET | `app/api/github/route.ts` | Proxy to GitHub public events API |
 | `/api/jd-analyzer` | POST | `app/api/jd-analyzer/route.ts` | Proxy to Supabase `jd-analyzer` Edge Function |
 
@@ -51,7 +58,7 @@ PostHog initializes on mount if `NEXT_PUBLIC_POSTHOG_KEY` exists. No-ops silentl
 
 ---
 
-## Component Render Order (page.tsx)
+## Component Render Order (`/keeganmoody33`)
 
 Top to bottom, this is exactly what renders on the main page:
 

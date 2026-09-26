@@ -1,3 +1,12 @@
+COMPLETED (2026-09-26 — lecturesfrom house cut):
+- Replaced root `/` turntable + hasVisitedPortfolio redirect with a Server Component title card + crate
+- Seed sleeves in lib/catalog.ts: punch2pen, proper-respect, yadiggg, collection, plus km-33 principal row
+- Routes: /catalog, /catalog/[slug], /collection (full Discogs crate), /legal, /keegan 301 → /keeganmoody33
+- SignalCut only on house ↔ person crossings (sessionStorage lf-signal-cut-count)
+- Person page wordmark is now a SignalCut link to `/`; Ask AI + JD Fit Analyzer stay on /keeganmoody33
+- Agent files: robots.txt/route.ts (LLMS: line; MetadataRoute.Robots cannot emit it), sitemap.ts, llms.txt, markdown mirrors, JSON-LD, /.well-known/ai-catalog.json
+- Two visual dialects: house near-black + print orange; person lime terminal untouched
+
 COMPLETED (2026-08-22 session — live Supabase sync execution):
 - Received owner sign-off and executed `sql/2026-08-22_sync_recent_experiences.sql` against production project `cvkcwvmlnghwwvdqudod` via equivalent PostgREST calls.
 - Synced four experiences, bringing `experiences` to 15 rows ordered by `display_order`; inserted 11 new skills, bringing `skills` to 25 rows.

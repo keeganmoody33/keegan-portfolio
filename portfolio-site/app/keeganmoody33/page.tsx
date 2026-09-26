@@ -12,6 +12,7 @@ import GitHubActivity from '@/components/GitHubActivity'
 import YouTubePlayer from '@/components/YouTubePlayer'
 import BannerRotator from '@/components/BannerRotator'
 import posthog from 'posthog-js'
+import SignalCut from '@/components/SignalCut'
 
 /** Error boundary — Discogs API failure never crashes the page */
 class WidgetErrorBoundary extends Component<
@@ -131,7 +132,15 @@ export default function Home() {
           <nav className="flex items-center justify-between mb-12 sm:mb-16">
             <div className="flex items-center gap-2">
               <span className="text-[var(--text-muted)] font-mono text-sm">/</span>
-              <span className="text-[var(--text-bright)] font-space">lecturesfrom</span>
+              <SignalCut
+                href="/"
+                fromId="km-33"
+                toId="lf-01"
+                className="text-[var(--text-bright)] font-space"
+                aria-label="lecturesfrom"
+              >
+                lecturesfrom
+              </SignalCut>
             </div>
             <div className="flex items-center gap-3 sm:gap-8">
               <a href="#experience" className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">

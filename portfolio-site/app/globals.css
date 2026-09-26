@@ -154,3 +154,87 @@ body {
 .log-success { color: #4ADE80; }
 .log-warn { color: var(--accent-orange); }
 .log-info { color: var(--text-muted); }
+
+/* House dialect — near-black + print orange. Do not leak lime terminal chrome. */
+.house {
+  --house-bg: #0a0a0a;
+  --house-ink: #ececec;
+  --house-muted: #8a8a8a;
+  --house-dim: #5c5c5c;
+  --house-line: #242424;
+  --house-orange: #E23D00;
+  min-height: 100vh;
+  background: var(--house-bg);
+  color: var(--house-ink);
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+html:has(.house) body {
+  background-color: #0a0a0a;
+  background-image: none;
+  animation: none;
+  color: #ececec;
+}
+
+html:has(.house)::-webkit-scrollbar-track { background: #0a0a0a; }
+html:has(.house)::-webkit-scrollbar-thumb {
+  background: #1a1a1a;
+  border: 1px solid #E23D00;
+}
+html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
+
+.house-meta {
+  font-family: 'Roboto Mono', monospace;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-size: 0.625rem;
+  color: var(--house-muted);
+}
+
+.house-wordmark {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 0.85;
+  animation: houseLockup 700ms ease-out both;
+}
+
+@keyframes houseLockup {
+  from { opacity: 0; letter-spacing: 0.28em; }
+  to { opacity: 1; letter-spacing: -0.045em; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .house-wordmark { animation: none; }
+}
+
+.house-hairline {
+  border-color: var(--house-line);
+}
+
+.house-spine {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr auto auto auto;
+  gap: 1rem;
+  align-items: baseline;
+  border-top: 1px solid var(--house-line);
+  padding: 0.7rem 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.house-spine:last-child {
+  border-bottom: 1px solid var(--house-line);
+}
+
+.house-spine:hover .house-spine-title {
+  color: var(--house-orange);
+}
+
+.house-spine-parked {
+  opacity: 0.4;
+}
+
+.house-spine-parked:hover {
+  opacity: 1;
+}

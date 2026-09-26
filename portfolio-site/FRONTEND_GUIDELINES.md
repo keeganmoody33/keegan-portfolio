@@ -1,6 +1,6 @@
 # Frontend Guidelines — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-07-24
+**Last Updated:** 2026-09-26
 **Supersedes:** `docs/DESIGN_PLAYBOOK.md` (archived -- all content folded into this doc)
 **CSS Framework:** Tailwind CSS 3.4.19 + CSS Custom Properties
 **Fonts:** Google Fonts (Space Grotesk, Roboto Mono, Roboto Slab)
@@ -16,6 +16,11 @@
 **Aesthetic:** Hip-hop / zine / street culture influence. Organized chaos -- dense but navigable. Hand-drawn energy, DIY, graffiti-adjacent. Not corporate. Not generic dark mode template. A person you'd want to grab coffee with.
 
 **First impression goal (3 seconds):** "What's happening here? I want to keep looking." Not impressed. Not sold. **Intrigued.**
+
+**Two visual dialects. Do not homogenize.**
+
+- **House** (`/`, `/catalog`, `/collection`, `/legal`): near-black `#0a0a0a`, grotesque / tight-tracked meta, one accent = print orange `#E23D00`. Hairlines. No terminal chrome. No lime spray type. Display name always lowercase `lecturesfrom` (`lecturesfrom LLC` allowed in footer/legal).
+- **Person** (`/keeganmoody33`): existing lime/orange terminal. Untouched except the wordmark becoming a SignalCut link to `/`.
 
 **Information density:** Sparse surface, dense on engagement. First screen is clean, intriguing, spacious. Interaction reveals depth.
 

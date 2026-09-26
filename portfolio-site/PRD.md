@@ -1,14 +1,14 @@
 # PRD — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-07-24
-**Status:** MVP Shipped, Iterating
-**Live URL:** [lecturesfrom.com/keeganmoody33](https://lecturesfrom.com/keeganmoody33)
+**Last Updated:** 2026-09-26
+**Status:** House cut in preview. Person page remains at /keeganmoody33.
+**Live URL:** [lecturesfrom.com](https://www.lecturesfrom.com) (house) · [lecturesfrom.com/keeganmoody33](https://www.lecturesfrom.com/keeganmoody33) (principal)
 
 ---
 
 ## Product Definition
 
-An AI-queryable portfolio site for Keegan Moody at **lecturesfrom.com**. Not a static resume. Not a content brand. An interactive system where recruiters, hiring managers, and potential collaborators can query Keegan's background directly -- via AI chat, JD fit analysis, or career timeline browsing.
+An AI-queryable portfolio for Keegan Moody, now entered through the lecturesfrom house. `/` is the company title card and crate. The principal channel remains `/keeganmoody33` with chat, JD fit analysis, and career timeline.
 
 The site is the product. The product demonstrates the builder.
 
@@ -46,7 +46,11 @@ Everything that serves the core purpose: help visitors understand who Keegan is,
 | Dark/Light Theme Toggle | ActivityStream theme buttons, CSS custom properties | **Shipped** |
 | YouTube Persistent Player | `YouTubePlayer.tsx`, `types/youtube.d.ts` | **Shipped** |
 | GitHub Activity Widget | `GitHubActivity.tsx`, `/api/github` | **Shipped** |
-| Turntable Loading Page | `TurntableCanvas.tsx`, root `/` gate → `/keeganmoody33` | **Shipped** |
+| Turntable Loading Page | `TurntableCanvas.tsx` (left on disk, not mounted at `/`) | **Retired from `/`** — 2026-09-26 house cut |
+| House title card + crate | `app/page.tsx`, `lib/catalog.ts`, `components/house/*` | **Shipped (this PR)** |
+| Sleeves | `/catalog`, `/catalog/[slug]` | **Shipped (this PR)** |
+| Full Discogs crate | `/collection`, `/api/discogs/collection` | **Shipped (this PR)** |
+| SignalCut | `components/SignalCut.tsx` | **Shipped (this PR)** — house ↔ person only |
 
 ### Spec-Locked (Not Yet Built)
 
@@ -73,7 +77,8 @@ These are explicitly **not** what this site is:
 - **Not a blog** -- Keegan has Substack for that
 - **Not a content brand** -- the work matters more than the visibility (per `source-interviews/06_LECTURES_FROM.md`)
 - **Not a job board** -- visitors evaluate Keegan, not the other way around
-- **Not a SaaS product** -- single-candidate portfolio, not a platform
+- **Not a services menu** -- house copy is issued, not "we help teams scale"
+- **Not Ask AI / JD analyzer on the house** -- those stay on `/keeganmoody33`
 
 ---
 

@@ -1,0 +1,22 @@
+# lecturesfrom
+> lecturesfrom is an atlanta llc — a garage, not a studio — that issues gtm systems, software, and physical products. work is catalogued as sleeves. the principal is keegan moody at /keeganmoody33.
+
+## catalog
+- [catalog](https://www.lecturesfrom.com/catalog): crate permalink. sleeves currently in build: punch2pen, proper-respect, yadiggg.
+- [punch2pen](https://www.lecturesfrom.com/catalog/punch2pen): lf-01 software. vocals become a living transcript inside the DAW. [markdown](https://www.lecturesfrom.com/catalog/punch2pen.md)
+- [proper-respect](https://www.lecturesfrom.com/catalog/proper-respect): lf-02 software. evidence proposes. the person confirms. [markdown](https://www.lecturesfrom.com/catalog/proper-respect.md)
+- [yadiggg](https://www.lecturesfrom.com/catalog/yadiggg): lf-03 physical. pocket crate-digger. no phone. no shazam. [markdown](https://www.lecturesfrom.com/catalog/yadiggg.md)
+
+## collection
+- [collection](https://www.lecturesfrom.com/collection): lf-00 issued crate. every release in the lecturesfrom discogs collection, live within a 5-minute revalidate. [markdown](https://www.lecturesfrom.com/collection.md) · [api](https://www.lecturesfrom.com/api/discogs/collection)
+
+## principal
+- [keegan moody](https://www.lecturesfrom.com/keeganmoody33): km-33 principal channel. ask ai and jd fit analyzer live here, not on the house.
+
+## machine
+- [llms.txt](https://www.lecturesfrom.com/llms.txt)
+- [llms.md](https://www.lecturesfrom.com/llms.md)
+- [catalog.md](https://www.lecturesfrom.com/catalog.md)
+- [ai-catalog.json](https://www.lecturesfrom.com/.well-known/ai-catalog.json)
+- [sitemap](https://www.lecturesfrom.com/sitemap.xml)
+- [robots](https://www.lecturesfrom.com/robots.txt)
