@@ -1,6 +1,7 @@
 COMPLETED (2026-09-26 — hidden YouTube iframe out of tab order):
 - Hidden iframe wrapper in YouTubePlayer is `inert` + `aria-hidden`
-- `onReady` sets `player.getIframe().tabIndex = -1`
+- `onReady` (and video-level `onError` if the embed already exists) sets `player.getIframe().tabIndex = -1`
+- Video-level `onError` does not unmount a mounted iframe
 - BannerRotator active panel no longer renders `aria-hidden="false"` (`suppress || undefined`)
 - Visible Play/Pause stays outside the wrapper so audio still works
 

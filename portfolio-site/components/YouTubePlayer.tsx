@@ -228,9 +228,16 @@ export default function YouTubePlayer() {
           persistState()
         },
 
-        onError: () => {
-          console.error('YouTubePlayer: playback error')
-          setError(true)
+        onError: (event: YT.OnErrorEvent) => {
+          console.error('YouTubePlayer: playback error', event.data)
+          // A video-level error must not tear down the embed: the 1×1
+          // iframe stays mounted for audio, and tearing it out races the
+          // inert/tabIndex guards. Script/timeout failures still hide.
+          try {
+            event.target.getIframe().tabIndex = -1
+          } catch {
+            setError(true)
+          }
         },
       },
     })
