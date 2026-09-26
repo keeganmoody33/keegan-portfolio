@@ -244,6 +244,12 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   white-space: nowrap;
   /* 12rem on wide desktops; scale to the slot so 12 glyphs never overflow. */
   font-size: clamp(2.5rem, 14.8vw, 12rem);
+  /* Plain-text rest of "lecturesfrom" at -0.045em is ~5.70em. Letter-spacing
+     trails the last glyph (12 steps). Cap the start so the last glyph stays
+     inside the slot with a 2px margin. Computed on the element (not only
+     inside the keyframe) so cqi resolves in Chrome and Safari. */
+  --lf-rest: 5.70em;
+  --lf-track-from: min(0.28em, calc(-0.045em + (100cqi - var(--lf-rest) - 2px) / 12));
   animation: houseLockup 700ms ease-out both;
 }
 
@@ -254,8 +260,14 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 }
 
 @keyframes houseLockup {
-  from { opacity: 0; letter-spacing: 0.28em; }
-  to { opacity: 1; letter-spacing: -0.045em; }
+  from {
+    opacity: 0;
+    letter-spacing: var(--lf-track-from);
+  }
+  to {
+    opacity: 1;
+    letter-spacing: -0.045em;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -303,4 +315,76 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 
 .house-spine-parked:hover {
   opacity: 1;
+}
+
+/*
+ * LogoGlobe — ring static, core rotateY. SVG contract: square viewBox,
+ * <g id="lf-ring"> outer circle, <g id="lf-core"> everything else,
+ * strokes currentColor. Duplicate the SVG once per layer.
+ */
+.lf-logo-globe {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+  container-type: size;
+  perspective: 400cqw;
+  perspective-origin: 50% 50%;
+}
+
+/* Keep the title-card mark at 2rem when LogoGlobe also carries .house-logo-mark. */
+.lf-logo-globe.house-logo-mark {
+  width: 2rem;
+  height: 2rem;
+}
+
+.lf-logo-globe-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.lf-logo-globe-layer .house-logo-mark {
+  width: 100%;
+  height: 100%;
+}
+
+.lf-logo-globe-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.lf-logo-globe-ring [id='lf-core'] {
+  visibility: hidden;
+}
+
+.lf-logo-globe-core [id='lf-ring'] {
+  visibility: hidden;
+}
+
+.lf-logo-globe-core {
+  transform-origin: 50% 50%;
+  transform-style: flat;
+  backface-visibility: visible;
+  will-change: transform;
+  animation: lf-logo-globe-spin 24s linear infinite;
+}
+
+@keyframes lf-logo-globe-spin {
+  from { transform: rotateY(0deg); }
+  /* Positive rotateY: near half of the plane moves left → right (west → east). */
+  to { transform: rotateY(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lf-logo-globe-core {
+    animation: none;
+    will-change: auto;
+    transform: none;
+  }
+}
+
+html[data-lf-signal-cut='active'] .lf-logo-globe-core {
+  animation-play-state: paused;
 }
