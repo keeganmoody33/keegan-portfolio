@@ -2,30 +2,41 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPostHogClient } from '@/lib/posthog-server'
 import { checkRateLimit } from '@/lib/rate-limit'
 import {
-  DISCOGS_RECENT_PER_PAGE,
   discogsErrorHttp,
-  fetchRecentReleases,
+  fetchFullCollection,
+  peekLastGoodCollection,
 } from '@/lib/discogs'
 
 export const revalidate = 300
+
+function clientIp(request: NextRequest): string {
+  return (
+    (request as NextRequest & { ip?: string }).ip ||
+    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+    'unknown'
+  )
+}
 
 export async function GET(request: NextRequest) {
   const posthog = getPostHogClient()
   const distinctId = request.headers.get('X-POSTHOG-DISTINCT-ID') || 'anonymous_server'
 
-  const rateLimit = checkRateLimit(request, 'api/discogs', 30, 60 * 1000)
+  const rateLimit = checkRateLimit(request, 'api/discogs/collection', 30, 60 * 1000)
   if (!rateLimit.success) {
+    const cached = peekLastGoodCollection()
     posthog.capture({
       distinctId,
       event: 'api_rate_limited',
       properties: {
-        route: 'api/discogs',
-        ip:
-          (request as NextRequest & { ip?: string }).ip ||
-          request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
-          'unknown',
+        route: 'api/discogs/collection',
+        ip: clientIp(request),
       },
     })
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: { 'Cache-Control': 'no-store' },
+      })
+    }
     return NextResponse.json(
       { error: 'Too many requests' },
       {
@@ -39,16 +50,16 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const collection = await fetchFullCollection()
     posthog.capture({
       distinctId,
-      event: 'api_discogs_request',
+      event: 'api_discogs_collection_request',
       properties: {
         source: 'api_route',
+        items: collection.pagination.items,
       },
     })
-
-    const releases = await fetchRecentReleases(DISCOGS_RECENT_PER_PAGE)
-    return NextResponse.json(releases)
+    return NextResponse.json(collection)
   } catch (error) {
     const mapped = discogsErrorHttp(error)
 
@@ -57,8 +68,9 @@ export async function GET(request: NextRequest) {
       event: 'api_discogs_error',
       properties: {
         error_type:
-          mapped.status === 429 ? 'discogs_rate_limited' : 'discogs_api_error',
+          mapped.status === 429 ? 'discogs_rate_limited' : 'internal_error',
         error_message: mapped.body.error,
+        route: 'api/discogs/collection',
         status_code: mapped.status,
       },
     })

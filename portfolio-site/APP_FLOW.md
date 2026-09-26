@@ -1,6 +1,6 @@
 # App Flow — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-07-22
+**Last Updated:** 2026-09-26
 **Framework:** Next.js (App Router)
 **Deployment:** Vercel (auto-deploy on push to main)
 
@@ -12,8 +12,13 @@
 
 | Route            | File                         | What It Shows                                                   |
 |------------------|------------------------------|-----------------------------------------------------------------|
-| `/`              | `app/page.tsx`               | Turntable loading gate — click tonearm to start music and enter |
-| `/keeganmoody33` | `app/keeganmoody33/page.tsx` | Main portfolio page (all content on one page)                   |
+| `/`              | `app/page.tsx`               | House title card + crate (Server Component). No turntable. No return-visit redirect. |
+| `/catalog`       | `app/catalog/page.tsx`       | Crate permalink (same spines as `/`)                            |
+| `/catalog/[slug]`| `app/catalog/[slug]/page.tsx`| Sleeve (cover, liner, tracks). Unknown slugs 404.               |
+| `/collection`    | `app/collection/page.tsx`    | Full live Discogs crate                                         |
+| `/legal`         | `app/legal/page.tsx`         | Entity + long about                                             |
+| `/keeganmoody33` | `app/keeganmoody33/page.tsx` | Principal / person page (Ask AI, JD Fit Analyzer, timeline)     |
+| `/keegan`        | next.config + vercel.json    | 301 → `/keeganmoody33`                                          |
 
 ### Vercel Routing Rules (vercel.json)
 
@@ -21,15 +26,17 @@
 |----------------|------------------|------------------|---------------------|
 | Redirect (301) | `/KeeganMoody33` | `/keeganmoody33` | Case normalization  |
 | Redirect (301) | `/keeganMoody33` | `/keeganmoody33` | Case normalization  |
+| Redirect (301) | `/keegan`        | `/keeganmoody33` | Short alias         |
 
-**Result:** Visitors land on `lecturesfrom.com` and see the turntable gate. After the needle drop they are routed to `lecturesfrom.com/keeganmoody33`, the portfolio.
+**Result:** Visitors land on `lecturesfrom.com` and see the house title card + crate. `/` never redirects to the person page. The person page is at `/keeganmoody33`. House ↔ person crossings use `SignalCut` (not a global layout animation). Ask AI and JD Fit Analyzer stay on the person page only.
 
 ### API Routes
 
 | Route | Method | File | Purpose |
 |-------|--------|------|---------|
 | `/api/chat` | POST | `app/api/chat/route.ts` | Proxy to Supabase `chat` Edge Function |
-| `/api/discogs` | GET | `app/api/discogs/route.ts` | Proxy to Discogs API |
+| `/api/discogs` | GET | `app/api/discogs/route.ts` | Recent-5 Discogs list for person-page RecentDigs |
+| `/api/discogs/collection` | GET | `app/api/discogs/collection/route.ts` | Full paginated Discogs crate (`revalidate: 300`) |
 | `/api/github` | GET | `app/api/github/route.ts` | Proxy to GitHub public events API |
 | `/api/jd-analyzer` | POST | `app/api/jd-analyzer/route.ts` | Proxy to Supabase `jd-analyzer` Edge Function |
 
@@ -51,7 +58,7 @@ PostHog initializes on mount if `NEXT_PUBLIC_POSTHOG_KEY` exists. No-ops silentl
 
 ---
 
-## Component Render Order (page.tsx)
+## Component Render Order (`/keeganmoody33`)
 
 Top to bottom, this is exactly what renders on the main page:
 
@@ -65,7 +72,7 @@ Top to bottom, this is exactly what renders on the main page:
    └── GitHubActivity               ← Retro bar chart (14 days)
 5. Main Layout Container (flex)
    ├── Navigation Header
-   │   ├── Logo: /lecturesfrom
+   │   ├── Logo: /lecturesfrom (SignalCut link to `/`, direction toHouse)
    │   ├── Links: XP, Projects [P], Contact [C]
    │   └── "Ask AI" button
    ├── Hero Section
@@ -320,6 +327,33 @@ GitHub Public Events API
 
 All interactions ──→ PostHog (client + server events)
 ```
+
+---
+
+### 12. SIGNAL CUT (house <-> person)
+
+**Trigger:** Same-tab unmodified primary click (or Enter) on a `SignalCut`-wrapped `next/link` that crosses house `/` and person `/keeganmoody33` (or `/keegan`).
+
+**Wrapped links (this branch):**
+- Person-page nav wordmark `lecturesfrom` → `/` (`direction="toHouse"`)
+- Crate row 04 `keegan moody` → `/keeganmoody33` (`direction="toPerson"`)
+
+**Does not play on:** first load, hash changes, back/forward, house <-> house routes, modifier/middle clicks, `target="_blank"`.
+
+**Steps:**
+
+1. Click intercepts client navigation (`onClick` + Next.js `onNavigate`) but the `<a href>` remains for no-JS / crawlers
+2. Module-level controller appends a `position:fixed` overlay to `document.body` (survives the Link unmount; not mounted in `app/layout.tsx`)
+3. First crossing in the tab (`sessionStorage lf-signal-cut-count` 0): 420ms tear → analog snow → black + id line (`km-33 → lf-01` or reverse) → fade. Overlay is fully opaque from snow start (60ms). `router.push` at snow-end / black (280ms) so person-page hydration does not starve the snow deadline
+4. Later crossings: 160ms tear + black + id, push at black (40ms)
+5. `prefers-reduced-motion: reduce`: 80ms black, push immediately, no tear/snow/id/fade
+6. Phase deadlines are `setTimeout` from click `t0` (snow paint is rAF-only). If the destination pathname has not committed by reveal start, hold black (id omitted when reduced) until it does, hard cap 1500ms from click. No extra quiet-frame wait.
+
+**Success state:** Destination paints under the overlay; overlay removed at end of reveal. CLS 0.
+
+**Error / abort state:** One idempotent `teardown()` (Copilot review comment 4111027402). It stops snow, cancels every timeout and rAF, reverts `document.documentElement` transform/classes, and removes the overlay. Called from completion, hard-cap fallback (`setTimeout(1500 + fade + 80)`), slow-destination hold, popstate, pagehide, `visibilitychange` hidden, thrown errors, and a second click (swallowed so no second loop). The triggering Link's React unmount is **not** a teardown path — that unmount is the route swap. Hidden-tab abort does not navigate if `router.push` has not already run.
+
+**PostHog events:** `signal_cut_started` (`direction`, `href`)
 
 ---
 

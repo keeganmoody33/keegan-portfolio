@@ -23,7 +23,8 @@ All versions are pinned from `portfolio-site/package-lock.json`.
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| typescript | 5.9.3 | Type checking, TS config |
+| eslint | 9.x | Lint runner (`eslint .`). `next lint` is invalid on Next 16 (treats `lint` as a directory). |
+| eslint-config-next | 16.1.6 | Next.js ESLint rules, aligned with next 16.1.6 |
 | @types/node | 20.19.30 | Node.js type definitions |
 | @types/react | 19.2.10 | React type definitions |
 | @types/react-dom | 19.2.3 | React DOM type definitions |
@@ -54,7 +55,7 @@ Runtime: **Deno**. Imports use URL specifiers with pinned versions where availab
 | Discogs | <https://api.discogs.com> | Header: `Authorization: Discogs token=<token>`, User-Agent required | DISCOGS_TOKEN (Next.js env) |
 | Supabase | NEXT_PUBLIC_SUPABASE_URL/functions/v1/* | Header: `Authorization: Bearer <anon_key>` | NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY |
 
-**Discogs (new):** `api.discogs.com`; auth via personal token; env var `DISCOGS_TOKEN`. Used for Recent Digs widget (collection endpoint).
+**Discogs:** `api.discogs.com`; optional `DISCOGS_TOKEN` (public `lecturesfrom` collection). Recent-5 for Recent Digs (`/api/discogs`). Full crate paginated at `/api/discogs/collection` with `revalidate: 300`. User-Agent: `lecturesfrom/1.0`. Last-good cache on Discogs 429; errors use `Cache-Control: no-store`.
 
 ---
 
@@ -71,7 +72,7 @@ Runtime: **Deno**. Imports use URL specifiers with pinned versions where availab
 ## Deployment
 
 - **Platform:** Vercel
-- **Live URL:** lecturesfrom.com (turntable gate) and lecturesfrom.com/keeganmoody33 (portfolio)
+- **Live URL:** lecturesfrom.com (house) and lecturesfrom.com/keeganmoody33 (principal)
 - **Build:** Next.js (`next build`); auto-deploy on push to main
 
 ---

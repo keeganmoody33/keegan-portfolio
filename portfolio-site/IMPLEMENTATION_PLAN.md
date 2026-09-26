@@ -1,7 +1,7 @@
 # Implementation Plan — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-07-24
-**Status:** Phase 0 complete (MVP shipped). Phases 1-5 sequenced below.
+**Last Updated:** 2026-09-26
+**Status:** House cut implemented (title card, sleeves, full crate, signal cut, agent files). Person page frozen except wordmark.
 **Previous plan:** `IMPLEMENTATION_PLAN_DISCOGS_ARCHIVED.md` (completed Discogs widget build)
 
 ---
@@ -66,11 +66,11 @@
 
 ---
 
-## Phase 2: Turntable Loading Experience (COMPLETED)
+## Phase 2: Turntable Loading Experience (SUPERSEDED)
 
 **Goal:** Entry experience with needle drop = play button = enter site.
 
-**Status:** COMPLETED — live at lecturesfrom.com. Turntable gate is at `/` and routes to `/keeganmoody33` after needle drop.
+**Status:** SUPERSEDED 2026-09-26 by the house cut: turntable root and hasVisitedPortfolio redirect removed; `/` is the lecturesfrom house.
 
 **Inputs:** `docs/TURNTABLE_LOADING_SPEC.md`, `FRONTEND_GUIDELINES.md`
 
@@ -96,9 +96,10 @@
 
 ### Step 2.3 — Return Visitor Bypass
 
+- **Status:** SUPERSEDED 2026-09-26 by the house cut: turntable root and hasVisitedPortfolio redirect removed; `/` is the lecturesfrom house.
 - **Goal:** Return visitors skip turntable, go straight to portfolio
-- **Technical:** `localStorage` flag set after first visit
-- **Validation:** First visit shows turntable. Subsequent visits skip to portfolio.
+- **Technical:** `localStorage` flag set after first visit — do not restore. Returning visitors land on the house root.
+- **Validation:** First visit shows turntable. Subsequent visits skip to portfolio. — void. `/` never redirects to `/keeganmoody33`.
 
 ### Step 2.4 — Integration
 
@@ -221,7 +222,7 @@ Phase 0 (DONE)
     │
     ├── Phase 1: Banner Widgets (Steps 1.1-1.4 DONE, Step 1.3 CANCELLED)
     │       │
-    │       └── Phase 2: Turntable (COMPLETED — needs YouTube player from 1.1)
+    │       └── Phase 2: Turntable (SUPERSEDED 2026-09-26 by the house cut: turntable root and hasVisitedPortfolio redirect removed; / is the lecturesfrom house.)
     │
     ├── Phase 3: Alan Iverson (CANCELLED)
     │

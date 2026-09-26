@@ -1,6 +1,6 @@
 # Backend Structure — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-08-22
+**Last Updated:** 2026-09-26
 **Database:** Supabase (PostgreSQL)
 **Edge Functions Runtime:** Deno
 **API Layer:** Next.js Route Handlers (proxy pattern)
@@ -247,12 +247,54 @@ Proxies to Discogs API. Returns 5 most recently added records.
 ```
 
 **Errors:**
-- `500` -- `{ "error": "DISCOGS_TOKEN not configured" }`
-- `502` -- `{ "error": "Failed to fetch from Discogs" }`
+- `429` -- `{ "error": "Too many requests" }` with `Retry-After` and `Cache-Control: no-store` (our limiter or Discogs)
+- `502` -- `{ "error": "Failed to fetch from Discogs" }` with `Cache-Control: no-store` (generic; never forwards upstream text)
 
 **External endpoint:** `https://api.discogs.com/users/lecturesfrom/collection/folders/0/releases?sort=added&sort_order=desc&per_page=5&page=1`
 
+**Auth:** `DISCOGS_TOKEN` if present. Collection is public; missing token does not 500.
+
+**Cache:** `next: { revalidate: 300 }` and route `revalidate = 300`. User-Agent: `lecturesfrom/1.0`.
+
 **PostHog events:** `api_discogs_request`, `api_discogs_error`
+
+---
+
+### GET /api/discogs/collection
+
+Full paginated Discogs crate for `/collection`. Paginates `per_page=100` until `pagination.pages` is exhausted.
+
+**Request:** No params.
+
+**Response (200):**
+```json
+{
+  "releases": [
+    {
+      "title": "string",
+      "artist": "string",
+      "year": "number",
+      "thumbnail": "string",
+      "cover": "string",
+      "format": "string",
+      "label": "string",
+      "catno": "string",
+      "discogsUrl": "string"
+    }
+  ],
+  "pagination": { "page": 1, "pages": "number", "items": "number", "perPage": 100 }
+}
+```
+
+**Errors:**
+- `429` -- `{ "error": "Too many requests" }` with `Retry-After` and `Cache-Control: no-store` (our limiter or Discogs, only when no last-good cache exists)
+- `502` -- `{ "error": "Failed to fetch from Discogs" }` with `Cache-Control: no-store` (generic; never forwards upstream text)
+
+**Auth:** `DISCOGS_TOKEN` if present. Missing token does not 500.
+
+**Cache:** `next: { revalidate: 300 }` and route `revalidate = 300`. Last-good in-memory cache is saved only after a complete crawl whose release count equals Discogs `pagination.items`. On Discogs 429 or exhausted `X-Discogs-Ratelimit-Remaining` mid-crawl, serve last-good if present; otherwise HTTP 429. Partial/failed crawls are never stored as last-good. No webhook; 5-minute ISR is the contract.
+
+**PostHog events:** `api_discogs_collection_request`, `api_discogs_error`, `api_rate_limited`
 
 ---
 
@@ -376,7 +418,7 @@ Both deployed via `supabase functions deploy <name>`. Source in `supabase/functi
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public (client + server) | Yes | `/api/chat`, `/api/jd-analyzer`, `lib/supabase.ts` |
 | `NEXT_PUBLIC_POSTHOG_KEY` | Public (client + server) | No | `providers.tsx`, `lib/posthog-server.ts` |
 | `NEXT_PUBLIC_POSTHOG_HOST` | Public (client + server) | No | Defaults to `https://us.i.posthog.com` |
-| `DISCOGS_TOKEN` | Server-only | Yes | `/api/discogs` |
+| `DISCOGS_TOKEN` | Server-only | No | `/api/discogs`, `/api/discogs/collection` (sent when present; public collection works without it) |
 
 ### Supabase Secrets (set via `supabase secrets set`)
 
@@ -398,7 +440,9 @@ All Next.js env vars above must also be set in Vercel for production deployment.
 | `/api/chat` | `question` must be non-empty string |
 | `/api/jd-analyzer` | `input` must be non-empty string; URL detection via `input.trim().startsWith('http')` |
 | `/api/discogs` | No input validation (GET, no params) |
-| All routes | Missing env vars return 500 before external calls |
+| `/api/discogs/collection` | No input validation (GET, no params) |
+| Chat / JD analyzer | Missing env vars return 500 before external calls |
+| Discogs routes | `DISCOGS_TOKEN` optional; missing token is not an error |
 
 ---
 
@@ -417,8 +461,8 @@ All API routes follow the same pattern:
 ## Known Issues
 
 - `achievements` table is populated but not queried by any Edge Function
-- No rate limiting on any API route
-- No caching on Discogs route (Discogs API has its own 60 req/min limit)
+- In-memory rate limiting is per-instance (stopgap for Vercel)
+- Discogs collection uses 5-minute ISR plus last-good cache; no Discogs webhook
 - Supabase client in `lib/supabase.ts` uses non-null assertion -- will throw if env vars missing at module load
 - Deno std lib in Edge Functions pinned to `0.168.0` (~45 versions behind)
 
