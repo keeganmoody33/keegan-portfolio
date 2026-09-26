@@ -244,10 +244,10 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   white-space: nowrap;
   /* 12rem on wide desktops; scale to the slot so 12 glyphs never overflow. */
   font-size: clamp(2.5rem, 14.8vw, 12rem);
-  /* Rest width of "lecturesfrom" at -0.045em is ~5.70em. Cap the per-glyph
-     step so glyph 11 never starts past the slot (100cqi). */
-  --lf-rest: 5.72em;
-  --lf-track: min(0.325em, calc((100cqi - var(--lf-rest)) / 11));
+  /* Per-glyph inline-block rest is ~5.75–5.79em (kerning lost vs plain
+     text). Cap the last glyph's start so it stays inside 100cqi. */
+  --lf-rest: 5.80em;
+  --lf-track: min(0.325em, max(0px, calc((100cqi - var(--lf-rest)) / 11)));
 }
 
 @supports (font-size: 1cqi) {

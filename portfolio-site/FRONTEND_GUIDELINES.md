@@ -248,7 +248,7 @@ Animated 60px x 60px grid pattern on body:
 | `.log-info` | Muted log entry | `color: var(--text-muted)` |
 | `.house-meta` | House metadata | Roboto Mono, 0.625rem, 0.22em tracking, uppercase |
 | `.house-rail` | House top rail | Three columns; atl / issue / year always visible; gutters `px-6 sm:px-10` |
-| `.house-wordmark` | Root lockup | `min(12rem, 17.2cqi)` so `lecturesfrom` fits its slot; 12rem cap on desktop. Entrance is 700ms opacity + per-glyph `translateX` (not letter-spacing, not `scaleX`). Step is `min(0.325em, (100cqi − rest) / 11)`. Resting tracking stays `-0.045em`. Slot `overflow-x: clip`. |
+| `.house-wordmark` | Root lockup | `min(12rem, 17.2cqi)` so `lecturesfrom` fits its slot; 12rem cap on desktop. Entrance is 700ms opacity + per-glyph `translateX` (not letter-spacing, not `scaleX`). Step is `min(0.325em, max(0px, (100cqi − 5.80em) / 11))` so the last glyph stays inside the slot after inline-block rest (~5.75–5.79em). Resting tracking stays `-0.045em`. Slot `overflow-x: clip`. |
 | `.house-logo-mark` | Root mark box | `2rem` square, `aspect-ratio: 1`, reserves size before paint |
 | `.lf-logo-globe` | Logo globe | Square `aspect-ratio: 1`; ring static; core `rotateY(360deg)` 24s linear (west→east). Pauses on `html[data-lf-signal-cut="active"]`. Title card wraps `LogoMark` `layer="ring"` + `layer="core"`. |
 | `.house-spine` | Crate row | 3 columns below `sm` (format/catno on a second title line); 5 columns from `md` |
