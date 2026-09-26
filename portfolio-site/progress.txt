@@ -1,3 +1,11 @@
+COMPLETED (2026-09-26 — Discogs full live crate):
+- Hardened `lib/discogs.ts`: paginate folder 0 at per_page=100 until `pagination.pages` is exhausted; count must equal `pagination.items`
+- Normalized `{ releases, pagination }` with title/artist/year/thumbnail/cover/format/label/catno/discogsUrl
+- `next: { revalidate: 300 }` + route `revalidate = 300`; last-good only after a complete crawl; 429 / remaining=0 serves last-good or HTTP 429 + Retry-After + Cache-Control: no-store
+- User-Agent `lecturesfrom/1.0`; `DISCOGS_TOKEN` optional; no upstream error text to the client
+- `/api/discogs` still returns the recent-5 array for RecentDigs
+- Rate-limit cases covered in `lib/discogs.test.ts` (node:test). Did not edit `app/collection/page.tsx`.
+
 COMPLETED (2026-09-26 — lecturesfrom house cut):
 - Replaced root `/` turntable + hasVisitedPortfolio redirect with a Server Component title card + crate
 - Seed sleeves in lib/catalog.ts: punch2pen, proper-respect, yadiggg, collection, plus km-33 principal row

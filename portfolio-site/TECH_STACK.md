@@ -55,7 +55,7 @@ Runtime: **Deno**. Imports use URL specifiers with pinned versions where availab
 | Discogs | <https://api.discogs.com> | Header: `Authorization: Discogs token=<token>`, User-Agent required | DISCOGS_TOKEN (Next.js env) |
 | Supabase | NEXT_PUBLIC_SUPABASE_URL/functions/v1/* | Header: `Authorization: Bearer <anon_key>` | NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY |
 
-**Discogs:** `api.discogs.com`; auth via personal token; env var `DISCOGS_TOKEN`. Recent-5 for Recent Digs (`/api/discogs`). Full crate paginated at `/api/discogs/collection` with `revalidate: 300`. User-Agent: `lecturesfrom/1.0`.
+**Discogs:** `api.discogs.com`; optional `DISCOGS_TOKEN` (public `lecturesfrom` collection). Recent-5 for Recent Digs (`/api/discogs`). Full crate paginated at `/api/discogs/collection` with `revalidate: 300`. User-Agent: `lecturesfrom/1.0`. Last-good cache on Discogs 429; errors use `Cache-Control: no-store`.
 
 ---
 
