@@ -12,8 +12,7 @@ import {
   requestNowPlayingFocusHandoff,
   ytMachineOnError,
   ytMachineOnProgress,
-  ytMachineOnStall,
-  YT_STALL_TIMEOUT_MS,
+  ytMachineOnTick,
   type YtErrorMachineState,
   type YtProgressKind,
 } from '@/lib/youtube-playback-errors'
@@ -116,23 +115,28 @@ export default function YouTubePlayer() {
         dropNowPlaying()
         return
       }
-      if (!next.stallArmed) {
+      if (!next.stallArmed || next.deadline === null) {
         clearStallTimer()
         return
       }
+      const remaining = next.deadline - Date.now()
       clearStallTimer()
+      if (remaining <= 0) {
+        applyMachine(ytMachineOnTick(next, Date.now()))
+        return
+      }
       const gen = ++stallGen.current
       stallTimer.current = setTimeout(() => {
         if (gen !== stallGen.current) return
-        applyMachine(ytMachineOnStall(errorMachine.current))
-      }, YT_STALL_TIMEOUT_MS)
+        applyMachine(ytMachineOnTick(errorMachine.current, Date.now()))
+      }, remaining)
     },
     [clearStallTimer, dropNowPlaying]
   )
 
   const noteProgress = useCallback(
     (kind: YtProgressKind) => {
-      applyMachine(ytMachineOnProgress(errorMachine.current, kind))
+      applyMachine(ytMachineOnProgress(errorMachine.current, kind, Date.now()))
     },
     [applyMachine]
   )
@@ -333,7 +337,8 @@ export default function YouTubePlayer() {
           const next = ytMachineOnError(
             errorMachine.current,
             event.data,
-            playlistLengthFromPlayer(event.target)
+            playlistLengthFromPlayer(event.target),
+            Date.now()
           )
           applyMachine(next)
           if (next.dropped || !next.stallArmed) return

@@ -18,11 +18,19 @@ import {
   isNowPlayingControl,
   ytMachineOnError,
   ytMachineOnProgress,
-  ytMachineOnStall,
+  ytMachineOnTick,
   YT_ERROR_SKIP_LIMIT,
   YT_RECOVERY_TITLE,
+  YT_STALL_CAP_MS,
   YT_STALL_TIMEOUT_MS,
 } from './youtube-playback-errors.ts'
+
+const T0 = 1_000_000
+const CLOCK_IDLE = {
+  errorTime: null,
+  deadline: null,
+  progressExtended: false,
+}
 
 function fakeEl(label: string, closestSel: string | null = null): Element {
   return {
@@ -124,78 +132,164 @@ describe('recordPlaybackError', () => {
 })
 
 describe('yt error machine', () => {
-  it('2b: one 150, BUFFERING at 2500ms, then PLAYING, slide stays', () => {
+  it('QA 2b: one 150, BUFFERING at 2500ms, then PLAYING, slide stays', () => {
     assert.equal(YT_STALL_TIMEOUT_MS, 10_000)
+    assert.equal(YT_STALL_CAP_MS, 25_000)
     let state = createYtErrorMachine()
-    state = ytMachineOnError(state, 150, 12)
-    assert.deepEqual(state, { streak: 1, stallArmed: true, dropped: false })
+    state = ytMachineOnError(state, 150, 12, T0)
+    assert.deepEqual(state, {
+      streak: 1,
+      stallArmed: true,
+      dropped: false,
+      errorTime: T0,
+      deadline: T0 + YT_STALL_TIMEOUT_MS,
+      progressExtended: false,
+    })
 
-    // BUFFERING restarts the stall clock; it does not drop or disarm
-    state = ytMachineOnProgress(state, 'buffering')
-    assert.deepEqual(state, { streak: 1, stallArmed: true, dropped: false })
+    state = ytMachineOnProgress(state, 'buffering', T0 + 2500)
+    assert.deepEqual(state, {
+      streak: 1,
+      stallArmed: true,
+      dropped: false,
+      errorTime: T0,
+      deadline: T0 + YT_STALL_CAP_MS,
+      progressExtended: true,
+    })
 
-    state = ytMachineOnProgress(state, 'playing')
-    assert.deepEqual(state, { streak: 0, stallArmed: false, dropped: false })
+    state = ytMachineOnProgress(state, 'playing', T0 + 3000)
+    assert.deepEqual(state, {
+      streak: 0,
+      stallArmed: false,
+      dropped: false,
+      ...CLOCK_IDLE,
+    })
 
-    state = ytMachineOnStall(state)
+    state = ytMachineOnTick(state, T0 + YT_STALL_CAP_MS)
     assert.equal(state.dropped, false)
     assert.equal(state.streak, 0)
   })
 
-  it('P2-F: hang after BUFFERING still drops', () => {
-    let state = createYtErrorMachine()
-    state = ytMachineOnError(state, 150, 12)
-    state = ytMachineOnProgress(state, 'buffering')
-    assert.equal(state.stallArmed, true)
+  it('BUFFERING held 12s after an error, then PLAYING: stays', () => {
+    let state = ytMachineOnError(createYtErrorMachine(), 150, 12, T0)
+    state = ytMachineOnProgress(state, 'buffering', T0 + 200)
+    assert.equal(state.deadline, T0 + YT_STALL_CAP_MS)
+    assert.equal(ytMachineOnTick(state, T0 + 12_000).dropped, false)
+    state = ytMachineOnProgress(state, 'playing', T0 + 12_000)
     assert.equal(state.dropped, false)
-    state = ytMachineOnStall(state)
-    assert.deepEqual(state, { streak: 1, stallArmed: false, dropped: true })
+    assert.equal(state.stallArmed, false)
+    assert.equal(state.streak, 0)
   })
 
-  it('one 150, then silence for 10s, drops', () => {
-    let state = createYtErrorMachine()
-    state = ytMachineOnError(state, 150, 12)
-    assert.equal(state.stallArmed, true)
-    state = ytMachineOnStall(state)
-    assert.deepEqual(state, { streak: 1, stallArmed: false, dropped: true })
+  it('BUFFERING stuck forever: drops at the cap', () => {
+    let state = ytMachineOnError(createYtErrorMachine(), 150, 12, T0)
+    state = ytMachineOnProgress(state, 'buffering', T0 + 200)
+    assert.equal(state.deadline, T0 + YT_STALL_CAP_MS)
+    assert.equal(ytMachineOnTick(state, T0 + YT_STALL_CAP_MS - 1).dropped, false)
+    state = ytMachineOnTick(state, T0 + YT_STALL_CAP_MS)
+    assert.deepEqual(state, {
+      streak: 1,
+      stallArmed: false,
+      dropped: true,
+      errorTime: T0,
+      deadline: T0 + YT_STALL_CAP_MS,
+      progressExtended: true,
+    })
+  })
+
+  it('BUFFERING/CUED churn every 3s: drops at the cap, not later', () => {
+    let state = ytMachineOnError(createYtErrorMachine(), 150, 12, T0)
+    const kinds = ['buffering', 'cued'] as const
+    for (let offset = 3000; offset <= 24_000; offset += 3000) {
+      state = ytMachineOnProgress(
+        state,
+        kinds[(offset / 3000) % 2],
+        T0 + offset
+      )
+      assert.equal(state.deadline, T0 + YT_STALL_CAP_MS)
+      assert.equal(state.progressExtended, true)
+      assert.equal(state.dropped, false)
+    }
+    assert.equal(ytMachineOnTick(state, T0 + YT_STALL_CAP_MS - 1).dropped, false)
+    state = ytMachineOnTick(state, T0 + YT_STALL_CAP_MS)
+    assert.equal(state.dropped, true)
+    assert.equal(state.deadline, T0 + YT_STALL_CAP_MS)
+  })
+
+  it('one 150 then silence: drops at about 10s', () => {
+    let state = ytMachineOnError(createYtErrorMachine(), 150, 12, T0)
+    assert.equal(state.deadline, T0 + YT_STALL_TIMEOUT_MS)
+    assert.equal(ytMachineOnTick(state, T0 + YT_STALL_TIMEOUT_MS - 1).dropped, false)
+    state = ytMachineOnTick(state, T0 + YT_STALL_TIMEOUT_MS)
+    assert.deepEqual(state, {
+      streak: 1,
+      stallArmed: false,
+      dropped: true,
+      errorTime: T0,
+      deadline: T0 + YT_STALL_TIMEOUT_MS,
+      progressExtended: false,
+    })
   })
 
   it('3 real errors, drops', () => {
     let state = createYtErrorMachine()
-    state = ytMachineOnError(state, 150, 12)
-    state = ytMachineOnError(state, 101, 12)
-    state = ytMachineOnError(state, 100, 12)
-    assert.deepEqual(state, { streak: 3, stallArmed: false, dropped: true })
+    state = ytMachineOnError(state, 150, 12, T0)
+    state = ytMachineOnError(state, 101, 12, T0 + 100)
+    state = ytMachineOnError(state, 100, 12, T0 + 200)
+    assert.deepEqual(state, {
+      streak: 3,
+      stallArmed: false,
+      dropped: true,
+      ...CLOCK_IDLE,
+    })
   })
 
   it('error, PLAYING, 2 errors, stays', () => {
     let state = createYtErrorMachine()
-    state = ytMachineOnError(state, 150, 12)
-    state = ytMachineOnProgress(state, 'playing')
-    assert.deepEqual(state, { streak: 0, stallArmed: false, dropped: false })
-    state = ytMachineOnError(state, 150, 12)
-    state = ytMachineOnError(state, 150, 12)
-    assert.deepEqual(state, { streak: 2, stallArmed: true, dropped: false })
+    state = ytMachineOnError(state, 150, 12, T0)
+    state = ytMachineOnProgress(state, 'playing', T0 + 100)
+    assert.deepEqual(state, {
+      streak: 0,
+      stallArmed: false,
+      dropped: false,
+      ...CLOCK_IDLE,
+    })
+    state = ytMachineOnError(state, 150, 12, T0 + 200)
+    state = ytMachineOnError(state, 150, 12, T0 + 300)
+    assert.deepEqual(state, {
+      streak: 2,
+      stallArmed: true,
+      dropped: false,
+      errorTime: T0 + 300,
+      deadline: T0 + 300 + YT_STALL_TIMEOUT_MS,
+      progressExtended: false,
+    })
   })
 
   it('does not increment the streak on a stall timeout', () => {
-    let state = ytMachineOnError(createYtErrorMachine(), 150, 12)
+    let state = ytMachineOnError(createYtErrorMachine(), 150, 12, T0)
     const streakBefore = state.streak
-    state = ytMachineOnStall(state)
+    state = ytMachineOnTick(state, T0 + YT_STALL_TIMEOUT_MS)
     assert.equal(state.streak, streakBefore)
   })
 
   it('still drops immediately on the first 150 when the playlist has one video', () => {
-    const state = ytMachineOnError(createYtErrorMachine(), 150, 1)
-    assert.deepEqual(state, { streak: 1, stallArmed: false, dropped: true })
+    const state = ytMachineOnError(createYtErrorMachine(), 150, 1, T0)
+    assert.deepEqual(state, {
+      streak: 1,
+      stallArmed: false,
+      dropped: true,
+      ...CLOCK_IDLE,
+    })
   })
 
-  it('CUED and a new video id keep the stall armed', () => {
-    let state = ytMachineOnError(createYtErrorMachine(), 150, 12)
-    state = ytMachineOnProgress(state, 'cued')
+  it('CUED and a new video id keep the stall armed and do not move the cap', () => {
+    let state = ytMachineOnError(createYtErrorMachine(), 150, 12, T0)
+    state = ytMachineOnProgress(state, 'cued', T0 + 100)
     assert.equal(state.stallArmed, true)
-    state = ytMachineOnProgress(state, 'new_video_id')
+    assert.equal(state.deadline, T0 + YT_STALL_CAP_MS)
+    state = ytMachineOnProgress(state, 'new_video_id', T0 + 400)
     assert.equal(state.stallArmed, true)
+    assert.equal(state.deadline, T0 + YT_STALL_CAP_MS)
     assert.equal(state.dropped, false)
   })
 })

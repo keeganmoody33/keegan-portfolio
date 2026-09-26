@@ -173,6 +173,8 @@ export default function BannerRotator({
     <BannerChromeContext.Provider value={{ showDots }}>
       <div
         className="relative w-full"
+        data-banner-rotator=""
+        tabIndex={-1}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
       >

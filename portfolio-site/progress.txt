@@ -3,7 +3,7 @@ COMPLETED (2026-09-26 — UX P1-A / P2-D/E/F/G around the stall):
 - `#yt-now-playing-live` is an empty React region on the career page at load; drop only writes the text
 - Focus handoff skips rotator dots and `[data-now-playing]` / Play / Pause; BannerRotator flushes after the slide count updates, to leftover `[data-banner-panel]` or nav. Pending stays until a target exists (GitHub-up must not dump to body)
 - Recovery chrome while the stall is armed: aria-busy/aria-disabled Play, "Track unavailable, skipping…", no time
-- BUFFERING / CUED / new video id restart the 10s stall; only PLAYING clears it (2b still stays)
+- After a skip, stall deadline is 10s; the first BUFFERING / CUED / new video id extends to a hard cap of errorTime + 25s. Churn does not extend past the cap. PLAYING clears. Silence drops at ~10s; hung BUFFERING drops at the cap (2b still stays)
 
 COMPLETED (2026-09-26 — YouTube 150 stall window, not skip-chain):
 - Only a real onError (2/5/100/101/150) increments the streak; a stall timer never does

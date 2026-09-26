@@ -9,8 +9,11 @@ export const YT_SKIPPABLE_ERROR_CODES: readonly number[] = [2, 5, 100, 101, 150]
 
 export const YT_ERROR_SKIP_LIMIT = 3
 
-/** Single stall window after an error-triggered skip. Matches the hung-load timeout. */
+/** Initial stall deadline after an error-triggered skip (`now + 10s`). */
 export const YT_STALL_TIMEOUT_MS = 10_000
+
+/** Hard cap after the first BUFFERING / CUED / new video id (`errorTime + 25s`). */
+export const YT_STALL_CAP_MS = 25_000
 
 export type YtProgressKind =
   | 'ready'
@@ -23,6 +26,15 @@ export type YtErrorMachineState = {
   streak: number
   stallArmed: boolean
   dropped: boolean
+  errorTime: number | null
+  deadline: number | null
+  progressExtended: boolean
+}
+
+const IDLE_CLOCK = {
+  errorTime: null as number | null,
+  deadline: null as number | null,
+  progressExtended: false,
 }
 
 export function isSkippablePlaybackError(code: number): boolean {
@@ -68,8 +80,8 @@ export function recordPlaybackError(
   return { streak, shouldDrop, shouldSkip: !shouldDrop }
 }
 
-/** BUFFERING / CUED / new id restart the stall clock; they do not clear it. */
-export function progressRestartsStall(kind: YtProgressKind): boolean {
+/** First BUFFERING / CUED / new id may extend the deadline to the cap. */
+export function progressCanExtendStall(kind: YtProgressKind): boolean {
   return kind === 'buffering' || kind === 'cued' || kind === 'new_video_id'
 }
 
@@ -83,43 +95,83 @@ export function progressResetsStreak(kind: YtProgressKind): boolean {
 }
 
 export function createYtErrorMachine(): YtErrorMachineState {
-  return { streak: 0, stallArmed: false, dropped: false }
+  return { streak: 0, stallArmed: false, dropped: false, ...IDLE_CLOCK }
 }
 
 /** Only a real onError increments the streak. */
 export function ytMachineOnError(
   state: YtErrorMachineState,
   code: number,
-  playlistLength?: number | null
+  playlistLength?: number | null,
+  now = 0
 ): YtErrorMachineState {
   if (state.dropped) return state
   const result = recordPlaybackError(code, state.streak, playlistLength)
   if (!isSkippablePlaybackError(code)) {
-    return { ...state, stallArmed: false }
+    return { ...state, stallArmed: false, ...IDLE_CLOCK }
   }
   if (result.shouldDrop) {
-    return { streak: result.streak, stallArmed: false, dropped: true }
+    return { streak: result.streak, stallArmed: false, dropped: true, ...IDLE_CLOCK }
   }
-  return { streak: result.streak, stallArmed: true, dropped: false }
+  return {
+    streak: result.streak,
+    stallArmed: true,
+    dropped: false,
+    errorTime: now,
+    deadline: now + YT_STALL_TIMEOUT_MS,
+    progressExtended: false,
+  }
 }
 
 export function ytMachineOnProgress(
   state: YtErrorMachineState,
-  kind: YtProgressKind
+  kind: YtProgressKind,
+  now = 0
 ): YtErrorMachineState {
   if (state.dropped) return state
   if (progressClearsStall(kind)) {
-    return { streak: 0, stallArmed: false, dropped: false }
+    return { streak: 0, stallArmed: false, dropped: false, ...IDLE_CLOCK }
   }
-  return {
-    streak: progressResetsStreak(kind) ? 0 : state.streak,
-    stallArmed: state.stallArmed,
-    dropped: false,
+  if (
+    state.stallArmed &&
+    state.deadline !== null &&
+    now >= state.deadline
+  ) {
+    return ytMachineOnTick(state, now)
   }
+  const streak = progressResetsStreak(kind) ? 0 : state.streak
+  if (
+    state.stallArmed &&
+    !state.progressExtended &&
+    progressCanExtendStall(kind) &&
+    state.errorTime !== null
+  ) {
+    return {
+      ...state,
+      streak,
+      deadline: state.errorTime + YT_STALL_CAP_MS,
+      progressExtended: true,
+    }
+  }
+  return { ...state, streak, dropped: false }
+}
+
+/** Drop only when the current deadline has passed. Never increments the streak. */
+export function ytMachineOnTick(
+  state: YtErrorMachineState,
+  now: number
+): YtErrorMachineState {
+  if (state.dropped || !state.stallArmed) return state
+  if (state.deadline === null || now < state.deadline) return state
+  return { ...state, stallArmed: false, dropped: true }
 }
 
 /** Stall timeout never increments the streak. */
-export function ytMachineOnStall(state: YtErrorMachineState): YtErrorMachineState {
+export function ytMachineOnStall(
+  state: YtErrorMachineState,
+  now?: number
+): YtErrorMachineState {
+  if (now !== undefined) return ytMachineOnTick(state, now)
   if (state.dropped || !state.stallArmed) return state
   return { ...state, stallArmed: false, dropped: true }
 }
@@ -211,6 +263,12 @@ export function resolveFocusAfterNowPlayingDrop(opts: {
       if (focusable) return focusable
     }
   }
+
+  const rotator =
+    header?.querySelector('[data-banner-rotator]') ??
+    (root as Document).querySelector?.('[data-banner-rotator]') ??
+    null
+  if (rotator instanceof HTMLElement) return rotator
 
   const nav =
     (root as Document).querySelector?.('nav') ??
