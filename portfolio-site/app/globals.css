@@ -244,10 +244,13 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   white-space: nowrap;
   /* 12rem on wide desktops; scale to the slot so 12 glyphs never overflow. */
   font-size: clamp(2.5rem, 14.8vw, 12rem);
-  /* Per-glyph inline-block rest is ~5.75–5.79em (kerning lost vs plain
-     text). Cap the last glyph's start so it stays inside 100cqi. */
-  --lf-rest: 5.80em;
-  --lf-track: min(0.325em, max(0px, calc((100cqi - var(--lf-rest)) / 11)));
+  /* Plain-text rest of "lecturesfrom" at -0.045em is ~5.70em. Letter-spacing
+     trails the last glyph (12 steps). Cap the start so the last glyph stays
+     inside the slot with a 2px margin. Computed on the element (not only
+     inside the keyframe) so cqi resolves in Chrome and Safari. */
+  --lf-rest: 5.70em;
+  --lf-track-from: min(0.28em, calc(-0.045em + (100cqi - var(--lf-rest) - 2px) / 12));
+  animation: houseLockup 700ms ease-out both;
 }
 
 @supports (font-size: 1cqi) {
@@ -256,28 +259,19 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   }
 }
 
-.house-wordmark > span {
-  display: inline-block;
-  animation: houseLockupGlyph 700ms ease-out both;
-}
-
-@keyframes houseLockupGlyph {
+@keyframes houseLockup {
   from {
     opacity: 0;
-    transform: translateX(calc(var(--i) * var(--lf-track)));
+    letter-spacing: var(--lf-track-from);
   }
   to {
     opacity: 1;
-    transform: none;
+    letter-spacing: -0.045em;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .house-wordmark > span {
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
+  .house-wordmark { animation: none; }
 }
 
 .house-hairline {

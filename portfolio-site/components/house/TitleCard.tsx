@@ -1,9 +1,6 @@
-import type { CSSProperties } from 'react'
 import HouseRail from '@/components/house/HouseRail'
 import LogoGlobe from '@/components/house/LogoGlobe'
 import LogoMark from '@/components/house/LogoMark'
-
-const WORDMARK = 'lecturesfrom'
 
 export default function TitleCard() {
   return (
@@ -18,11 +15,7 @@ export default function TitleCard() {
           core={<LogoMark decorative layer="core" />}
         />
         <div className="house-wordmark-slot">
-          <h1 className="house-wordmark" aria-label={WORDMARK}>
-            {Array.from(WORDMARK).map((glyph, i) => (
-              <span key={i} aria-hidden="true" style={{ '--i': i } as CSSProperties}>{glyph}</span>
-            ))}
-          </h1>
+          <h1 className="house-wordmark">lecturesfrom</h1>
         </div>
         <p className="house-meta mt-3">llc</p>
       </div>

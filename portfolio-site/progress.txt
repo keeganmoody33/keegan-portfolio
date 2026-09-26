@@ -1,5 +1,5 @@
 COMPLETED (2026-09-26 — LogoGlobe + lockup clip):
-- Entrance lockup is 700ms opacity + per-glyph `translateX` (letterforms unstretched). Resting letter-spacing stays `-0.045em`. Slot `overflow-x: clip`. Track step is `min(0.325em, max(0px, (100cqi − 5.80em) / 11))` so the last glyph never starts past the clip edge.
+- Entrance lockup is 700ms opacity + `letter-spacing` on a plain-text `h1`. Resting tracking stays `-0.045em`. Slot `overflow-x: clip`. Start tracking is `min(0.28em, −0.045em + (100cqi − 5.70em − 2px) / 12)` so the last glyph never starts past the clip edge.
 - `LogoGlobe` Server Component: static ring, core `rotateY` 24s linear infinite, perspective 4× box, paused via `html[data-lf-signal-cut="active"]`. Title card wraps existing `LogoMark` `layer="ring"` + `layer="core"` without changing mark size or placement.
 - SignalCut sets `data-lf-signal-cut="active"` for the whole crossing and removes it in `teardown()`. Pause is CSS-only, never `window.__lfSignalCut`.
 
