@@ -540,7 +540,7 @@ export async function readCachedCollection(
   const lastGood = options.lastGood ?? defaultLastGoodStore()
   const durable = defaultDurableStore(options)
 
-  if (durable) {
+  if (durable && process.env.NEXT_PHASE !== 'phase-production-build') {
     try {
       const snapshot = await durable.get()
       const parsed = parseDurableCollection(snapshot?.collection)
@@ -595,6 +595,13 @@ export async function fetchFullCollection(
   const isBuild = isProductionBuildPhase(options)
 
   if (!durable) {
+    return fetchFromDiscogsWithMemoryFallback(
+      { ...options, cacheMode: options.cacheMode ?? 'isr' },
+      lastGood
+    )
+  }
+
+  if (isBuild) {
     return fetchFromDiscogsWithMemoryFallback(
       { ...options, cacheMode: options.cacheMode ?? 'isr' },
       lastGood

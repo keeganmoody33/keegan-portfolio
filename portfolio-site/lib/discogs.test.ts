@@ -27,8 +27,11 @@ import {
   type ScheduleRefresh,
 } from './discogs.ts'
 import {
+  REDIS_READ_CACHE,
   createMemoryDurableStore,
+  createRedisDurableStore,
   discogsRedisKeys,
+  isEmptyUpstashReadResult,
   isSnapshotStale,
   resetDefaultRedisDurableStore,
   resolveRedisRestConfig,
@@ -429,6 +432,56 @@ function twoPageFetch(): ReturnType<typeof mockFetch> {
   })
 }
 
+function createInMemoryUpstash() {
+  const kv = new Map<string, string>()
+  const calls: Array<{
+    op: string
+    cache?: RequestCache
+    body: unknown
+  }> = []
+
+  const fetchImpl: DiscogsFetch = async (_url, init) => {
+    const body = JSON.parse(String(init?.body ?? 'null')) as unknown[]
+    const op = String(body?.[0] ?? '').toLowerCase()
+    calls.push({ op, cache: init?.cache, body })
+
+    if (op === 'mget') {
+      const values = body.slice(1).map((key) => kv.get(String(key)) ?? null)
+      return new Response(JSON.stringify({ result: values }), { status: 200 })
+    }
+    if (op === 'get') {
+      return new Response(
+        JSON.stringify({ result: kv.get(String(body[1])) ?? null }),
+        { status: 200 }
+      )
+    }
+    if (op === 'set') {
+      const key = String(body[1])
+      const value = body[2]
+      const nx = body.some((part) => String(part).toLowerCase() === 'nx')
+      if (nx && kv.has(key)) {
+        return new Response(JSON.stringify({ result: null }), { status: 200 })
+      }
+      kv.set(
+        key,
+        typeof value === 'string' ? value : JSON.stringify(value)
+      )
+      return new Response(JSON.stringify({ result: 'OK' }), { status: 200 })
+    }
+    if (op === 'del') {
+      const existed = kv.delete(String(body[1]))
+      return new Response(JSON.stringify({ result: existed ? 1 : 0 }), {
+        status: 200,
+      })
+    }
+    return new Response(JSON.stringify({ error: 'unknown command' }), {
+      status: 400,
+    })
+  }
+
+  return { kv, calls, fetchImpl }
+}
+
 describe('env resolution and key prefix', () => {
   it('prefers KV_REST_API_URL/TOKEN and falls back to UPSTASH_*', () => {
     withEnv(
@@ -750,7 +803,7 @@ describe('durable last-good snapshot', () => {
     assert.equal(durable.setCalls, 1)
   })
 
-  it('does not write Redis or schedule a refresh during next build', async () => {
+  it('does not read or write Redis during next build', async () => {
     const cached = completeCollection(2, 'Build')
     const durable = createMemoryDurableStore({
       collection: cached,
@@ -768,10 +821,74 @@ describe('durable last-good snapshot', () => {
       isProductionBuild: true,
     })
 
-    assert.equal(collection.releases[0].title, 'Build 1')
+    assert.equal(collection.releases.length, 179)
     assert.equal(tasks.length, 0)
-    assert.equal(calls.length, 0)
+    assert.equal(calls.length, 2)
+    assert.equal(durable.getCalls, 0)
     assert.equal(durable.setCalls, 0)
+  })
+
+  it('does not cache an empty Redis read, so a later snapshot is visible without crawling', async () => {
+    const fake = createInMemoryUpstash()
+    const durable = createRedisDurableStore(
+      { url: 'http://upstash.test', token: 'test-token' },
+      { VERCEL_ENV: 'preview' },
+      fake.fetchImpl
+    )
+    const { fetchImpl: liveFetch, calls: liveCalls } = twoPageFetch()
+    const { tasks, scheduleRefresh } = captureSchedule()
+    const memory = createMemoryLastGoodStore()
+
+    const first = await fetchFullCollection({
+      fetchImpl: liveFetch,
+      durable,
+      lastGood: memory,
+      scheduleRefresh,
+      now: () => NOW_MS,
+    })
+    assert.equal(first.releases.length, 179)
+    assert.equal(liveCalls.length, 2)
+    await tasks[0]()
+
+    const mgets = fake.calls.filter((call) => call.op === 'mget')
+    assert.ok(mgets.length >= 1)
+    assert.equal(mgets[0]?.cache, REDIS_READ_CACHE)
+    assert.equal(REDIS_READ_CACHE, 'no-store')
+    assert.equal(isEmptyUpstashReadResult([null, null]), true)
+
+    const { fetchImpl: blockedFetch, calls: blockedCalls } = mockFetch({
+      1: { status: 429, retryAfter: '60', body: { message: 'RAW' } },
+    })
+    const later = await fetchFullCollection({
+      fetchImpl: blockedFetch,
+      durable,
+      lastGood: createMemoryLastGoodStore(),
+      scheduleRefresh: () => {},
+      now: () => NOW_MS,
+    })
+
+    assert.equal(later.releases.length, 179)
+    assert.equal(later.releases[0].title, first.releases[0].title)
+    assert.equal(blockedCalls.length, 0)
+  })
+
+  it('skips RedisDurableStore.get during the production build phase', async () => {
+    const fake = createInMemoryUpstash()
+    const previous = process.env.NEXT_PHASE
+    process.env.NEXT_PHASE = 'phase-production-build'
+    try {
+      const durable = createRedisDurableStore(
+        { url: 'http://upstash.test', token: 'test-token' },
+        { VERCEL_ENV: 'preview' },
+        fake.fetchImpl
+      )
+      const snapshot = await durable.get()
+      assert.equal(snapshot, null)
+      assert.equal(fake.calls.length, 0)
+    } finally {
+      if (previous === undefined) delete process.env.NEXT_PHASE
+      else process.env.NEXT_PHASE = previous
+    }
   })
 
   it('rewrites stored /release/0 links when reading a snapshot', () => {

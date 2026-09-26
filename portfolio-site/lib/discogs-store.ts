@@ -4,7 +4,7 @@ import type { DiscogsCollection } from './discogs.ts'
 
 export const DISCOGS_SNAPSHOT_TTL_MS = 24 * 60 * 60 * 1000
 export const DISCOGS_REFRESH_LOCK_SECONDS = 120
-export const DISCOGS_REDIS_READ_REVALIDATE_SECONDS = 300
+export const REDIS_READ_CACHE: RequestCache = 'no-store'
 
 export type DurableErrorKind = 'rate_limit' | 'unavailable' | 'partial'
 
@@ -47,6 +47,11 @@ export type DiscogsRedisKeys = {
 type CachedFetchInit = RequestInit & {
   next?: { revalidate: number }
 }
+
+export type UpstashFetch = (
+  input: string,
+  init?: CachedFetchInit
+) => Promise<Response>
 
 type EnvMap = Record<string, string | undefined>
 
@@ -131,12 +136,22 @@ function parseMeta(value: unknown): DiscogsDurableMeta | null {
   }
 }
 
-function createRequester(config: RedisRestConfig, init: CachedFetchInit): Requester {
+export function isEmptyUpstashReadResult(result: unknown): boolean {
+  if (result == null) return true
+  if (Array.isArray(result)) return result[0] == null
+  return false
+}
+
+function createRequester(
+  config: RedisRestConfig,
+  init: CachedFetchInit,
+  fetchImpl: UpstashFetch
+): Requester {
   const baseUrl = config.url.replace(/\/$/, '')
   return {
     async request<TResult>(req: UpstashRequest): Promise<UpstashResponse<TResult>> {
       const requestUrl = [baseUrl, ...(req.path ?? [])].join('/')
-      const response = await fetch(requestUrl, {
+      const response = await fetchImpl(requestUrl, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${config.token}`,
@@ -161,8 +176,16 @@ function createRequester(config: RedisRestConfig, init: CachedFetchInit): Reques
   }
 }
 
-function createRedis(config: RedisRestConfig, init: CachedFetchInit): Redis {
-  return new Redis(createRequester(config, init) as unknown as ConstructorParameters<typeof Redis>[0])
+function createRedis(
+  config: RedisRestConfig,
+  init: CachedFetchInit,
+  fetchImpl: UpstashFetch
+): Redis {
+  return new Redis(
+    createRequester(config, init, fetchImpl) as unknown as ConstructorParameters<
+      typeof Redis
+    >[0]
+  )
 }
 
 class RedisDurableStore implements DurableStore {
@@ -170,16 +193,20 @@ class RedisDurableStore implements DurableStore {
   private readonly readRedis: Redis
   private readonly writeRedis: Redis
 
-  constructor(config: RedisRestConfig, env: EnvMap = process.env) {
+  constructor(
+    config: RedisRestConfig,
+    env: EnvMap = process.env,
+    fetchImpl: UpstashFetch = fetch
+  ) {
     this.keys = discogsRedisKeys(env)
-    this.readRedis = createRedis(config, {
-      cache: 'force-cache',
-      next: { revalidate: DISCOGS_REDIS_READ_REVALIDATE_SECONDS },
-    })
-    this.writeRedis = createRedis(config, { cache: 'no-store' })
+    this.readRedis = createRedis(config, { cache: REDIS_READ_CACHE }, fetchImpl)
+    this.writeRedis = createRedis(config, { cache: 'no-store' }, fetchImpl)
   }
 
   async get(): Promise<DurableSnapshot | null> {
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+      return null
+    }
     const [collection, metaValue] = await this.readRedis.mget<[unknown, unknown]>(
       this.keys.collection,
       this.keys.meta
@@ -245,9 +272,10 @@ export function resetDefaultRedisDurableStore(): void {
 
 export function createRedisDurableStore(
   config: RedisRestConfig,
-  env: EnvMap = process.env
+  env: EnvMap = process.env,
+  fetchImpl: UpstashFetch = fetch
 ): DurableStore {
-  return new RedisDurableStore(config, env)
+  return new RedisDurableStore(config, env, fetchImpl)
 }
 
 export function createMemoryDurableStore(
