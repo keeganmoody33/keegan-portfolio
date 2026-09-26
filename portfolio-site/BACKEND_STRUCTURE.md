@@ -366,7 +366,7 @@ Proxies to Supabase `jd-analyzer` Edge Function.
 
 ## Static metadata files
 
-House share images live in the `(house)` route group so they do **not** inherit onto `/keeganmoody33`.
+House share images live in the `(house)` route group so they do **not** inherit onto `/keeganmoody33`. Nested house pages (`/catalog`, `/collection`, `/legal`, sleeves) set their own `openGraph` via `houseMetadata()`, which replaces the file-convention image — so `houseMetadata()` includes `openGraph.images` pointing at `/opengraph-image`. `personMetadata()` keeps `/og.jpg`.
 
 | File | URL | Notes |
 |------|-----|--------|

@@ -2,6 +2,15 @@ export const SITE_URL = 'https://www.lecturesfrom.com'
 
 export const HOUSE_TITLE = 'lecturesfrom'
 export const HOUSE_DESCRIPTION = 'not a studio. a garage.'
+/** Stable house share still. Nested house routes set this on openGraph so
+ *  their own openGraph objects do not drop the file-convention image. */
+export const HOUSE_OG_IMAGE = {
+  url: '/opengraph-image',
+  alt: HOUSE_TITLE,
+  width: 1200,
+  height: 630,
+} as const
+
 export const HOUSE_TAGLINE =
   "Transforming your business's Achilles' heel into durable systems and crafted products that fuel growth and culture."
 
