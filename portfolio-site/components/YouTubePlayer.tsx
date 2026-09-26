@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, useId } from 'react'
-import { createPortal } from 'react-dom'
 import Script from 'next/script'
 import posthog from 'posthog-js'
 import { useBannerAvailability, useBannerPanelPad } from '@/components/BannerRotator'
 import {
+  announceNowPlayingUnavailable,
   createYtErrorMachine,
   moveFocusAfterNowPlayingDrop,
   playlistLengthFromPlayer,
@@ -75,7 +75,6 @@ export default function YouTubePlayer() {
   const [isReady, setIsReady] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(false)
-  const [dropAnnouncement, setDropAnnouncement] = useState('')
   const [playing, setPlaying] = useState(false)
   const [trackTitle, setTrackTitle] = useState('')
   const [trackAuthor, setTrackAuthor] = useState('')
@@ -101,7 +100,7 @@ export default function YouTubePlayer() {
     droppedRef.current = true
     clearStallTimer()
     moveFocusAfterNowPlayingDrop(playerRootRef.current)
-    setDropAnnouncement('Now Playing unavailable')
+    announceNowPlayingUnavailable()
     setError(true)
     setIsLoading(false)
   }, [clearStallTimer])
@@ -471,25 +470,14 @@ export default function YouTubePlayer() {
   useBannerAvailability(!error)
   const panelPad = useBannerPanelPad()
 
-  const liveRegion =
-    typeof document !== 'undefined'
-      ? createPortal(
-          <div role="status" aria-live="polite" className="sr-only">
-            {dropAnnouncement}
-          </div>,
-          document.body
-        )
-      : null
-
   // ── Error → graceful hide ────────────────────────────────
-  if (error) return liveRegion
+  if (error) return null
 
   // ── Render ───────────────────────────────────────────────
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
 
   return (
     <>
-      {liveRegion}
       <div ref={playerRootRef} className="contents">
       {/* Load YouTube IFrame API — must always render, even during loading,
           otherwise the script never loads and isLoading never clears (deadlock) */}

@@ -3,7 +3,7 @@ COMPLETED (2026-09-26 — YouTube 150 stall window, not skip-chain):
 - BUFFERING / CUED / PLAYING or a new video id cancel the pending stall
 - After an error-triggered skip, one 10s stall window drops if nothing progresses
 - Three real errors (or playlist length if shorter) still drop; 1-video playlist still drops on first 150
-- On drop: focus moves to the next visible slide or first nav control; polite live region announces "Now Playing unavailable"
+- On drop: focus moves to the next visible slide or first nav control; a body-owned polite live region (`#yt-now-playing-live`) announces "Now Playing unavailable" so the text survives rotator unmount
 
 COMPLETED (2026-09-26 — YouTube 150 skip-then-drop):
 - Playback errors 2/5/100/101/150 call `nextVideo()` instead of leaving a stale Play button

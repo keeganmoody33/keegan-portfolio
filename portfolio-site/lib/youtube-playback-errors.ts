@@ -181,3 +181,24 @@ export function moveFocusAfterNowPlayingDrop(playerRoot: Element | null): void {
   })
   target?.focus()
 }
+
+const LIVE_REGION_ID = 'yt-now-playing-live'
+
+/** Body-owned so the announcement survives BannerRotator unmounting this slide. */
+export function announceNowPlayingUnavailable(): void {
+  if (typeof document === 'undefined') return
+  let node = document.getElementById(LIVE_REGION_ID)
+  if (!node) {
+    node = document.createElement('div')
+    node.id = LIVE_REGION_ID
+    node.setAttribute('role', 'status')
+    node.setAttribute('aria-live', 'polite')
+    node.className = 'sr-only'
+    document.body.appendChild(node)
+  }
+  node.textContent = ''
+  window.requestAnimationFrame(() => {
+    const live = document.getElementById(LIVE_REGION_ID)
+    if (live) live.textContent = 'Now Playing unavailable'
+  })
+}
