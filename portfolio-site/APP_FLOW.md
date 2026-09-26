@@ -220,7 +220,7 @@ Land on /keeganmoody33
 3. YouTube IFrame API script loads (`afterInteractive`)
 4. `onYouTubeIframeAPIReady` fires, creates hidden YT.Player with playlist
 5. Player loads playlist `PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk`
-6. `onReady` sets `isLoading=false`, skeleton swaps to real controls
+6. `onReady` sets `isLoading=false`, skeleton swaps to real controls. The hidden iframe wrapper is `inert` + `aria-hidden`; `getIframe().tabIndex = -1` so Tab never lands in the embed. Visible Play/Pause stays outside the wrapper.
 7. Track title and author populate from `getVideoData()`
 8. User clicks play → music starts
 9. Hover expands to reveal next/prev, progress bar, volume slider

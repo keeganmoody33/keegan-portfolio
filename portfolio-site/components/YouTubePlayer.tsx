@@ -160,6 +160,14 @@ export default function YouTubePlayer() {
           const p = event.target
           playerRef.current = p
 
+          // Hidden iframe must stay mounted for audio, but it is not a
+          // control. tabindex=-1 is a second guard behind wrapper `inert`.
+          try {
+            p.getIframe().tabIndex = -1
+          } catch {
+            // iframe may not be queryable yet
+          }
+
           // Restore volume
           p.setVolume(saved?.volume ?? 50)
           setVolume(saved?.volume ?? 50)
@@ -374,6 +382,7 @@ export default function YouTubePlayer() {
         className="absolute overflow-hidden"
         style={{ width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
         aria-hidden="true"
+        {...{ inert: true }}
       >
         <div id={containerRef.current} />
       </div>

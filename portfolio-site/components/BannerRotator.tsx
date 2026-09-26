@@ -186,7 +186,7 @@ export default function BannerRotator({
                       }
                     `
                 }
-                aria-hidden={suppress}
+                aria-hidden={suppress || undefined}
                 {...(suppress ? { inert: true } : {})}
               >
                 {child}

@@ -209,7 +209,7 @@ All banner widgets follow the same compact pattern:
 - **Layout:** Single-row flex (`flex items-center gap-4`)
 - **Border:** `border-b border-[var(--border-dim)]` between each layer
 - **Chart (GitHubActivity):** `h-[24px]` bar chart, `flex-1` fills available space
-- **Player (YouTubePlayer):** `w-6 h-6` play button, track info truncated, expand-on-hover for prev/next/volume
+- **Player (YouTubePlayer):** `w-6 h-6` play button, track info truncated, expand-on-hover for prev/next/volume. Hidden iframe wrapper is `inert` + `aria-hidden`; `onReady` sets `getIframe().tabIndex = -1`. Visible controls stay outside that wrapper.
 - **Min height:** `min-h-12` on every banner panel so rotation does not shift content
 
 ### Grid Background
