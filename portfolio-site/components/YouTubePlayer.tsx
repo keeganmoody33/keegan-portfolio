@@ -4,6 +4,10 @@ import { useState, useEffect, useRef, useCallback, useId } from 'react'
 import Script from 'next/script'
 import posthog from 'posthog-js'
 import { useBannerAvailability, useBannerPanelPad } from '@/components/BannerRotator'
+import {
+  playlistLengthFromPlayer,
+  recordPlaybackError,
+} from '@/lib/youtube-playback-errors'
 
 // ── Constants ──────────────────────────────────────────────────
 const PLAYLIST_ID = 'PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk'
@@ -53,6 +57,7 @@ export default function YouTubePlayer() {
   const containerRef = useRef<string>(`yt-player-${reactId.replace(/:/g, '')}`)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const progressInterval = useRef<ReturnType<typeof setInterval> | null>(null)
+  const playbackErrorStreak = useRef(0)
 
   const [isReady, setIsReady] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -159,6 +164,7 @@ export default function YouTubePlayer() {
         onReady: (event: YT.PlayerEvent) => {
           const p = event.target
           playerRef.current = p
+          playbackErrorStreak.current = 0
 
           // Hidden iframe must stay mounted for audio, but it is not a
           // control. tabindex=-1 is a second guard behind wrapper `inert`.
@@ -198,6 +204,7 @@ export default function YouTubePlayer() {
           const state = event.data
 
           if (state === YT.PlayerState.PLAYING) {
+            playbackErrorStreak.current = 0
             setPlaying(true)
             syncTrackInfo()
 
@@ -230,13 +237,31 @@ export default function YouTubePlayer() {
 
         onError: (event: YT.OnErrorEvent) => {
           console.error('YouTubePlayer: playback error', event.data)
-          // A video-level error must not tear down the embed: the 1×1
-          // iframe stays mounted for audio, and tearing it out races the
-          // inert/tabIndex guards. Script/timeout failures still hide.
+          // Keep the embed mounted for skip attempts; tabindex=-1 stays
+          // a second guard behind wrapper `inert`. After N skippable
+          // errors (3, or playlist length if shorter) drop the slide.
           try {
             event.target.getIframe().tabIndex = -1
           } catch {
             setError(true)
+            return
+          }
+          const result = recordPlaybackError(
+            event.data,
+            playbackErrorStreak.current,
+            playlistLengthFromPlayer(event.target)
+          )
+          playbackErrorStreak.current = result.streak
+          if (result.shouldDrop) {
+            setError(true)
+            return
+          }
+          if (result.shouldSkip) {
+            try {
+              event.target.nextVideo()
+            } catch {
+              setError(true)
+            }
           }
         },
       },

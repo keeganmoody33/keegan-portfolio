@@ -1,3 +1,8 @@
+COMPLETED (2026-09-26 — YouTube 150 skip-then-drop):
+- Playback errors 2/5/100/101/150 call `nextVideo()` instead of leaving a stale Play button
+- After 3 in a row (or playlist length if shorter) `setError(true)` drops the slide
+- Streak resets on `onReady` and PLAYING; inert wrapper and tabIndex=-1 unchanged
+
 COMPLETED (2026-09-26 — hidden YouTube iframe out of tab order):
 - Hidden iframe wrapper in YouTubePlayer is `inert` + `aria-hidden`
 - `onReady` (and video-level `onError` if the embed already exists) sets `player.getIframe().tabIndex = -1`
