@@ -245,7 +245,11 @@ Animated 60px x 60px grid pattern on body:
 | `.activity-stream` | Sidebar container | Glass bg, dim border, Roboto Mono |
 | `.log-success` | Green log entry | `color: #4ADE80` |
 | `.log-warn` | Orange log entry | `color: var(--accent-orange)` |
-| `.log-info` | Muted log entry | `color: var(--text-muted)` |
+| `.house-meta` | House metadata | Roboto Mono, 0.625rem, 0.22em tracking, uppercase |
+| `.house-rail` | House top rail | Three columns; atl / issue / year always visible; gutters `px-6 sm:px-10` |
+| `.house-wordmark` | Root lockup | `min(12rem, 17.2cqi)` so `lecturesfrom` fits its slot; 12rem cap on desktop |
+| `.house-spine` | Crate row | 3 columns below `sm` (format/catno on a second title line); 5 columns from `md` |
+
 
 ### Button Patterns
 
@@ -331,7 +335,16 @@ Mobile-first approach using Tailwind defaults:
 | `xl:` | 1280px | Large desktop |
 | `2xl:` | 1536px | Extra large |
 
+### House chrome (2026-09-26)
+
+Two dialects. House pages (`/`, `/catalog`, sleeves, `/collection`, `/legal`) share one gutter: `px-6` (24px) / `sm:px-10` (40px). `HouseRail` owns that gutter. Do not nest another `px-6` around the rail on `/`.
+
+- **Wordmark:** size to the content slot (`clamp` / `cqi`). Never `18vw` or a raw `12rem` that can overflow. Desktop cap stays `12rem`.
+- **Spines:** format and catalog number stay visible at 375 (second meta line). Status column is the last grid track so it meets the hairline and the SPINES header. Do not leave empty `auto` tracks with `gap` when columns are `display: none`.
+- **No-art Discogs tiles:** `NoArtTile` (hairline + artist/title in meta type). `IssuePlate` is for house sleeves only.
+
 ### Current Responsive Rules
+
 
 Only `RecentDigs.tsx` has dedicated mobile/desktop handling. All other components render identically across breakpoints.
 

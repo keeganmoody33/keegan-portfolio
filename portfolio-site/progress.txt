@@ -1,3 +1,10 @@
+COMPLETED (2026-09-26 — house UX F01–F06):
+- Wordmark scales to its container (`min(12rem, 17.2cqi)`); no horizontal clip at 375/768/1024
+- Crate spines keep format / catno at 375 on a second meta line; status column meets the hairline
+- Top rail always shows atl 33.70n / issue 01 / 2026; root rail uses the same 24/40 gutters as other house pages
+- Discogs coverless items use NoArtTile (hairline + meta type); IssuePlate stays on house sleeves
+- Did not touch SignalCut, Agent-Ready files, discogs data logic, or /keeganmoody33
+
 COMPLETED (2026-09-26 — SignalCut warm-path timing):
 - Phase boundaries are `setTimeout` from click `t0` (not rAF frame counting); snow paint stays on rAF
 - Hold only if pathname has not committed at reveal-start; quiet-frame wait removed
