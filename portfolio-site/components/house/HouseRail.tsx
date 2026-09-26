@@ -8,9 +8,9 @@ export default function HouseRail({
   right?: string
 }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 px-6 pt-6 sm:px-10">
+    <div className="house-rail px-6 pt-6 sm:px-10">
       <span className="house-meta">{left}</span>
-      <span className="house-meta hidden sm:inline">{center}</span>
+      <span className="house-meta">{center}</span>
       <span className="house-meta">{right}</span>
     </div>
   )

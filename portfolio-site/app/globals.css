@@ -191,6 +191,31 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   color: var(--house-muted);
 }
 
+.house-rail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 0.5rem;
+}
+
+.house-rail > :nth-child(2) {
+  text-align: center;
+}
+
+.house-rail > :last-child {
+  text-align: right;
+}
+
+.house-rail .house-meta {
+  letter-spacing: 0.14em;
+}
+
+@media (min-width: 640px) {
+  .house-rail .house-meta {
+    letter-spacing: 0.22em;
+  }
+}
+
 .house-wordmark-slot {
   container-type: inline-size;
   width: 100%;
