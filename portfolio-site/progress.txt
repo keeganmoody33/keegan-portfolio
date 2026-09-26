@@ -1,3 +1,12 @@
+COMPLETED (2026-09-26 — banner failure + polish):
+- BannerRotator drops failed/empty panels and their dots (`useBannerAvailability`)
+- One panel left → static, no dots; zero panels → rotator collapses (no blank slot, no orphaned dots)
+- WidgetErrorBoundary reports unavailable on catch; YouTube Script `onError` + 10s timeout set the same path
+- Shared `min-h-12` on banner panels; mobile `pr-12` so dots miss `/ 7d`
+- Career nav: `whitespace-nowrap` on items, `gap-x-3 gap-y-2` on the right group
+- `prefers-reduced-motion`: marquee animation none; banner does not auto-rotate (dots/manual stay)
+- `/api/github` still has no token env var; still `next: { revalidate: 300 }`
+
 COMPLETED (2026-09-26 — career Discogs removal):
 - Removed Recent Digs from `/keeganmoody33` (`BannerRotator` now YouTube + GitHub only)
 - Deleted unused `components/RecentDigs.tsx` and career-only `app/api/discogs/route.ts`

@@ -63,14 +63,15 @@ Top to bottom, this is exactly what renders on the main page:
 
 ```
 1. Marquee                          ← Full-width ticker, always visible
-2. WidgetErrorBoundary
-   └── YouTubePlayer                ← Persistent music player (YouTube IFrame API, playlist)
-3. WidgetErrorBoundary
-   └── GitHubActivity               ← Retro bar chart (14 days)
+2. BannerRotator                    ← Drops failed/empty panels; collapses if none remain
+   ├── WidgetErrorBoundary
+   │   └── YouTubePlayer            ← Persistent music player (YouTube IFrame API, playlist)
+   └── WidgetErrorBoundary
+       └── GitHubActivity           ← Retro bar chart (14 days)
 5. Main Layout Container (flex)
    ├── Navigation Header
    │   ├── Logo: /lecturesfrom (SignalCut link to `/`, direction toHouse)
-   │   ├── Links: XP, Projects [P], Contact [C]
+   │   ├── Links: XP, Projects [P], Contact [C] (whitespace-nowrap; right group gap-x-3 gap-y-2)
    │   └── "Ask AI" button
    ├── Hero Section
    │   ├── Tagline lines (3)
@@ -196,10 +197,11 @@ Land on /keeganmoody33
 1. Renders immediately with hardcoded items
 2. Scrolls horizontally in infinite loop (40s cycle)
 3. Hover pauses animation
+4. `prefers-reduced-motion: reduce` stops the scroll (`animation: none`); items stay in place
 
-**Success state:** Smooth infinite scroll.
+**Success state:** Smooth infinite scroll (or a static strip under reduced motion).
 
-**Error state:** N/A (no data fetching, no interaction).
+**Error state:** GitHub stats stay on the loading/fallback copy; ticker still renders.
 
 **Empty state:** N/A (hardcoded content).
 
@@ -228,7 +230,7 @@ Land on /keeganmoody33
 
 **Success state:** Player shows track title, play/pause controls (w-6 h-6). Hover reveals full controls. Music plays from YouTube playlist.
 
-**Error state:** Component returns `null` (graceful failure). Wrapped in `WidgetErrorBoundary`.
+**Error state:** Component returns `null` (graceful failure) and reports `useBannerAvailability(false)` so the rotator drops the slide and its dot. Script `onError` and a 10s API timeout also set this path. Wrapped in `WidgetErrorBoundary`, which reports unavailable if the widget throws.
 
 **Empty state:** Compact loading skeleton (py-2, inline layout) while IFrame API loads.
 
@@ -238,6 +240,24 @@ Land on /keeganmoody33
 - Stores: `videoId`, `trackTitle`, `trackAuthor`, `position`, `duration`, `playing`, `playlistIndex`, `volume`, `timestamp`
 
 **PostHog events:** `youtube_player_loaded`, `youtube_player_play`, `youtube_player_pause`, `youtube_track_changed`
+
+---
+
+### 6b. BannerRotator + GitHub Activity
+
+**Trigger:** Page load. `BannerRotator` mounts YouTube and GitHub together; only the active panel is visible.
+
+**Steps:**
+
+1. Each widget reports `useBannerAvailability(true|false)`
+2. Failed, empty, or error-boundary panels are removed from rotation and from the dots
+3. Two or more available panels: 8s auto-rotate (skipped under `prefers-reduced-motion: reduce`); dots stay for manual switching
+4. One available panel: show it statically, no dots
+5. Zero available panels: rotator returns `null` — the banner row collapses; Marquee remains
+
+**GitHub Activity error:** `/api/github` 5xx (including GitHub's unauthenticated 60/hr 502) → component returns `null` and reports unavailable. No blank 8s slot.
+
+**GitHub route:** No GitHub token env var. Upstream fetch uses `next: { revalidate: 300 }`.
 
 ---
 
@@ -267,7 +287,8 @@ Land on /keeganmoody33
 | Element | Desktop | Mobile |
 |---------|---------|--------|
 | Chat modal | Overlay on page | Same (full overlay) |
-| Navigation | Horizontal top bar | Same (no hamburger menu currently) |
+| Navigation | Horizontal top bar | Same; items `whitespace-nowrap`, right group `gap-x-3 gap-y-2` |
+| BannerRotator | `md:pr-4` | `pr-12` so dots do not cover `/ 7d` |
 | Timeline | Full-width cards | Same layout (no responsive changes) |
 | JD Analyzer | Full-width textarea | Same layout |
 

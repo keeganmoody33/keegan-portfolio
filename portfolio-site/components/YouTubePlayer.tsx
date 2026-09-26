@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useId } from 'react'
 import Script from 'next/script'
 import posthog from 'posthog-js'
+import { useBannerAvailability } from '@/components/BannerRotator'
 
 // ── Constants ──────────────────────────────────────────────────
 const PLAYLIST_ID = 'PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk'
@@ -268,8 +269,15 @@ export default function YouTubePlayer() {
         initPlayer()
       }
     }, 100)
-    // Safety cap — stop polling after 10s
-    setTimeout(() => clearInterval(poll), 10_000)
+    // Safety cap — if the API never appears, drop this panel
+    setTimeout(() => {
+      clearInterval(poll)
+      if (!playerRef.current) {
+        console.error('YouTubePlayer: iframe API timed out')
+        setError(true)
+        setIsLoading(false)
+      }
+    }, 10_000)
   }, [initPlayer])
 
   // ── Controls ─────────────────────────────────────────────
@@ -328,6 +336,15 @@ export default function YouTubePlayer() {
     playerRef.current?.seekTo(t, true)
   }
 
+  const handleScriptError = useCallback(() => {
+    console.error('YouTubePlayer: iframe API failed to load')
+    setError(true)
+    setIsLoading(false)
+  }, [])
+
+  // Report before any null return so BannerRotator can drop this slide
+  useBannerAvailability(!error)
+
   // ── Error → graceful hide ────────────────────────────────
   if (error) return null
 
@@ -342,6 +359,7 @@ export default function YouTubePlayer() {
         src="https://www.youtube.com/iframe_api"
         strategy="afterInteractive"
         onLoad={handleScriptLoad}
+        onError={handleScriptError}
       />
 
       {/* Hidden YouTube iframe — must be ≥200×200 per API requirement */}
@@ -356,7 +374,7 @@ export default function YouTubePlayer() {
 
       {/* Loading skeleton */}
       {isLoading ? (
-        <div className="w-full border-b border-[var(--border-dim)] bg-[var(--bg-surface)] font-mono">
+        <div className="min-h-12 w-full border-b border-[var(--border-dim)] bg-[var(--bg-surface)] font-mono">
           <div className="max-w-7xl mx-auto px-4 py-2">
             <div className="flex items-center gap-3">
               {/* Play button skeleton */}
@@ -373,7 +391,7 @@ export default function YouTubePlayer() {
 
         /* Visible custom controls */
         <div
-          className="w-full border-b border-[var(--border-dim)] bg-[var(--bg-surface)] font-mono group"
+          className="min-h-12 w-full border-b border-[var(--border-dim)] bg-[var(--bg-surface)] font-mono group"
           onMouseEnter={() => setExpanded(true)}
           onMouseLeave={() => setExpanded(false)}
         >

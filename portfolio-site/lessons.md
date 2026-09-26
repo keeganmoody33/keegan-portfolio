@@ -35,6 +35,7 @@ Updated: 2026-08-22
 - **Use `useId()` for DOM ids that must be stable across SSR and hydration.** `YouTubePlayer` originally generated the hidden iframe container id with `Math.random()`, which produced a different server/client `id` and caused a hydration warning even though playback still worked.
 - **Check Tailwind config before adding inline styles.** `font-mono` was already mapped to Roboto Mono in `tailwind.config.js`. The first pass used inline `fontFamily` which worked but violated the project's no-inline-styles rule and duplicated config. Always grep tailwind.config for existing mappings first.
 - **Error boundaries are the one exception to "no class components."** React requires error boundaries to be class components — there is no hook equivalent. When wrapping third-party or async widgets, add a lightweight error boundary that renders `null` on failure so a single widget crash never takes down the page.
+- **A rotator that keeps a null child still spends time on a blank slide.** `GitHubActivity` and `YouTubePlayer` return `null` on error; `BannerRotator` used to auto-cycle those empty slots (8s blank, 48px jump, dots on the marquee; both failing left two orphaned dots). Widgets must call `useBannerAvailability`; drop the slide and its dot. One panel = static, no dots. Zero panels = collapse the rotator. Do not rely on `ResizeObserver` once wrappers have `min-h-12` — that fakes height. `WidgetErrorBoundary` must also report unavailable, because a first-render throw never runs the child's `useEffect` cleanup.
 
 ## Component Architecture
 

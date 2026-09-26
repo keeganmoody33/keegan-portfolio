@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import posthog from 'posthog-js'
 import { getPostHogDistinctIdHeader } from '@/lib/posthog-client'
+import { useBannerAvailability } from '@/components/BannerRotator'
 
 interface DailyActivity {
   date: string
@@ -49,13 +50,17 @@ export default function GitHubActivity() {
     })
   }
 
-  // Graceful — hide on error
+  const available =
+    !error && (isLoading || Boolean(data && data.daily_activity.length > 0))
+  useBannerAvailability(available)
+
+  // Graceful — hide on error so BannerRotator can drop this slide
   if (error) return null
 
   // Loading skeleton
   if (isLoading) {
     return (
-      <div className="w-full border-b border-[var(--border-dim)] bg-[var(--bg-surface)] font-mono">
+      <div className="min-h-12 w-full border-b border-[var(--border-dim)] bg-[var(--bg-surface)] font-mono">
         <div className="max-w-7xl mx-auto px-4 py-2">
           <div className="flex items-center gap-4">
             <p className="text-[var(--text-muted)] text-[10px] uppercase tracking-wider shrink-0">
@@ -81,7 +86,7 @@ export default function GitHubActivity() {
   const maxCount = Math.max(...data.daily_activity.map((d) => d.count), 1)
 
   return (
-    <div className="w-full border-b border-[var(--border-dim)] bg-[var(--bg-surface)] font-mono">
+    <div className="min-h-12 w-full border-b border-[var(--border-dim)] bg-[var(--bg-surface)] font-mono">
       <div className="max-w-7xl mx-auto px-4 py-2">
         <div className="flex items-center gap-4">
           <p className="text-[var(--text-muted)] text-[10px] uppercase tracking-wider shrink-0">

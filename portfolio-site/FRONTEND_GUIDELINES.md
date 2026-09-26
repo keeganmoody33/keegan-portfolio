@@ -192,9 +192,12 @@ Single-page app. All content on one route (`/`). No multi-page navigation curren
 
 The two widget layers (YouTubePlayer, GitHubActivity) live inside a `BannerRotator` that shows one at a time:
 - **Component:** `components/BannerRotator.tsx`
-- **Rotation:** 8-second auto-cycle, crossfade (500ms `transition-opacity`)
-- **Interaction:** Pauses on hover; dot indicators at right edge for manual switching
+- **Rotation:** 8-second auto-cycle, crossfade (500ms `transition-opacity`). Skipped when `prefers-reduced-motion: reduce` or when fewer than two panels are available.
+- **Interaction:** Pauses on hover; dot indicators at right edge for manual switching. Dots stay usable under reduced motion.
 - **Mounting:** All children stay mounted (critical for YouTubePlayer iframe audio continuity); inactive panels get `opacity-0 absolute pointer-events-none`
+- **Height:** Every available panel wrapper is `min-h-12` so YouTube (41px) and GitHub (48px) do not shift the page when they swap.
+- **Mobile padding:** Rotator root is `pr-12 md:pr-4` so dots do not cover GitHub's `/ 7d` below 768px.
+- **Failures:** Widgets call `useBannerAvailability`. A null/error/empty render drops that slide and its dot. One panel left → static, no dots. Zero panels left → rotator returns `null` (banner row collapses). `WidgetErrorBoundary` also reports unavailable on catch.
 - **PostHog:** Fires `banner_panel_switched` on manual dot clicks with `from`/`to` labels
 
 ### Banner Widget Rules
@@ -207,6 +210,7 @@ All banner widgets follow the same compact pattern:
 - **Border:** `border-b border-[var(--border-dim)]` between each layer
 - **Chart (GitHubActivity):** `h-[24px]` bar chart, `flex-1` fills available space
 - **Player (YouTubePlayer):** `w-6 h-6` play button, track info truncated, expand-on-hover for prev/next/volume
+- **Min height:** `min-h-12` on every banner panel so rotation does not shift content
 
 ### Grid Background
 
@@ -240,7 +244,7 @@ Animated 60px x 60px grid pattern on body:
 | `.spray-char` | Spray paint character | Inline-block, blur → focus animation |
 | `.experience-card` | Timeline experience card | Surface bg, dim border, lime on hover |
 | `.tech-pill` | Technology tag | Roboto Mono, dim border, muted text |
-| `.marquee-container` | Scrolling ticker | Flex, max-content, 40s scroll, pauses on hover |
+| `.marquee-container` | Scrolling ticker | Flex, max-content, 40s scroll, pauses on hover; `animation: none` when `prefers-reduced-motion: reduce` |
 | `.activity-stream` | Sidebar container | Glass bg, dim border, Roboto Mono |
 | `.log-success` | Green log entry | `color: #4ADE80` |
 | `.log-warn` | Orange log entry | `color: var(--accent-orange)` |
@@ -294,6 +298,8 @@ Animated 60px x 60px grid pattern on body:
 | SIGNAL CUT first | 420ms | tear 0–60 / snow 60–280 / black 280–360 / fade 360–420 | House <-> person, first crossing in the tab |
 | SIGNAL CUT repeat | 160ms | tear 0–40 / black 40–120 / fade 120–160 | Later crossings in the same tab |
 | SIGNAL CUT reduced | 80ms | instant black, no tear/snow/id/fade | `prefers-reduced-motion: reduce` |
+| Marquee (reduced) | — | animation none | `prefers-reduced-motion: reduce` |
+| Banner rotate (reduced) | — | no auto-cycle; dots/manual still work | `prefers-reduced-motion: reduce` |
 
 Tear easing: `cubic-bezier(0.7, 0, 0.84, 0)`. Reveal easing: `cubic-bezier(0.2, 0, 0, 1)`. Overlay `z-index: 2147483647`, `pointer-events: none`. Id color `#d9d9d9`, arrow `#E23D00`.
 
@@ -350,6 +356,8 @@ Person-page components render the same layout across breakpoints.
 
 | Component | Mobile | Desktop (md+) |
 |-----------|--------|----------------|
+| Career nav items | `whitespace-nowrap`; right group `gap-x-3 gap-y-2` | `sm:gap-x-8` |
+| BannerRotator | `pr-12` so dots miss `/ 7d` | `md:pr-4` |
 | All person-page components | Same layout | Same layout |
 
 ### Responsive Priorities (future)

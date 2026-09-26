@@ -269,6 +269,8 @@ Full paginated Discogs crate for `/collection`. Paginates `per_page=100` until `
 
 Proxies to GitHub public events API. Returns aggregated activity stats for keeganmoody33.
 
+**Auth:** None. This route does not read a GitHub token env var. Upstream calls are unauthenticated (GitHub 60 req/hr).
+
 **Request:** No params.
 
 **Response (200):**

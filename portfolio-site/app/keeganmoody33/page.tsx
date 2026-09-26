@@ -9,7 +9,9 @@ import Timeline from '@/components/Timeline'
 import Marquee from '@/components/Marquee'
 import GitHubActivity from '@/components/GitHubActivity'
 import YouTubePlayer from '@/components/YouTubePlayer'
-import BannerRotator from '@/components/BannerRotator'
+import BannerRotator, {
+  BannerAvailabilityContext,
+} from '@/components/BannerRotator'
 import SignalCut from '@/components/SignalCut'
 import posthog from 'posthog-js'
 
@@ -18,6 +20,9 @@ class WidgetErrorBoundary extends Component<
   { children: ReactNode },
   { hasError: boolean }
 > {
+  static contextType = BannerAvailabilityContext
+  declare context: (available: boolean) => void
+
   constructor(props: { children: ReactNode }) {
     super(props)
     this.state = { hasError: false }
@@ -27,6 +32,7 @@ class WidgetErrorBoundary extends Component<
   }
   componentDidCatch(error: Error) {
     console.error('WidgetErrorBoundary caught:', error)
+    this.context(false)
   }
   render() {
     if (this.state.hasError) return null
@@ -138,20 +144,20 @@ export default function Home() {
                 lecturesfrom
               </SignalCut>
             </div>
-            <div className="flex items-center gap-3 sm:gap-8">
-              <a href="#experience" className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-x-8">
+              <a href="#experience" className="whitespace-nowrap text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
                 XP
               </a>
-              <a href="#projects" className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
+              <a href="#projects" className="whitespace-nowrap text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
                 Projects <span className="text-[var(--text-muted)]">[P]</span>
               </a>
-              <a href="#contact" className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
+              <a href="#contact" className="whitespace-nowrap text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
                 Contact <span className="text-[var(--text-muted)]">[C]</span>
               </a>
               <button
                 onClick={handleOpenChat}
                 aria-label="Ask AI"
-                className="ask-ai-btn px-3 py-2 sm:px-4 font-mono text-sm"
+                className="ask-ai-btn whitespace-nowrap px-3 py-2 sm:px-4 font-mono text-sm"
               >
                 Ask AI
               </button>
