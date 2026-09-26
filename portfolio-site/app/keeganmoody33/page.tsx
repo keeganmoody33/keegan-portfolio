@@ -106,26 +106,28 @@ export default function Home() {
   }, [])
 
   return (
-    <div className="min-h-screen">
-      {/* Marquee Ticker */}
-      <Marquee />
+    <div className="min-h-screen overflow-x-hidden">
+      <header>
+        {/* Marquee Ticker */}
+        <Marquee />
 
-      {/* Rotating Banner — one widget visible at a time, auto-cycles */}
-      <BannerRotator labels={['Now Playing', 'GitHub']}>
-        <WidgetErrorBoundary>
-          <YouTubePlayer />
-        </WidgetErrorBoundary>
-        <WidgetErrorBoundary>
-          <GitHubActivity />
-        </WidgetErrorBoundary>
-      </BannerRotator>
+        {/* Rotating Banner — one widget visible at a time, auto-cycles */}
+        <BannerRotator labels={['Now Playing', 'GitHub']}>
+          <WidgetErrorBoundary>
+            <YouTubePlayer />
+          </WidgetErrorBoundary>
+          <WidgetErrorBoundary>
+            <GitHubActivity />
+          </WidgetErrorBoundary>
+        </BannerRotator>
+      </header>
 
       {/* Main Layout */}
-      <div className="flex">
+      <div className="flex min-w-0">
         {/* Main Content */}
-        <main className="flex-1 px-4 sm:px-8 lg:px-16 py-8">
+        <main className="min-w-0 flex-1 px-4 sm:px-8 lg:px-16 py-8">
           {/* Navigation */}
-          <nav className="flex items-center justify-between mb-12 sm:mb-16">
+          <nav className="mb-12 flex flex-wrap items-center justify-between gap-3 sm:mb-16">
             <div className="flex items-center gap-2">
               <span className="text-[var(--text-muted)] font-mono text-sm">/</span>
               <SignalCut

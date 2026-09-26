@@ -94,6 +94,7 @@ export default function GitHubActivity() {
             target="_blank"
             rel="noopener noreferrer"
             onClick={handleClick}
+            aria-label="GitHub activity, last 14 days"
             className="flex items-end gap-[2px] h-[24px] flex-1 group cursor-pointer"
           >
             {data.daily_activity.map((day) => {
