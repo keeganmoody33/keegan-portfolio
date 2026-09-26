@@ -436,6 +436,30 @@ function waitForPathname(href: string, deadline: number, gen: number): Promise<{
   })
 }
 
+function waitForQuietFrame(deadline: number, gen: number): Promise<number> {
+  const started = performance.now()
+  return new Promise((resolve) => {
+    const tick = (before: number) => {
+      if (runtime.generation !== gen) {
+        resolve(performance.now() - started)
+        return
+      }
+      runtime.waitRaf = window.requestAnimationFrame((after) => {
+        if (runtime.generation !== gen) {
+          resolve(performance.now() - started)
+          return
+        }
+        if (after - before < 24 || after >= deadline) {
+          resolve(after - started)
+          return
+        }
+        runtime.waitRaf = window.requestAnimationFrame(tick)
+      })
+    }
+    runtime.waitRaf = window.requestAnimationFrame(tick)
+  })
+}
+
 function fallbackNavigate(req: CutRequest) {
   try {
     teardown()
@@ -503,6 +527,7 @@ function playCut(req: CutRequest): boolean {
       return
     }
     overlay.style.transition = `opacity ${timing.fade}ms ${REVEAL_EASE}`
+    void overlay.offsetWidth
     overlay.style.opacity = '0'
     let ended = false
     const finish = () => {
@@ -543,6 +568,8 @@ function playCut(req: CutRequest): boolean {
         }
       }
     }
+    if (runtime.generation !== gen) return
+    await waitForQuietFrame(t0 + HARD_CAP_MS, gen)
     if (runtime.generation !== gen) return
     finishReveal()
   }
@@ -592,11 +619,7 @@ function playCut(req: CutRequest): boolean {
 
       if (!revealArmed && elapsed >= timing.reveal) {
         revealArmed = true
-        if (currentPathname() === pathnameOf(req.href)) {
-          finishReveal()
-        } else {
-          void maybeHoldThenReveal()
-        }
+        void maybeHoldThenReveal()
         return
       }
 

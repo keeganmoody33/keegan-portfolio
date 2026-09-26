@@ -96,6 +96,7 @@ Updated: 2026-09-26
 - **Do not `router.prefetch` synchronously inside the click handler before the overlay is up.** Prefetching `/` on this main branch parses the R3F turntable bundle and created >50ms long tasks during snow. Prefetch on mount/hover/focus/touchstart, start the cut first, then `queueMicrotask` the click prefetch.
 - **Do not set `html { overflow: hidden }` for the tear.** Hiding the scrollbar is a layout shift (CLS). The spec requires CLS 0 from the overlay itself; destination `/` on main is still the 3D turntable and may shift on commit.
 - **Drive phase boundaries from a single rAF clock (`elapsed` vs `t0`), not a chain of `setTimeout`s.** Timer drift stacked past ±20ms. Fade-end is the exception: duration from `reveal-start` via `setTimeout(fadeMs)`, not `fadeMs + 16`, or `end` overshoots when reveal was already a frame late.
+- **After pathname commit, wait for one frame under 24ms before revealing.** The current `/` on main hydrates a R3F turntable; that long-task delayed `setTimeout(60)` to ~173ms. Spec hold is pathname; the extra quiet frame keeps the fade mark honest until the house title card lands. Hard cap remains 1500ms.
 - **Destination `/` on main redirects returning visitors** via `localStorage hasVisitedPortfolio`. Clear it in measurements or the house crossing is not observable.
 
 ## Descoped Features
