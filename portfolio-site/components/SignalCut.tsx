@@ -560,6 +560,7 @@ function fallbackNavigate(req: CutRequest) {
     try {
       revertTear()
       clearTimers()
+      clearCrossingFlag()
       removeOverlay()
     } catch {
       // last-resort cleanup
