@@ -20,7 +20,7 @@
 | `/icon.svg`      | `app/icon.svg`                       | Site icon; `prefers-color-scheme` stroke. Applies to house and person. |
 | `/favicon.ico`   | `app/favicon.ico`                    | 16/32/48 ico from the same mark                                 |
 | `/apple-icon.png`| `app/apple-icon.png`                 | 180px, light ground, mark `#20262b`                             |
-| `/opengraph-image` | `app/(house)/opengraph-image.png`  | House share image 1200×630. Person page keeps `/og.jpg`.        |
+| `/opengraph-image` | `app/(house)/opengraph-image.tsx`  | House share image 1200×630. Person page keeps `/og.jpg`.        |
 | `/keeganmoody33` | `app/keeganmoody33/page.tsx` | Principal / person page (Ask AI, JD Fit Analyzer, timeline)     |
 | `/keegan`        | next.config + vercel.json    | 301 → `/keeganmoody33`                                          |
 

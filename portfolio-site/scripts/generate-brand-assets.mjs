@@ -147,8 +147,7 @@ function main() {
 
   const applePath = path.join(APP, 'apple-icon.png')
   const icoPath = path.join(APP, 'favicon.ico')
-  const ogPath = path.join(HOUSE, 'opengraph-image.png')
-  const twPath = path.join(HOUSE, 'twitter-image.png')
+  const ogPath = path.join(ROOT, 'brand/house-share.png')
 
   pythonComposite(`
 from PIL import Image
@@ -163,8 +162,7 @@ x = (${OG_W} - core.width) // 2
 y = (${OG_H} - core.height) // 2
 og.alpha_composite(core, (x, y))
 og.convert('RGB').save(${JSON.stringify(ogPath)}, 'PNG')
-og.convert('RGB').save(${JSON.stringify(twPath)}, 'PNG')
-print('wrote apple-icon, opengraph-image, twitter-image')
+print('wrote apple-icon, house-share')
 `)
 
   fs.writeFileSync(

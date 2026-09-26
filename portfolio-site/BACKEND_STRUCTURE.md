@@ -373,8 +373,8 @@ House share images live in the `(house)` route group so they do **not** inherit 
 | `app/icon.svg` | `/icon.svg` | Stroke via `prefers-color-scheme` (`#20262b` light / `#ececec` dark). No `currentColor`. |
 | `app/favicon.ico` | `/favicon.ico` | 16 / 32 / 48 from the same SVG. |
 | `app/apple-icon.png` | `/apple-icon.png` | 180×180, solid `#ececec` ground, mark `#20262b`. |
-| `app/(house)/opengraph-image.png` | `/opengraph-image` | 1200×630, mark on `#0a0a0a` in `#ececec`. House routes only. |
-| `app/(house)/twitter-image.png` | `/twitter-image` | Same still as OG. |
+| `app/(house)/opengraph-image.tsx` | `/opengraph-image` | 1200×630 from `brand/house-share.png`. House routes only. |
+| `app/(house)/twitter-image.tsx` | `/twitter-image` | Same still as OG. |
 | `public/og.jpg` | `/og.jpg` | GTM certificate. Person metadata only (`personMetadata()`). |
 
 Regenerate rasters with `npm run generate:brand`. Canonical vector: `brand/lecturesfrom-mark.svg`.
