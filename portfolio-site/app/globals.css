@@ -259,10 +259,45 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   }
 }
 
+/* scaleX is capped so the wide pose stays inside the viewport at 320–1440. */
 @keyframes houseLockup {
   from {
     opacity: 0;
-    transform: scaleX(1.325);
+    transform: scaleX(1.05);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 374px) {
+  .house-wordmark {
+    animation-name: houseLockup320;
+  }
+}
+
+@keyframes houseLockup320 {
+  from {
+    opacity: 0;
+    transform: scaleX(1.09);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (min-width: 1400px) {
+  .house-wordmark {
+    animation-name: houseLockupXl;
+  }
+}
+
+@keyframes houseLockupXl {
+  from {
+    opacity: 0;
+    transform: scaleX(1.25);
   }
   to {
     opacity: 1;
