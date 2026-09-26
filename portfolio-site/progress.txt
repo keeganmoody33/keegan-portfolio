@@ -8,7 +8,8 @@ COMPLETED (2026-09-26 — house UX F01–F06):
 COMPLETED (2026-09-26 — SignalCut warm-path timing):
 - Phase boundaries are `setTimeout` from click `t0` (not rAF frame counting); snow paint stays on rAF
 - Hold only if pathname has not committed at reveal-start; quiet-frame wait removed
-- `router.push` as soon as overlay is fully opaque (first: snow start 60ms; repeat: black 40ms)
+- Overlay is fully opaque from snow start (first) / black (repeat). First `router.push` waits until snow-end (280ms) so person-page hydration does not starve snow timers; repeat pushes at black (40ms)
+- After a slow-destination hold, the reveal fade is timed from now (not `t0 + fadeMs`, which would skip the fade)
 
 COMPLETED (2026-09-26 — SignalCut teardown vs Copilot 4111027402):
 - One idempotent `teardown()` on completion, hard-cap fallback, hold, popstate, pagehide, visibilitychange hidden, thrown error, second click (swallowed)
