@@ -264,11 +264,19 @@ export function resolveFocusAfterNowPlayingDrop(opts: {
     }
   }
 
+  const leftoverPanels = panels.filter((panel) => {
+    if (panel.classList.contains('hidden')) return false
+    if (playerRoot && panel.contains(playerRoot)) return false
+    if (panel.querySelector('[data-now-playing]')) return false
+    return true
+  })
   const rotator =
     header?.querySelector('[data-banner-rotator]') ??
     (root as Document).querySelector?.('[data-banner-rotator]') ??
     null
-  if (rotator instanceof HTMLElement) return rotator
+  // Only the rotator that will survive the drop — zero leftover slides
+  // collapses BannerRotator, which would dump focus to body.
+  if (leftoverPanels.length > 0 && rotator instanceof HTMLElement) return rotator
 
   const nav =
     (root as Document).querySelector?.('nav') ??
