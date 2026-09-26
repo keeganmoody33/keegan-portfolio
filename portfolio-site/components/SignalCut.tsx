@@ -476,12 +476,14 @@ function debugState(): SignalCutDebugState {
 
 function installDebugHook() {
   if (typeof window === 'undefined') return
-  window.__lfSignalCut = {
-    teardown,
-    getState: debugState,
-    get callbackTicks() {
-      return runtime.callbackTicks
-    },
+  if (process.env.NODE_ENV !== 'production') {
+    window.__lfSignalCut = {
+      teardown,
+      getState: debugState,
+      get callbackTicks() {
+        return runtime.callbackTicks
+      },
+    }
   }
 }
 
