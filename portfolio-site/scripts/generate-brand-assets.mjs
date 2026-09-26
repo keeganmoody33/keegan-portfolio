@@ -148,9 +148,26 @@ function main() {
   const applePath = path.join(APP, 'apple-icon.png')
   const icoPath = path.join(APP, 'favicon.ico')
   const ogPath = path.join(ROOT, 'brand/house-share.png')
+  const ico16 = path.join(tmp, 'ico-16.png')
+  const ico32 = path.join(tmp, 'ico-32.png')
+  const ico48 = path.join(tmp, 'ico-48.png')
 
   pythonComposite(`
-from PIL import Image
+from PIL import Image, ImageDraw
+
+def rounded_plate(size, radius, fill):
+    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.rounded_rectangle([0, 0, size - 1, size - 1], radius=radius, fill=fill)
+    return img
+
+def favicon_frame(mark_path, out_path, size):
+    radius = max(2, round(size * 0.1875))
+    plate = rounded_plate(size, radius, '${APPLE_BG}')
+    mark = Image.open(mark_path).convert('RGBA')
+    plate.alpha_composite(mark)
+    plate.save(out_path, 'PNG')
+
 apple_bg = Image.new('RGBA', (${APPLE}, ${APPLE}), '${APPLE_BG}')
 mark = Image.open(${JSON.stringify(png180)}).convert('RGBA')
 apple_bg.alpha_composite(mark)
@@ -162,15 +179,19 @@ x = (${OG_W} - core.width) // 2
 y = (${OG_H} - core.height) // 2
 og.alpha_composite(core, (x, y))
 og.convert('RGB').save(${JSON.stringify(ogPath)}, 'PNG')
-print('wrote apple-icon, house-share')
+
+favicon_frame(${JSON.stringify(png16)}, ${JSON.stringify(ico16)}, 16)
+favicon_frame(${JSON.stringify(png32)}, ${JSON.stringify(ico32)}, 32)
+favicon_frame(${JSON.stringify(png48)}, ${JSON.stringify(ico48)}, 48)
+print('wrote apple-icon, house-share, favicon frames')
 `)
 
   fs.writeFileSync(
     icoPath,
     encodeIco([
-      { width: 16, height: 16, buffer: fs.readFileSync(png16) },
-      { width: 32, height: 32, buffer: fs.readFileSync(png32) },
-      { width: 48, height: 48, buffer: fs.readFileSync(png48) },
+      { width: 16, height: 16, buffer: fs.readFileSync(ico16) },
+      { width: 32, height: 32, buffer: fs.readFileSync(ico32) },
+      { width: 48, height: 48, buffer: fs.readFileSync(ico48) },
     ])
   )
 

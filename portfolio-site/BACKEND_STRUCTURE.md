@@ -371,7 +371,7 @@ House share images live in the `(house)` route group so they do **not** inherit 
 | File | URL | Notes |
 |------|-----|--------|
 | `app/icon.svg` | `/icon.svg` | Stroke via `prefers-color-scheme` (`#20262b` light / `#ececec` dark). No `currentColor`. |
-| `app/favicon.ico` | `/favicon.ico` | 16 / 32 / 48 from the same SVG. |
+| `app/favicon.ico` | `/favicon.ico` | 16 / 32 / 48 on a `#ececec` rounded plate, mark `#20262b`. |
 | `app/apple-icon.png` | `/apple-icon.png` | 180×180, solid `#ececec` ground, mark `#20262b`. |
 | `app/(house)/opengraph-image.tsx` | hashed `/opengraph-image-*` | Injects house `og:image`. |
 | `app/opengraph-image/route.ts` | `/opengraph-image` | Stable 1200×630 PNG from `brand/house-share.png`. |

@@ -18,7 +18,7 @@
 | `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate                                         |
 | `/legal`         | `app/(house)/legal/page.tsx`         | Entity + long about                                             |
 | `/icon.svg`      | `app/icon.svg`                       | Site icon; `prefers-color-scheme` stroke. Applies to house and person. |
-| `/favicon.ico`   | `app/favicon.ico`                    | 16/32/48 ico from the same mark                                 |
+| `/favicon.ico`   | `app/favicon.ico`                    | 16/32/48 ico: `#ececec` rounded plate, mark `#20262b` (matches apple-icon). |
 | `/apple-icon.png`| `app/apple-icon.png`                 | 180px, light ground, mark `#20262b`                             |
 | `/opengraph-image` | `app/(house)/opengraph-image.tsx`  | House share image 1200×630. Person page keeps `/og.jpg`.        |
 | `/keeganmoody33` | `app/keeganmoody33/page.tsx` | Principal / person page (Ask AI, JD Fit Analyzer, timeline)     |
