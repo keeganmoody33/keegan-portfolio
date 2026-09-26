@@ -268,10 +268,15 @@ export function markdownMirrors(): string[] {
 
 export function discoveryDocument() {
   return {
+    specVersion: '1.0',
     name: 'lecturesfrom',
     legalName: 'lecturesfrom LLC',
     url: SITE_URL,
     description: HOUSE_DESCRIPTION,
+    host: {
+      displayName: 'lecturesfrom',
+      identifier: 'urn:air:lecturesfrom.com:host',
+    },
     llms: `${SITE_URL}/llms.txt`,
     pages: housePages(),
     markdown: markdownMirrors(),

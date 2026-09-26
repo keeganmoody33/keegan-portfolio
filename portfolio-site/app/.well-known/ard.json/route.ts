@@ -5,6 +5,8 @@ export function GET() {
   const catalog = discoveryDocument()
   return NextResponse.json(
     {
+      specVersion: catalog.specVersion,
+      host: catalog.host,
       entries: catalog.entries,
       name: catalog.name,
       legalName: catalog.legalName,

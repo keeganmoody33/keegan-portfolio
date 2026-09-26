@@ -1,4 +1,4 @@
-import { SITE_URL, HOUSE_SAME_AS } from '@/lib/site'
+import { SITE_URL, HOUSE_DESCRIPTION, HOUSE_SAME_AS } from '@/lib/site'
 import { getCatalogPageSleeves, sleeves } from '@/lib/catalog'
 
 const organizationId = `${SITE_URL}/#organization`
@@ -27,6 +27,7 @@ export function houseOrganizationJsonLd() {
         '@id': organizationId,
         name: 'lecturesfrom',
         legalName: 'lecturesfrom LLC',
+        description: HOUSE_DESCRIPTION,
         url: SITE_URL,
         foundingDate: '2025',
         address: {
