@@ -13,7 +13,9 @@ export default function LegalPage() {
     <HouseShell>
       <HouseRail left="atl 33.70n" center="legal" right="llc" />
       <article className="mx-auto max-w-2xl px-6 py-16 sm:px-10">
-        <p className="house-meta">lecturesfrom LLC · Atlanta, Georgia 30316 · founded 2025 · self-owned</p>
+        <p className="font-mono text-[11px] tracking-wide text-[var(--house-muted)]">
+          lecturesfrom LLC · Atlanta, Georgia 30316 · founded 2025 · self-owned
+        </p>
         <h1 className="mt-4 font-space text-4xl tracking-tight sm:text-6xl">lecturesfrom</h1>
         <p className="mt-6 font-mono text-sm leading-relaxed text-[var(--house-orange)]">
           Transforming your business&apos;s Achilles&apos; heel into durable systems and crafted products that

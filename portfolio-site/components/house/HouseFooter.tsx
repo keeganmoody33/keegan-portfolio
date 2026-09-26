@@ -3,7 +3,9 @@ import Link from 'next/link'
 export default function HouseFooter() {
   return (
     <footer className="mt-16 border-t border-[var(--house-line)] px-6 py-8 sm:px-10">
-      <p className="house-meta">lecturesfrom LLC · Atlanta, Georgia</p>
+      <p className="font-mono text-[11px] tracking-wide text-[var(--house-muted)]">
+        lecturesfrom LLC · Atlanta, Georgia
+      </p>
       <p className="mt-2 font-mono text-[11px] tracking-wide text-[var(--house-muted)]">
         we think through every thing we ship.
       </p>
