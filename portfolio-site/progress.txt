@@ -6,6 +6,7 @@ COMPLETED (2026-09-26 — lecturesfrom house cut):
 - Person page wordmark is now a SignalCut link to `/`; Ask AI + JD Fit Analyzer stay on /keeganmoody33
 - Agent files: robots.txt/route.ts (LLMS: line; MetadataRoute.Robots cannot emit it), sitemap.ts, llms.txt, markdown mirrors, JSON-LD, /.well-known/ai-catalog.json
 - Two visual dialects: house near-black + print orange; person lime terminal untouched
+- 2026-09-26 review: Phase 2 marked SUPERSEDED in IMPLEMENTATION_PLAN.md; --house-dim raised to #7a7a7a (AA on #0a0a0a); /collection no longer leaks error.message or caches a failed ISR page; grid prefers thumbnail + lazy/async img
 
 COMPLETED (2026-08-22 session — live Supabase sync execution):
 - Received owner sign-off and executed `sql/2026-08-22_sync_recent_experiences.sql` against production project `cvkcwvmlnghwwvdqudod` via equivalent PostgREST calls.

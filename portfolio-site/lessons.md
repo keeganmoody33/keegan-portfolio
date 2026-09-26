@@ -6,6 +6,8 @@ Updated: 2026-09-26
 
 - **Never restore `hasVisitedPortfolio`.** The old root wrote that localStorage key and `router.replace('/keeganmoody33')` on return visits. The house root must stay on `/` even if that key is still set in a visitor's browser. Grep new code paths for `hasVisitedPortfolio` and `router.replace` before shipping.
 - **House `/` must be a Server Component.** Title card copy (`lecturesfrom`, `not a studio`, sleeve names) has to be in the first HTML response. A client-only root scores empty for agents (Ora). Optional lockup animation is CSS on server-rendered text.
+- **Never cache a failed Discogs `/collection` render.** Catch only during `next build` (`NEXT_PHASE === 'phase-production-build'`) so the build can succeed. At runtime, rethrow so ISR keeps the last good HTML. Never print `error.message` to visitors; never show `0 releases` when the count is unknown.
+- **`--house-dim` must stay WCAG AA on `#0a0a0a`.** Floor is `#7a7a7a` (~4.5:1). Keep it darker than `--house-muted` (`#8a8a8a`). Parked spines still dim via opacity, not a darker token.
 - **SignalCut is not a layout animation.** Mount it only on the two boundary links (crate row 04, person wordmark). `sessionStorage` key is `lf-signal-cut-count`. 2D canvas/CSS noise only — no three.js, no video.
 - **Two dialects.** Do not restyle the person page when adding house chrome. Print orange `#E23D00` on the house; lime stays on `/keeganmoody33`.
 - **Discogs has two modes.** `/api/discogs` stays recent-5 for RecentDigs. `/api/discogs/collection` paginates the full crate. Do not collapse them.
