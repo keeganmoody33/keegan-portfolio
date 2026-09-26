@@ -17,6 +17,7 @@ import {
   isBannerDotControl,
   isNowPlayingControl,
   isFocusInsideNowPlaying,
+  shouldArmNowPlayingFocusHandoff,
   requestNowPlayingFocusHandoff,
   flushNowPlayingFocusHandoff,
   NOW_PLAYING_FOCUS_OPTIONS,
@@ -374,6 +375,37 @@ describe('isFocusInsideNowPlaying', () => {
   })
 })
 
+describe('shouldArmNowPlayingFocusHandoff', () => {
+  it('arms for Play inside the player and for a rotator dot', () => {
+    const play = fakeEl('Play', '[data-now-playing]')
+    const root = {
+      contains: (el: Element) => el === play,
+    } as unknown as Element
+    const dot = fakeEl('Switch to Now Playing', '[data-banner-dots]')
+    const rotatorDot = fakeEl('Switch to GitHub Activity', '[data-banner-rotator]')
+    assert.equal(shouldArmNowPlayingFocusHandoff(root, play), true)
+    assert.equal(shouldArmNowPlayingFocusHandoff(null, play), true)
+    assert.equal(shouldArmNowPlayingFocusHandoff(root, dot), true)
+    assert.equal(shouldArmNowPlayingFocusHandoff(null, rotatorDot), true)
+  })
+
+  it('does not arm for body or a nav control', () => {
+    const play = fakeEl('Play', '[data-now-playing]')
+    const root = {
+      contains: (el: Element) => el === play,
+    } as unknown as Element
+    const body = Object.assign(fakeEl('body'), { nodeName: 'BODY' }) as unknown as Element
+    const html = Object.assign(fakeEl('html'), { nodeName: 'HTML' }) as unknown as Element
+    const xp = fakeEl('XP')
+    const ask = fakeEl('Ask AI')
+    assert.equal(shouldArmNowPlayingFocusHandoff(root, body), false)
+    assert.equal(shouldArmNowPlayingFocusHandoff(root, html), false)
+    assert.equal(shouldArmNowPlayingFocusHandoff(root, xp), false)
+    assert.equal(shouldArmNowPlayingFocusHandoff(root, ask), false)
+    assert.equal(shouldArmNowPlayingFocusHandoff(root, null), false)
+  })
+})
+
 describe('requestNowPlayingFocusHandoff / flush preventScroll', () => {
   const g = globalThis as typeof globalThis & {
     document?: Document
@@ -421,6 +453,47 @@ describe('requestNowPlayingFocusHandoff / flush preventScroll', () => {
     } as unknown as Window
     return { github, body }
   }
+
+  it('does not queue a handoff when activeElement is a nav link', () => {
+    const play = fakeEl('Play', '[data-now-playing]')
+    const root = {
+      contains: (el: Element) => el === play,
+    } as unknown as Element
+    const xp = fakeEl('XP')
+    const { github } = installDoc({ active: xp })
+    let focused = false
+    ;(github as HTMLElement).focus = () => {
+      focused = true
+    }
+    requestNowPlayingFocusHandoff(root)
+    assert.equal(flushNowPlayingFocusHandoff(), null)
+    assert.equal(focused, false)
+  })
+
+  it('queues a handoff when activeElement is a rotator dot', () => {
+    const play = fakeEl('Play', '[data-now-playing]')
+    const root = {
+      contains: (el: Element) => el === play,
+    } as unknown as Element
+    const dot = fakeEl('Switch to Now Playing', '[data-banner-dots]')
+    const focusCalls: unknown[] = []
+    const github = {
+      getAttribute: (name: string) => {
+        if (name === 'href') return 'https://github.com/keeganmoody33'
+        if (name === 'aria-label') return 'GitHub activity, last 14 days'
+        return null
+      },
+      closest: () => null,
+      focus: (opts?: FocusOptions) => {
+        focusCalls.push(opts)
+      },
+    } as unknown as HTMLElement
+    installDoc({ active: dot, github })
+    requestNowPlayingFocusHandoff(root)
+    const landed = flushNowPlayingFocusHandoff()
+    assert.equal(landed, github)
+    assert.deepEqual(focusCalls, [{ preventScroll: true }])
+  })
 
   it('does not queue a handoff when activeElement is body', () => {
     const play = fakeEl('Play', '[data-now-playing]')

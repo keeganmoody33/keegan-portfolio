@@ -289,6 +289,12 @@ let pendingNowPlayingFocusHandoff = false
 
 export const NOW_PLAYING_FOCUS_OPTIONS: FocusOptions = { preventScroll: true }
 
+function closestAttr(el: Element, sel: string): boolean {
+  return typeof (el as { closest?: (s: string) => Element | null }).closest === 'function'
+    ? !!(el as Element).closest(sel)
+    : false
+}
+
 /** True only when focus is still inside the Now Playing slide. Body is not. */
 export function isFocusInsideNowPlaying(
   playerRoot: Element | null,
@@ -298,17 +304,34 @@ export function isFocusInsideNowPlaying(
   if (playerRoot && typeof playerRoot.contains === 'function' && playerRoot.contains(active)) {
     return true
   }
-  if (typeof (active as { closest?: (sel: string) => Element | null }).closest === 'function') {
-    return !!(active as Element).closest('[data-now-playing]')
-  }
-  return false
+  return closestAttr(active, '[data-now-playing]')
 }
 
-/** Only records a handoff if focus is inside the Now Playing slide. */
+/**
+ * Arm the drop handoff only for focus still inside the banner rotator:
+ * the Now Playing slide or the dots chrome. Never body. Never nav.
+ */
+export function shouldArmNowPlayingFocusHandoff(
+  playerRoot: Element | null,
+  active: Element | null
+): boolean {
+  if (!active) return false
+  const tag = (active as { nodeName?: string }).nodeName
+  if (tag === 'BODY' || tag === 'HTML') return false
+  if (playerRoot && typeof playerRoot.contains === 'function' && playerRoot.contains(active)) {
+    return true
+  }
+  if (closestAttr(active, '[data-banner-rotator]')) return true
+  if (closestAttr(active, '[data-now-playing]')) return true
+  if (closestAttr(active, '[data-banner-dots]')) return true
+  return isBannerDotControl(active)
+}
+
+/** Only records a handoff if focus is inside the banner rotator. */
 export function requestNowPlayingFocusHandoff(playerRoot: Element | null): void {
   if (typeof document === 'undefined') return
   const active = document.activeElement
-  if (!isFocusInsideNowPlaying(playerRoot, active)) return
+  if (!shouldArmNowPlayingFocusHandoff(playerRoot, active)) return
   pendingNowPlayingFocusHandoff = true
   // Do not flush in a microtask: the dropping slide is still mounted and
   // its Play button would win, then unmount and dump focus to body.
