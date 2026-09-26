@@ -13,10 +13,12 @@ import {
   playbackErrorSkipLimit,
   playlistLengthFromPlayer,
   recordPlaybackError,
+  nowPlayingRecoveryPresentation,
   ytMachineOnError,
   ytMachineOnProgress,
   ytMachineOnStall,
   YT_ERROR_SKIP_LIMIT,
+  YT_RECOVERY_TITLE,
   YT_STALL_TIMEOUT_MS,
 } from './youtube-playback-errors.ts'
 
@@ -113,20 +115,32 @@ describe('recordPlaybackError', () => {
 })
 
 describe('yt error machine', () => {
-  it('2b: one 150, BUFFERING at 2500ms, slide stays', () => {
+  it('2b: one 150, BUFFERING at 2500ms, then PLAYING, slide stays', () => {
     assert.equal(YT_STALL_TIMEOUT_MS, 10_000)
     let state = createYtErrorMachine()
     state = ytMachineOnError(state, 150, 12)
     assert.deepEqual(state, { streak: 1, stallArmed: true, dropped: false })
 
-    // BUFFERING at 2500ms — well inside the 10s stall window
+    // BUFFERING restarts the stall clock; it does not drop or disarm
     state = ytMachineOnProgress(state, 'buffering')
-    assert.deepEqual(state, { streak: 1, stallArmed: false, dropped: false })
+    assert.deepEqual(state, { streak: 1, stallArmed: true, dropped: false })
 
-    // A cancelled stall must not drop if it later fires
+    state = ytMachineOnProgress(state, 'playing')
+    assert.deepEqual(state, { streak: 0, stallArmed: false, dropped: false })
+
     state = ytMachineOnStall(state)
     assert.equal(state.dropped, false)
-    assert.equal(state.streak, 1)
+    assert.equal(state.streak, 0)
+  })
+
+  it('P2-F: hang after BUFFERING still drops', () => {
+    let state = createYtErrorMachine()
+    state = ytMachineOnError(state, 150, 12)
+    state = ytMachineOnProgress(state, 'buffering')
+    assert.equal(state.stallArmed, true)
+    assert.equal(state.dropped, false)
+    state = ytMachineOnStall(state)
+    assert.deepEqual(state, { streak: 1, stallArmed: false, dropped: true })
   })
 
   it('one 150, then silence for 10s, drops', () => {
@@ -165,5 +179,32 @@ describe('yt error machine', () => {
   it('still drops immediately on the first 150 when the playlist has one video', () => {
     const state = ytMachineOnError(createYtErrorMachine(), 150, 1)
     assert.deepEqual(state, { streak: 1, stallArmed: false, dropped: true })
+  })
+
+  it('CUED and a new video id keep the stall armed', () => {
+    let state = ytMachineOnError(createYtErrorMachine(), 150, 12)
+    state = ytMachineOnProgress(state, 'cued')
+    assert.equal(state.stallArmed, true)
+    state = ytMachineOnProgress(state, 'new_video_id')
+    assert.equal(state.stallArmed, true)
+    assert.equal(state.dropped, false)
+  })
+})
+
+describe('nowPlayingRecoveryPresentation', () => {
+  it('sets aria-busy and aria-disabled while recovering', () => {
+    const ui = nowPlayingRecoveryPresentation(true)
+    assert.equal(ui.ariaBusy, true)
+    assert.equal(ui.ariaDisabled, true)
+    assert.equal(ui.title, YT_RECOVERY_TITLE)
+    assert.equal(ui.hideTime, true)
+  })
+
+  it('clears recovery chrome when idle', () => {
+    const ui = nowPlayingRecoveryPresentation(false)
+    assert.equal(ui.ariaBusy, false)
+    assert.equal(ui.ariaDisabled, false)
+    assert.equal(ui.title, null)
+    assert.equal(ui.hideTime, false)
   })
 })

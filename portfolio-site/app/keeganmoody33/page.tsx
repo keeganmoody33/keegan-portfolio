@@ -12,6 +12,7 @@ import YouTubePlayer from '@/components/YouTubePlayer'
 import BannerRotator, {
   BannerAvailabilityContext,
 } from '@/components/BannerRotator'
+import NowPlayingLiveRegion from '@/components/NowPlayingLiveRegion'
 import SignalCut from '@/components/SignalCut'
 import posthog from 'posthog-js'
 
@@ -113,6 +114,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen overflow-x-hidden">
+      <NowPlayingLiveRegion />
       <header>
         {/* Marquee Ticker */}
         <Marquee />

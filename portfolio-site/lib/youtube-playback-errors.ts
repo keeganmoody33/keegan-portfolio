@@ -68,14 +68,14 @@ export function recordPlaybackError(
   return { streak, shouldDrop, shouldSkip: !shouldDrop }
 }
 
-export function progressCancelsStall(kind: YtProgressKind): boolean {
-  return (
-    kind === 'ready' ||
-    kind === 'playing' ||
-    kind === 'buffering' ||
-    kind === 'cued' ||
-    kind === 'new_video_id'
-  )
+/** BUFFERING / CUED / new id restart the stall clock; they do not clear it. */
+export function progressRestartsStall(kind: YtProgressKind): boolean {
+  return kind === 'buffering' || kind === 'cued' || kind === 'new_video_id'
+}
+
+/** Only PLAYING clears an armed stall. */
+export function progressClearsStall(kind: YtProgressKind): boolean {
+  return kind === 'playing'
 }
 
 export function progressResetsStreak(kind: YtProgressKind): boolean {
@@ -108,9 +108,12 @@ export function ytMachineOnProgress(
   kind: YtProgressKind
 ): YtErrorMachineState {
   if (state.dropped) return state
+  if (progressClearsStall(kind)) {
+    return { streak: 0, stallArmed: false, dropped: false }
+  }
   return {
     streak: progressResetsStreak(kind) ? 0 : state.streak,
-    stallArmed: false,
+    stallArmed: state.stallArmed,
     dropped: false,
   }
 }
@@ -124,45 +127,54 @@ export function ytMachineOnStall(state: YtErrorMachineState): YtErrorMachineStat
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
+export function isBannerDotControl(el: Element): boolean {
+  if (el.closest('[data-banner-dots]')) return true
+  const label = el.getAttribute('aria-label') || ''
+  return label.startsWith('Switch to')
+}
+
 export function firstFocusableIn(root: ParentNode): HTMLElement | null {
   const nodes = root.querySelectorAll<HTMLElement>(FOCUSABLE)
   for (const el of nodes) {
     if (el.closest('[inert]')) continue
     if (el.getAttribute('aria-hidden') === 'true') continue
+    if (isBannerDotControl(el)) continue
     return el
   }
   return null
 }
 
 /**
- * If focus is inside the Now Playing widget, move it to the next visible
- * banner slide or the first nav control before the slide unmounts.
+ * After Now Playing drops, land on the next visible slide's first
+ * focusable control — never a rotator dot — or the first nav link.
+ * `afterUnmount` is for the post-render handoff once the slide is gone.
  */
 export function resolveFocusAfterNowPlayingDrop(opts: {
   playerRoot: Element | null
   activeElement: Element | null
   root: ParentNode
+  afterUnmount?: boolean
 }): HTMLElement | null {
-  const { playerRoot, activeElement, root } = opts
-  if (!playerRoot || !activeElement || !playerRoot.contains(activeElement)) {
-    return null
+  const { playerRoot, activeElement, root, afterUnmount } = opts
+  if (!afterUnmount) {
+    if (!playerRoot || !activeElement || !playerRoot.contains(activeElement)) {
+      return null
+    }
   }
 
   const header =
-    playerRoot.closest('header') ??
+    playerRoot?.closest('header') ??
     (root as Document).querySelector?.('header') ??
     null
-  const rotator = header?.querySelector(':scope > div.relative')
-  if (rotator) {
-    for (const panel of rotator.children) {
-      if (!(panel instanceof HTMLElement)) continue
-      if (panel.contains(playerRoot)) continue
-      if (panel.classList.contains('hidden')) continue
-      if (panel.getAttribute('aria-hidden') === 'true') continue
-      if (panel.hasAttribute('inert')) continue
-      const focusable = firstFocusableIn(panel)
-      if (focusable) return focusable
-    }
+  const panels = header?.querySelectorAll('[data-banner-panel]') ?? []
+  for (const panel of panels) {
+    if (!(panel instanceof HTMLElement)) continue
+    if (playerRoot && panel.contains(playerRoot)) continue
+    if (panel.classList.contains('hidden')) continue
+    if (panel.getAttribute('aria-hidden') === 'true') continue
+    if (panel.hasAttribute('inert')) continue
+    const focusable = firstFocusableIn(panel)
+    if (focusable) return focusable
   }
 
   const nav =
@@ -172,33 +184,63 @@ export function resolveFocusAfterNowPlayingDrop(opts: {
   return nav ? firstFocusableIn(nav) : null
 }
 
-export function moveFocusAfterNowPlayingDrop(playerRoot: Element | null): void {
+let pendingNowPlayingFocusHandoff = false
+
+/** Only records a handoff if focus is inside the player. */
+export function requestNowPlayingFocusHandoff(playerRoot: Element | null): void {
   if (typeof document === 'undefined') return
-  const target = resolveFocusAfterNowPlayingDrop({
-    playerRoot,
-    activeElement: document.activeElement,
-    root: document,
-  })
-  target?.focus()
+  const active = document.activeElement
+  if (!playerRoot || !active || !playerRoot.contains(active)) return
+  pendingNowPlayingFocusHandoff = true
 }
 
-const LIVE_REGION_ID = 'yt-now-playing-live'
+export function flushNowPlayingFocusHandoff(root?: ParentNode): HTMLElement | null {
+  if (!pendingNowPlayingFocusHandoff) return null
+  if (typeof document === 'undefined') return null
+  pendingNowPlayingFocusHandoff = false
+  const target = resolveFocusAfterNowPlayingDrop({
+    playerRoot: null,
+    activeElement: null,
+    root: root ?? document,
+    afterUnmount: true,
+  })
+  target?.focus()
+  return target
+}
 
-/** Body-owned so the announcement survives BannerRotator unmounting this slide. */
+export const NOW_PLAYING_LIVE_ID = 'yt-now-playing-live'
+export const NOW_PLAYING_UNAVAILABLE_TEXT = 'Now Playing unavailable'
+export const YT_RECOVERY_TITLE = 'Track unavailable, skipping…'
+
+export type NowPlayingRecoveryPresentation = {
+  ariaBusy: boolean
+  ariaDisabled: boolean
+  title: string | null
+  hideTime: boolean
+}
+
+export function nowPlayingRecoveryPresentation(
+  recovering: boolean
+): NowPlayingRecoveryPresentation {
+  if (!recovering) {
+    return {
+      ariaBusy: false,
+      ariaDisabled: false,
+      title: null,
+      hideTime: false,
+    }
+  }
+  return {
+    ariaBusy: true,
+    ariaDisabled: true,
+    title: YT_RECOVERY_TITLE,
+    hideTime: true,
+  }
+}
+
+/** Writes into the React-mounted live region. Does not create a node. */
 export function announceNowPlayingUnavailable(): void {
   if (typeof document === 'undefined') return
-  let node = document.getElementById(LIVE_REGION_ID)
-  if (!node) {
-    node = document.createElement('div')
-    node.id = LIVE_REGION_ID
-    node.setAttribute('role', 'status')
-    node.setAttribute('aria-live', 'polite')
-    node.className = 'sr-only'
-    document.body.appendChild(node)
-  }
-  node.textContent = ''
-  window.requestAnimationFrame(() => {
-    const live = document.getElementById(LIVE_REGION_ID)
-    if (live) live.textContent = 'Now Playing unavailable'
-  })
+  const node = document.getElementById(NOW_PLAYING_LIVE_ID)
+  if (node) node.textContent = NOW_PLAYING_UNAVAILABLE_TEXT
 }

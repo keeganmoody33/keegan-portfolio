@@ -7,8 +7,9 @@ import { useBannerAvailability, useBannerPanelPad } from '@/components/BannerRot
 import {
   announceNowPlayingUnavailable,
   createYtErrorMachine,
-  moveFocusAfterNowPlayingDrop,
+  nowPlayingRecoveryPresentation,
   playlistLengthFromPlayer,
+  requestNowPlayingFocusHandoff,
   ytMachineOnError,
   ytMachineOnProgress,
   ytMachineOnStall,
@@ -75,6 +76,7 @@ export default function YouTubePlayer() {
   const [isReady, setIsReady] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [recovering, setRecovering] = useState(false)
   const [playing, setPlaying] = useState(false)
   const [trackTitle, setTrackTitle] = useState('')
   const [trackAuthor, setTrackAuthor] = useState('')
@@ -99,7 +101,8 @@ export default function YouTubePlayer() {
     if (droppedRef.current) return
     droppedRef.current = true
     clearStallTimer()
-    moveFocusAfterNowPlayingDrop(playerRootRef.current)
+    setRecovering(false)
+    requestNowPlayingFocusHandoff(playerRootRef.current)
     announceNowPlayingUnavailable()
     setError(true)
     setIsLoading(false)
@@ -108,11 +111,21 @@ export default function YouTubePlayer() {
   const applyMachine = useCallback(
     (next: YtErrorMachineState) => {
       errorMachine.current = next
+      setRecovering(next.stallArmed && !next.dropped)
       if (next.dropped) {
         dropNowPlaying()
         return
       }
-      if (!next.stallArmed) clearStallTimer()
+      if (!next.stallArmed) {
+        clearStallTimer()
+        return
+      }
+      clearStallTimer()
+      const gen = ++stallGen.current
+      stallTimer.current = setTimeout(() => {
+        if (gen !== stallGen.current) return
+        applyMachine(ytMachineOnStall(errorMachine.current))
+      }, YT_STALL_TIMEOUT_MS)
     },
     [clearStallTimer, dropNowPlaying]
   )
@@ -123,15 +136,6 @@ export default function YouTubePlayer() {
     },
     [applyMachine]
   )
-
-  const armStallTimer = useCallback(() => {
-    clearStallTimer()
-    const gen = ++stallGen.current
-    stallTimer.current = setTimeout(() => {
-      if (gen !== stallGen.current) return
-      applyMachine(ytMachineOnStall(errorMachine.current))
-    }, YT_STALL_TIMEOUT_MS)
-  }, [applyMachine, clearStallTimer])
 
   const persistState = useCallback(() => {
     const player = playerRef.current
@@ -340,15 +344,12 @@ export default function YouTubePlayer() {
             dropNowPlaying()
             return
           }
-          // nextVideo() can fire BUFFERING/CUED synchronously — only
-          // arm the stall if progress did not already cancel it.
-          if (errorMachine.current.stallArmed) armStallTimer()
         },
       },
     })
 
     playerRef.current = player
-  }, [syncTrackInfo, persistState, noteProgress, applyMachine, armStallTimer, dropNowPlaying])
+  }, [syncTrackInfo, persistState, noteProgress, applyMachine, dropNowPlaying])
 
   // ── Hook into the global callback ────────────────────────
   useEffect(() => {
@@ -407,6 +408,7 @@ export default function YouTubePlayer() {
 
   // ── Controls ─────────────────────────────────────────────
   const handlePlayPause = () => {
+    if (recovering) return
     const player = playerRef.current
     if (!player) return
     if (playing) {
@@ -474,6 +476,7 @@ export default function YouTubePlayer() {
   if (error) return null
 
   // ── Render ───────────────────────────────────────────────
+  const recovery = nowPlayingRecoveryPresentation(recovering)
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
 
   return (
@@ -530,12 +533,15 @@ export default function YouTubePlayer() {
                 className={`
                 w-6 h-6 flex items-center justify-center rounded border
                 transition-colors duration-150
+                ${recovery.ariaDisabled ? 'opacity-40' : ''}
                 ${playing
                     ? 'border-[var(--accent-lime)] text-[var(--accent-lime)]'
                     : 'border-[var(--border-dim)] text-[var(--text-muted)] hover:text-[var(--accent-lime)] hover:border-[var(--accent-lime)]'
                   }
               `}
                 aria-label={playing ? 'Pause' : 'Play'}
+                aria-disabled={recovery.ariaDisabled || undefined}
+                aria-busy={recovery.ariaBusy || undefined}
               >
                 {playing ? (
                   // Pause icon
@@ -554,7 +560,7 @@ export default function YouTubePlayer() {
               {/* Track info */}
               <div className="flex-1 min-w-0">
                 <p className="text-[var(--text-bright)] text-xs truncate">
-                  {trackTitle || 'Loading playlist...'}
+                  {recovery.title ?? (trackTitle || 'Loading playlist...')}
                 </p>
                 <p className="text-[var(--text-muted)] text-[10px] truncate">
                   {trackAuthor || '\u00A0'}
@@ -563,9 +569,9 @@ export default function YouTubePlayer() {
 
               {/* Compact: just show time */}
               <span className="text-[var(--text-muted)] text-[10px] tabular-nums">
-                {playing || currentTime > 0
-                  ? `${formatTime(currentTime)} / ${formatTime(duration)}`
-                  : ''}
+                {recovery.hideTime || !(playing || currentTime > 0)
+                  ? ''
+                  : `${formatTime(currentTime)} / ${formatTime(duration)}`}
               </span>
 
               {/* Expanded controls — prev / next */}
@@ -610,7 +616,7 @@ export default function YouTubePlayer() {
             </div>
 
             {/* Progress bar — always visible when playing */}
-            {(playing || currentTime > 0) && (
+            {!recovery.hideTime && (playing || currentTime > 0) && (
               <div className="mt-2 relative group/progress">
                 {/* Background track */}
                 <div className="h-[2px] w-full bg-[var(--border-dim)] rounded-full overflow-hidden">

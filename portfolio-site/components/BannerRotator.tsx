@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from 'react'
 import posthog from 'posthog-js'
+import { flushNowPlayingFocusHandoff } from '@/lib/youtube-playback-errors'
 
 export const BannerAvailabilityContext = createContext<
   (available: boolean) => void
@@ -122,13 +123,22 @@ export default function BannerRotator({
     [available, count]
   )
 
+  const firstVisible = visibleIndices[0]
+  const resolvedActiveIndex =
+    firstVisible !== undefined && !visibleIndices.includes(activeIndex)
+      ? firstVisible
+      : activeIndex
+
   useEffect(() => {
-    const firstVisible = visibleIndices[0]
     if (firstVisible === undefined) return
-    if (!visibleIndices.includes(activeIndex)) {
+    if (resolvedActiveIndex !== activeIndex) {
       setActiveIndex(firstVisible)
     }
-  }, [visibleIndices, activeIndex])
+  }, [visibleIndices, activeIndex, firstVisible, resolvedActiveIndex])
+
+  useEffect(() => {
+    flushNowPlayingFocusHandoff()
+  }, [visibleIndices])
 
   useEffect(() => {
     if (paused || reduceMotion || visibleIndices.length <= 1) return
@@ -168,12 +178,13 @@ export default function BannerRotator({
       >
         {panels.map((child, i) => {
           const isAvailable = available[i] !== false
-          const isActive = i === activeIndex
+          const isActive = i === resolvedActiveIndex
           const suppress = !isAvailable || !isActive
 
           return (
             <BannerSlot key={i} index={i} onAvailability={onAvailability}>
               <div
+                data-banner-panel=""
                 className={
                   !isAvailable
                     ? 'hidden'
@@ -196,7 +207,10 @@ export default function BannerRotator({
         })}
 
         {showDots && (
-          <div className="absolute right-3 top-1/2 z-20 flex -translate-y-1/2 items-center gap-1">
+          <div
+            data-banner-dots=""
+            className="absolute right-3 top-1/2 z-20 flex -translate-y-1/2 items-center gap-1"
+          >
             {visibleIndices.map((i) => (
               <button
                 key={i}
