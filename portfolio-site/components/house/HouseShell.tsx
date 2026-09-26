@@ -25,7 +25,7 @@ export default function HouseShell({ children }: { children: ReactNode }) {
       return
     }
     if (isElementOf(child, HouseRail)) {
-      before.push(<header>{child}</header>)
+      before.push(<header key="house-rail">{child}</header>)
       return
     }
     content.push(child)
@@ -33,9 +33,9 @@ export default function HouseShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="house">
-      {before}
-      <main>{content}</main>
-      {after}
+      {Children.toArray(before)}
+      <main>{Children.toArray(content)}</main>
+      {Children.toArray(after)}
     </div>
   )
 }
