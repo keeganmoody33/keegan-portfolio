@@ -233,9 +233,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 .house-wordmark-slot {
   container-type: inline-size;
   width: 100%;
-  /* Transform lockup never expands layout. Visible overflow so a scaleX
-     entrance cannot clip glyphs the way letter-spacing + overflow-x: clip did. */
-  overflow-x: visible;
+  overflow-x: clip;
 }
 
 .house-wordmark {
@@ -246,11 +244,10 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   white-space: nowrap;
   /* 12rem on wide desktops; scale to the slot so 12 glyphs never overflow. */
   font-size: clamp(2.5rem, 14.8vw, 12rem);
-  display: block;
-  width: max-content;
-  max-width: 100%;
-  transform-origin: 0% 50%;
-  animation: houseLockup 700ms ease-out both;
+  /* Rest width of "lecturesfrom" at -0.045em is ~5.70em. Cap the per-glyph
+     step so glyph 11 never starts past the slot (100cqi). */
+  --lf-rest: 5.72em;
+  --lf-track: min(0.325em, calc((100cqi - var(--lf-rest)) / 11));
 }
 
 @supports (font-size: 1cqi) {
@@ -259,45 +256,15 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   }
 }
 
-/* scaleX is capped so the wide pose stays inside the viewport at 320–1440. */
-@keyframes houseLockup {
+.house-wordmark > span {
+  display: inline-block;
+  animation: houseLockupGlyph 700ms ease-out both;
+}
+
+@keyframes houseLockupGlyph {
   from {
     opacity: 0;
-    transform: scaleX(1.05);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@media (max-width: 374px) {
-  .house-wordmark {
-    animation-name: houseLockup320;
-  }
-}
-
-@keyframes houseLockup320 {
-  from {
-    opacity: 0;
-    transform: scaleX(1.09);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@media (min-width: 1400px) {
-  .house-wordmark {
-    animation-name: houseLockupXl;
-  }
-}
-
-@keyframes houseLockupXl {
-  from {
-    opacity: 0;
-    transform: scaleX(1.25);
+    transform: translateX(calc(var(--i) * var(--lf-track)));
   }
   to {
     opacity: 1;
@@ -306,7 +273,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .house-wordmark {
+  .house-wordmark > span {
     animation: none;
     opacity: 1;
     transform: none;
