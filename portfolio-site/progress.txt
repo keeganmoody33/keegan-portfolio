@@ -1,3 +1,7 @@
+COMPLETED (2026-09-26 — QA Gate landmark + docs):
+- `/keeganmoody33` footer is a sibling of `<main>` (one main landmark), matching house 404
+- `IMPLEMENTATION_PLAN.md` Step 4.4 no longer points at the removed career `/api/discogs` route
+
 COMPLETED (2026-09-26 — banner failure + polish):
 - BannerRotator drops failed/empty panels and their dots (`useBannerAvailability`)
 - One panel left → static, no dots; zero panels → rotator collapses (no blank slot, no orphaned dots)

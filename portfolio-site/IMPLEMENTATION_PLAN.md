@@ -175,7 +175,7 @@
 ### Step 4.4 — Stack of Wax (Discogs Collection)
 
 - **Goal:** Full vinyl collection browsing via Discogs API
-- **Output:** `components/StackOfWax.tsx`, potentially updated `/api/discogs` route
+- **Output:** `components/StackOfWax.tsx` on house `/collection` via `/api/discogs/collection`. Career-only `/api/discogs` (recent-5) has been removed — do not revive it.
 - **Validation:** Grid shows collection, clicking tile opens Discogs page
 
 ---

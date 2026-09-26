@@ -83,8 +83,8 @@ Top to bottom, this is exactly what renders on the main page:
    │       └── Publications (inside Timeline, for ASGM Research)
    ├── JD Analyzer Section (id="projects")
    │   └── JDAnalyzer
-   ├── Footer (id="contact")
-   │   └── Social links: LinkedIn, X, Substack, GitHub, Discord, Bluesky
+5b. Footer (id="contact") — sibling of `<main>`, not nested in it
+   └── Social links: LinkedIn, X, Substack, GitHub, Discord, Bluesky
 6. Chat Modal (conditional overlay)
    └── Chat
 ```

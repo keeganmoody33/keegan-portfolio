@@ -128,10 +128,7 @@ export default function Home() {
         </BannerRotator>
       </header>
 
-      {/* Main Layout */}
-      <div className="flex min-w-0">
-        {/* Main Content */}
-        <main className="min-w-0 flex-1 px-4 sm:px-8 lg:px-16 py-8">
+      <main className="min-w-0 px-4 sm:px-8 lg:px-16 py-8">
           {/* Navigation */}
           <nav className="mb-12 flex flex-wrap items-center justify-between gap-3 sm:mb-16">
             <div className="flex items-center gap-2">
@@ -239,74 +236,71 @@ export default function Home() {
             </p>
             <JDAnalyzer />
           </section>
+      </main>
 
-          {/* Footer */}
-          <footer id="contact" className="border-t border-[var(--border-dim)] pt-8">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <span className="text-[var(--text-muted)] font-mono text-sm">
-                © 2026 lecturesfrom
-              </span>
-              <div className="flex flex-wrap gap-4 sm:gap-6">
-                <a
-                  href={profile?.linkedin_url || 'https://linkedin.com/in/keeganmoody33'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleExternalLinkClick('linkedin', profile?.linkedin_url || 'https://linkedin.com/in/keeganmoody33')}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
-                >
-                  LINKEDIN
-                </a>
-                <a
-                  href="https://x.com/keeganmoody33"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleExternalLinkClick('x', 'https://x.com/keeganmoody33')}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
-                >
-                  X
-                </a>
-                <a
-                  href="https://substack.com/@keeganmoody33"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleExternalLinkClick('substack', 'https://substack.com/@keeganmoody33')}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
-                >
-                  SUBSTACK
-                </a>
-                <a
-                  href={profile?.github_url || 'https://github.com/keeganmoody33'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleExternalLinkClick('github', profile?.github_url || 'https://github.com/keeganmoody33')}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
-                >
-                  GITHUB
-                </a>
-                <a
-                  href="https://discord.com/users/lecturesfrom"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleExternalLinkClick('discord', 'https://discord.com/users/lecturesfrom')}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
-                >
-                  DISCORD
-                </a>
-                <a
-                  href="https://bsky.app/profile/lecturesfrom.bsky.social"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleExternalLinkClick('bluesky', 'https://bsky.app/profile/lecturesfrom.bsky.social')}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
-                >
-                  BLUESKY
-                </a>
-              </div>
-            </div>
-          </footer>
-        </main>
-
-      </div>
+      <footer id="contact" className="border-t border-[var(--border-dim)] px-4 pb-8 pt-8 sm:px-8 lg:px-16">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <span className="text-[var(--text-muted)] font-mono text-sm">
+            © 2026 lecturesfrom
+          </span>
+          <div className="flex flex-wrap gap-4 sm:gap-6">
+            <a
+              href={profile?.linkedin_url || 'https://linkedin.com/in/keeganmoody33'}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => handleExternalLinkClick('linkedin', profile?.linkedin_url || 'https://linkedin.com/in/keeganmoody33')}
+              className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+            >
+              LINKEDIN
+            </a>
+          <a
+            href="https://x.com/keeganmoody33"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => handleExternalLinkClick('x', 'https://x.com/keeganmoody33')}
+            className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+          >
+            X
+          </a>
+          <a
+            href="https://substack.com/@keeganmoody33"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => handleExternalLinkClick('substack', 'https://substack.com/@keeganmoody33')}
+            className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+          >
+            SUBSTACK
+          </a>
+          <a
+            href={profile?.github_url || 'https://github.com/keeganmoody33'}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => handleExternalLinkClick('github', profile?.github_url || 'https://github.com/keeganmoody33')}
+            className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+          >
+            GITHUB
+          </a>
+          <a
+            href="https://discord.com/users/lecturesfrom"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => handleExternalLinkClick('discord', 'https://discord.com/users/lecturesfrom')}
+            className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+          >
+            DISCORD
+          </a>
+          <a
+            href="https://bsky.app/profile/lecturesfrom.bsky.social"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => handleExternalLinkClick('bluesky', 'https://bsky.app/profile/lecturesfrom.bsky.social')}
+            className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+          >
+            BLUESKY
+          </a>
+          </div>
+        </div>
+      </footer>
 
       {/* Chat Modal */}
       {showChat && (

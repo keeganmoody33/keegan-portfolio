@@ -179,8 +179,8 @@ Single-page app. All content on one route (`/`). No multi-page navigation curren
 │   ├── Nav Header                              │
 │   ├── Hero (SprayText + CTA)                  │
 │   ├── Timeline (id="experience")              │
-│   ├── JD Analyzer (id="projects")             │
-│   └── Footer (id="contact")                   │
+│   └── JD Analyzer (id="projects")             │
+│ Footer (id="contact") — sibling of <main>     │
 ├──────────────────────────────────────────────┤
 │ Activity Sidebar (fixed right, conditional)   │
 ├──────────────────────────────────────────────┤
