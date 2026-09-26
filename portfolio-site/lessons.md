@@ -28,7 +28,8 @@ Updated: 2026-09-26
 - **Markdown mirrors are required.** Keep `/llms.md`, `/index.md`, `/catalog.md`, `/catalog/punch2pen.md`, `/catalog/proper-respect.md`, `/catalog/yadiggg.md`, and `/collection.md` as `text/markdown` with the same facts as the HTML. `/collection.md` is a count plus the Discogs endpoint, not a crate dump. Do not delete them because a review called them optional.
 - Markdown negotiation belongs in `proxy.ts` (Next 16 renamed middleware → proxy). Rewrite house HTML to `/md/...`; return a markdown 404 for unknown `Accept: text/markdown` requests. Do not put Discogs fetches in the proxy; keep those on the Node route handler.
 - Do not invent Organization `contactPoint`, `sameAs`, offers, or prices. If no email exists in the brief or the live site, omit contactPoint.
-- **`/og.jpg` is the GTM certificate.** Keep it off house routes (`/`, `/catalog`, sleeves, `/collection`, `/legal`, root layout). No `og:image` or `twitter:image` on the house. Leave the file for `/keeganmoody33` only. Do not generate a house brand still.
+- **`/og.jpg` is the GTM certificate on the person segment only.** House share images are the generated mark (`app/(house)/opengraph-image.png` + `twitter-image.png`). Do not put `opengraph-image` at `app/` root or it inherits onto `/keeganmoody33` and replaces `/og.jpg`. Do not add `images` to `houseMetadata()`.
+- **Title-card LogoMark is `aria-hidden`.** The `h1` wordmark is the name. Do not also `aria-label` the SVG next to it. Keep `#lf-ring` / `#lf-core` ids; Motion wraps `layer="ring"` + `layer="core"`, it does not rewrite the geometry.
 
 ## Schema
 

@@ -47,7 +47,8 @@ Everything that serves the core purpose: help visitors understand who Keegan is,
 | YouTube Persistent Player | `YouTubePlayer.tsx`, `types/youtube.d.ts` | **Shipped** |
 | GitHub Activity Widget | `GitHubActivity.tsx`, `/api/github` | **Shipped** |
 | Turntable Loading Page | `TurntableCanvas.tsx` (left on disk, not mounted at `/`) | **Retired from `/`** — 2026-09-26 house cut |
-| House title card + crate | `app/page.tsx`, `lib/catalog.ts`, `components/house/*` | **Shipped (this PR)** |
+| House title card + crate | `app/(house)/page.tsx`, `lib/catalog.ts`, `components/house/*` | **Shipped** |
+| lecturesfrom logo mark + favicon + house share image | `LogoMark.tsx`, `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`, `app/(house)/opengraph-image.png` | **Shipped** |
 | Sleeves | `/catalog`, `/catalog/[slug]` | **Shipped (this PR)** |
 | Full Discogs crate | `/collection`, `/api/discogs/collection` | **Shipped (this PR)** |
 | SignalCut | `components/SignalCut.tsx` | **Shipped (this PR)** — house ↔ person only |

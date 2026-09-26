@@ -12,11 +12,15 @@
 
 | Route            | File                         | What It Shows                                                   |
 |------------------|------------------------------|-----------------------------------------------------------------|
-| `/`              | `app/page.tsx`               | House title card + crate (Server Component). No turntable. No return-visit redirect. |
-| `/catalog`       | `app/catalog/page.tsx`       | Crate permalink (same spines as `/`)                            |
-| `/catalog/[slug]`| `app/catalog/[slug]/page.tsx`| Sleeve (cover, liner, tracks). Unknown slugs 404.               |
-| `/collection`    | `app/collection/page.tsx`    | Full live Discogs crate                                         |
-| `/legal`         | `app/legal/page.tsx`         | Entity + long about                                             |
+| `/`              | `app/(house)/page.tsx`               | House title card + crate (Server Component). LogoMark sits above the wordmark. No turntable. No return-visit redirect. |
+| `/catalog`       | `app/(house)/catalog/page.tsx`       | Crate permalink (same spines as `/`)                            |
+| `/catalog/[slug]`| `app/(house)/catalog/[slug]/page.tsx`| Sleeve (cover, liner, tracks). Unknown slugs 404.               |
+| `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate                                         |
+| `/legal`         | `app/(house)/legal/page.tsx`         | Entity + long about                                             |
+| `/icon.svg`      | `app/icon.svg`                       | Site icon; `prefers-color-scheme` stroke. Applies to house and person. |
+| `/favicon.ico`   | `app/favicon.ico`                    | 16/32/48 ico from the same mark                                 |
+| `/apple-icon.png`| `app/apple-icon.png`                 | 180px, light ground, mark `#20262b`                             |
+| `/opengraph-image` | `app/(house)/opengraph-image.png`  | House share image 1200×630. Person page keeps `/og.jpg`.        |
 | `/keeganmoody33` | `app/keeganmoody33/page.tsx` | Principal / person page (Ask AI, JD Fit Analyzer, timeline)     |
 | `/keegan`        | next.config + vercel.json    | 301 → `/keeganmoody33`                                          |
 
@@ -48,7 +52,7 @@
 <html lang="en">
   <body>
     <PostHogProvider>        ← Client-side analytics (providers.tsx)
-      <Page />               ← app/page.tsx
+      <Page />               ← app/(house)/page.tsx (house) or app/keeganmoody33/page.tsx
     </PostHogProvider>
   </body>
 </html>
