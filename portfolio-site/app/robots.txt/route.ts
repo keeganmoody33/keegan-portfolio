@@ -1,24 +1,26 @@
+const GROUP = `Allow: /
+Disallow: /api/`
+
 const BODY = `User-agent: *
-Allow: /
-Disallow: /api/
+${GROUP}
 
 User-agent: GPTBot
-Allow: /
+${GROUP}
 
 User-agent: ClaudeBot
-Allow: /
+${GROUP}
 
 User-agent: Google-Extended
-Allow: /
+${GROUP}
 
 User-agent: CCBot
-Allow: /
+${GROUP}
 
 User-agent: PerplexityBot
-Allow: /
+${GROUP}
 
 User-agent: Googlebot
-Allow: /
+${GROUP}
 
 Sitemap: https://www.lecturesfrom.com/sitemap.xml
 LLMS: https://www.lecturesfrom.com/llms.txt

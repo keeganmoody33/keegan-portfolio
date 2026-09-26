@@ -15,6 +15,7 @@ Updated: 2026-09-26
 ## Agent-ready
 
 - Next.js `app/robots.ts` (`MetadataRoute.Robots`) cannot emit a custom `LLMS:` line. Serve `/robots.txt` from `app/robots.txt/route.ts` when the brief requires that line.
+- **robots.txt groups do not stack.** A named `User-agent:` group does not inherit `Disallow` from `*`. Repeat `Disallow: /api/` in every named group (GPTBot, ClaudeBot, Google-Extended, CCBot, PerplexityBot, Googlebot) or those bots can crawl `/api/`.
 - Markdown negotiation belongs in `proxy.ts` (Next 16 renamed middleware → proxy). Rewrite house HTML to `/md/...`; return a markdown 404 for unknown `Accept: text/markdown` requests. Do not put Discogs fetches in the proxy; keep those on the Node route handler.
 - Do not invent Organization `contactPoint`, `sameAs`, offers, or prices. If no email exists in the brief or the live site, omit contactPoint.
 

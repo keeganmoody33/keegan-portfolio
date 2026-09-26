@@ -1,5 +1,5 @@
 COMPLETED (2026-09-26 — agent-ready for house cut):
-- robots.txt fully open (`*` plus GPTBot, ClaudeBot, Google-Extended, CCBot, PerplexityBot, Googlebot); Disallow only `/api/`; Sitemap + LLMS lines
+- robots.txt fully open (`*` plus GPTBot, ClaudeBot, Google-Extended, CCBot, PerplexityBot, Googlebot); `Disallow: /api/` repeated in every named group (groups do not stack); Sitemap + LLMS lines
 - sitemap lists `/`, `/catalog`, `/catalog/punch2pen`, `/catalog/proper-respect`, `/catalog/yadiggg`, `/collection`, `/legal`, `/keeganmoody33`
 - `/llms.txt` + markdown mirrors (`/index.md`, `/llms.md`, catalog/sleeve/collection/legal) as `text/markdown; charset=utf-8`
 - Accept: text/markdown on house HTML routes returns the markdown twin with Vary: Accept; unknown paths get a markdown 404
