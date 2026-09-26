@@ -50,7 +50,7 @@ Everything that serves the core purpose: help visitors understand who Keegan is,
 | House title card + crate | `app/(house)/page.tsx`, `lib/catalog.ts`, `components/house/*` | **Shipped** |
 | lecturesfrom logo mark + favicon + house share image | `LogoMark.tsx`, `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`, `app/(house)/opengraph-image.png` | **Shipped** |
 | Sleeves | `/catalog`, `/catalog/[slug]` | **Shipped (this PR)** |
-| Full Discogs crate | `/collection`, `/api/discogs/collection` | **Shipped (this PR)** |
+| Full Discogs crate | `/collection`, `/api/discogs/collection` | **Shipped** — durable Redis last-good when Upstash env is set |
 | SignalCut | `components/SignalCut.tsx` | **Shipped (this PR)** — house ↔ person only |
 
 ### Spec-Locked (Not Yet Built)

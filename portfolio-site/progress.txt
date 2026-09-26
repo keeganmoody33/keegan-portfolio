@@ -107,6 +107,17 @@ COMPLETED (2026-09-26 — career Discogs removal):
 - No career-only records route existed; no new redirect added
 - Ask AI / JD Fit Analyzer / chat / github APIs / `/og.jpg` untouched
 
+COMPLETED (2026-09-26 — durable Discogs collection in Upstash Redis):
+- Last-good crate snapshot in Redis (`lf:discogs:collection:v1` / `lf:preview:…` when `VERCEL_ENV !== 'production'`), plus meta + lock keys
+- `fetchFullCollection()` contract unchanged; `/collection` page not edited
+- Serve Redis first (cold instance never 429s when a snapshot exists); throw 429 only if Redis and memory are empty
+- Refresh ~once a day via `after()` + `SET NX EX` (120s); only a complete crawl overwrites; 429/partial keeps the old copy
+- Redis reads use `cache: 'no-store'` so empty MGETs are not Data-Cached; skip Redis reads and writes during `next build` so `/collection` stays ISR (`○` 5m)
+- Missing KV/UPSTASH env = today's in-memory last-good + Discogs crawl; `Redis.fromEnv()` not used
+- `mapRelease` never emits `/release/0`; tiles still link to `https://www.discogs.com/release/<id>`
+- Tests: `node --experimental-strip-types --test lib/discogs.test.ts` (fake store; existing tests still pass)
+- Career `/api/discogs` is gone (#24); house crate is `/api/discogs/collection` only. No cron; no new secrets
+
 COMPLETED (2026-08-22 session — live Supabase sync execution):
 - Received owner sign-off and executed `sql/2026-08-22_sync_recent_experiences.sql` against production project `cvkcwvmlnghwwvdqudod` via equivalent PostgREST calls.
 - Synced four experiences, bringing `experiences` to 15 rows ordered by `display_order`; inserted 11 new skills, bringing `skills` to 25 rows.

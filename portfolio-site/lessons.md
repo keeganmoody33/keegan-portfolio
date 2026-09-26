@@ -2,6 +2,17 @@
 
 Updated: 2026-09-27
 
+## Discogs durable snapshot (2026-09-26)
+
+- **Durable last-good lives in Upstash Redis, not module memory.** Memory is per serverless instance; a cold instance that hits Discogs 429 has nothing to serve. Store a complete crawl at `lf:discogs:collection:v1` (preview/dev: `lf:preview:discogs:collection:v1` when `VERCEL_ENV !== 'production'`). Serve Redis first. Refresh ~daily via `after()` + `SET NX EX`. Only a complete crawl (`releases.length === pagination.items`) may overwrite. Missing Redis env must behave exactly as before — no crash, no Redis reads or writes during `next build`.
+- **`Redis.fromEnv()` only warns when vars are missing.** Resolve `KV_REST_API_URL`/`KV_REST_API_TOKEN` (then `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`) yourself and skip the client when the pair is absent. Do not mix KV URL with UPSTASH token.
+- **Never Data-Cache an empty Redis MGET.** `force-cache` + `revalidate: 300` stored the empty build-time read, so a cold `next start` never hit Redis and treated a real snapshot as missing. Redis reads use `cache: 'no-store'`. Skip Redis entirely when `NEXT_PHASE === 'phase-production-build'` so SSG of `/collection` only uses Discogs `next.revalidate: 300` and stays ISR (`○` 5m). Writes and the lock stay `no-store` inside `after()`.
+- **Never cache a failed or partial Discogs crawl as last-good.** Last-good is only a complete crawl whose `releases.length` equals Discogs `pagination.items`. 429 / exhausted `X-Discogs-Ratelimit-Remaining` mid-paginate: serve last-good, or HTTP 429 + `Retry-After`. Put `Cache-Control: no-store` on error responses — route `revalidate = 300` will otherwise ISR-cache a 429 for five minutes.
+- **Never leak Discogs bodies** to the client, rendered page errors, or PostHog `error_message`. Map to generic `Too many requests` / `Failed to fetch from Discogs`.
+- **`DISCOGS_TOKEN` is optional** for the public `lecturesfrom` collection. Requiring it 500s `/collection` in previews that lack the env. User-Agent must be `lecturesfrom/1.0` on every Discogs request.
+- **House crate is `/api/discogs/collection` + `/collection`.** Career `/api/discogs` and RecentDigs were removed (#24). Do not put Discogs back on `/keeganmoody33`.
+- **Route `export const revalidate` must be a numeric literal.** `export const revalidate = DISCOGS_REVALIDATE_SECONDS` fails Next 16 with "Invalid segment configuration export". Use `export const revalidate = 300`.
+
 ## House logo / lockup (2026-09-27)
 
 - **WCAG 2.2.2 pause lives in the shared house footer, not the lockup.** `LogoGlobe` is `aria-hidden` on the title card. A control inside that tree is invisible to AT. `MotionSwitch` in `HouseFooter` (`/`, `/catalog`, `/collection`, `/legal`) sets `data-logo-paused` on `<html>` because the footer is not an ancestor of the mark. `/keeganmoody33` does not share this footer.
