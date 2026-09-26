@@ -33,14 +33,24 @@ async function loadPlaywright() {
 
   for (const candidate of candidates) {
     try {
-      return await import(pathToFileURL(path.resolve(candidate, 'index.js')).href)
+      const require = createRequire(
+        candidate.endsWith('playwright')
+          ? path.join(candidate, 'package.json')
+          : path.join(candidate, 'index.js'),
+      )
+      const loaded = require(candidate.endsWith('playwright') ? candidate : candidate)
+      if (loaded?.chromium) return loaded
+      if (loaded?.default?.chromium) return loaded.default
     } catch {
-      try {
-        const require = createRequire(import.meta.url)
-        return require(candidate)
-      } catch {
-        // try next
-      }
+      // try ESM path
+    }
+    try {
+      const href = pathToFileURL(path.resolve(candidate, 'index.js')).href
+      const loaded = await import(href)
+      if (loaded?.chromium) return loaded
+      if (loaded?.default?.chromium) return loaded.default
+    } catch {
+      // try next
     }
   }
   throw new Error('playwright not found; set PLAYWRIGHT_MODULE or install it')
