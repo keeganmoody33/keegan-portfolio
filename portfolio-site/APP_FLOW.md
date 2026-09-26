@@ -12,7 +12,7 @@
 
 | Route            | File                         | What It Shows                                                   |
 |------------------|------------------------------|-----------------------------------------------------------------|
-| `/`              | `app/(house)/page.tsx`               | House title card + crate (Server Component). LogoGlobe wraps LogoMark (ring + core) above the wordmark at the same 2rem size. Core ships static (house spec: no 3D). No turntable. No return-visit redirect. |
+| `/`              | `app/(house)/page.tsx`               | House title card + crate (Server Component). LogoGlobe wraps LogoMark (ring + core) above the wordmark at the same 2rem size. Core ships static (house spec: no 3D). Wordmark entrance is a 700ms opacity fade. No turntable. No return-visit redirect. |
 | `/catalog`       | `app/(house)/catalog/page.tsx`       | Crate permalink (same spines as `/`)                            |
 | `/catalog/[slug]`| `app/(house)/catalog/[slug]/page.tsx`| Sleeve (cover, liner, tracks). Unknown slugs 404.               |
 | `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate                                         |
