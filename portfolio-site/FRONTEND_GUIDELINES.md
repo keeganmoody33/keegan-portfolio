@@ -245,6 +245,7 @@ Animated 60px x 60px grid pattern on body:
 | `.activity-stream` | Sidebar container | Glass bg, dim border, Roboto Mono |
 | `.log-success` | Green log entry | `color: #4ADE80` |
 | `.log-warn` | Orange log entry | `color: var(--accent-orange)` |
+| `.log-info` | Muted log entry | `color: var(--text-muted)` |
 | `.house-meta` | House metadata | Roboto Mono, 0.625rem, 0.22em tracking, uppercase |
 | `.house-rail` | House top rail | Three columns; atl / issue / year always visible; gutters `px-6 sm:px-10` |
 | `.house-wordmark` | Root lockup | `min(12rem, 17.2cqi)` so `lecturesfrom` fits its slot; 12rem cap on desktop |
