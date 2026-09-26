@@ -180,7 +180,7 @@ class RedisDurableStore implements DurableStore {
   }
 
   async get(): Promise<DurableSnapshot | null> {
-    const [collection, metaValue] = await this.readRedis.mget<unknown[]>(
+    const [collection, metaValue] = await this.readRedis.mget<[unknown, unknown]>(
       this.keys.collection,
       this.keys.meta
     )

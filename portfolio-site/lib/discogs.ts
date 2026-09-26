@@ -1,3 +1,4 @@
+import { after } from 'next/server.js'
 import {
   DISCOGS_REFRESH_LOCK_SECONDS,
   DISCOGS_SNAPSHOT_TTL_MS,
@@ -414,19 +415,13 @@ export function defaultScheduleRefresh(task: () => Promise<void>): void {
     return
   }
 
-  void import('next/server')
-    .then((mod) => {
-      try {
-        mod.after(() => {
-          void task()
-        })
-      } catch {
-        void task()
-      }
-    })
-    .catch(() => {
+  try {
+    after(() => {
       void task()
     })
+  } catch {
+    void task()
+  }
 }
 
 function defaultDurableStore(
