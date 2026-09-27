@@ -39,7 +39,6 @@
 | Route | Method | File | Purpose |
 |-------|--------|------|---------|
 | `/api/chat` | POST | `app/api/chat/route.ts` | Proxy to Supabase `chat` Edge Function |
-| `/api/discogs` | GET | `app/api/discogs/route.ts` | Recent-5 Discogs list for person-page RecentDigs |
 | `/api/discogs/collection` | GET | `app/api/discogs/collection/route.ts` | Full paginated Discogs crate (`revalidate: 300`) |
 | `/api/github` | GET | `app/api/github/route.ts` | Proxy to GitHub public events API |
 | `/api/jd-analyzer` | POST | `app/api/jd-analyzer/route.ts` | Proxy to Supabase `jd-analyzer` Edge Function |
@@ -68,17 +67,16 @@ Top to bottom, this is exactly what renders on the main page:
 
 ```
 1. Marquee                          ← Full-width ticker, always visible
-2. WidgetErrorBoundary
-   └── YouTubePlayer                ← Persistent music player (YouTube IFrame API, playlist)
-3. WidgetErrorBoundary
-   └── RecentDigs                   ← Discogs widget (5 records)
-4. WidgetErrorBoundary
-   └── GitHubActivity               ← Retro bar chart (14 days)
+2. BannerRotator                    ← Drops failed/empty panels; collapses if none remain
+   ├── WidgetErrorBoundary
+   │   └── YouTubePlayer            ← Persistent music player (YouTube IFrame API, playlist)
+   └── WidgetErrorBoundary
+       └── GitHubActivity           ← Retro bar chart (14 days)
 5. Main Layout Container (flex)
    ├── Navigation Header
    │   ├── Logo: /lecturesfrom (SignalCut link to `/`, direction toHouse)
-   │   ├── Links: XP, Projects [P], Contact [C]
-   │   └── "Ask AI" button
+   │   ├── Links: XP, Projects [P], Contact [C] (whitespace-nowrap; right group gap-x-3 gap-y-2)
+   │   └── "Ask AI" button (`min-h-11`, 44px tap target)
    ├── Hero Section
    │   ├── Tagline lines (3)
    │   ├── SprayText (first name, lime)
@@ -89,8 +87,8 @@ Top to bottom, this is exactly what renders on the main page:
    │       └── Publications (inside Timeline, for ASGM Research)
    ├── JD Analyzer Section (id="projects")
    │   └── JDAnalyzer
-   ├── Footer (id="contact")
-   │   └── Social links: LinkedIn, X, Substack, GitHub, Discord, Bluesky
+5b. Footer (id="contact") — sibling of `<main>`, not nested in it
+   └── Social links: LinkedIn, X, Substack, GitHub, Discord, Bluesky
 6. Chat Modal (conditional overlay)
    └── Chat
 ```
@@ -116,8 +114,6 @@ Land on /keeganmoody33
     ├─→ Click play on YouTube Player → Music starts from playlist
     │       ├─→ Hover → Reveals next/prev, progress, volume
     │       └─→ Click next/prev → Changes track
-    │
-    ├─→ Click record in Recent Digs → Opens Discogs page (new tab)
     │
     └─→ Click footer social links (LinkedIn, X, Substack, GitHub, Discord, Bluesky) → Opens external profiles (new tab)
 ```
@@ -174,28 +170,7 @@ Land on /keeganmoody33
 
 ---
 
-### 3. Recent Digs (Discogs Widget)
-
-**Trigger:** Page load (automatic)
-
-**Steps:**
-
-1. Component mounts, fires GET `/api/discogs`
-2. Loading skeleton renders (5 pulsing items)
-3. Data returns: 5 records with cover art, title, artist
-4. Each record links to Discogs release page
-
-**Success state:** 5 records displayed. Desktop: horizontal row. Mobile: horizontal scroll with snap points.
-
-**Error state:** Component returns `null` (graceful failure -- widget disappears, page unaffected). Wrapped in `WidgetErrorBoundary`.
-
-**Empty state:** Component returns `null` if no releases returned.
-
-**PostHog events:** `recent_digs_record_clicked` (includes `title`, `artist`, `discogsUrl`)
-
----
-
-### 4. Career Timeline
+### 3. Career Timeline
 
 **Trigger:** Page load (data fetched from Supabase on mount in page.tsx)
 
@@ -226,10 +201,11 @@ Land on /keeganmoody33
 1. Renders immediately with hardcoded items
 2. Scrolls horizontally in infinite loop (40s cycle)
 3. Hover pauses animation
+4. `prefers-reduced-motion: reduce` stops the scroll (`animation: none`); items stay in place
 
-**Success state:** Smooth infinite scroll.
+**Success state:** Smooth infinite scroll (or a static strip under reduced motion).
 
-**Error state:** N/A (no data fetching, no interaction).
+**Error state:** GitHub stats stay on the loading/fallback copy; ticker still renders.
 
 **Empty state:** N/A (hardcoded content).
 
@@ -248,7 +224,7 @@ Land on /keeganmoody33
 3. YouTube IFrame API script loads (`afterInteractive`)
 4. `onYouTubeIframeAPIReady` fires, creates hidden YT.Player with playlist
 5. Player loads playlist `PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk`
-6. `onReady` sets `isLoading=false`, skeleton swaps to real controls
+6. `onReady` sets `isLoading=false`, skeleton swaps to real controls. The hidden iframe wrapper is `inert` + `aria-hidden`; `getIframe().tabIndex = -1` so Tab never lands in the embed. Visible Play/Pause stays outside the wrapper.
 7. Track title and author populate from `getVideoData()`
 8. User clicks play → music starts
 9. Hover expands to reveal next/prev, progress bar, volume slider
@@ -258,7 +234,7 @@ Land on /keeganmoody33
 
 **Success state:** Player shows track title, play/pause controls (w-6 h-6). Hover reveals full controls. Music plays from YouTube playlist.
 
-**Error state:** Component returns `null` (graceful failure). Wrapped in `WidgetErrorBoundary`.
+**Error state:** Component returns `null` (graceful failure) and reports `useBannerAvailability(false)` so the rotator drops the slide and its dot. Script `onError` and a 10s timeout **started on mount** also set this path (a stalled script must not wait to `onLoad` before the clock starts). Playback errors 2/5/100/101/150 call `nextVideo()`; only a real `onError` increments the streak. After 3 in a row (or the playlist length if shorter) `setError(true)` drops the slide. The streak resets on `onReady` and PLAYING. After an error-triggered skip the stall deadline is `now + 10s` (`YT_STALL_TIMEOUT_MS`). The first BUFFERING, CUED, or new video id extends that deadline to a hard cap of `errorTime + 25s` (`YT_STALL_CAP_MS`); later BUFFERING/CUED churn does not extend past the cap. Only PLAYING (or unmount/drop) clears the stall. If the deadline passes without PLAYING, the slide drops. Slow BUFFERING (e.g. 12s then PLAYING) stays; a hung BUFFERING drops at the cap, not by restarting 10s forever. While the stall is armed the slide shows recovery chrome (dim Play with `aria-disabled` + `aria-busy`, no hover lime, `cursor-not-allowed`, title "Track unavailable, skipping…", blank author, no time). A one-video playlist still drops on the first 150. Before drop, arm the handoff only if focus is still inside the banner rotator — the Now Playing slide or `[data-banner-dots]` — never when `activeElement` is `body` (a mouse Play click then scroll) and never for nav. Always `focus({ preventScroll: true })`. BannerRotator lands on the next visible `[data-banner-panel]` control (never a rotator dot, never Play/Pause / `[data-now-playing]`) or the rotator root (`tabIndex={-1}`) if that slide has no control, or the first nav link after the slide count updates. The dots unmount when one slide remains, so a focused "Switch to Now Playing" dot must hand off. The handoff stays pending until that target exists so a leftover GitHub slide is not skipped for `body`. `NowPlayingLiveRegion` is an empty polite live region on the page at load; drop writes "Now Playing unavailable". Wrapped in `WidgetErrorBoundary`, which reports unavailable if the widget throws. If GitHub has already failed, the header stays at the skeleton height until this timeout, then collapses — no blank frame in between.
 
 **Empty state:** Compact loading skeleton (py-2, inline layout) while IFrame API loads.
 
@@ -268,6 +244,24 @@ Land on /keeganmoody33
 - Stores: `videoId`, `trackTitle`, `trackAuthor`, `position`, `duration`, `playing`, `playlistIndex`, `volume`, `timestamp`
 
 **PostHog events:** `youtube_player_loaded`, `youtube_player_play`, `youtube_player_pause`, `youtube_track_changed`
+
+---
+
+### 6b. BannerRotator + GitHub Activity
+
+**Trigger:** Page load. `BannerRotator` mounts YouTube and GitHub together; only the active panel is visible.
+
+**Steps:**
+
+1. Each widget reports `useBannerAvailability(true|false)`
+2. Failed, empty, or error-boundary panels are removed from rotation and from the dots
+3. Two or more available panels: 8s auto-rotate (skipped under `prefers-reduced-motion: reduce`); dots stay for manual switching. Inactive panels get `aria-hidden` + `inert` so tab focus cannot land on invisible controls. Content uses `pr-16` so `/ 7d` clears the 24×24 dot hit areas; the bar itself is full-bleed.
+4. One available panel: show it statically, no dots, no extra `pr-16`
+5. Zero available panels: rotator returns `null` — the banner row collapses; Marquee remains
+
+**GitHub Activity error:** `/api/github` 5xx (including GitHub's unauthenticated 60/hr 502) → component returns `null` and reports unavailable. No blank 8s slot.
+
+**GitHub route:** No GitHub token env var. Upstream fetch uses `next: { revalidate: 300 }`.
 
 ---
 
@@ -296,14 +290,11 @@ Land on /keeganmoody33
 
 | Element | Desktop | Mobile |
 |---------|---------|--------|
-| Recent Digs | Horizontal row (`flex`) | Horizontal scroll with snap points (`snap-x`) |
-| Recent Digs items | `flex-1` fill available space | Fixed `w-[140px]` with `touch-pan-x` |
 | Chat modal | Overlay on page | Same (full overlay) |
-| Navigation | Horizontal top bar | Same (no hamburger menu currently) |
+| Navigation | Horizontal top bar | Same; items `whitespace-nowrap`, right group `gap-x-3 gap-y-2` |
+| BannerRotator | Full-bleed bar; `pr-16` on content only when dots show | Same |
 | Timeline | Full-width cards | Same layout (no responsive changes) |
 | JD Analyzer | Full-width textarea | Same layout |
-
-**Note:** Most components lack dedicated mobile responsive handling beyond Recent Digs. This is a known area for improvement.
 
 ---
 
@@ -320,7 +311,7 @@ Supabase DB
     │   └── jd-analyzer/index.ts ──→ /api/jd-analyzer ──→ JDAnalyzer component
     │
 Discogs API
-    └── /api/discogs ──→ RecentDigs component
+    └── /api/discogs/collection ──→ house `/collection` (not the person page)
 
 YouTube IFrame API (client-side, no proxy)
     └── youtube.com/iframe_api ──→ YouTubePlayer component

@@ -19,7 +19,6 @@ export default defineConfig([
     'components/ActivityStream.tsx',
     'components/JDAnalyzer.tsx',
     'components/YouTubePlayer.tsx',
-    'components/RecentDigs.tsx',
     'components/Timeline.tsx',
     'components/Chat.tsx',
     'components/Marquee.tsx',

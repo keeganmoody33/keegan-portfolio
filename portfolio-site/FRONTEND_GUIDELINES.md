@@ -179,8 +179,8 @@ Single-page app. All content on one route (`/`). No multi-page navigation curren
 │   ├── Nav Header                              │
 │   ├── Hero (SprayText + CTA)                  │
 │   ├── Timeline (id="experience")              │
-│   ├── JD Analyzer (id="projects")             │
-│   └── Footer (id="contact")                   │
+│   └── JD Analyzer (id="projects")             │
+│ Footer (id="contact") — sibling of <main>     │
 ├──────────────────────────────────────────────┤
 │ Activity Sidebar (fixed right, conditional)   │
 ├──────────────────────────────────────────────┤
@@ -190,11 +190,14 @@ Single-page app. All content on one route (`/`). No multi-page navigation curren
 
 ### Banner Rotator
 
-The three widget layers (YouTubePlayer, RecentDigs, GitHubActivity) live inside a `BannerRotator` that shows one at a time:
+The two widget layers (YouTubePlayer, GitHubActivity) live inside a `BannerRotator` that shows one at a time:
 - **Component:** `components/BannerRotator.tsx`
-- **Rotation:** 8-second auto-cycle, crossfade (500ms `transition-opacity`)
-- **Interaction:** Pauses on hover; dot indicators at right edge for manual switching
-- **Mounting:** All children stay mounted (critical for YouTubePlayer iframe audio continuity); inactive panels get `opacity-0 absolute pointer-events-none`
+- **Rotation:** 8-second auto-cycle, crossfade (500ms `transition-opacity`). Skipped when `prefers-reduced-motion: reduce` or when fewer than two panels are available.
+- **Interaction:** Pauses on hover; dot indicators at right edge for manual switching. Dots stay usable under reduced motion.
+- **Mounting:** All children stay mounted (critical for YouTubePlayer iframe audio continuity); inactive panels get `opacity-0 absolute pointer-events-none`, `aria-hidden`, and `inert` so keyboard focus cannot land on invisible controls
+- **Height:** Every available panel wrapper is `min-h-12` so YouTube (41px) and GitHub (48px) do not shift the page when they swap.
+- **Padding:** Rotator root has no horizontal padding so the widget bar/border is full-bleed. When dots are shown, panel *content* uses `pr-16` (`useBannerPanelPad`) so `/ 7d` clears the 24×24 dot hit areas (`right-3` + 24 + 4 + 24 = 64px). Visible dots stay `h-1.5 w-1.5`. One panel / no dots → no extra pad.
+- **Failures:** Widgets call `useBannerAvailability`. A null/error/empty render drops that slide and its dot. One panel left → static, no dots. Zero panels left → rotator returns `null` (banner row collapses). `WidgetErrorBoundary` also reports unavailable on catch.
 - **PostHog:** Fires `banner_panel_switched` on manual dot clicks with `from`/`to` labels
 
 ### Banner Widget Rules
@@ -205,9 +208,9 @@ All banner widgets follow the same compact pattern:
 - **Container:** `max-w-7xl mx-auto px-4`
 - **Layout:** Single-row flex (`flex items-center gap-4`)
 - **Border:** `border-b border-[var(--border-dim)]` between each layer
-- **Covers (RecentDigs):** Fixed width `w-[72px]` desktop / `w-[60px]` mobile, no metadata text (title via `title` attr on hover)
 - **Chart (GitHubActivity):** `h-[24px]` bar chart, `flex-1` fills available space
-- **Player (YouTubePlayer):** `w-6 h-6` play button, track info truncated, expand-on-hover for prev/next/volume
+- **Player (YouTubePlayer):** `w-6 h-6` play button, track info truncated, expand-on-hover for prev/next/volume. Hidden iframe wrapper is `inert` + `aria-hidden`; `onReady` sets `getIframe().tabIndex = -1`. Visible controls stay outside that wrapper. Skippable playback errors (2/5/100/101/150) advance with `nextVideo()`; only a real `onError` increments the streak. Three in a row (or playlist length if shorter) drop the slide. After a skip the stall deadline is 10s (`YT_STALL_TIMEOUT_MS`); the first BUFFERING/CUED/new video id extends it to a hard cap of `errorTime + 25s` (`YT_STALL_CAP_MS`). Churn does not extend past the cap. Only PLAYING (or unmount/drop) clears it. While the stall is armed the Play control is `aria-disabled` + `aria-busy` (not `disabled`), dimmed, `cursor-not-allowed` with no hover lime, the title reads "Track unavailable, skipping…", the author is blank, and the time readout is blank. On drop, arm the handoff only if `document.activeElement` is still inside the banner rotator (Now Playing slide or `[data-banner-dots]`) — never when focus is `body`, never for nav. Always `focus({ preventScroll: true })`. The landing target is the next visible slide panel (never a rotator dot, never Play/Pause), the rotator root (`tabIndex={-1}`) if that slide has no control, or the first nav control after the leftover slide is active. `NowPlayingLiveRegion` mounts empty `#yt-now-playing-live` on the career page at load (`sr-only`); drop only writes the text.
+- **Min height:** `min-h-12` on every banner panel so rotation does not shift content
 
 ### Grid Background
 
@@ -241,7 +244,7 @@ Animated 60px x 60px grid pattern on body:
 | `.spray-char` | Spray paint character | Inline-block, blur → focus animation |
 | `.experience-card` | Timeline experience card | Surface bg, dim border, lime on hover |
 | `.tech-pill` | Technology tag | Roboto Mono, dim border, muted text |
-| `.marquee-container` | Scrolling ticker | Flex, max-content, 40s scroll, pauses on hover |
+| `.marquee-container` | Scrolling ticker | Flex, max-content, 40s scroll, pauses on hover; `animation: none` when `prefers-reduced-motion: reduce` |
 | `.activity-stream` | Sidebar container | Glass bg, dim border, Roboto Mono |
 | `.log-success` | Green log entry | `color: #4ADE80` |
 | `.log-warn` | Orange log entry | `color: var(--accent-orange)` |
@@ -264,6 +267,7 @@ Animated 60px x 60px grid pattern on body:
 **Ask AI (Orange CTA):**
 - `border: 2px dashed var(--accent-orange)`, `bg` transparent
 - Hover: fills with orange, border becomes solid
+- Nav control is `inline-flex min-h-11 items-center` so the tap target is at least 44px without changing padding or type
 
 **Ghost (Secondary):**
 - `bg` transparent, `border` dim
@@ -298,6 +302,8 @@ Animated 60px x 60px grid pattern on body:
 | SIGNAL CUT first | 420ms | tear 0–60 / snow 60–280 / black 280–360 / fade 360–420 | House <-> person, first crossing in the tab |
 | SIGNAL CUT repeat | 160ms | tear 0–40 / black 40–120 / fade 120–160 | Later crossings in the same tab |
 | SIGNAL CUT reduced | 80ms | instant black, no tear/snow/id/fade | `prefers-reduced-motion: reduce` |
+| Marquee (reduced) | — | animation none | `prefers-reduced-motion: reduce` |
+| Banner rotate (reduced) | — | no auto-cycle; dots/manual still work | `prefers-reduced-motion: reduce` |
 
 Tear easing: `cubic-bezier(0.7, 0, 0.84, 0)`. Reveal easing: `cubic-bezier(0.2, 0, 0, 1)`. Overlay `z-index: 2147483647`, `pointer-events: none`. Id color `#d9d9d9`, arrow `#E23D00`.
 
@@ -350,13 +356,13 @@ Two dialects. House pages (`/`, `/catalog`, sleeves, `/collection`, `/legal`) sh
 ### Current Responsive Rules
 
 
-Only `RecentDigs.tsx` has dedicated mobile/desktop handling. All other components render identically across breakpoints.
+Person-page components render the same layout across breakpoints.
 
 | Component | Mobile | Desktop (md+) |
 |-----------|--------|----------------|
-| Recent Digs | Horizontal scroll, `w-[140px]` items, snap points | Flex row, `flex-1` items |
-| Recent Digs loading | Scroll skeleton | Row skeleton |
-| All other components | Same layout | Same layout |
+| Career nav items | `whitespace-nowrap`; right group `gap-x-3 gap-y-2` | `sm:gap-x-8` |
+| BannerRotator | Full-bleed bar; `pr-16` on content only when dots show | Same |
+| All person-page components | Same layout | Same layout |
 
 ### Responsive Priorities (future)
 
@@ -371,7 +377,7 @@ Only `RecentDigs.tsx` has dedicated mobile/desktop handling. All other component
 
 ### What Exists
 
-- Images have `alt` attributes (Recent Digs: `${artist} — ${title}`)
+- Images have `alt` attributes
 - Root title-card `LogoMark` is `aria-hidden` so the `h1` wordmark is the only accessible name. Standalone uses pass `decorative={false}` (`<title>` lecturesfrom).
 - External links have `target="_blank"` and `rel="noopener noreferrer"`
 - Form submission via Enter key (Chat)
@@ -386,7 +392,7 @@ Only `RecentDigs.tsx` has dedicated mobile/desktop handling. All other component
 - No skip-to-content link
 - No focus visible indicators beyond browser defaults
 - Hover-only interactions on Publications (no keyboard alternative)
-- No `aria-live` regions for dynamic content (chat messages, analysis results)
+- No `aria-live` regions for dynamic content (chat messages, analysis results). Exception: `NowPlayingLiveRegion` renders an empty polite live region (`#yt-now-playing-live`, `sr-only`) on the career page at load; drop writes "Now Playing unavailable". Tailwind safelists `sr-only` and scans `components/` (not `lib/`) so the live region is hidden without emitting unused utilities from catalog prose.
 - Activity sidebar: no keyboard trigger, no escape-to-close
 - Color contrast may not meet WCAG AA in light mode (needs audit)
 

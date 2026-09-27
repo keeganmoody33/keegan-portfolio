@@ -227,39 +227,6 @@ Proxies to Supabase `chat` Edge Function.
 
 ---
 
-### GET /api/discogs
-
-Proxies to Discogs API. Returns 5 most recently added records.
-
-**Request:** No params.
-
-**Response (200):**
-```json
-[
-  {
-    "title": "string",
-    "artist": "string",
-    "year": "number",
-    "thumbnail": "string (URL)",
-    "discogsUrl": "string (URL)"
-  }
-]
-```
-
-**Errors:**
-- `429` -- `{ "error": "Too many requests" }` with `Retry-After` and `Cache-Control: no-store` (our limiter or Discogs)
-- `502` -- `{ "error": "Failed to fetch from Discogs" }` with `Cache-Control: no-store` (generic; never forwards upstream text)
-
-**External endpoint:** `https://api.discogs.com/users/lecturesfrom/collection/folders/0/releases?sort=added&sort_order=desc&per_page=5&page=1`
-
-**Auth:** `DISCOGS_TOKEN` if present. Collection is public; missing token does not 500.
-
-**Cache:** `next: { revalidate: 300 }` and route `revalidate = 300`. User-Agent: `lecturesfrom/1.0`.
-
-**PostHog events:** `api_discogs_request`, `api_discogs_error`
-
----
-
 ### GET /api/discogs/collection
 
 Full paginated Discogs crate for `/collection`. Paginates `per_page=100` until `pagination.pages` is exhausted.
@@ -301,6 +268,8 @@ Full paginated Discogs crate for `/collection`. Paginates `per_page=100` until `
 ### GET /api/github
 
 Proxies to GitHub public events API. Returns aggregated activity stats for keeganmoody33.
+
+**Auth:** None. This route does not read a GitHub token env var. Upstream calls are unauthenticated (GitHub 60 req/hr).
 
 **Request:** No params.
 
@@ -437,7 +406,7 @@ Both deployed via `supabase functions deploy <name>`. Source in `supabase/functi
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public (client + server) | Yes | `/api/chat`, `/api/jd-analyzer`, `lib/supabase.ts` |
 | `NEXT_PUBLIC_POSTHOG_KEY` | Public (client + server) | No | `providers.tsx`, `lib/posthog-server.ts` |
 | `NEXT_PUBLIC_POSTHOG_HOST` | Public (client + server) | No | Defaults to `https://us.i.posthog.com` |
-| `DISCOGS_TOKEN` | Server-only | No | `/api/discogs`, `/api/discogs/collection` (sent when present; public collection works without it) |
+| `DISCOGS_TOKEN` | Server-only | No | `/api/discogs/collection` (sent when present; public collection works without it) |
 
 ### Supabase Secrets (set via `supabase secrets set`)
 
@@ -458,7 +427,6 @@ All Next.js env vars above must also be set in Vercel for production deployment.
 |-------|------|
 | `/api/chat` | `question` must be non-empty string |
 | `/api/jd-analyzer` | `input` must be non-empty string; URL detection via `input.trim().startsWith('http')` |
-| `/api/discogs` | No input validation (GET, no params) |
 | `/api/discogs/collection` | No input validation (GET, no params) |
 | Chat / JD analyzer | Missing env vars return 500 before external calls |
 | Discogs routes | `DISCOGS_TOKEN` optional; missing token is not an error |
