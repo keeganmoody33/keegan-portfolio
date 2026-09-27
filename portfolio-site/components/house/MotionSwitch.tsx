@@ -5,7 +5,7 @@ import { useCallback, useLayoutEffect, useSyncExternalStore } from 'react'
 const STORAGE_KEY = 'lf-logo-paused'
 const CHANGE_EVENT = 'lf-logo-paused'
 
-const ARIA_BOOTSTRAP = `try{if(sessionStorage.getItem('lf-logo-paused')==='1'){var s=document.currentScript;var b=s&&s.previousElementSibling;if(b){b.setAttribute('aria-checked','false');b.setAttribute('aria-label','motion: off');}}}catch(e){}`
+const ARIA_BOOTSTRAP = `try{var s=document.currentScript;var b=s&&s.previousElementSibling;if(b){var p=document.documentElement.getAttribute('data-logo-paused')==='true';b.setAttribute('aria-checked',p?'false':'true');b.setAttribute('aria-label',p?'motion: off':'motion: on');}}catch(e){}`
 
 function subscribe(onStoreChange: () => void): () => void {
   window.addEventListener(CHANGE_EVENT, onStoreChange)
@@ -24,12 +24,21 @@ function getServerSnapshot(): boolean {
   return false
 }
 
+function syncSwitchFromHtml(): void {
+  const paused = document.documentElement.getAttribute('data-logo-paused') === 'true'
+  document.querySelectorAll('.lf-motion-switch').forEach((node) => {
+    node.setAttribute('aria-checked', paused ? 'false' : 'true')
+    node.setAttribute('aria-label', paused ? 'motion: off' : 'motion: on')
+  })
+}
+
 function applyHtmlPaused(paused: boolean): void {
   if (paused) {
     document.documentElement.setAttribute('data-logo-paused', 'true')
-    return
+  } else {
+    document.documentElement.removeAttribute('data-logo-paused')
   }
-  document.documentElement.removeAttribute('data-logo-paused')
+  syncSwitchFromHtml()
 }
 
 /**
@@ -38,16 +47,15 @@ function applyHtmlPaused(paused: boolean): void {
  * Both labels are in the SSR markup; CSS on `html[data-logo-paused]`
  * picks the visible word before paint so a reload with motion off does
  * not flash "motion: on". Grid-stacked spans reserve the wider "off"
- * width. A parser-blocking sibling script (and the head observer) set
- * `aria-checked="false"` before first paint when sessionStorage is
- * paused. `getServerSnapshot` stays playing so hydration matches the
- * default markup; `suppressHydrationWarning` covers the pre-paint
- * aria write. Pause is CSS-only via `html[data-logo-paused="true"]`
- * — never inline `animation-play-state`, never `running`.
+ * width. `aria-checked` and `aria-label` are not React state — the
+ * parser-blocking head script and a sibling script key them off the
+ * same `html[data-logo-paused]` attribute so hydration cannot rewrite
+ * the name or checked state. Hidden words are `aria-hidden`. Pause is
+ * CSS-only via `html[data-logo-paused="true"]` — never inline
+ * `animation-play-state`, never `running`.
  */
 export default function MotionSwitch() {
   const paused = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
-  const motionOn = !paused
 
   useLayoutEffect(() => {
     applyHtmlPaused(getSnapshot())
@@ -59,17 +67,16 @@ export default function MotionSwitch() {
     } catch {
       // ignore quota / private mode
     }
+    applyHtmlPaused(getSnapshot())
     window.dispatchEvent(new Event(CHANGE_EVENT))
   }, [])
 
   return (
     <>
+      {/* eslint-disable jsx-a11y/role-has-required-aria-props -- keyed off html[data-logo-paused] */}
       <button
         type="button"
         role="switch"
-        aria-checked={motionOn}
-        aria-label={motionOn ? 'motion: on' : 'motion: off'}
-        suppressHydrationWarning
         className="lf-motion-switch mt-2 font-mono text-[11px] tracking-wide text-[var(--house-muted)]"
         onClick={onToggle}
       >
@@ -80,6 +87,7 @@ export default function MotionSwitch() {
           motion: off
         </span>
       </button>
+      {/* eslint-enable jsx-a11y/role-has-required-aria-props */}
       <script dangerouslySetInnerHTML={{ __html: ARIA_BOOTSTRAP }} />
     </>
   )
