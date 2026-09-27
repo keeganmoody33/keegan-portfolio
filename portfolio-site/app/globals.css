@@ -306,6 +306,49 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   /* 0.961 of the Space Grotesk lockup so Chakra Petch 600 keeps the same width. */
   font-size: clamp(2.4rem, 14.2vw, 11.5rem);
   animation: houseLockup 700ms ease-out both;
+  /*
+   * Chakra Petch 600 — Google Fonts v13, UPM 1000.
+   * TTF: fonts.gstatic.com/s/chakrapetch/v13/cIflMapbsEk7TDLdtEz1BwkeQI5FQA.ttf
+   * o hmtx advance = 585 → 0.585em
+   * OS/2 sxHeight = 498 → 0.498em
+   * hhea descent = 308 → 0.308em (alphabetic baseline from font box bottom)
+   */
+  --lf-wordmark-o-advance: 0.585em;
+  --lf-wordmark-o-x-height: 0.498em;
+  --lf-wordmark-o-descent: 0.308em;
+}
+
+/*
+ * Last o in "from": in-flow transparent glyph keeps the o's actual
+ * advance (and letter-spacing) so the lockup width matches plain text.
+ * Mark is the static LogoMark square sized to x-height, centered on the
+ * glyph, sitting on the baseline. Face-on; not .lf-logo-globe.
+ * The painted run is aria-hidden; .sr-only "lecturesfrom" is the name.
+ */
+.house-wordmark-visual {
+  user-select: none;
+}
+
+.house-wordmark-o {
+  position: relative;
+}
+
+.house-wordmark-o-letter {
+  color: transparent;
+}
+
+.house-wordmark-o-mark.house-logo-mark {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--lf-wordmark-o-descent);
+  margin-inline: auto;
+  width: var(--lf-wordmark-o-x-height);
+  height: var(--lf-wordmark-o-x-height);
+  pointer-events: none;
+  user-select: none;
+  transform: none;
+  overflow: hidden;
 }
 
 @supports (font-size: 1cqi) {

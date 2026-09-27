@@ -1,4 +1,5 @@
 import HouseRail from '@/components/house/HouseRail'
+import HouseWordmark from '@/components/house/HouseWordmark'
 import LogoGlobe from '@/components/house/LogoGlobe'
 import LogoMark from '@/components/house/LogoMark'
 
@@ -15,7 +16,7 @@ export default function TitleCard() {
           core={<LogoMark decorative layer="core" />}
         />
         <div className="house-wordmark-slot">
-          <h1 className="house-wordmark">lecturesfrom</h1>
+          <HouseWordmark />
         </div>
         <p className="house-meta mt-3">llc</p>
       </div>

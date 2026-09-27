@@ -19,7 +19,7 @@
 
 **Two visual dialects. Do not homogenize.**
 
-- **House** (`/`, `/catalog`, `/collection`, `/legal`): near-black `#0a0a0a`, grotesque / tight-tracked meta, one accent = print orange `#e23d00`. Display face is Chakra Petch 600 (wordmark, page-title h1/h2, `.house-spine-title`). Body on `.house` stays Space Grotesk. Meta stays Roboto Mono. Hairlines. No terminal chrome. No lime spray type. Display name always lowercase `lecturesfrom` (`lecturesfrom LLC` allowed in footer/legal). The line-mark on the title card is modest (`2rem`), `currentColor` / house ink, above the wordmark — not a hero graphic and not inside `.house-wordmark-slot`. `#lf-core` is `scale(0.74)` so the orbit sits inside the ring instead of sharing its radius.
+- **House** (`/`, `/catalog`, `/collection`, `/legal`): near-black `#0a0a0a`, grotesque / tight-tracked meta, one accent = print orange `#e23d00`. Display face is Chakra Petch 600 (wordmark, page-title h1/h2, `.house-spine-title`). Body on `.house` stays Space Grotesk. Meta stays Roboto Mono. Hairlines. No terminal chrome. No lime spray type. Display name always lowercase `lecturesfrom` (`lecturesfrom LLC` allowed in footer/legal). The line-mark on the title card is modest (`2rem`), `currentColor` / house ink, above the wordmark. The last `o` in the root wordmark is the same static `LogoMark` (face-on, no spin), sized to Chakra Petch 600 x-height (`0.498em`). `#lf-core` is `scale(0.74)` so the orbit sits inside the ring instead of sharing its radius.
 - **Person** (`/keeganmoody33`): existing lime/orange terminal and Space Grotesk. Untouched except the wordmark becoming a SignalCut link to `/`. Do not apply house display type or house light tokens here.
 
 **Information density:** Sparse surface, dense on engagement. First screen is clean, intriguing, spacious. Interaction reveals depth.
@@ -291,8 +291,9 @@ Animated 60px x 60px grid pattern on body:
 | `.house-meta` | House metadata | Roboto Mono, 0.625rem, 0.22em tracking, uppercase |
 | `.house-lcd` | LCD chip | `--house-lcd` on `--house-lcd-ink`, Doto 800, `10px 16px` padding. Defined, unused. |
 | `.house-rail` | House top rail | Three columns; atl / issue / year always visible; gutters `px-6 sm:px-10` |
-| `.house-wordmark` | Root lockup | Chakra Petch 600, tracking `-0.01em`, `line-height: 0.85`. `min(11.5rem, 16.5cqi)` so `lecturesfrom` keeps the Space Grotesk width (0.961 of `min(12rem, 17.2cqi)`). Entrance is a 700ms opacity fade (`houseLockup`). Instant under `prefers-reduced-motion`. Slot `overflow-x: clip`. Nameplate SVGs in `brand/lecturesfrom-wordmark*.svg` (Archivo Narrow Bold outlines, +3% tracking, hairline in `#8a8a8a`) are not mounted. |
-| `.house-logo-mark` | Root mark box | `2rem` square, `aspect-ratio: 1`, reserves size before paint |
+| `.house-wordmark` | Root lockup | Chakra Petch 600, tracking `-0.01em`, `line-height: 0.85`. `min(11.5rem, 16.5cqi)` so `lecturesfrom` keeps the Space Grotesk width (0.961 of `min(12rem, 17.2cqi)`). Entrance is a 700ms opacity fade (`houseLockup`). Last `o` in `from` is a static `LogoMark` over an in-flow transparent o (advance from the glyph; mark square `0.498em` x-height). Full word is `.sr-only`; painted run is `aria-hidden`. Instant under `prefers-reduced-motion`. Slot `overflow-x: clip`. Nameplate and Hathaway SVGs are not mounted. |
+| `.house-wordmark-o` | Wordmark o slot | `position: relative` inline. In-flow transparent `o` keeps glyph advance + tracking. Mark square = x-height `0.498em`, baseline offset `0.308em`. The lecturesfrom `LogoMark` (same ring + core as the title-card globe / favicon / og, core `scale(0.74)`) sits in that square. Does not use `LogoGlobe`, spin, rim wall, or `data-logo-paused`. |
+| `.house-logo-mark` | Root mark box | `2rem` square, `aspect-ratio: 1`, reserves size before paint. Wordmark o overrides to `0.498em` via `.house-wordmark-o-mark`. |
 | `.lf-logo-globe` | Logo mark box | Square `aspect-ratio: 1`; reserves size before paint (CLS 0). `perspective: 8rem` (4× the 2rem title-card mark) on this box. Title card wraps `LogoMark` `layer="ring"` + `layer="core"`. |
 | `.lf-logo-globe-spin` | Coin spin | Shared wrapper around both layers. `rotateY(0→360deg)` 12s linear infinite (west→east). `backface-visibility: visible`. Pauses on `html[data-lf-signal-cut="active"]` or `html[data-logo-paused="true"]` (either attribute; never `running`). `animation: none` under `prefers-reduced-motion`. Owner override of house "No 3D", scoped to this mark. |
 | `.lf-motion-switch` | Footer Motion | HouseFooter `role="switch"` (`motion: on` / `motion: off`). Min 24×24, house muted/ink, `:focus-visible` 2px `--house-ink` outline. Hidden (`display: none`) under `prefers-reduced-motion: reduce`. Writes `data-logo-paused` on `<html>` after hydration; root layout head script sets the same attribute before first paint when `sessionStorage['lf-logo-paused']` is `'1'`. |
@@ -421,7 +422,7 @@ Person-page components render the same layout across breakpoints.
 ### What Exists
 
 - Images have `alt` attributes
-- Root title-card `LogoMark` is `aria-hidden` so the `h1` wordmark is the only accessible name. Standalone uses pass `decorative={false}` (`<title>` lecturesfrom).
+- Root title-card `LogoGlobe` is `aria-hidden` so the `h1` wordmark is the only accessible name. The wordmark keeps a `.sr-only` full word `lecturesfrom`; the painted run is `aria-hidden`. The in-word mark is `aria-hidden` and `focusable="false"`. Standalone uses pass `decorative={false}` (`<title>` lecturesfrom).
 - HouseFooter Motion switch (WCAG 2.2.2) pauses the title-card coin spin. Shared on `/`, `/catalog`, `/collection`, `/legal`. Hidden under `prefers-reduced-motion`. Root layout head script applies a saved pause before first paint. `/keeganmoody33` does not share this footer (marquee / `gridShift` remain).
 - External links have `target="_blank"` and `rel="noopener noreferrer"`
 - Form submission via Enter key (Chat)

@@ -49,6 +49,7 @@ Everything that serves the core purpose: help visitors understand who Keegan is,
 | Turntable Loading Page | `TurntableCanvas.tsx` (left on disk, not mounted at `/`) | **Retired from `/`** — 2026-09-26 house cut |
 | House title card + crate | `app/(house)/page.tsx`, `lib/catalog.ts`, `components/house/*` | **Shipped** |
 | lecturesfrom logo mark + favicon + house share image | `LogoMark.tsx`, `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`, `app/(house)/opengraph-image.png` | **Shipped** |
+| Hero wordmark o = lecturesfrom logo | `HouseWordmark.tsx` — last `o` in `from` is the canonical `LogoMark` (same ring + core as title-card / favicon / og, core `scale(0.74)`) at Chakra Petch x-height; spinning title-card globe unchanged | **Shipped on the house title card** |
 | Sleeves | `/catalog`, `/catalog/[slug]` | **Shipped (this PR)** |
 | Full Discogs crate | `/collection`, `/api/discogs/collection` | **Shipped** — durable Redis last-good when Upstash env is set |
 | SignalCut | `components/SignalCut.tsx` | **Shipped (this PR)** — house ↔ person only |

@@ -1,7 +1,7 @@
 # Implementation Plan — lecturesfrom.com Portfolio
 
 **Last Updated:** 2026-09-27
-**Status:** House cut implemented (title card, sleeves, full crate, signal cut, agent files, logo mark). Person page frozen except wordmark. Live lockup is Chakra Petch. Hathaway (`public/brand/wordmark-hathaway.svg`) and nameplate (`brand/lecturesfrom-wordmark.svg`) vectors are assets only and are not mounted.
+**Status:** House cut implemented (title card, sleeves, full crate, signal cut, agent files, logo mark). Person page frozen except wordmark. Live lockup is Chakra Petch; the last `o` is the static LogoMark. Hathaway (`public/brand/wordmark-hathaway.svg`) and nameplate (`brand/lecturesfrom-wordmark.svg`) vectors are assets only and are not mounted.
 **Previous plan:** `IMPLEMENTATION_PLAN_DISCOGS_ARCHIVED.md` (completed Discogs widget build)
 
 ---
@@ -257,6 +257,7 @@ Phases 1 and 4 can run in parallel after Phase 0. Phase 3 is cancelled.
 
 - **Output:** `components/house/LogoMark.tsx` on the root title card; `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`; house `opengraph-image` / `twitter-image` from `brand/house-share.png`.
 - **Globe:** `LogoGlobe` layers stay. Shared `.lf-logo-globe-spin` wrapper coins-spins the whole mark (`rotateY` 12s). Core stays `animation: none` (face-on). Owner override of house "No 3D", scoped to this mark. HouseFooter Motion switch for WCAG 2.2.2; composed with SignalCut via pause-only CSS attributes on `<html>`. Root layout blocking script applies a saved pause before first paint (`suppressHydrationWarning` on `<html>`).
+- **Wordmark o:** `HouseWordmark` replaces the last `o` in `from` with the lecturesfrom `LogoMark` (`groupIds={false}`, `focusable={false}`). Same ring + core as the title-card globe / favicon / og. In-flow transparent `o` keeps glyph advance. Full word is `.sr-only`. Does not read `data-logo-paused`, spin, or draw a rim.
 - **Validation:** lint / typecheck / build; `/keeganmoody33` `og:image` stays `/og.jpg`.
 
 ---

@@ -12,7 +12,7 @@
 
 | Route            | File                         | What It Shows                                                   |
 |------------------|------------------------------|-----------------------------------------------------------------|
-| `/`              | `app/(house)/page.tsx`               | House title card + crate (Server Component). LogoGlobe wraps LogoMark (ring + core) above the wordmark at the same 2rem size. The shared wrapper coins-spins the whole mark; core stays face-on. HouseFooter Motion switch (WCAG 2.2.2) pauses the spin via `html[data-logo-paused]`. Root layout head script sets the attribute from `sessionStorage['lf-logo-paused']` before first paint; `useLayoutEffect` keeps it in sync after hydration/toggles. Hidden under reduced motion. Wordmark entrance is a 700ms opacity fade. Nameplate SVGs in `brand/` are not mounted. No page turntable. No return-visit redirect. |
+| `/`              | `app/(house)/page.tsx`               | House title card + crate (Server Component). LogoGlobe wraps LogoMark (ring + core) above the wordmark at the same 2rem size. The shared wrapper coins-spins the whole mark; core stays face-on. HouseFooter Motion switch (WCAG 2.2.2) pauses the spin via `html[data-logo-paused]`. Root layout head script sets the attribute from `sessionStorage['lf-logo-paused']` before first paint; `useLayoutEffect` keeps it in sync after hydration/toggles. Hidden under reduced motion. Wordmark (`HouseWordmark`, Chakra Petch) entrance is a 700ms opacity fade. The last `o` in `from` is a static `LogoMark` (no globe spin, no rim, no pause attribute). Nameplate and Hathaway SVGs are not mounted. No page turntable. No return-visit redirect. |
 | `/catalog`       | `app/(house)/catalog/page.tsx`       | Crate permalink (same spines as `/`)                            |
 | `/catalog/[slug]`| `app/(house)/catalog/[slug]/page.tsx`| Sleeve (cover, liner, tracks). Unknown slugs 404.               |
 | `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate (ISR 300s; durable last-good in Redis when configured) |
@@ -32,7 +32,7 @@
 | Redirect (301) | `/keeganMoody33` | `/keeganmoody33` | Case normalization  |
 | Redirect (301) | `/keegan`        | `/keeganmoody33` | Short alias         |
 
-**Result:** Visitors land on `lecturesfrom.com` and see the house title card + crate. `/` never redirects to the person page. The person page is at `/keeganmoody33`. House ↔ person crossings use `SignalCut` (not a global layout animation). Ask AI and JD Fit Analyzer stay on the person page only. `LogoGlobe` wraps the title-card `LogoMark` (`layer="ring"` + `layer="core"`); geometry stays in LogoMark. The globe core is static (`animation: none`). `HouseFooter` (including the Motion switch) is shared on `/`, `/catalog`, `/collection`, `/legal`. `/keeganmoody33` has its own footer.
+**Result:** Visitors land on `lecturesfrom.com` and see the house title card + crate. `/` never redirects to the person page. The person page is at `/keeganmoody33`. House ↔ person crossings use `SignalCut` (not a global layout animation). Ask AI and JD Fit Analyzer stay on the person page only. `LogoGlobe` wraps the title-card `LogoMark` (`layer="ring"` + `layer="core"`); geometry stays in LogoMark. The globe core is static (`animation: none`). The hero wordmark's last `o` is the same static `LogoMark` as the title-card globe (no spin) and does not spin. `HouseFooter` (including the Motion switch) is shared on `/`, `/catalog`, `/collection`, `/legal`. `/keeganmoody33` has its own footer.
 
 ### API Routes
 
