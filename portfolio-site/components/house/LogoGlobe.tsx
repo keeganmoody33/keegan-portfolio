@@ -59,9 +59,9 @@ function cloneRimRing(ring: ReactNode): ReactNode {
  * each other. The shared `.lf-logo-globe-spin` wrapper turns the whole
  * mark as one coin (`rotateY` 12s linear infinite, west→east). Core
  * stays `animation: none` on the front plane so the layers cannot
- * drift. Dimmer ring copies behind z=0 give the edge a rim when the
- * coin is edge-on. Pause is CSS-only via `html[data-lf-signal-cut="active"]`
- * — never the SignalCut debug hook.
+ * drift. Ring copies behind z=0 (same ink, 0.5px steps, 2.5px depth)
+ * give the edge a rim when the coin is edge-on. Pause is CSS-only via
+ * `html[data-lf-signal-cut="active"]` — never the SignalCut debug hook.
  *
  * Server Component. No JS animation loop. Title-card placement wraps
  * LogoMark `layer="ring"` + `layer="core"` at the mark's existing size.

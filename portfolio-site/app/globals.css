@@ -330,6 +330,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   flex-shrink: 0;
   perspective: 8rem;
   perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
 }
 
 /* Keep the title-card mark at 2rem when LogoGlobe also carries .house-logo-mark. */
@@ -351,21 +352,24 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 .lf-logo-globe-layer {
   position: absolute;
   inset: 0;
+  transform-style: preserve-3d;
+  backface-visibility: visible;
 }
 
 /*
- * Rim: dimmer ring copies behind the face. Scale counters perspective so
- * they sit under the front stroke when face-on (rest pose stays identical).
+ * Rim: thin ring copies behind the face. Same ink as the front stroke so
+ * they hide under it when face-on; stacked translateZ is the coin edge.
+ * No extra scale — compensating scale sat outside the stroke as a halo.
  */
 .lf-logo-globe-rim {
-  color: var(--house-dim);
   pointer-events: none;
-  transform: translateZ(var(--lf-rim-z, 0px))
-    scale(calc((8rem - var(--lf-rim-z, 0px)) / 8rem));
+  z-index: 0;
+  transform: translate3d(0, 0, var(--lf-rim-z, 0px));
 }
 
 .lf-logo-globe-ring {
-  transform: translateZ(0);
+  z-index: 1;
+  transform: translate3d(0, 0, 0);
 }
 
 .lf-logo-globe-layer .house-logo-mark {
@@ -389,7 +393,8 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 
 /* Core stays face-on on the front plane. No independent spin. */
 .lf-logo-globe-core {
-  transform: translateZ(0);
+  z-index: 2;
+  transform: translate3d(0, 0, 0);
   will-change: auto;
   animation: none;
 }
@@ -405,6 +410,11 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
     animation: none;
     will-change: auto;
     transform: none;
+  }
+
+  /* Rims may stay in the DOM; hide them so the static face matches 4c4869d. */
+  .lf-logo-globe-rim {
+    visibility: hidden;
   }
 }
 
