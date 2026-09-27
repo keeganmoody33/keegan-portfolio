@@ -47,7 +47,7 @@ function cloneLayer(svg: LogoGlobeSvg, extra: string): LogoGlobeSvg {
 /**
  * Lecturesfrom logo globe. Ring and core stay stacked and face-on to
  * each other. The shared `.lf-logo-globe-spin` wrapper turns the whole
- * mark as one coin (`rotateY` 24s linear infinite, west→east). Core
+ * mark as one coin (`rotateY` 12s linear infinite, west→east). Core
  * stays `animation: none` / `transform: none` so the layers cannot
  * drift. Pause is CSS-only via `html[data-lf-signal-cut="active"]` —
  * never the SignalCut debug hook.

@@ -345,7 +345,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   transform-style: flat;
   backface-visibility: visible;
   will-change: transform;
-  animation: lf-logo-globe-spin 24s linear infinite;
+  animation: lf-logo-globe-spin 12s linear infinite;
 }
 
 .lf-logo-globe-layer {
