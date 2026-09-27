@@ -1,3 +1,9 @@
+COMPLETED (2026-09-27 — lecturesfrom Hathaway wordmark, assets only):
+- Custom lowercase `lecturesfrom` as SVG path data (not a live font). Cooper Black / Souvenir Bold used only as weight/roundness references
+- Face is one evenodd path; three equal 4% down-right `<use>` shadows (#4A4A4A / #7A7A7A / #A8A8A8) plus face #111111. Small variant: one #7A7A7A step
+- Files: `public/brand/wordmark-hathaway.svg`, `public/brand/wordmark-hathaway-sm.svg`. Regenerator: `scripts/build-wordmark-hathaway.py`
+- Not wired. Header integration waits on PR #23 (`cursor/lf-logo-globe`) and Keegan PNG approval (stop rule 6)
+
 COMPLETED (2026-09-26 — QA amendment: rotator-dot handoff + drop lib/ Tailwind glob):
 - Arm the drop handoff when focus is anywhere inside the banner rotator (Now Playing slide or `[data-banner-dots]`). Still never arm for `body` or anything outside the rotator. Always `focus({ preventScroll: true })`. Landing target is the leftover slide's first focusable, then the first nav link on collapse
 - Tailwind content no longer scans `./lib/**` (that emitted `.top-10` from catalog prose). `.sr-only` stays safelisted; the live region lives in `components/`

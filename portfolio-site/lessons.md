@@ -1,6 +1,13 @@
 # Lessons Learned
 
-Updated: 2026-08-22
+Updated: 2026-09-27
+
+## Brand / wordmark
+
+- Draw the Hathaway `lecturesfrom` face as path data. Do not set Cooper Black or Souvenir. Overlap neighbours 1–2% of letter width, then weld any pair whose ink does not actually kiss (open `c` / `r` / `s` / `f` otherwise separate at 320px).
+- Keep e/o counters open at 32px: bowl walls ~20% of x-height (stems stay 24%). A closed theta `e` with a thin bar beats a Cooper-tiny eye. Confirm with 4× nearest-neighbour crops of `e`, `o`, and `r`.
+- Shadow must be equal `<use>` translations, not a tapered extrusion. Face `#111111` then `#4A4A4A` `#7A7A7A` `#A8A8A8`. One `#7A7A7A` step under 24px.
+- Union + evenodd: the o-dot is a second polygon inside the o hole. Do not evenodd-overlap letter bodies or they punch holes in each other.
 
 ## Schema
 
