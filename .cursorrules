@@ -110,7 +110,7 @@ All API routes follow: browser → Next.js Route Handler (keeps keys server-side
 | Route | Method | Proxies To |
 |-------|--------|------------|
 | `/api/chat` | POST | Supabase `chat` Edge Function |
-| `/api/discogs` | GET | Discogs API |
+| `/api/discogs/collection` | GET | Discogs API (house `/collection` crate) |
 | `/api/github` | GET | GitHub public events API |
 | `/api/jd-analyzer` | POST | Supabase `jd-analyzer` Edge Function |
 

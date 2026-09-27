@@ -4,7 +4,9 @@ module.exports = {
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
     './app/**/*.{js,ts,jsx,tsx,mdx}',
+    './hooks/**/*.{js,ts,jsx,tsx}',
   ],
+  safelist: ['sr-only'],
   darkMode: 'class',
   theme: {
     extend: {
@@ -32,6 +34,7 @@ module.exports = {
       },
       fontFamily: {
         'space': ['Space Grotesk', 'sans-serif'],
+        'display': ['var(--house-font-display)', 'sans-serif'],
         'mono': ['Roboto Mono', 'monospace'],
         'slab': ['Roboto Slab', 'serif'],
       },
