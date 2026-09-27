@@ -369,7 +369,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   position: absolute;
   inset: 0;
   transform-origin: 50% 50%;
-  transform-style: flat;
+  transform-style: preserve-3d;
   backface-visibility: visible;
   will-change: transform;
   animation: lf-logo-globe-spin 12s linear infinite;
@@ -378,6 +378,32 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 .lf-logo-globe-layer {
   position: absolute;
   inset: 0;
+}
+
+/*
+ * Coin rim: one 2.5px capsule in the YZ plane (rotateY 90deg). Face-on
+ * it is opacity 0 so the ring stroke is unchanged vs 33954d9. Near
+ * 90° / 270° it is a continuous edge — stacked SVG copies dashed at
+ * 2×/4× DPR. Height 87.5% = ring diameter (r=1, scale(224), viewBox 512).
+ */
+.lf-logo-globe-rim-wall {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 2.5px;
+  height: 87.5%;
+  margin: auto;
+  border-radius: 1.25px;
+  background: currentColor;
+  pointer-events: none;
+  transform: rotateY(90deg);
+  transform-origin: 50% 50%;
+  backface-visibility: visible;
+  opacity: 0;
+  will-change: opacity;
+  animation: lf-logo-globe-rim-wall 12s linear infinite;
 }
 
 .lf-logo-globe-layer .house-logo-mark {
@@ -412,6 +438,12 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   to { transform: rotateY(360deg); }
 }
 
+/* Same 12s clock as the spin. 85°=23.611%, 90°=25%, 95°=26.389%, 265–275°=73.611–76.389%. */
+@keyframes lf-logo-globe-rim-wall {
+  0%, 22%, 28%, 50%, 72%, 78%, 100% { opacity: 0; }
+  23.611%, 26.389%, 73.611%, 76.389% { opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .lf-logo-globe-spin {
     animation: none;
@@ -424,6 +456,14 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .lf-logo-globe-rim-wall {
+    animation: none;
+    will-change: auto;
+    opacity: 0;
+  }
+}
+
 /*
  * Pause is attribute-only. Never set animation-play-state: running —
  * user resume and SignalCut teardown both drop their own attribute so
@@ -431,5 +471,10 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
  */
 html[data-lf-signal-cut='active'] .lf-logo-globe-spin,
 html[data-logo-paused='true'] .lf-logo-globe-spin {
+  animation-play-state: paused;
+}
+
+html[data-lf-signal-cut='active'] .lf-logo-globe-rim-wall,
+html[data-logo-paused='true'] .lf-logo-globe-rim-wall {
   animation-play-state: paused;
 }

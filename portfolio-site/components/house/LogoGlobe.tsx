@@ -93,6 +93,7 @@ export default function LogoGlobe({
       aria-hidden={decorative ? true : undefined}
     >
       <div className="lf-logo-globe-spin" aria-hidden="true">
+        <div className="lf-logo-globe-rim-wall" aria-hidden="true" />
         <div className="lf-logo-globe-layer lf-logo-globe-ring">
           {ringNode}
         </div>
