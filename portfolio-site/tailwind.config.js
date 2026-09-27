@@ -34,6 +34,7 @@ module.exports = {
       },
       fontFamily: {
         'space': ['Space Grotesk', 'sans-serif'],
+        'display': ['var(--house-font-display)', 'sans-serif'],
         'mono': ['Roboto Mono', 'monospace'],
         'slab': ['Roboto Slab', 'serif'],
       },

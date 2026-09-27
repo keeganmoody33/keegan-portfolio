@@ -7,7 +7,7 @@ export default function NotFound() {
     <HouseShell>
       <div className="px-6 pt-24 sm:px-10">
         <p className="house-meta">404</p>
-        <h1 className="mt-4 font-space text-4xl tracking-tight">not found</h1>
+        <h1 className="mt-4 font-display text-4xl font-semibold tracking-[-0.01em]">not found</h1>
         <p className="mt-3 font-mono text-sm text-[var(--house-muted)]">
           no sleeve at this slug.
         </p>

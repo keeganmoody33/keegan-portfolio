@@ -18,7 +18,7 @@ export default function LegalPage() {
         <p className="font-mono text-[11px] tracking-wide text-[var(--house-muted)]">
           lecturesfrom LLC · Atlanta, Georgia 30316 · founded 2025 · self-owned
         </p>
-        <h1 className="mt-4 font-space text-4xl tracking-tight sm:text-6xl">lecturesfrom</h1>
+        <h1 className="mt-4 font-display text-4xl font-semibold tracking-[-0.01em] sm:text-6xl">lecturesfrom</h1>
         <p className="mt-6 font-mono text-sm leading-relaxed text-[var(--house-orange)]">
           Transforming your business&apos;s Achilles&apos; heel into durable systems and crafted products that
           fuel growth and culture.
@@ -41,14 +41,14 @@ export default function LegalPage() {
             aligned.
           </p>
 
-          <h2 className="pt-4 font-space text-2xl tracking-tight">GTME &amp; Revenue Architecture</h2>
+          <h2 className="pt-4 font-display text-2xl font-semibold tracking-[-0.01em]">GTME &amp; Revenue Architecture</h2>
           <p>
             From customer journeys and revenue architecture to integrations, outbound operations, and
             workflow automation, every motion is engineered with intention. We partner with businesses
             ready to turn originality and authenticity into durable growth.
           </p>
 
-          <h2 className="pt-4 font-space text-2xl tracking-tight">Publishing House &amp; Physical Products</h2>
+          <h2 className="pt-4 font-display text-2xl font-semibold tracking-[-0.01em]">Publishing House &amp; Physical Products</h2>
           <p>
             lecturesfrom designs physical products that cultivate authenticity alongside digital
             experiences. Pressed records, printed books, art editions, objects, and original designs give

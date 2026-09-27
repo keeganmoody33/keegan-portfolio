@@ -16,7 +16,7 @@ export default function CatalogPage() {
     <HouseShell>
       <HouseRail left="atl 33.70n" center="catalog" right="lf" />
       <div className="px-6 pb-4 pt-16 sm:px-10">
-        <h1 className="font-space text-4xl tracking-tight sm:text-6xl">catalog</h1>
+        <h1 className="font-display text-4xl font-semibold tracking-[-0.01em] sm:text-6xl">catalog</h1>
         <p className="mt-3 max-w-xl font-mono text-sm text-[var(--house-muted)]">
           a catalog item is a record sleeve that holds artifacts. front = cover. back = liner notes.
           contents = numbered tracks.

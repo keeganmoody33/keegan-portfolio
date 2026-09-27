@@ -11,8 +11,9 @@
  *   via `aria-labelledby`). Never both next to the `h1`.
  * - `layer` (default `'all'`): `'all'` keeps `#lf-ring` and `#lf-core` in one
  *   SVG. `'ring'` / `'core'` render that group only, so a wrapper can stack two
- *   same-size layers without duplicate ids. Geometry and group ids stay locked;
- *   Motion's globe spin should wrap these layers rather than rewrite the markup.
+ *   same-size layers without duplicate ids. Group ids stay locked. The core
+ *   group is scale(0.74) so the orbit sits inside the ring instead of sharing
+ *   its radius. Motion's globe spin should wrap these layers rather than rewrite the markup.
  *
  * Strokes are `currentColor` so the mark inherits house ink on `/` (and any
  * future parent color). Favicons cannot use currentColor — see `app/icon.svg`.
@@ -36,7 +37,7 @@ function Ring() {
 
 function Core() {
   return (
-    <g id="lf-core">
+    <g id="lf-core" transform="scale(0.74)">
       <ellipse rx="1" ry="0.43" transform="rotate(-60)" />
       <path d="M 0.605385 -0.384961 C 0.86 -0.09 0.94 0.22 0.852000 0.501000" />
       <path d="M 0.605385 -0.384961 L 0 0 L 0.852000 0.501000 M 0 0 L 0.837356 0.000000 M 0 0 L 0.237000 -0.482000" />

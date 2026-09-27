@@ -18,7 +18,7 @@ export default function Sleeve({ sleeve }: { sleeve: Sleeve }) {
             <p className="house-meta">
               {sleeve.catno} · {sleeve.format} · {sleeve.year}
             </p>
-            <h1 className="mt-4 font-space text-4xl tracking-tight sm:text-6xl">{sleeve.title}</h1>
+            <h1 className="mt-4 font-display text-4xl font-semibold tracking-[-0.01em] sm:text-6xl">{sleeve.title}</h1>
             <p className="mt-3 font-mono text-sm text-[var(--house-orange)]">{sleeve.aside}</p>
           </div>
           <div className="mt-8 space-y-4 font-mono text-sm leading-relaxed text-[var(--house-ink)]">
