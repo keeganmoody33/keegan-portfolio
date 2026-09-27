@@ -11,16 +11,17 @@
  *   via `aria-labelledby`). Never both next to the `h1`.
  * - `layer` (default `'all'`): `'all'` keeps `#lf-ring` and `#lf-core` in one
  *   SVG. `'ring'` / `'core'` render that group only, so a wrapper can stack two
- *   same-size layers without duplicate ids. Geometry and group ids stay locked;
- *   Motion's globe spin should wrap these layers rather than rewrite the markup.
+ *   same-size layers without duplicate ids. `'wordmark'` is ring + orbit
+ *   ellipse only (no inner detail), for the in-word o.
  * - `groupIds` (default true): set false when a second mark shares the page
  *   (wordmark o) so `#lf-ring` / `#lf-core` stay unique on the title-card globe.
  * - `focusable` (default omit): pass `false` for the wordmark o so the SVG is
  *   not a tab stop. The title-card globe omits this; it stays as before.
  * - `strokeWidth` / `geometryScale` (default canonical 0.0625 / 224): the
- *   wordmark o passes the stem-matched pair so the ring is 95% of the
+ *   wordmark o passes the stem-matched ring pair so the ring is 95% of the
  *   Space Grotesk SemiBold vertical stem and the extra width grows inward.
- *   Title-card globe, favicon, and og keep the defaults.
+ * - `orbitStrokeWidth`: wordmark-only; orbit ellipse at half the stem. Omit
+ *   on the title-card globe so it keeps the shared canonical stroke.
  *
  * Strokes are `currentColor` so the mark inherits house ink on `/` (and any
  * future parent color). Favicons cannot use currentColor — see `app/icon.svg`.
@@ -36,24 +37,38 @@ const LF_MARK_OUTER =
 /**
  * Space Grotesk SemiBold (Google Fonts v22 wght 600, UPM 1000) vertical stem:
  * `l` is a 73–188 rectangle (115 UPM); `m` stems are 115 / 114 / 115 at
- * sxHeight/2. Ring stroke is 95% of that stem. The mark box is sxHeight
- * (486 UPM). Scale drops so (r + stroke/2) stays the canonical outer 231
- * viewBox units — stroke grows inward, paths are unchanged.
+ * sxHeight/2. Ring stroke is 95% of that stem. Orbit stroke is 50%.
+ * The mark box is sxHeight (486 UPM). Scale drops so (r + ringStroke/2)
+ * stays the canonical outer 231 viewBox units — ring grows inward.
  */
 export const LF_WORDMARK_STEM_UPM = 115
 export const LF_WORDMARK_STEM_EM = LF_WORDMARK_STEM_UPM / 1000
 export const LF_WORDMARK_RING_TO_STEM = 0.95
+export const LF_WORDMARK_ORBIT_TO_STEM = 0.5
 export const LF_WORDMARK_RING_STROKE_EM =
   LF_WORDMARK_STEM_EM * LF_WORDMARK_RING_TO_STEM
+export const LF_WORDMARK_ORBIT_STROKE_EM =
+  LF_WORDMARK_STEM_EM * LF_WORDMARK_ORBIT_TO_STEM
 const LF_WORDMARK_X_HEIGHT_EM = 486 / 1000
+
+function emToLocalStroke(em: number, geometryScale: number): number {
+  return ((em / LF_WORDMARK_X_HEIGHT_EM) * LF_MARK_VIEWBOX) / geometryScale
+}
+
 const LF_WORDMARK_STROKE_VIEWBOX =
   (LF_WORDMARK_RING_STROKE_EM / LF_WORDMARK_X_HEIGHT_EM) * LF_MARK_VIEWBOX
 export const LF_WORDMARK_GEOMETRY_SCALE =
   LF_MARK_OUTER - LF_WORDMARK_STROKE_VIEWBOX / 2
-export const LF_WORDMARK_STROKE_WIDTH =
-  LF_WORDMARK_STROKE_VIEWBOX / LF_WORDMARK_GEOMETRY_SCALE
+export const LF_WORDMARK_STROKE_WIDTH = emToLocalStroke(
+  LF_WORDMARK_RING_STROKE_EM,
+  LF_WORDMARK_GEOMETRY_SCALE
+)
+export const LF_WORDMARK_ORBIT_STROKE_WIDTH = emToLocalStroke(
+  LF_WORDMARK_ORBIT_STROKE_EM,
+  LF_WORDMARK_GEOMETRY_SCALE
+)
 
-export type LogoMarkLayer = 'all' | 'ring' | 'core'
+export type LogoMarkLayer = 'all' | 'ring' | 'core' | 'wordmark'
 
 export type LogoMarkProps = {
   size?: number
@@ -64,6 +79,7 @@ export type LogoMarkProps = {
   focusable?: false
   strokeWidth?: number
   geometryScale?: number
+  orbitStrokeWidth?: number
 }
 
 function Ring({ grouped }: { grouped: boolean }) {
@@ -74,13 +90,25 @@ function Ring({ grouped }: { grouped: boolean }) {
   )
 }
 
-function Core({ grouped }: { grouped: boolean }) {
+function OrbitEllipse() {
+  return <ellipse rx="1" ry="0.43" transform="rotate(-60)" />
+}
+
+function CoreDetail() {
   return (
-    <g id={grouped ? 'lf-core' : undefined}>
-      <ellipse rx="1" ry="0.43" transform="rotate(-60)" />
+    <>
       <path d="M 0.605385 -0.384961 C 0.86 -0.09 0.94 0.22 0.852000 0.501000" />
       <path d="M 0.605385 -0.384961 L 0 0 L 0.852000 0.501000 M 0 0 L 0.837356 0.000000 M 0 0 L 0.237000 -0.482000" />
       <path d="M 0.197285 -0.587803 L 0.275803 -0.552715 L 0.240715 -0.474197 L 0.162197 -0.509285 Z" />
+    </>
+  )
+}
+
+function Core({ grouped }: { grouped: boolean }) {
+  return (
+    <g id={grouped ? 'lf-core' : undefined}>
+      <OrbitEllipse />
+      <CoreDetail />
     </g>
   )
 }
@@ -94,8 +122,13 @@ export default function LogoMark({
   focusable,
   strokeWidth = LF_MARK_STROKE_WIDTH,
   geometryScale = LF_MARK_GEOMETRY_SCALE,
+  orbitStrokeWidth,
 }: LogoMarkProps) {
   const named = !decorative
+  const wordmark = layer === 'wordmark'
+  const showRing = layer !== 'core'
+  const showCore = layer === 'all' || layer === 'core'
+  const showOrbitOnly = wordmark
 
   return (
     <div className={['house-logo-mark', className].filter(Boolean).join(' ')}>
@@ -118,8 +151,17 @@ export default function LogoMark({
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          {layer === 'core' ? null : <Ring grouped={groupIds} />}
-          {layer === 'ring' ? null : <Core grouped={groupIds} />}
+          {showRing ? <Ring grouped={groupIds} /> : null}
+          {showCore ? <Core grouped={groupIds} /> : null}
+          {showOrbitOnly ? (
+            <g
+              strokeWidth={
+                orbitStrokeWidth === undefined ? strokeWidth : orbitStrokeWidth
+              }
+            >
+              <OrbitEllipse />
+            </g>
+          ) : null}
         </g>
       </svg>
     </div>
