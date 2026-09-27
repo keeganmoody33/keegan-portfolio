@@ -5,13 +5,16 @@ import LogoMark, {
 
 /**
  * Root title-card wordmark. The last o in "from" is a static LogoMark
- * (layer="wordmark": ring + orbit ellipse, no inner detail) sized to
- * Space Grotesk SemiBold's x-height and sitting on the baseline over an
- * in-flow transparent o (exact advance). Face-on, no LogoGlobe, no spin,
- * no rim wall, no `data-logo-paused`.
+ * (layer="wordmark": ring + flat overshoot orbit, no inner detail) sized
+ * to Space Grotesk SemiBold's x-height and sitting on the baseline over
+ * an in-flow transparent o (exact advance). Face-on, no LogoGlobe, no
+ * spin, no rim wall, no `data-logo-paused`.
  *
  * Ring and orbit share one stroke (stem ratio in LogoMark). Geometry
- * scale drops so the ring grows inward; the orbit ellipse is not shrunk.
+ * scale drops so the ring grows inward. The orbit is a flat ellipse
+ * tilted 18° off horizontal; the back arc is clipped where it passes
+ * behind the ring. Overshoot is the largest half-stem-or-less that
+ * still keeps ≥ 0.5 stem from r/m ink without changing word width.
  * Inner detail is omitted. Title-card globe / favicon / og keep the
  * default stroke and full core.
  *

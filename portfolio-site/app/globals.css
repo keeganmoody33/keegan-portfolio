@@ -258,6 +258,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
    * hhea descent = 292 → 0.292em (alphabetic baseline from font box bottom)
    * vertical stem (l 73–188; m stems 115/114/115 at sxHeight/2) = 115 → 0.115em
    * in-word ring+orbit stroke = stem × LF_WORDMARK_STROKE_TO_STEM (shared; grows inward)
+   * in-word orbit overshoot = 0.01373em (half-stem target reduced to keep ≥ 0.5 stem from r ink)
    * o ink (not used for layout): xMin 49 yMin -14 xMax 564 yMax 508
    */
   --lf-wordmark-o-advance: 0.613em;
@@ -297,7 +298,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   pointer-events: none;
   user-select: none;
   transform: none;
-  overflow: hidden;
+  overflow: visible;
 }
 
 @supports (font-size: 1cqi) {

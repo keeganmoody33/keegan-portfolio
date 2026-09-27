@@ -15,15 +15,18 @@
  *   ellipse only (no inner detail), sharing one stroke, for the in-word o.
  * - `groupIds` (default true): set false when a second mark shares the page
  *   (wordmark o) so `#lf-ring` / `#lf-core` stay unique on the title-card globe.
+ *   Wordmark clip/mask ids still use `useId()` so they cannot collide.
  * - `focusable` (default omit): pass `false` for the wordmark o so the SVG is
  *   not a tab stop. The title-card globe omits this; it stays as before.
  * - `strokeWidth` / `geometryScale` (default canonical 0.0625 / 224): the
  *   wordmark o passes the stem-ratio pair so ring and orbit share one stroke
- *   and extra width grows inward. Do not shrink the orbit ellipse.
+ *   and extra width grows inward. Title-card / favicon / og keep defaults.
  *
  * Strokes are `currentColor` so the mark inherits house ink on `/` (and any
  * future parent color). Favicons cannot use currentColor — see `app/icon.svg`.
  */
+
+import { useId } from 'react'
 
 /** Canonical geometry (title-card globe, favicon, og). Do not change for the wordmark o. */
 export const LF_MARK_GEOMETRY_SCALE = 224
@@ -37,9 +40,7 @@ const LF_MARK_OUTER =
  * `l` is a 73–188 rectangle (115 UPM); `m` stems are 115 / 114 / 115 at
  * sxHeight/2. In-word ring and orbit share one stroke = this ratio × stem.
  * The mark box is sxHeight (486 UPM). Scale drops so (r + stroke/2) stays
- * the canonical outer 231 viewBox units — the ring grows inward. The orbit
- * ellipse stays rx=1 / ry=0.43 / rotate(-60) so it crosses the ring on
- * both sides.
+ * the canonical outer 231 viewBox units — the ring grows inward.
  */
 export const LF_WORDMARK_STEM_UPM = 115
 export const LF_WORDMARK_STEM_EM = LF_WORDMARK_STEM_UPM / 1000
@@ -61,6 +62,42 @@ export const LF_WORDMARK_STROKE_WIDTH = emToLocalStroke(
   LF_WORDMARK_STROKE_EM,
   LF_WORDMARK_GEOMETRY_SCALE
 )
+
+/**
+ * Wordmark orbit: flat ellipse, 18° off horizontal (not the old rotate(-60)
+ * slash). Target overshoot is half a stem past the ring outer; r-ink at
+ * tracking -0.045em only leaves 0.01373em before the gap drops under 0.5
+ * stem. Width stays the o glyph advance. m-side gap is larger.
+ */
+export const LF_WORDMARK_ORBIT_TILT_DEG = 18
+export const LF_WORDMARK_OVERSHOOT_TARGET_EM = LF_WORDMARK_STEM_EM / 2
+export const LF_WORDMARK_NEIGHBOR_GAP_EM = LF_WORDMARK_STEM_EM / 2
+const LF_O_CENTER_EM = 0.613 / 2
+const LF_RING_OUTER_EM =
+  (LF_MARK_OUTER / LF_MARK_VIEWBOX) * LF_WORDMARK_X_HEIGHT_EM
+/** r xMax 362, advance 391, tracking -45 → r ink right is 16 UPM from o origin */
+const LF_R_INK_RIGHT_FROM_O_EM = 0.016
+/** o advance 613 + tracking -45 + m xMin 73 */
+const LF_M_INK_LEFT_FROM_O_EM = 0.641
+export const LF_WORDMARK_OVERSHOOT_EM =
+  LF_O_CENTER_EM -
+  LF_RING_OUTER_EM -
+  LF_R_INK_RIGHT_FROM_O_EM -
+  LF_WORDMARK_NEIGHBOR_GAP_EM
+export const LF_WORDMARK_GAP_R_EM = LF_WORDMARK_NEIGHBOR_GAP_EM
+export const LF_WORDMARK_GAP_M_EM =
+  LF_M_INK_LEFT_FROM_O_EM -
+  LF_O_CENTER_EM -
+  LF_RING_OUTER_EM -
+  LF_WORDMARK_OVERSHOOT_EM
+
+const LF_WORDMARK_OVERSHOOT_LOCAL =
+  ((LF_WORDMARK_OVERSHOOT_EM / LF_WORDMARK_X_HEIGHT_EM) * LF_MARK_VIEWBOX) /
+  LF_WORDMARK_GEOMETRY_SCALE
+export const LF_WORDMARK_ORBIT_RX = 1 + LF_WORDMARK_OVERSHOOT_LOCAL
+export const LF_WORDMARK_ORBIT_RY =
+  LF_WORDMARK_ORBIT_RX *
+  Math.sin((LF_WORDMARK_ORBIT_TILT_DEG * Math.PI) / 180)
 
 export type LogoMarkLayer = 'all' | 'ring' | 'core' | 'wordmark'
 
@@ -106,6 +143,43 @@ function Core({ grouped }: { grouped: boolean }) {
   )
 }
 
+function WordmarkOrbit({ strokeWidth }: { strokeWidth: number }) {
+  const uid = useId().replace(/[^A-Za-z0-9_-]/g, '')
+  const clipOut = `lf-wm-orbit-out-${uid}`
+  const clipFront = `lf-wm-orbit-front-${uid}`
+  const outer = 1 + strokeWidth / 2
+  const inner = 1 - strokeWidth / 2
+  const tilt = LF_WORDMARK_ORBIT_TILT_DEG
+  const rx = LF_WORDMARK_ORBIT_RX
+  const ry = LF_WORDMARK_ORBIT_RY
+  const twoOuter = 2 * outer
+
+  return (
+    <>
+      <defs>
+        <clipPath id={clipOut} clipPathUnits="userSpaceOnUse">
+          <path
+            clipRule="evenodd"
+            d={`M-8-8h16v16h-16zM${-outer} 0a${outer} ${outer} 0 1 0 ${twoOuter} 0a${outer} ${outer} 0 1 0 ${-twoOuter} 0`}
+          />
+        </clipPath>
+        <clipPath id={clipFront} clipPathUnits="userSpaceOnUse">
+          <path
+            transform={`rotate(${tilt})`}
+            d={`M ${-inner} 0 A ${inner} ${inner} 0 0 1 ${inner} 0 Z`}
+          />
+        </clipPath>
+      </defs>
+      <g clipPath={`url(#${clipOut})`}>
+        <ellipse rx={rx} ry={ry} transform={`rotate(${tilt})`} />
+      </g>
+      <g clipPath={`url(#${clipFront})`}>
+        <ellipse rx={rx} ry={ry} transform={`rotate(${tilt})`} />
+      </g>
+    </>
+  )
+}
+
 export default function LogoMark({
   size = 32,
   className,
@@ -142,9 +216,17 @@ export default function LogoMark({
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          {showRing ? <Ring grouped={groupIds} /> : null}
-          {showCore ? <Core grouped={groupIds} /> : null}
-          {wordmark ? <OrbitEllipse /> : null}
+          {wordmark ? (
+            <>
+              <WordmarkOrbit strokeWidth={strokeWidth} />
+              {showRing ? <Ring grouped={groupIds} /> : null}
+            </>
+          ) : (
+            <>
+              {showRing ? <Ring grouped={groupIds} /> : null}
+              {showCore ? <Core grouped={groupIds} /> : null}
+            </>
+          )}
         </g>
       </svg>
     </div>
