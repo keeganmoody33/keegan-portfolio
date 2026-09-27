@@ -17,10 +17,42 @@
  *   (wordmark o) so `#lf-ring` / `#lf-core` stay unique on the title-card globe.
  * - `focusable` (default omit): pass `false` for the wordmark o so the SVG is
  *   not a tab stop. The title-card globe omits this; it stays as before.
+ * - `strokeWidth` / `geometryScale` (default canonical 0.0625 / 224): the
+ *   wordmark o passes the stem-matched pair so the ring is 95% of the
+ *   Space Grotesk SemiBold vertical stem and the extra width grows inward.
+ *   Title-card globe, favicon, and og keep the defaults.
  *
  * Strokes are `currentColor` so the mark inherits house ink on `/` (and any
  * future parent color). Favicons cannot use currentColor — see `app/icon.svg`.
  */
+
+/** Canonical geometry (title-card globe, favicon, og). Do not change for the wordmark o. */
+export const LF_MARK_GEOMETRY_SCALE = 224
+export const LF_MARK_STROKE_WIDTH = 0.0625
+const LF_MARK_VIEWBOX = 512
+const LF_MARK_OUTER =
+  LF_MARK_GEOMETRY_SCALE * (1 + LF_MARK_STROKE_WIDTH / 2)
+
+/**
+ * Space Grotesk SemiBold (Google Fonts v22 wght 600, UPM 1000) vertical stem:
+ * `l` is a 73–188 rectangle (115 UPM); `m` stems are 115 / 114 / 115 at
+ * sxHeight/2. Ring stroke is 95% of that stem. The mark box is sxHeight
+ * (486 UPM). Scale drops so (r + stroke/2) stays the canonical outer 231
+ * viewBox units — stroke grows inward, paths are unchanged.
+ */
+export const LF_WORDMARK_STEM_UPM = 115
+export const LF_WORDMARK_STEM_EM = LF_WORDMARK_STEM_UPM / 1000
+export const LF_WORDMARK_RING_TO_STEM = 0.95
+export const LF_WORDMARK_RING_STROKE_EM =
+  LF_WORDMARK_STEM_EM * LF_WORDMARK_RING_TO_STEM
+const LF_WORDMARK_X_HEIGHT_EM = 486 / 1000
+const LF_WORDMARK_STROKE_VIEWBOX =
+  (LF_WORDMARK_RING_STROKE_EM / LF_WORDMARK_X_HEIGHT_EM) * LF_MARK_VIEWBOX
+export const LF_WORDMARK_GEOMETRY_SCALE =
+  LF_MARK_OUTER - LF_WORDMARK_STROKE_VIEWBOX / 2
+export const LF_WORDMARK_STROKE_WIDTH =
+  LF_WORDMARK_STROKE_VIEWBOX / LF_WORDMARK_GEOMETRY_SCALE
+
 export type LogoMarkLayer = 'all' | 'ring' | 'core'
 
 export type LogoMarkProps = {
@@ -30,6 +62,8 @@ export type LogoMarkProps = {
   layer?: LogoMarkLayer
   groupIds?: boolean
   focusable?: false
+  strokeWidth?: number
+  geometryScale?: number
 }
 
 function Ring({ grouped }: { grouped: boolean }) {
@@ -58,6 +92,8 @@ export default function LogoMark({
   layer = 'all',
   groupIds = true,
   focusable,
+  strokeWidth = LF_MARK_STROKE_WIDTH,
+  geometryScale = LF_MARK_GEOMETRY_SCALE,
 }: LogoMarkProps) {
   const named = !decorative
 
@@ -76,9 +112,9 @@ export default function LogoMark({
       >
         {named ? <title id="lf-mark-title">lecturesfrom</title> : null}
         <g
-          transform="translate(256 256) scale(224)"
+          transform={`translate(256 256) scale(${geometryScale})`}
           stroke="currentColor"
-          strokeWidth="0.0625"
+          strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeLinejoin="round"
         >
