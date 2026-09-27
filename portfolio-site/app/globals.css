@@ -340,8 +340,10 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 }
 
 .lf-motion-switch {
-  display: inline-flex;
+  display: inline-grid;
+  grid-template-columns: max-content;
   align-items: center;
+  justify-items: start;
   min-width: 24px;
   min-height: 24px;
   padding: 0;
@@ -350,6 +352,24 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   color: var(--house-muted);
   cursor: pointer;
   white-space: nowrap;
+}
+
+.lf-motion-on,
+.lf-motion-off {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+}
+
+.lf-motion-off {
+  visibility: hidden;
+}
+
+html[data-logo-paused='true'] .lf-motion-on {
+  visibility: hidden;
+}
+
+html[data-logo-paused='true'] .lf-motion-off {
+  visibility: visible;
 }
 
 .lf-motion-switch:hover {
@@ -369,7 +389,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   position: absolute;
   inset: 0;
   transform-origin: 50% 50%;
-  transform-style: preserve-3d;
+  transform-style: flat;
   backface-visibility: visible;
   will-change: transform;
   animation: lf-logo-globe-spin 12s linear infinite;
@@ -381,10 +401,12 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 }
 
 /*
- * Coin rim: one 2.5px capsule in the YZ plane (rotateY 90deg). Face-on
- * it is opacity 0 so the ring stroke is unchanged vs 33954d9. Near
- * 90° / 270° it is a continuous edge — stacked SVG copies dashed at
- * 2×/4× DPR. Height 87.5% = ring diameter (r=1, scale(224), viewBox 512).
+ * Coin rim: a flat 2D sibling of the spin (transform: none). Lives
+ * outside `.lf-logo-globe-spin` so the spin can stay `transform-style:
+ * flat` and Chrome rasterizes the SVG at device DPR. Same 12s linear
+ * infinite clock as the spin (no delay) so opacity peaks at 90° / 270°.
+ * Width 1.125px (~stroke 0.875px). Face-on opacity 0. Height 87.5% =
+ * ring diameter (r=1, scale(224), viewBox 512).
  */
 .lf-logo-globe-rim-wall {
   position: absolute;
@@ -392,15 +414,14 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   right: 0;
   top: 0;
   bottom: 0;
-  width: 2.5px;
+  width: 1.125px;
   height: 87.5%;
   margin: auto;
-  border-radius: 1.25px;
+  border-radius: 0.5625px;
   background: currentColor;
   pointer-events: none;
-  transform: rotateY(90deg);
+  transform: none;
   transform-origin: 50% 50%;
-  backface-visibility: visible;
   opacity: 0;
   will-change: opacity;
   animation: lf-logo-globe-rim-wall 12s linear infinite;
@@ -438,9 +459,13 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   to { transform: rotateY(360deg); }
 }
 
-/* Same 12s clock as the spin. 85°=23.611%, 90°=25%, 95°=26.389%, 265–275°=73.611–76.389%. */
+/*
+ * Same 12s clock as the spin. Peak only 85–95° / 265–275°.
+ * 83°=23.056% and 97°=26.944% stay 0 so 80/82/98/100° do not read as
+ * a dim filled capsule over the thin ellipse.
+ */
 @keyframes lf-logo-globe-rim-wall {
-  0%, 22%, 28%, 50%, 72%, 78%, 100% { opacity: 0; }
+  0%, 23.056%, 26.944%, 50%, 73.056%, 76.944%, 100% { opacity: 0; }
   23.611%, 26.389%, 73.611%, 76.389% { opacity: 1; }
 }
 
