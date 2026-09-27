@@ -330,6 +330,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   flex-shrink: 0;
   perspective: 8rem;
   perspective-origin: 50% 50%;
+  pointer-events: none;
 }
 
 /* Keep the title-card mark at 2rem when LogoGlobe also carries .house-logo-mark. */
@@ -339,15 +340,19 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 }
 
 .lf-logo-lockup {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  position: relative;
+  z-index: 1;
 }
 
 .lf-logo-pause {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  z-index: 1;
   width: 1.5rem;
   height: 1.5rem;
   min-width: 24px;

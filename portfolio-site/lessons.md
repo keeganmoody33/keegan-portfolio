@@ -7,6 +7,7 @@ Updated: 2026-09-27
 - **WCAG 2.2.2 pause is a sibling, not a child of the decorative mark.** `LogoGlobe` is `aria-hidden` on the title card. A pause control inside that tree is invisible to AT. Keep the button in `LogoGlobePauseToggle` next to the mark.
 - **Compose pause attributes; never set `animation-play-state: running`.** User toggle writes `data-logo-paused`. SignalCut writes `data-lf-signal-cut` on `html`. Both CSS rules only set `paused`. Dropping one cannot un-pause the other. Inline `running` on resume would punch through SignalCut.
 - **Hide the toggle with CSS under `prefers-reduced-motion: reduce`.** Do not omit it in JS — that hydrates differently from the server. `display: none` also removes it from the tab order. Read sessionStorage in an effect; default render is playing.
+- **Lockup must sit above the wordmark stacking context.** `houseLockup` (opacity) plus the coin's 3D `perspective`/`rotateY` lets `elementFromPoint` on the button center miss to the `h1` at 1440. `.lf-logo-lockup` is `inline-flex; position: relative; z-index: 1`. Decorative globe is `pointer-events: none`.
 
 ## House logo / lockup (2026-09-26)
 
