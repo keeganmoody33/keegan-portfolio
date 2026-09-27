@@ -238,7 +238,7 @@ Phases 1 and 4 can run in parallel after Phase 0. Phase 3 is cancelled.
 
 - **Output:** `components/house/LogoMark.tsx` on the root title card; `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`; house `opengraph-image` / `twitter-image` from `brand/house-share.png`.
 - **Globe:** `LogoGlobe` layers stay. Shared `.lf-logo-globe-spin` wrapper coins-spins the whole mark (`rotateY` 12s). Core stays `animation: none` (face-on). Owner override of house "No 3D", scoped to this mark. HouseFooter Motion switch for WCAG 2.2.2; composed with SignalCut via pause-only CSS attributes on `<html>`. Root layout blocking script applies a saved pause before first paint (`suppressHydrationWarning` on `<html>`).
-- **Wordmark o:** `HouseWordmark` replaces the last `o` in `from` with static `LogoMark` (`groupIds={false}`, `focusable={false}`). Slot `0.613em` (o advance) × `0.486em` (OS/2 sxHeight). Real `o` is `.sr-only`. Does not read `data-logo-paused`, spin, or draw a rim. Favicon / og / footer switch unchanged.
+- **Wordmark o:** `HouseWordmark` replaces the last `o` in `from` with static `LogoMark` (`groupIds={false}`, `focusable={false}`). In-flow transparent `o` keeps glyph advance + tracking; mark square `0.486em` (OS/2 sxHeight) sits on the baseline (`bottom: 0.292em` hhea descent). Full word is `.sr-only`; painted run is `aria-hidden`. Does not read `data-logo-paused`, spin, or draw a rim. Favicon / og / footer switch unchanged.
 - **Validation:** lint / typecheck / build; `/keeganmoody33` `og:image` stays `/og.jpg`.
 
 ---

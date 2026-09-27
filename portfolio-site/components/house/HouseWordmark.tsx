@@ -3,33 +3,29 @@ import LogoMark from '@/components/house/LogoMark'
 /**
  * Root title-card wordmark. The last o in "from" is a static LogoMark
  * (layer="all") sized to Space Grotesk SemiBold's x-height and sitting
- * on the baseline in a slot of the o's advance width. Face-on, no
- * LogoGlobe, no spin, no rim wall, no `data-logo-paused`. The spinning
- * mark above this heading is a separate instance.
+ * on the baseline over an in-flow transparent o (exact advance). Face-on,
+ * no LogoGlobe, no spin, no rim wall, no `data-logo-paused`.
  *
- * The real o stays in the DOM as `.sr-only` so the accessible name and
- * copy text stay "lecturesfrom". The mark is aria-hidden and not
- * focusable. Keep this lowercase.
+ * A visually hidden full word keeps the accessible name "lecturesfrom"
+ * (inline-block slots otherwise become "lecturesfr o m"). The painted
+ * letters are aria-hidden. Copy still yields "lecturesfrom".
  */
 export default function HouseWordmark() {
   return (
     <h1 className="house-wordmark">
-      {'lecturesfr'}
-      <span className="house-wordmark-o">
-        {[
-          <span key="letter" className="sr-only">
-            o
-          </span>,
+      <span className="sr-only">lecturesfrom</span>
+      <span className="house-wordmark-visual" aria-hidden="true">
+        {'lecturesfr'}
+        <span className="house-wordmark-o">
+          <span className="house-wordmark-o-letter">o</span>
           <LogoMark
-            key="mark"
-            decorative
             groupIds={false}
             focusable={false}
             className="house-wordmark-o-mark"
-          />,
-        ]}
+          />
+        </span>
+        {'m'}
       </span>
-      {'m'}
     </h1>
   )
 }

@@ -255,37 +255,44 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
    * TTF: fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj42Vksj.ttf
    * o hmtx advance = 613 → 0.613em
    * OS/2 sxHeight = 486 → 0.486em
+   * hhea descent = 292 → 0.292em (alphabetic baseline from font box bottom)
    * o ink (not used for layout): xMin 49 yMin -14 xMax 564 yMax 508
    */
   --lf-wordmark-o-advance: 0.613em;
   --lf-wordmark-o-x-height: 0.486em;
+  --lf-wordmark-o-descent: 0.292em;
 }
 
 /*
- * Last o in "from": real glyph is .sr-only (accessible name + copy).
- * Slot width is the o's advance so tracking and total width match the
- * plain-text wordmark. Mark is the static LogoMark square sized to
- * x-height, centered in the advance, sitting on the baseline. Face-on;
- * this instance is not .lf-logo-globe and does not spin.
+ * Last o in "from": in-flow transparent glyph keeps the o's actual
+ * advance (and letter-spacing) so the lockup width matches plain text.
+ * Mark is the static LogoMark square sized to x-height, centered on the
+ * glyph, sitting on the baseline. Face-on; not .lf-logo-globe.
+ * The painted run is aria-hidden; .sr-only "lecturesfrom" is the name.
  */
+.house-wordmark-visual {
+  user-select: none;
+}
+
 .house-wordmark-o {
-  display: inline-block;
   position: relative;
-  width: var(--lf-wordmark-o-advance);
-  height: var(--lf-wordmark-o-x-height);
-  vertical-align: baseline;
+}
+
+.house-wordmark-o-letter {
+  color: transparent;
 }
 
 .house-wordmark-o-mark.house-logo-mark {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: var(--lf-wordmark-o-descent);
   margin-inline: auto;
   width: var(--lf-wordmark-o-x-height);
   height: var(--lf-wordmark-o-x-height);
   pointer-events: none;
   user-select: none;
+  transform: none;
 }
 
 @supports (font-size: 1cqi) {
