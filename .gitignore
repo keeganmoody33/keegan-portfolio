@@ -30,3 +30,7 @@ __pycache__/
 .venv/
 .vercel
 .env*.local
+
+# Local tool state
+.cursor/settings.json
+supabase/.temp/

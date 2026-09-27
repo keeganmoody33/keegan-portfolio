@@ -14,6 +14,7 @@ All versions are pinned from `portfolio-site/package-lock.json`.
 | react | 19.2.4 | UI library |
 | react-dom | 19.2.4 | React DOM renderer |
 | @supabase/supabase-js | 2.90.1 | Supabase client; queries candidate_profile, experiences, etc. |
+| @upstash/redis | 1.35.6 | REST Redis client for the durable Discogs last-good snapshot |
 | posthog-js | 1.336.4 | Client-side analytics (components, page events) |
 | posthog-node | 5.21.2 | Server-side analytics (API routes via lib/posthog-server.ts) |
 
@@ -23,13 +24,16 @@ All versions are pinned from `portfolio-site/package-lock.json`.
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| typescript | 5.9.3 | Type checking, TS config |
+| eslint | 9.x | Lint runner (`eslint .`). `next lint` is invalid on Next 16 (treats `lint` as a directory). |
+| eslint-config-next | 16.1.6 | Next.js ESLint rules, aligned with next 16.1.6 |
 | @types/node | 20.19.30 | Node.js type definitions |
 | @types/react | 19.2.10 | React type definitions |
 | @types/react-dom | 19.2.3 | React DOM type definitions |
 | tailwindcss | 3.4.19 | Utility CSS, design tokens |
 | postcss | 8.5.6 | CSS processing pipeline |
 | autoprefixer | 10.4.23 | Vendor prefixes for CSS |
+
+**Brand assets:** `npm run generate:brand` (`scripts/generate-brand-assets.mjs`) rebuilds `icon.svg`, `favicon.ico`, `apple-icon.png`, and house OG/twitter PNGs from `brand/lecturesfrom-mark.svg`. Needs system `rsvg-convert` and `python3-pil`. Not an npm dependency.
 
 ---
 
@@ -39,10 +43,8 @@ Runtime: **Deno**. Imports use URL specifiers with pinned versions where availab
 
 | Import URL | Pinned Version | Purpose |
 |------------|----------------|---------|
-| https://deno.land/std@0.168.0/http/server.ts | 0.168.0 | HTTP server (serve) |
-| https://esm.sh/@supabase/supabase-js@2 | @2 only (no patch) | Supabase client in Edge Functions |
-
-**Note:** `@supabase/supabase-js@2` is not patch-pinned; consider pinning to a specific version (e.g. 2.90.1) for reproducibility.
+| `Deno.serve()` | Built-in (Deno runtime) | HTTP server — replaced deprecated `std@0.168.0/http/server.ts` import on 2026-07-24 |
+| <https://esm.sh/@supabase/supabase-js@2.90.1> | 2.90.1 | Supabase client in Edge Functions (patch-pinned for reproducibility) |
 
 ---
 
@@ -50,13 +52,15 @@ Runtime: **Deno**. Imports use URL specifiers with pinned versions where availab
 
 | Service | Endpoint | Auth Method | Env Variable |
 |---------|----------|-------------|--------------|
-| Anthropic Claude | https://api.anthropic.com/v1/messages | Header: `x-api-key` | ANTHROPIC_API_KEY (Supabase secrets) |
-| Firecrawl | https://api.firecrawl.dev/v1/scrape | Header: `Authorization: Bearer <token>` | FIRECRAWL_API_KEY (Supabase secrets) |
-| PostHog | https://us.i.posthog.com | Project key in client init | NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST |
-| Discogs | https://api.discogs.com | Header: `Authorization: Discogs token=<token>`, User-Agent required | DISCOGS_TOKEN (Next.js env) |
+| Anthropic Claude | <https://api.anthropic.com/v1/messages> | Header: `x-api-key` | ANTHROPIC_API_KEY (Supabase secrets) |
+| Firecrawl | <https://api.firecrawl.dev/v1/scrape> | Header: `Authorization: Bearer <token>` | FIRECRAWL_API_KEY (Supabase secrets) |
+| PostHog | <https://us.i.posthog.com> | Project key in client init | NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST |
+| Discogs | <https://api.discogs.com> | Header: `Authorization: Discogs token=<token>`, User-Agent required | DISCOGS_TOKEN (Next.js env) |
+| GitHub | <https://api.github.com/users/keeganmoody33/events/public> | None (unauthenticated, 60 req/hr) | (none — `/api/github` does not read a token) |
+| Upstash Redis | REST (`KV_REST_API_URL` / `UPSTASH_REDIS_REST_URL`) | Bearer token | KV_REST_API_URL, KV_REST_API_TOKEN (preferred); UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN (fallback) |
 | Supabase | NEXT_PUBLIC_SUPABASE_URL/functions/v1/* | Header: `Authorization: Bearer <anon_key>` | NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY |
 
-**Discogs (new):** `api.discogs.com`; auth via personal token; env var `DISCOGS_TOKEN`. Used for Recent Digs widget (collection endpoint).
+**Discogs:** `api.discogs.com`; optional `DISCOGS_TOKEN` (public `lecturesfrom` collection). Full crate (`fetchFullCollection()`) at `/api/discogs/collection` and house `/collection` serves a durable last-good copy from Upstash Redis when configured; Discogs is crawled at most about once a day behind a `SET NX EX` lock. Redis reads are `cache: 'no-store'` (empty MGETs must not enter Next's Data Cache) and are skipped during `next build`, so `/collection` stays ISR (`revalidate = 300`). User-Agent: `lecturesfrom/1.0`. Missing Redis env = today's in-memory last-good + Discogs crawl. Errors use `Cache-Control: no-store`. Do not call `Redis.fromEnv()` (it only warns, then fails later). Not used on `/keeganmoody33` (career `/api/discogs` / RecentDigs removed).
 
 ---
 
@@ -73,7 +77,7 @@ Runtime: **Deno**. Imports use URL specifiers with pinned versions where availab
 ## Deployment
 
 - **Platform:** Vercel
-- **Live URL:** lecturesfrom.com/keeganmoody33 (rewrites in vercel.json: `/` → `/keeganmoody33`, `/keeganmoody33` → `/`)
+- **Live URL:** lecturesfrom.com (house) and lecturesfrom.com/keeganmoody33 (principal)
 - **Build:** Next.js (`next build`); auto-deploy on push to main
 
 ---

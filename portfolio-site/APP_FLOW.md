@@ -1,6 +1,6 @@
 # App Flow — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-02-09
+**Last Updated:** 2026-09-27
 **Framework:** Next.js (App Router)
 **Deployment:** Vercel (auto-deploy on push to main)
 
@@ -10,28 +10,36 @@
 
 ### Pages
 
-| Route | File | What It Shows |
-|-------|------|---------------|
-| `/` | `app/page.tsx` | Main portfolio page (all content on one page) |
-| `/keeganmoody33` | Vercel rewrite → `/` | Public-facing URL; rewrites internally to `/` |
+| Route            | File                         | What It Shows                                                   |
+|------------------|------------------------------|-----------------------------------------------------------------|
+| `/`              | `app/(house)/page.tsx`               | House title card + crate (Server Component). LogoGlobe wraps LogoMark (ring + core) above the wordmark at the same 2rem size. The shared wrapper coins-spins the whole mark; core stays face-on. HouseFooter Motion switch (WCAG 2.2.2) pauses the spin via `html[data-logo-paused]`. Root layout head script sets the attribute from `sessionStorage['lf-logo-paused']` before first paint; `useLayoutEffect` keeps it in sync after hydration/toggles. Hidden under reduced motion. Wordmark entrance is a 700ms opacity fade. No page turntable. No return-visit redirect. |
+| `/catalog`       | `app/(house)/catalog/page.tsx`       | Crate permalink (same spines as `/`)                            |
+| `/catalog/[slug]`| `app/(house)/catalog/[slug]/page.tsx`| Sleeve (cover, liner, tracks). Unknown slugs 404.               |
+| `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate (ISR 300s; durable last-good in Redis when configured) |
+| `/legal`         | `app/(house)/legal/page.tsx`         | Entity + long about                                             |
+| `/icon.svg`      | `app/icon.svg`                       | Site icon; `prefers-color-scheme` stroke. Applies to house and person. |
+| `/favicon.ico`   | `app/favicon.ico`                    | 16/32/48 ico: `#ececec` rounded plate, mark `#20262b` (matches apple-icon). |
+| `/apple-icon.png`| `app/apple-icon.png`                 | 180px, light ground, mark `#20262b`                             |
+| `/opengraph-image` | `app/(house)/opengraph-image.tsx`  | House share image 1200×630. Person page keeps `/og.jpg`.        |
+| `/keeganmoody33` | `app/keeganmoody33/page.tsx` | Principal / person page (Ask AI, JD Fit Analyzer, timeline)     |
+| `/keegan`        | next.config + vercel.json    | 301 → `/keeganmoody33`                                          |
 
 ### Vercel Routing Rules (vercel.json)
 
-| Type | From | To | Notes |
-|------|------|----|-------|
-| Redirect (301) | `/` | `/keeganmoody33` | Root always redirects to vanity URL |
-| Redirect (301) | `/KeeganMoody33` | `/keeganmoody33` | Case normalization |
-| Redirect (301) | `/keeganMoody33` | `/keeganmoody33` | Case normalization |
-| Rewrite | `/keeganmoody33` | `/` | Internal rewrite; URL stays `/keeganmoody33` |
+| Type           | From             | To               | Notes               |
+|----------------|------------------|------------------|---------------------|
+| Redirect (301) | `/KeeganMoody33` | `/keeganmoody33` | Case normalization  |
+| Redirect (301) | `/keeganMoody33` | `/keeganmoody33` | Case normalization  |
+| Redirect (301) | `/keegan`        | `/keeganmoody33` | Short alias         |
 
-**Result:** Visitors always see `lecturesfrom.com/keeganmoody33` in their browser. Internally, Next.js serves `app/page.tsx`.
+**Result:** Visitors land on `lecturesfrom.com` and see the house title card + crate. `/` never redirects to the person page. The person page is at `/keeganmoody33`. House ↔ person crossings use `SignalCut` (not a global layout animation). Ask AI and JD Fit Analyzer stay on the person page only. `LogoGlobe` wraps the title-card `LogoMark` (`layer="ring"` + `layer="core"`); geometry stays in LogoMark. The globe core is static (`animation: none`). `HouseFooter` (including the Motion switch) is shared on `/`, `/catalog`, `/collection`, `/legal`. `/keeganmoody33` has its own footer.
 
 ### API Routes
 
 | Route | Method | File | Purpose |
 |-------|--------|------|---------|
 | `/api/chat` | POST | `app/api/chat/route.ts` | Proxy to Supabase `chat` Edge Function |
-| `/api/discogs` | GET | `app/api/discogs/route.ts` | Proxy to Discogs API |
+| `/api/discogs/collection` | GET | `app/api/discogs/collection/route.ts` | Full Discogs crate (`revalidate: 300`, Redis last-good when configured). Career `/api/discogs` was removed. |
 | `/api/github` | GET | `app/api/github/route.ts` | Proxy to GitHub public events API |
 | `/api/jd-analyzer` | POST | `app/api/jd-analyzer/route.ts` | Proxy to Supabase `jd-analyzer` Edge Function |
 
@@ -43,7 +51,7 @@
 <html lang="en">
   <body>
     <PostHogProvider>        ← Client-side analytics (providers.tsx)
-      <Page />               ← app/page.tsx
+      <Page />               ← app/(house)/page.tsx (house) or app/keeganmoody33/page.tsx
     </PostHogProvider>
   </body>
 </html>
@@ -53,23 +61,22 @@ PostHog initializes on mount if `NEXT_PUBLIC_POSTHOG_KEY` exists. No-ops silentl
 
 ---
 
-## Component Render Order (page.tsx)
+## Component Render Order (`/keeganmoody33`)
 
 Top to bottom, this is exactly what renders on the main page:
 
 ```
 1. Marquee                          ← Full-width ticker, always visible
-2. WidgetErrorBoundary
-   └── YouTubePlayer                ← Persistent music player (YouTube IFrame API, playlist)
-3. WidgetErrorBoundary
-   └── RecentDigs                   ← Discogs widget (5 records)
-4. WidgetErrorBoundary
-   └── GitHubActivity               ← Retro bar chart (14 days)
+2. BannerRotator                    ← Drops failed/empty panels; collapses if none remain
+   ├── WidgetErrorBoundary
+   │   └── YouTubePlayer            ← Persistent music player (YouTube IFrame API, playlist)
+   └── WidgetErrorBoundary
+       └── GitHubActivity           ← Retro bar chart (14 days)
 5. Main Layout Container (flex)
    ├── Navigation Header
-   │   ├── Logo: /lecturesfrom
-   │   ├── Links: XP, Projects [P], Contact [C]
-   │   └── "Ask AI" button
+   │   ├── Logo: /lecturesfrom (SignalCut link to `/`, direction toHouse)
+   │   ├── Links: XP, Projects [P], Contact [C] (whitespace-nowrap; right group gap-x-3 gap-y-2)
+   │   └── "Ask AI" button (`min-h-11`, 44px tap target)
    ├── Hero Section
    │   ├── Tagline lines (3)
    │   ├── SprayText (first name, lime)
@@ -80,12 +87,9 @@ Top to bottom, this is exactly what renders on the main page:
    │       └── Publications (inside Timeline, for ASGM Research)
    ├── JD Analyzer Section (id="projects")
    │   └── JDAnalyzer
-   ├── Footer (id="contact")
-   │   └── Social links: LinkedIn, X, Substack, GitHub, Discord, Bluesky
-   ├── Sidebar Toggle Button (fixed, bottom-right)
-   └── Activity Stream Sidebar (conditional, fixed right)
-       └── ActivityStream
-4. Chat Modal (conditional overlay)
+5b. Footer (id="contact") — sibling of `<main>`, not nested in it
+   └── Social links: LinkedIn, X, Substack, GitHub, Discord, Bluesky
+6. Chat Modal (conditional overlay)
    └── Chat
 ```
 
@@ -111,11 +115,6 @@ Land on /keeganmoody33
     │       ├─→ Hover → Reveals next/prev, progress, volume
     │       └─→ Click next/prev → Changes track
     │
-    ├─→ Click record in Recent Digs → Opens Discogs page (new tab)
-    │
-    ├─→ Click "Show Activity" → Sidebar slides in
-    │       └─→ Theme toggle buttons (dark/light)
-    │
     └─→ Click footer social links (LinkedIn, X, Substack, GitHub, Discord, Bluesky) → Opens external profiles (new tab)
 ```
 
@@ -128,6 +127,7 @@ Land on /keeganmoody33
 **Trigger:** Click "Ask AI" button (nav or hero CTA)
 
 **Steps:**
+
 1. Chat modal opens (overlay)
 2. If no messages: show 3 suggested questions
 3. User clicks suggested question OR types own question
@@ -152,6 +152,7 @@ Land on /keeganmoody33
 **Trigger:** Scroll to Projects section, interact with textarea
 
 **Steps:**
+
 1. User pastes job description text OR a URL into textarea
 2. Click "Analyze Fit" button
 3. Button shows "Analyzing...", disabled during processing
@@ -169,31 +170,12 @@ Land on /keeganmoody33
 
 ---
 
-### 3. Recent Digs (Discogs Widget)
-
-**Trigger:** Page load (automatic)
-
-**Steps:**
-1. Component mounts, fires GET `/api/discogs`
-2. Loading skeleton renders (5 pulsing items)
-3. Data returns: 5 records with cover art, title, artist
-4. Each record links to Discogs release page
-
-**Success state:** 5 records displayed. Desktop: horizontal row. Mobile: horizontal scroll with snap points.
-
-**Error state:** Component returns `null` (graceful failure -- widget disappears, page unaffected). Wrapped in `WidgetErrorBoundary`.
-
-**Empty state:** Component returns `null` if no releases returned.
-
-**PostHog events:** `recent_digs_record_clicked` (includes `title`, `artist`, `discogsUrl`)
-
----
-
-### 4. Career Timeline
+### 3. Career Timeline
 
 **Trigger:** Page load (data fetched from Supabase on mount in page.tsx)
 
 **Steps:**
+
 1. Page component fetches `experiences` from Supabase ordered by `display_order`
 2. Passes array to `Timeline` component as props
 3. Timeline renders vertical line with experience cards
@@ -210,38 +192,20 @@ Land on /keeganmoody33
 
 ---
 
-### 5. Activity Stream Sidebar
-
-**Trigger:** Click "Show Activity" button (fixed, bottom-right)
-
-**Steps:**
-1. Sidebar slides in from right (fixed position)
-2. Shows system log entries (currently hardcoded/simulated)
-3. Theme toggle buttons at bottom (dark/light)
-4. Click toggle button to switch theme
-
-**Success state:** Sidebar visible with log entries and theme controls.
-
-**Error state:** N/A (hardcoded data, always renders).
-
-**Empty state:** N/A (always has initial log entries).
-
-**PostHog events:** `activity_sidebar_toggled`, `theme_changed` (includes `theme: 'dark' | 'light'`)
-
----
-
-### 6. Marquee Ticker
+### 5. Marquee Ticker
 
 **Trigger:** Always visible on page load.
 
 **Steps:**
+
 1. Renders immediately with hardcoded items
 2. Scrolls horizontally in infinite loop (40s cycle)
 3. Hover pauses animation
+4. `prefers-reduced-motion: reduce` stops the scroll (`animation: none`); items stay in place
 
-**Success state:** Smooth infinite scroll.
+**Success state:** Smooth infinite scroll (or a static strip under reduced motion).
 
-**Error state:** N/A (no data fetching, no interaction).
+**Error state:** GitHub stats stay on the loading/fallback copy; ticker still renders.
 
 **Empty state:** N/A (hardcoded content).
 
@@ -249,17 +213,18 @@ Land on /keeganmoody33
 
 ---
 
-### 7. YouTube Player
+### 6. YouTube Player
 
 **Trigger:** Page load (automatic). Loads YouTube IFrame API client-side.
 
 **Steps:**
+
 1. Component always renders `<Script>` tag + hidden iframe (even while loading)
 2. Loading skeleton shows inline (play button + track info placeholder) via ternary
 3. YouTube IFrame API script loads (`afterInteractive`)
 4. `onYouTubeIframeAPIReady` fires, creates hidden YT.Player with playlist
 5. Player loads playlist `PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk`
-6. `onReady` sets `isLoading=false`, skeleton swaps to real controls
+6. `onReady` sets `isLoading=false`, skeleton swaps to real controls. The hidden iframe wrapper is `inert` + `aria-hidden`; `getIframe().tabIndex = -1` so Tab never lands in the embed. Visible Play/Pause stays outside the wrapper.
 7. Track title and author populate from `getVideoData()`
 8. User clicks play → music starts
 9. Hover expands to reveal next/prev, progress bar, volume slider
@@ -269,11 +234,12 @@ Land on /keeganmoody33
 
 **Success state:** Player shows track title, play/pause controls (w-6 h-6). Hover reveals full controls. Music plays from YouTube playlist.
 
-**Error state:** Component returns `null` (graceful failure). Wrapped in `WidgetErrorBoundary`.
+**Error state:** Component returns `null` (graceful failure) and reports `useBannerAvailability(false)` so the rotator drops the slide and its dot. Script `onError` and a 10s timeout **started on mount** also set this path (a stalled script must not wait to `onLoad` before the clock starts). Playback errors 2/5/100/101/150 call `nextVideo()`; only a real `onError` increments the streak. After 3 in a row (or the playlist length if shorter) `setError(true)` drops the slide. The streak resets on `onReady` and PLAYING. After an error-triggered skip the stall deadline is `now + 10s` (`YT_STALL_TIMEOUT_MS`). The first BUFFERING, CUED, or new video id extends that deadline to a hard cap of `errorTime + 25s` (`YT_STALL_CAP_MS`); later BUFFERING/CUED churn does not extend past the cap. Only PLAYING (or unmount/drop) clears the stall. If the deadline passes without PLAYING, the slide drops. Slow BUFFERING (e.g. 12s then PLAYING) stays; a hung BUFFERING drops at the cap, not by restarting 10s forever. While the stall is armed the slide shows recovery chrome (dim Play with `aria-disabled` + `aria-busy`, no hover lime, `cursor-not-allowed`, title "Track unavailable, skipping…", blank author, no time). A one-video playlist still drops on the first 150. Before drop, arm the handoff only if focus is still inside the banner rotator — the Now Playing slide or `[data-banner-dots]` — never when `activeElement` is `body` (a mouse Play click then scroll) and never for nav. Always `focus({ preventScroll: true })`. BannerRotator lands on the next visible `[data-banner-panel]` control (never a rotator dot, never Play/Pause / `[data-now-playing]`) or the rotator root (`tabIndex={-1}`) if that slide has no control, or the first nav link after the slide count updates. The dots unmount when one slide remains, so a focused "Switch to Now Playing" dot must hand off. The handoff stays pending until that target exists so a leftover GitHub slide is not skipped for `body`. `NowPlayingLiveRegion` is an empty polite live region on the page at load; drop writes "Now Playing unavailable". Wrapped in `WidgetErrorBoundary`, which reports unavailable if the widget throws. If GitHub has already failed, the header stays at the skeleton height until this timeout, then collapses — no blank frame in between.
 
 **Empty state:** Compact loading skeleton (py-2, inline layout) while IFrame API loads.
 
 **sessionStorage contract (Phase 2 Turntable handoff):**
+
 - Key: `yt-player-state`
 - Stores: `videoId`, `trackTitle`, `trackAuthor`, `position`, `duration`, `playing`, `playlistIndex`, `volume`, `timestamp`
 
@@ -281,11 +247,30 @@ Land on /keeganmoody33
 
 ---
 
-### 8. SprayText Hero Animation
+### 6b. BannerRotator + GitHub Activity
+
+**Trigger:** Page load. `BannerRotator` mounts YouTube and GitHub together; only the active panel is visible.
+
+**Steps:**
+
+1. Each widget reports `useBannerAvailability(true|false)`
+2. Failed, empty, or error-boundary panels are removed from rotation and from the dots
+3. Two or more available panels: 8s auto-rotate (skipped under `prefers-reduced-motion: reduce`); dots stay for manual switching. Inactive panels get `aria-hidden` + `inert` so tab focus cannot land on invisible controls. Content uses `pr-16` so `/ 7d` clears the 24×24 dot hit areas; the bar itself is full-bleed.
+4. One available panel: show it statically, no dots, no extra `pr-16`
+5. Zero available panels: rotator returns `null` — the banner row collapses; Marquee remains
+
+**GitHub Activity error:** `/api/github` 5xx (including GitHub's unauthenticated 60/hr 502) → component returns `null` and reports unavailable. No blank 8s slot.
+
+**GitHub route:** No GitHub token env var. Upstream fetch uses `next: { revalidate: 300 }`.
+
+---
+
+### 7. SprayText Hero Animation
 
 **Trigger:** Page load with configurable delay.
 
 **Steps:**
+
 1. Component mounts with `opacity-0`
 2. After delay (0ms for first name, 500ms for last name), `visible` state set to true
 3. Characters animate in sequence (50ms per character)
@@ -305,15 +290,11 @@ Land on /keeganmoody33
 
 | Element | Desktop | Mobile |
 |---------|---------|--------|
-| Recent Digs | Horizontal row (`flex`) | Horizontal scroll with snap points (`snap-x`) |
-| Recent Digs items | `flex-1` fill available space | Fixed `w-[140px]` with `touch-pan-x` |
 | Chat modal | Overlay on page | Same (full overlay) |
-| Activity sidebar | Fixed right panel | Same (fixed right, may overlap content) |
-| Navigation | Horizontal top bar | Same (no hamburger menu currently) |
+| Navigation | Horizontal top bar | Same; items `whitespace-nowrap`, right group `gap-x-3 gap-y-2` |
+| BannerRotator | Full-bleed bar; `pr-16` on content only when dots show | Same |
 | Timeline | Full-width cards | Same layout (no responsive changes) |
 | JD Analyzer | Full-width textarea | Same layout |
-
-**Note:** Most components lack dedicated mobile responsive handling beyond Recent Digs. This is a known area for improvement.
 
 ---
 
@@ -330,7 +311,9 @@ Supabase DB
     │   └── jd-analyzer/index.ts ──→ /api/jd-analyzer ──→ JDAnalyzer component
     │
 Discogs API
-    └── /api/discogs ──→ RecentDigs component
+    └── fetchFullCollection() ──→ house `/collection`, `/api/discogs/collection`, `/collection.md`
+            └── Upstash Redis last-good (`lf:discogs:collection:v1`) when env is set
+            └── not used on `/keeganmoody33` (career `/api/discogs` / RecentDigs removed)
 
 YouTube IFrame API (client-side, no proxy)
     └── youtube.com/iframe_api ──→ YouTubePlayer component
@@ -341,6 +324,33 @@ GitHub Public Events API
 
 All interactions ──→ PostHog (client + server events)
 ```
+
+---
+
+### 12. SIGNAL CUT (house <-> person)
+
+**Trigger:** Same-tab unmodified primary click (or Enter) on a `SignalCut`-wrapped `next/link` that crosses house `/` and person `/keeganmoody33` (or `/keegan`).
+
+**Wrapped links (this branch):**
+- Person-page nav wordmark `lecturesfrom` → `/` (`direction="toHouse"`)
+- Crate row 04 `keegan moody` → `/keeganmoody33` (`direction="toPerson"`)
+
+**Does not play on:** first load, hash changes, back/forward, house <-> house routes, modifier/middle clicks, `target="_blank"`.
+
+**Steps:**
+
+1. Click intercepts client navigation (`onClick` + Next.js `onNavigate`) but the `<a href>` remains for no-JS / crawlers
+2. Module-level controller appends a `position:fixed` overlay to `document.body` (survives the Link unmount; not mounted in `app/layout.tsx`)
+3. First crossing in the tab (`sessionStorage lf-signal-cut-count` 0): 420ms tear → analog snow → black + id line (`km-33 → lf-01` or reverse) → fade. Overlay is fully opaque from snow start (60ms). `router.push` at snow-end / black (280ms) so person-page hydration does not starve the snow deadline
+4. Later crossings: 160ms tear + black + id, push at black (40ms)
+5. `prefers-reduced-motion: reduce`: 80ms black, push immediately, no tear/snow/id/fade
+6. Phase deadlines are `setTimeout` from click `t0` (snow paint is rAF-only). If the destination pathname has not committed by reveal start, hold black (id omitted when reduced) until it does, hard cap 1500ms from click. No extra quiet-frame wait.
+
+**Success state:** Destination paints under the overlay; overlay removed at end of reveal. CLS 0.
+
+**Error / abort state:** One idempotent `teardown()` (Copilot review comment 4111027402). It stops snow, cancels every timeout and rAF, reverts `document.documentElement` transform/classes, and removes the overlay. Called from completion, hard-cap fallback (`setTimeout(1500 + fade + 80)`), slow-destination hold, popstate, pagehide, `visibilitychange` hidden, thrown errors, and a second click (swallowed so no second loop). The triggering Link's React unmount is **not** a teardown path — that unmount is the route swap. Hidden-tab abort does not navigate if `router.push` has not already run.
+
+**PostHog events:** `signal_cut_started` (`direction`, `href`)
 
 ---
 

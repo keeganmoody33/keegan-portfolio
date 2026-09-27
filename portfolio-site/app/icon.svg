@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" role="img" aria-labelledby="lf-mark-title">
+  <title id="lf-mark-title">lecturesfrom</title>
+  <style>
+    .lf-stroke { stroke: #20262b; }
+    @media (prefers-color-scheme: dark) {
+      .lf-stroke { stroke: #ececec; }
+    }
+  </style>
+  <g class="lf-stroke" transform="translate(256 256) scale(224)" stroke-width="0.0625" stroke-linecap="round" stroke-linejoin="round">
+    <g id="lf-ring">
+      <circle r="1"/>
+    </g>
+    <g id="lf-core" transform="scale(0.74)">
+      <ellipse rx="1" ry="0.43" transform="rotate(-60)"/>
+      <path d="M 0.605385 -0.384961 C 0.86 -0.09 0.94 0.22 0.852000 0.501000"/>
+      <path d="M 0.605385 -0.384961 L 0 0 L 0.852000 0.501000 M 0 0 L 0.837356 0.000000 M 0 0 L 0.237000 -0.482000"/>
+      <path d="M 0.197285 -0.587803 L 0.275803 -0.552715 L 0.240715 -0.474197 L 0.162197 -0.509285 Z"/>
+    </g>
+  </g>
+</svg>

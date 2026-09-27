@@ -1,7 +1,7 @@
 # Cursor Rules — Keegan Moody Portfolio
 
 > For AI assistants working on this codebase
-> Last updated: 2026-02-09
+> Last updated: 2026-07-24
 
 ---
 
@@ -110,7 +110,7 @@ All API routes follow: browser → Next.js Route Handler (keeps keys server-side
 | Route | Method | Proxies To |
 |-------|--------|------------|
 | `/api/chat` | POST | Supabase `chat` Edge Function |
-| `/api/discogs` | GET | Discogs API |
+| `/api/discogs/collection` | GET | Discogs API (house `/collection` crate) |
 | `/api/github` | GET | GitHub public events API |
 | `/api/jd-analyzer` | POST | Supabase `jd-analyzer` Edge Function |
 

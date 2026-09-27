@@ -1,11 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPostHogClient } from '@/lib/posthog-server'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   const posthog = getPostHogClient()
 
   // Get distinct ID from header if available (passed from client)
   const distinctId = request.headers.get('X-POSTHOG-DISTINCT-ID') || 'anonymous_server'
+
+  // Rate limit: 10 requests per minute per IP
+  const rateLimit = checkRateLimit(request, 'api/chat', 10, 60 * 1000)
+  if (!rateLimit.success) {
+    posthog.capture({
+      distinctId,
+      event: 'api_rate_limited',
+      properties: {
+        route: 'api/chat',
+        ip: (request as NextRequest & { ip?: string }).ip || request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown',
+      }
+    })
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfter) } }
+    )
+  }
 
   try {
     const { question } = await request.json()

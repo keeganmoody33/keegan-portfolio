@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { getPostHogDistinctIdHeader } from '@/lib/posthog-client'
 
 interface GitHubStats {
   pushes_24h: number
@@ -16,7 +17,9 @@ export default function Marquee() {
   useEffect(() => {
     async function fetchGitHub() {
       try {
-        const res = await fetch('/api/github')
+        const res = await fetch('/api/github', {
+          headers: getPostHogDistinctIdHeader(),
+        })
         if (res.ok) {
           const data = await res.json()
           setGitHub(data)
@@ -47,7 +50,11 @@ export default function Marquee() {
   const allItems = [...items, ...items]
 
   return (
-    <div className="w-full overflow-hidden border-b border-[var(--border-dim)] bg-[var(--bg-surface)]">
+    <div
+      role="region"
+      aria-label="Activity ticker"
+      className="w-full overflow-hidden border-b border-[var(--border-dim)] bg-[var(--bg-surface)]"
+    >
       <div className="marquee-container py-2">
         {allItems.map((item, i) => (
           <div key={i} className="flex items-center gap-2 px-8 whitespace-nowrap">

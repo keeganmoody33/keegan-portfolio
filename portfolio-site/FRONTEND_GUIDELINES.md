@@ -1,9 +1,9 @@
 # Frontend Guidelines — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-02-09
+**Last Updated:** 2026-09-27
 **Supersedes:** `docs/DESIGN_PLAYBOOK.md` (archived -- all content folded into this doc)
 **CSS Framework:** Tailwind CSS 3.4.19 + CSS Custom Properties
-**Fonts:** Google Fonts (Space Grotesk, Roboto Mono, Roboto Slab)
+**Fonts:** Google Fonts (Chakra Petch, Doto, Space Grotesk, Roboto Mono, Roboto Slab)
 
 ---
 
@@ -16,6 +16,11 @@
 **Aesthetic:** Hip-hop / zine / street culture influence. Organized chaos -- dense but navigable. Hand-drawn energy, DIY, graffiti-adjacent. Not corporate. Not generic dark mode template. A person you'd want to grab coffee with.
 
 **First impression goal (3 seconds):** "What's happening here? I want to keep looking." Not impressed. Not sold. **Intrigued.**
+
+**Two visual dialects. Do not homogenize.**
+
+- **House** (`/`, `/catalog`, `/collection`, `/legal`): near-black `#0a0a0a`, grotesque / tight-tracked meta, one accent = print orange `#e23d00`. Display face is Chakra Petch 600 (wordmark, page-title h1/h2, `.house-spine-title`). Body on `.house` stays Space Grotesk. Meta stays Roboto Mono. Hairlines. No terminal chrome. No lime spray type. Display name always lowercase `lecturesfrom` (`lecturesfrom LLC` allowed in footer/legal). The line-mark on the title card is modest (`2rem`), `currentColor` / house ink, above the wordmark — not a hero graphic and not inside `.house-wordmark-slot`. `#lf-core` is `scale(0.74)` so the orbit sits inside the ring instead of sharing its radius.
+- **Person** (`/keeganmoody33`): existing lime/orange terminal and Space Grotesk. Untouched except the wordmark becoming a SignalCut link to `/`. Do not apply house display type or house light tokens here.
 
 **Information density:** Sparse surface, dense on engagement. First screen is clean, intriguing, spacious. Interaction reveals depth.
 
@@ -67,6 +72,42 @@
 4. Hard shadows flip: lime on dark (`#CCFF00`), dark on light
 5. Dark mode is the primary experience; light mode is the alternative
 
+### House tokens (v3, Sep 27 2026)
+
+Dark is the live default on `.house` and on `html:has(.house)` (body and the scrollbar sit outside `.house`, so the six core colors are mirrored there). Light swaps those six when `data-theme="light"` is on `.house` (`html:has(.house[data-theme="light"])` mirrors them). No house control sets that attribute yet. Person light mode (`[data-theme="light"]` on the document, warm paper / olive) is a different palette.
+
+| Token | Dark | Light | Usage |
+|-------|------|-------|-------|
+| `--house-bg` | `#0a0a0a` | `#ffffff` | Page background |
+| `--house-ink` | `#ececec` | `#0a0a0a` | Primary text |
+| `--house-muted` | `#8a8a8a` | `#666666` | Meta labels |
+| `--house-dim` | `#7a7a7a` | `#757575` | Catalog numbers, footer nav |
+| `--house-line` | `#242424` | `#e3e3e3` | Hairlines only |
+| `--house-orange` | `#e23d00` | `#d73100` | The one key: hover, issue plates |
+
+Add-ons are the same in both modes. Defined, not applied to chrome. Cobalt has no job. Cable colors are for system diagrams only.
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--house-stripe-red` | `#ea4d30` | 1980 stripe |
+| `--house-stripe-orange` | `#ec7c3a` | 1980 stripe |
+| `--house-stripe-amber` | `#f1ac4b` | 1980 stripe |
+| `--house-key` | `#eca50b` | Open-window key |
+| `--house-lcd` | `#afc875` | LCD chip background |
+| `--house-lcd-ink` | `#0a0a0a` | Text on the LCD chip |
+| `--house-pad` | `#7f8085` | Hardware surfaces |
+| `--house-cable-audio` | `#b8c95e` | System diagrams |
+| `--house-cable-usb` | `#49b0d3` | System diagrams |
+| `--house-cable-midi` | `#ca77b3` | System diagrams |
+| `--house-cobalt` | `#2842ba` | No job yet |
+
+| Token | Value |
+|-------|-------|
+| `--house-font-display` | Chakra Petch |
+| `--house-font-mono` | Roboto Mono |
+| `--house-font-lcd` | Doto |
+| `--house-font-sans` | Space Grotesk |
+
 ---
 
 ## Design Tokens -- Typography
@@ -75,16 +116,19 @@
 
 | Role | Font | Weights | Usage |
 |------|------|---------|-------|
-| Headings + Body | Space Grotesk | 300, 400, 500, 600, 700 | H1-H3, hero text, paragraphs, descriptions |
-| UI / Code / Metadata | Roboto Mono | 300, 400, 500 | Tech pills, nav items, timestamps, buttons |
+| House display | Chakra Petch | 600 (400 and 700 loaded) | Wordmark, house page-title h1/h2, `.house-spine-title`. Tracking `-0.01em`. |
+| House body | Space Grotesk | 300, 400, 500, 600, 700 | Base on `.house`. Person headings and body. |
+| House LCD | Doto | 800 on `.house-lcd` (variable 100–900 loaded) | Sampler screen and lab readouts. No screen UI uses it yet. |
+| UI / Code / Metadata | Roboto Mono | 300, 400, 500 | Tech pills, nav items, timestamps, buttons, house meta |
 | Accent (available) | Roboto Slab | 300, 400, 500, 600 | Loaded but minimally used currently |
 
 ### Tailwind Font Families
 
 ```
-font-space: 'Space Grotesk', sans-serif   ← default body font
-font-mono: 'Roboto Mono', monospace       ← technical elements
-font-slab: 'Roboto Slab', serif           ← accent use
+font-space: 'Space Grotesk', sans-serif              ← person body, and the base on .house
+font-display: var(--house-font-display), sans-serif ← house display (Chakra Petch)
+font-mono: 'Roboto Mono', monospace                 ← technical elements
+font-slab: 'Roboto Slab', serif                     ← accent use
 ```
 
 ### Type Scale (from DESIGN_PLAYBOOK)
@@ -104,8 +148,8 @@ font-slab: 'Roboto Slab', serif           ← accent use
 
 ### Typography Rules
 
-1. Headlines in Space Grotesk Bold -- confident, geometric
-2. Body in Space Grotesk Regular -- readable, friendly
+1. Person headlines in Space Grotesk Bold. House page titles use `font-display font-semibold tracking-[-0.01em]` (Chakra Petch 600).
+2. Body in Space Grotesk Regular -- readable, friendly. House running text and meta stay Roboto Mono.
 3. Anything technical (buttons, chips, code, labels) in Roboto Mono
 4. Line height: 1.5 for body, 1.2 for headlines
 5. Max body width: 65ch for readable line length
@@ -174,8 +218,8 @@ Single-page app. All content on one route (`/`). No multi-page navigation curren
 │   ├── Nav Header                              │
 │   ├── Hero (SprayText + CTA)                  │
 │   ├── Timeline (id="experience")              │
-│   ├── JD Analyzer (id="projects")             │
-│   └── Footer (id="contact")                   │
+│   └── JD Analyzer (id="projects")             │
+│ Footer (id="contact") — sibling of <main>     │
 ├──────────────────────────────────────────────┤
 │ Activity Sidebar (fixed right, conditional)   │
 ├──────────────────────────────────────────────┤
@@ -185,11 +229,14 @@ Single-page app. All content on one route (`/`). No multi-page navigation curren
 
 ### Banner Rotator
 
-The three widget layers (YouTubePlayer, RecentDigs, GitHubActivity) live inside a `BannerRotator` that shows one at a time:
+The two widget layers (YouTubePlayer, GitHubActivity) live inside a `BannerRotator` that shows one at a time:
 - **Component:** `components/BannerRotator.tsx`
-- **Rotation:** 8-second auto-cycle, crossfade (500ms `transition-opacity`)
-- **Interaction:** Pauses on hover; dot indicators at right edge for manual switching
-- **Mounting:** All children stay mounted (critical for YouTubePlayer iframe audio continuity); inactive panels get `opacity-0 absolute pointer-events-none`
+- **Rotation:** 8-second auto-cycle, crossfade (500ms `transition-opacity`). Skipped when `prefers-reduced-motion: reduce` or when fewer than two panels are available.
+- **Interaction:** Pauses on hover; dot indicators at right edge for manual switching. Dots stay usable under reduced motion.
+- **Mounting:** All children stay mounted (critical for YouTubePlayer iframe audio continuity); inactive panels get `opacity-0 absolute pointer-events-none`, `aria-hidden`, and `inert` so keyboard focus cannot land on invisible controls
+- **Height:** Every available panel wrapper is `min-h-12` so YouTube (41px) and GitHub (48px) do not shift the page when they swap.
+- **Padding:** Rotator root has no horizontal padding so the widget bar/border is full-bleed. When dots are shown, panel *content* uses `pr-16` (`useBannerPanelPad`) so `/ 7d` clears the 24×24 dot hit areas (`right-3` + 24 + 4 + 24 = 64px). Visible dots stay `h-1.5 w-1.5`. One panel / no dots → no extra pad.
+- **Failures:** Widgets call `useBannerAvailability`. A null/error/empty render drops that slide and its dot. One panel left → static, no dots. Zero panels left → rotator returns `null` (banner row collapses). `WidgetErrorBoundary` also reports unavailable on catch.
 - **PostHog:** Fires `banner_panel_switched` on manual dot clicks with `from`/`to` labels
 
 ### Banner Widget Rules
@@ -200,9 +247,9 @@ All banner widgets follow the same compact pattern:
 - **Container:** `max-w-7xl mx-auto px-4`
 - **Layout:** Single-row flex (`flex items-center gap-4`)
 - **Border:** `border-b border-[var(--border-dim)]` between each layer
-- **Covers (RecentDigs):** Fixed width `w-[72px]` desktop / `w-[60px]` mobile, no metadata text (title via `title` attr on hover)
 - **Chart (GitHubActivity):** `h-[24px]` bar chart, `flex-1` fills available space
-- **Player (YouTubePlayer):** `w-6 h-6` play button, track info truncated, expand-on-hover for prev/next/volume
+- **Player (YouTubePlayer):** `w-6 h-6` play button, track info truncated, expand-on-hover for prev/next/volume. Hidden iframe wrapper is `inert` + `aria-hidden`; `onReady` sets `getIframe().tabIndex = -1`. Visible controls stay outside that wrapper. Skippable playback errors (2/5/100/101/150) advance with `nextVideo()`; only a real `onError` increments the streak. Three in a row (or playlist length if shorter) drop the slide. After a skip the stall deadline is 10s (`YT_STALL_TIMEOUT_MS`); the first BUFFERING/CUED/new video id extends it to a hard cap of `errorTime + 25s` (`YT_STALL_CAP_MS`). Churn does not extend past the cap. Only PLAYING (or unmount/drop) clears it. While the stall is armed the Play control is `aria-disabled` + `aria-busy` (not `disabled`), dimmed, `cursor-not-allowed` with no hover lime, the title reads "Track unavailable, skipping…", the author is blank, and the time readout is blank. On drop, arm the handoff only if `document.activeElement` is still inside the banner rotator (Now Playing slide or `[data-banner-dots]`) — never when focus is `body`, never for nav. Always `focus({ preventScroll: true })`. The landing target is the next visible slide panel (never a rotator dot, never Play/Pause), the rotator root (`tabIndex={-1}`) if that slide has no control, or the first nav control after the leftover slide is active. `NowPlayingLiveRegion` mounts empty `#yt-now-playing-live` on the career page at load (`sr-only`); drop only writes the text.
+- **Min height:** `min-h-12` on every banner panel so rotation does not shift content
 
 ### Grid Background
 
@@ -217,7 +264,7 @@ Animated 60px x 60px grid pattern on body:
 
 ### Rules for All Components
 
-1. All components are `'use client'` (client components)
+1. Person-page components in `components/` are `'use client'`. House components in `components/house/` are Server Components by default (`LogoMark` included). Do not add `'use client'` to the title card just to host the mark. `MotionSwitch` is the house exception: a client child of `HouseFooter`.
 2. All components live in `portfolio-site/components/`
 3. Functional components with hooks (no class components)
 4. No inline styles -- always Tailwind classes or CSS custom properties
@@ -236,11 +283,22 @@ Animated 60px x 60px grid pattern on body:
 | `.spray-char` | Spray paint character | Inline-block, blur → focus animation |
 | `.experience-card` | Timeline experience card | Surface bg, dim border, lime on hover |
 | `.tech-pill` | Technology tag | Roboto Mono, dim border, muted text |
-| `.marquee-container` | Scrolling ticker | Flex, max-content, 40s scroll, pauses on hover |
+| `.marquee-container` | Scrolling ticker | Flex, max-content, 40s scroll, pauses on hover; `animation: none` when `prefers-reduced-motion: reduce` |
 | `.activity-stream` | Sidebar container | Glass bg, dim border, Roboto Mono |
 | `.log-success` | Green log entry | `color: #4ADE80` |
 | `.log-warn` | Orange log entry | `color: var(--accent-orange)` |
 | `.log-info` | Muted log entry | `color: var(--text-muted)` |
+| `.house-meta` | House metadata | Roboto Mono, 0.625rem, 0.22em tracking, uppercase |
+| `.house-lcd` | LCD chip | `--house-lcd` on `--house-lcd-ink`, Doto 800, `10px 16px` padding. Defined, unused. |
+| `.house-rail` | House top rail | Three columns; atl / issue / year always visible; gutters `px-6 sm:px-10` |
+| `.house-wordmark` | Root lockup | Chakra Petch 600, tracking `-0.01em`, `line-height: 0.85`. `min(11.5rem, 16.5cqi)` so `lecturesfrom` keeps the Space Grotesk width (0.961 of `min(12rem, 17.2cqi)`). Entrance is a 700ms opacity fade (`houseLockup`). Instant under `prefers-reduced-motion`. Slot `overflow-x: clip`. |
+| `.house-logo-mark` | Root mark box | `2rem` square, `aspect-ratio: 1`, reserves size before paint |
+| `.lf-logo-globe` | Logo mark box | Square `aspect-ratio: 1`; reserves size before paint (CLS 0). `perspective: 8rem` (4× the 2rem title-card mark) on this box. Title card wraps `LogoMark` `layer="ring"` + `layer="core"`. |
+| `.lf-logo-globe-spin` | Coin spin | Shared wrapper around both layers. `rotateY(0→360deg)` 12s linear infinite (west→east). `backface-visibility: visible`. Pauses on `html[data-lf-signal-cut="active"]` or `html[data-logo-paused="true"]` (either attribute; never `running`). `animation: none` under `prefers-reduced-motion`. Owner override of house "No 3D", scoped to this mark. |
+| `.lf-motion-switch` | Footer Motion | HouseFooter `role="switch"` (`motion: on` / `motion: off`). Min 24×24, house muted/ink, `:focus-visible` 2px `--house-ink` outline. Hidden (`display: none`) under `prefers-reduced-motion: reduce`. Writes `data-logo-paused` on `<html>` after hydration; root layout head script sets the same attribute before first paint when `sessionStorage['lf-logo-paused']` is `'1'`. |
+| `.lf-logo-globe-core` | Core layer | Face-on rest pose. `animation: none; transform: none`. No independent spin. |
+| `.house-spine` | Crate row | 3 columns below `sm` (format/catno on a second title line); 5 columns from `md` |
+
 
 ### Button Patterns
 
@@ -252,6 +310,7 @@ Animated 60px x 60px grid pattern on body:
 **Ask AI (Orange CTA):**
 - `border: 2px dashed var(--accent-orange)`, `bg` transparent
 - Hover: fills with orange, border becomes solid
+- Nav control is `inline-flex min-h-11 items-center` so the tap target is at least 44px without changing padding or type
 
 **Ghost (Secondary):**
 - `bg` transparent, `border` dim
@@ -282,6 +341,16 @@ Animated 60px x 60px grid pattern on body:
 | `gridShift` | 8s | linear infinite | Body grid background movement |
 | `sprayStroke` | 0.15s | cubic-bezier(0.25, 0.46, 0.45, 0.94) | Hero name character reveal |
 | `marquee` | 40s | linear infinite | Horizontal ticker scroll |
+| `houseLockup` | 700ms | ease-out both | Root wordmark opacity fade (`0` → `1`). No letter-spacing. Instant under `prefers-reduced-motion`. |
+| SIGNAL CUT first | 420ms | tear 0–60 / snow 60–280 / black 280–360 / fade 360–420 | House <-> person, first crossing in the tab |
+| SIGNAL CUT repeat | 160ms | tear 0–40 / black 40–120 / fade 120–160 | Later crossings in the same tab |
+| SIGNAL CUT reduced | 80ms | instant black, no tear/snow/id/fade | `prefers-reduced-motion: reduce` |
+| Marquee (reduced) | — | animation none | `prefers-reduced-motion: reduce` |
+| Banner rotate (reduced) | — | no auto-cycle; dots/manual still work | `prefers-reduced-motion: reduce` |
+
+Tear easing: `cubic-bezier(0.7, 0, 0.84, 0)`. Reveal easing: `cubic-bezier(0.2, 0, 0, 1)`. Overlay `z-index: 2147483647`, `pointer-events: none`. Id color `#d9d9d9`, arrow `#E23D00`.
+
+`components/SignalCut.tsx` owns the overlay via a module-level `document.body` controller so the animation survives the route change. Do not mount it in `app/layout.tsx`. Phase deadlines are `setTimeout` from click `t0`; snow paint is rAF. Teardown is one idempotent function (stops snow, cancels timers/rAF, reverts `html` transform) called from every abort path including `visibilitychange` hidden — never `overlay.remove()` alone (Copilot 4111027402). Hold only if the destination pathname is still the origin at reveal-start.
 
 ### Motion Philosophy
 
@@ -319,15 +388,24 @@ Mobile-first approach using Tailwind defaults:
 | `xl:` | 1280px | Large desktop |
 | `2xl:` | 1536px | Extra large |
 
+### House chrome (2026-09-26)
+
+Two dialects. House pages (`/`, `/catalog`, sleeves, `/collection`, `/legal`) share one gutter: `px-6` (24px) / `sm:px-10` (40px). `HouseRail` owns that gutter. Do not nest another `px-6` around the rail on `/`.
+
+- **Wordmark:** size to the content slot (`clamp` / `cqi`). Never `18vw` or a raw `12rem` that can overflow. Desktop cap stays `12rem`.
+- **Spines:** format and catalog number stay visible at 375 (second meta line). Status column is the last grid track so it meets the hairline and the SPINES header. Do not leave empty `auto` tracks with `gap` when columns are `display: none`.
+- **No-art Discogs tiles:** `NoArtTile` (hairline + artist/title in meta type). `IssuePlate` is for house sleeves only.
+
 ### Current Responsive Rules
 
-Only `RecentDigs.tsx` has dedicated mobile/desktop handling. All other components render identically across breakpoints.
+
+Person-page components render the same layout across breakpoints.
 
 | Component | Mobile | Desktop (md+) |
 |-----------|--------|----------------|
-| Recent Digs | Horizontal scroll, `w-[140px]` items, snap points | Flex row, `flex-1` items |
-| Recent Digs loading | Scroll skeleton | Row skeleton |
-| All other components | Same layout | Same layout |
+| Career nav items | `whitespace-nowrap`; right group `gap-x-3 gap-y-2` | `sm:gap-x-8` |
+| BannerRotator | Full-bleed bar; `pr-16` on content only when dots show | Same |
+| All person-page components | Same layout | Same layout |
 
 ### Responsive Priorities (future)
 
@@ -342,7 +420,9 @@ Only `RecentDigs.tsx` has dedicated mobile/desktop handling. All other component
 
 ### What Exists
 
-- Images have `alt` attributes (Recent Digs: `${artist} — ${title}`)
+- Images have `alt` attributes
+- Root title-card `LogoMark` is `aria-hidden` so the `h1` wordmark is the only accessible name. Standalone uses pass `decorative={false}` (`<title>` lecturesfrom).
+- HouseFooter Motion switch (WCAG 2.2.2) pauses the title-card coin spin. Shared on `/`, `/catalog`, `/collection`, `/legal`. Hidden under `prefers-reduced-motion`. Root layout head script applies a saved pause before first paint. `/keeganmoody33` does not share this footer (marquee / `gridShift` remain).
 - External links have `target="_blank"` and `rel="noopener noreferrer"`
 - Form submission via Enter key (Chat)
 - Disabled states on buttons during loading
@@ -356,7 +436,7 @@ Only `RecentDigs.tsx` has dedicated mobile/desktop handling. All other component
 - No skip-to-content link
 - No focus visible indicators beyond browser defaults
 - Hover-only interactions on Publications (no keyboard alternative)
-- No `aria-live` regions for dynamic content (chat messages, analysis results)
+- No `aria-live` regions for dynamic content (chat messages, analysis results). Exception: `NowPlayingLiveRegion` renders an empty polite live region (`#yt-now-playing-live`, `sr-only`) on the career page at load; drop writes "Now Playing unavailable". Tailwind safelists `sr-only` and scans `components/` (not `lib/`) so the live region is hidden without emitting unused utilities from catalog prose.
 - Activity sidebar: no keyboard trigger, no escape-to-close
 - Color contrast may not meet WCAG AA in light mode (needs audit)
 
@@ -364,11 +444,11 @@ Only `RecentDigs.tsx` has dedicated mobile/desktop handling. All other component
 
 ## Dark/Light Mode
 
-- **Strategy:** Tailwind `class` dark mode + `data-theme` attribute on root
+- **Strategy:** Tailwind `class` dark mode + `data-theme` attribute on root for the person palette. House light is separate: `data-theme="light"` on `.house`.
 - **Default:** Dark mode
-- **Toggle:** Buttons in Activity Stream sidebar
+- **Toggle:** Person theme buttons live in the Activity Stream sidebar. House has no toggle.
 - **Persistence:** None currently (resets on page load)
-- **Implementation:** CSS custom properties swap all values when `[data-theme="light"]` is set
+- **Implementation:** Person CSS custom properties swap when `[data-theme="light"]` is set on the document. House core colors swap on `.house[data-theme="light"]` and `html:has(.house[data-theme="light"])`. Add-on house colors do not swap.
 
 ---
 

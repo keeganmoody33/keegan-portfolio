@@ -12,6 +12,7 @@
 The turntable loading page is the entry experience before the portfolio. The needle drop is a **disguised play button** — it triggers a hidden YouTube embed and simultaneously proceeds to the portfolio. Users cannot enter the site without playing music (forcing function).
 
 **Why YouTube over Tidal:**
+
 - Tidal requires subscription for full playback
 - YouTube embeds are free, ubiquitous, and reliable
 - Can still curate specific tracks/playlists
@@ -58,12 +59,14 @@ The turntable loading page is the entry experience before the portfolio. The nee
 ## Visual Design
 
 ### Aesthetic
+
 - **Perspective:** 45° angle POV — like looking down at a turntable on a desk in front of you
 - **Style:** Sketch aesthetic (hand-drawn/illustrated feel)
 - **Tools:** Aura.build for design, Unicorn Studio for effects/animations
 - Clean, minimal, high contrast
 
 ### Elements
+
 | Element | Description |
 |---------|-------------|
 | Record | Black vinyl with label art (TBD: custom or placeholder) |
@@ -72,6 +75,7 @@ The turntable loading page is the entry experience before the portfolio. The nee
 | Background | Dark/black, minimal distraction |
 
 ### Animation States
+
 | State | Description | Duration |
 |-------|-------------|----------|
 | Idle | Record spinning, tonearm lifted | Continuous |
@@ -85,6 +89,7 @@ The turntable loading page is the entry experience before the portfolio. The nee
 ## Audio Architecture
 
 ### YouTube Integration
+
 ```javascript
 // YouTube IFrame API
 const player = new YT.Player('player', {
@@ -106,6 +111,7 @@ const player = new YT.Player('player', {
 ```
 
 ### State Handoff to Banner
+
 ```javascript
 // On transition to portfolio
 const audioState = {
@@ -126,6 +132,7 @@ sessionStorage.setItem('audioState', JSON.stringify(audioState));
 ## Technical Implementation
 
 ### Component Hierarchy
+
 ```
 <TurntableLoader>
   ├── <Turntable>
@@ -138,6 +145,7 @@ sessionStorage.setItem('audioState', JSON.stringify(audioState));
 ```
 
 ### Interaction Logic
+
 ```javascript
 // Tonearm interaction
 const [needleDropped, setNeedleDropped] = useState(false);
@@ -162,6 +170,7 @@ const handleNeedleDrop = () => {
 ```
 
 ### Skip Option
+
 ```javascript
 // Subtle skip for accessibility — wording makes user feel "lame" for using it
 // Does NOT say "skip" — says something clever that encourages engagement
@@ -179,6 +188,7 @@ const handleNeedleDrop = () => {
 ## Banner Player Integration
 
 ### Persistent Player Component
+
 ```javascript
 // In layout or app wrapper
 const BannerPlayer = () => {
@@ -208,6 +218,7 @@ const BannerPlayer = () => {
 ```
 
 ### Banner Layout Reference
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  [▶] Track Name - Artist                    [YouTube logo]  │
@@ -220,11 +231,13 @@ const BannerPlayer = () => {
 ## Track Curation
 
 ### Options
+
 1. **Single curated track** — Same song every time
 2. **Rotating playlist** — Random from curated list
 3. **User's choice** — Let them pick before needle drop
 
 ### Track Criteria
+
 - Sets the vibe (matches portfolio energy)
 - Instrumental or clean lyrics
 - Good intro (first 10 seconds matter)
@@ -233,12 +246,14 @@ const BannerPlayer = () => {
 ### Playlist Strategy
 
 **Approach:** Public YouTube playlist
+
 - You curate a public playlist on YouTube
 - We pull video IDs from the playlist via YouTube Data API
 - Random track selected on each visit (or sequential)
 - You can update tracks anytime without touching code
 
 **YouTube Playlist API:**
+
 ```javascript
 const PLAYLIST_ID = 'PLK7yHtEENYGHUVVhW9oaFVKRhh-FORGOk';
 
@@ -263,6 +278,7 @@ async function getPlaylistTracks() {
 ## Accessibility
 
 ### Requirements
+
 - Skip button always visible (not just on hover)
 - Keyboard accessible needle drop (Enter/Space)
 - Screen reader: "Press Enter to start music and enter portfolio"
@@ -270,6 +286,7 @@ async function getPlaylistTracks() {
 - Respect `prefers-reduced-motion` media query
 
 ### Implementation
+
 ```javascript
 // Reduced motion support
 const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
@@ -291,6 +308,7 @@ if (prefersReducedMotion) {
 | Transition smoothness | 60fps |
 
 ### Optimization Strategy
+
 - Preload portfolio assets during turntable interaction
 - YouTube player loads in background (not blocking)
 - Turntable assets optimized (SVG where possible, compressed PNG/WebP)
@@ -344,7 +362,7 @@ if (prefersReducedMotion) {
 | Feature | Relation |
 |---------|----------|
 | Banner widgets | Music player persistence lives here |
-| Alan Iverson | Both are "intro experiences" before main content |
+| Alan Iverson | CANCELLED 2026-07-24 — feature descoped |
 | Theme/vibe | Turntable sets the aesthetic tone |
 
 ---

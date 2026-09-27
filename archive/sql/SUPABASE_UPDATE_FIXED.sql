@@ -1,3 +1,4 @@
+-- ARCHIVED: Historical update script. Corrected to match live schema (2026-07-24).
 -- ============================================================
 -- PORTFOLIO DATABASE UPDATE - FIXED VERSION
 -- Run this in Supabase SQL Editor
@@ -64,7 +65,7 @@ WHERE id = 'keegan-moody-001';
 -- Trace Air - Focus on wins
 UPDATE experiences
 SET
-    bullet_points = ARRAY[
+    public_bullets = ARRAY[
         '$220K generated in 90 days from greenfield territory',
         '23 demos booked in first fully onboarded month',
         '18 of 23 demos (78%) self-sourced from outside the CRM',
@@ -78,7 +79,7 @@ WHERE company_name ILIKE '%trace%air%';
 -- Biofourmis - Focus on wins
 UPDATE experiences
 SET
-    bullet_points = ARRAY[
+    public_bullets = ARRAY[
         'Co-founding SDR feeding 6 AEs across all of North America',
         'Enterprise healthcare accounts: hospitals, academic medical centers',
         'Originated Orlando Health deal: $1M+ lifetime value, 90-day close, still active',
@@ -92,7 +93,7 @@ WHERE company_name ILIKE '%biofourmis%';
 -- Mixmax - Frame as infrastructure build
 UPDATE experiences
 SET
-    bullet_points = ARRAY[
+    public_bullets = ARRAY[
         'Built complete GTM infrastructure from zero — first time doing any of it',
         '53-inbox email infrastructure across multiple providers',
         'ICP validation across 280 customers ($4.79M ARR analyzed)',
@@ -156,7 +157,7 @@ FROM ai_instructions WHERE candidate_id = 'keegan-moody-001' LIMIT 3;
 SELECT 'candidate_profile' as table_name, title, headline
 FROM candidate_profile WHERE id = 'keegan-moody-001';
 
-SELECT 'experiences' as table_name, company_name, bullet_points[1] as first_bullet
+SELECT 'experiences' as table_name, company_name, public_bullets[1] as first_bullet
 FROM experiences WHERE candidate_id = 'keegan-moody-001' LIMIT 3;
 
 SELECT 'gaps_weaknesses' as table_name, gap_name, gap_type

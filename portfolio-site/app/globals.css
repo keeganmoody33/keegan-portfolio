@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500&family=Roboto+Slab:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Doto:wght@100..900&family=Roboto+Mono:wght@300;400;500&family=Roboto+Slab:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -119,6 +119,11 @@ body {
 .marquee-container:hover {
   animation-play-state: paused;
 }
+@media (prefers-reduced-motion: reduce) {
+  .marquee-container {
+    animation: none;
+  }
+}
 @keyframes marquee {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
@@ -154,3 +159,403 @@ body {
 .log-success { color: #4ADE80; }
 .log-warn { color: var(--accent-orange); }
 .log-info { color: var(--text-muted); }
+
+/* House dialect — near-black + print orange. Do not leak lime terminal chrome.
+   Core colors also live on html:has(.house) so body and the scrollbar, which
+   sit outside .house, follow the same mode. Add-ons are the same in both modes. */
+html:has(.house) {
+  --house-bg: #0a0a0a;
+  --house-ink: #ececec;
+  --house-muted: #8a8a8a;
+  --house-dim: #7a7a7a;
+  --house-line: #242424;
+  --house-orange: #e23d00;
+}
+
+html:has(.house[data-theme="light"]) {
+  --house-bg: #ffffff;
+  --house-ink: #0a0a0a;
+  --house-muted: #666666;
+  --house-dim: #757575;
+  --house-line: #e3e3e3;
+  --house-orange: #d73100;
+}
+
+.house {
+  --house-bg: #0a0a0a;
+  --house-ink: #ececec;     /* 16.76:1 */
+  --house-muted: #8a8a8a;   /*  5.73:1  meta labels */
+  --house-dim: #7a7a7a;     /*  4.61:1  catalog numbers, footer nav */
+  --house-line: #242424;    /*  1.28:1  hairlines only */
+  --house-orange: #e23d00;  /*  4.62:1  the one key: hover, issue plates */
+
+  /* add ons, official Sep 27 2026. Same in both modes. */
+  --house-stripe-red: #ea4d30;
+  --house-stripe-orange: #ec7c3a;
+  --house-stripe-amber: #f1ac4b;
+  --house-key: #eca50b;
+  --house-lcd: #afc875;
+  --house-lcd-ink: #0a0a0a;
+  --house-pad: #7f8085;
+  --house-cable-audio: #b8c95e;
+  --house-cable-usb: #49b0d3;
+  --house-cable-midi: #ca77b3;
+  --house-cobalt: #2842ba;
+
+  --house-font-display: "Chakra Petch", sans-serif;
+  --house-font-mono: "Roboto Mono", monospace;
+  --house-font-lcd: "Doto", monospace;
+  --house-font-sans: "Space Grotesk", sans-serif;
+
+  min-height: 100vh;
+  background: var(--house-bg);
+  color: var(--house-ink);
+  font-family: var(--house-font-sans);
+}
+
+.house[data-theme="light"] {
+  --house-bg: #ffffff;
+  --house-ink: #0a0a0a;     /* 19.80:1 */
+  --house-muted: #666666;   /*  5.74:1 */
+  --house-dim: #757575;     /*  4.61:1 */
+  --house-line: #e3e3e3;    /*  1.28:1 */
+  --house-orange: #d73100;  /*  4.85:1, same hue as #e23d00, one step deeper */
+}
+
+html:has(.house) body {
+  background-color: var(--house-bg);
+  background-image: none;
+  animation: none;
+  color: var(--house-ink);
+}
+
+html:has(.house)::-webkit-scrollbar-track { background: var(--house-bg); }
+html:has(.house)::-webkit-scrollbar-thumb {
+  background: #1a1a1a;
+  border: 1px solid var(--house-orange);
+}
+html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange); }
+
+.house-lcd {
+  background: var(--house-lcd);
+  color: var(--house-lcd-ink);
+  font-family: var(--house-font-lcd);
+  font-weight: 800;
+  padding: 10px 16px;
+}
+
+.house-meta {
+  font-family: 'Roboto Mono', monospace;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-size: 0.625rem;
+  color: var(--house-muted);
+}
+
+.house-rail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 0.5rem;
+}
+
+.house-rail > :nth-child(2) {
+  text-align: center;
+}
+
+.house-rail > :last-child {
+  text-align: right;
+}
+
+.house-rail .house-meta {
+  letter-spacing: 0.14em;
+}
+
+@media (min-width: 640px) {
+  .house-rail .house-meta {
+    letter-spacing: 0.22em;
+  }
+}
+
+.house-logo-mark {
+  width: 2rem;
+  height: 2rem;
+  aspect-ratio: 1;
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.house-logo-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.house-wordmark-slot {
+  container-type: inline-size;
+  width: 100%;
+  overflow-x: clip;
+}
+
+.house-wordmark {
+  font-family: var(--house-font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 0.85;
+  white-space: nowrap;
+  /* 0.961 of the Space Grotesk lockup so Chakra Petch 600 keeps the same width. */
+  font-size: clamp(2.4rem, 14.2vw, 11.5rem);
+  animation: houseLockup 700ms ease-out both;
+}
+
+@supports (font-size: 1cqi) {
+  .house-wordmark {
+    font-size: min(11.5rem, 16.5cqi);
+  }
+}
+
+@keyframes houseLockup {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .house-wordmark { animation: none; }
+}
+
+.house-hairline {
+  border-color: var(--house-line);
+}
+
+.house-spine {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: baseline;
+  border-top: 1px solid var(--house-line);
+  padding: 0.7rem 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+@media (min-width: 640px) {
+  .house-spine {
+    grid-template-columns: 2.5rem minmax(0, 1fr) auto auto;
+  }
+}
+
+@media (min-width: 768px) {
+  .house-spine {
+    grid-template-columns: 2.5rem minmax(0, 1fr) auto auto auto;
+  }
+}
+
+.house-spine:last-child {
+  border-bottom: 1px solid var(--house-line);
+}
+
+.house-spine:hover .house-spine-title {
+  color: var(--house-orange);
+}
+
+.house-spine-parked {
+  opacity: 0.4;
+}
+
+.house-spine-parked:hover {
+  opacity: 1;
+}
+
+/*
+ * LogoGlobe — reserved square box. SVG contract: square viewBox,
+ * <g id="lf-ring"> outer circle, <g id="lf-core"> everything else,
+ * strokes currentColor. Duplicate the SVG once per layer.
+ *
+ * Owner override (title-card mark only): the shared spin wrapper turns
+ * ring+core as one coin. Perspective lives on this box so it applies to
+ * the child transform. 8rem is 4× the 2rem title-card mark — a coin edge
+ * rather than a flat squash. (400cqw cannot be used here: this element
+ * is not a query container for its own properties, so cqw resolved to
+ * the viewport and became ~180× the mark.)
+ */
+.lf-logo-globe {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+  perspective: 8rem;
+  perspective-origin: 50% 50%;
+  pointer-events: none;
+}
+
+/* Keep the title-card mark at 2rem when LogoGlobe also carries .house-logo-mark. */
+.lf-logo-globe.house-logo-mark {
+  width: 2rem;
+  height: 2rem;
+}
+
+.lf-motion-switch {
+  display: inline-grid;
+  grid-template-columns: max-content;
+  align-items: center;
+  justify-items: start;
+  min-width: 80px;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--house-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.lf-motion-on,
+.lf-motion-off {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+}
+
+.lf-motion-off {
+  visibility: hidden;
+}
+
+html[data-logo-paused='true'] .lf-motion-on {
+  visibility: hidden;
+}
+
+html[data-logo-paused='true'] .lf-motion-off {
+  visibility: visible;
+}
+
+.lf-motion-switch:hover {
+  color: var(--house-ink);
+}
+
+.lf-motion-switch:focus {
+  outline: 2px solid var(--house-ink);
+  outline-offset: 2px;
+}
+
+.lf-motion-switch:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.lf-logo-globe-spin {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 50%;
+  transform-style: flat;
+  backface-visibility: visible;
+  will-change: transform;
+  animation: lf-logo-globe-spin 12s linear infinite;
+}
+
+.lf-logo-globe-layer {
+  position: absolute;
+  inset: 0;
+}
+
+/*
+ * Coin rim: a flat 2D sibling of the spin (transform: none). Lives
+ * outside `.lf-logo-globe-spin` so the spin can stay `transform-style:
+ * flat` and Chrome rasterizes the SVG at device DPR. Same 12s linear
+ * infinite clock as the spin (no delay) so opacity peaks at 90° / 270°.
+ * Width 1.125px (~stroke 0.875px). Face-on opacity 0. Height 87.5% =
+ * ring diameter (r=1, scale(224), viewBox 512).
+ */
+.lf-logo-globe-rim-wall {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 1.125px;
+  height: 87.5%;
+  margin: auto;
+  border-radius: 0.5625px;
+  background: currentColor;
+  pointer-events: none;
+  transform: none;
+  transform-origin: 50% 50%;
+  opacity: 0;
+  will-change: opacity;
+  animation: lf-logo-globe-rim-wall 12s linear infinite;
+}
+
+.lf-logo-globe-layer .house-logo-mark {
+  width: 100%;
+  height: 100%;
+}
+
+.lf-logo-globe-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.lf-logo-globe-ring [id='lf-core'] {
+  visibility: hidden;
+}
+
+.lf-logo-globe-core [id='lf-ring'] {
+  visibility: hidden;
+}
+
+/* Core stays face-on relative to the wrapper. No independent spin. */
+.lf-logo-globe-core {
+  transform: none;
+  will-change: auto;
+  animation: none;
+}
+
+@keyframes lf-logo-globe-spin {
+  from { transform: rotateY(0deg); }
+  /* Positive rotateY: near half of the plane moves left → right (west → east). */
+  to { transform: rotateY(360deg); }
+}
+
+/*
+ * Same 12s clock as the spin. Peak only 85–95° / 265–275°.
+ * 83°=23.056% and 97°=26.944% stay 0 so 80/82/98/100° do not read as
+ * a dim filled capsule over the thin ellipse.
+ */
+@keyframes lf-logo-globe-rim-wall {
+  0%, 23.056%, 26.944%, 50%, 73.056%, 76.944%, 100% { opacity: 0; }
+  23.611%, 26.389%, 73.611%, 76.389% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lf-logo-globe-spin {
+    animation: none;
+    will-change: auto;
+    transform: none;
+  }
+
+  .lf-motion-switch {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lf-logo-globe-rim-wall {
+    animation: none;
+    will-change: auto;
+    opacity: 0;
+  }
+}
+
+/*
+ * Pause is attribute-only. Never set animation-play-state: running —
+ * user resume and SignalCut teardown both drop their own attribute so
+ * the other can still hold the animation paused.
+ */
+html[data-lf-signal-cut='active'] .lf-logo-globe-spin,
+html[data-logo-paused='true'] .lf-logo-globe-spin {
+  animation-play-state: paused;
+}
+
+html[data-lf-signal-cut='active'] .lf-logo-globe-rim-wall,
+html[data-logo-paused='true'] .lf-logo-globe-rim-wall {
+  animation-play-state: paused;
+}

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import posthog from 'posthog-js'
+import { getPostHogDistinctIdHeader } from '@/lib/posthog-client'
+import { useBannerAvailability, useBannerPanelPad } from '@/components/BannerRotator'
 
 interface DailyActivity {
   date: string
@@ -15,6 +17,8 @@ interface GitHubData {
   daily_activity: DailyActivity[]
 }
 
+const SKELETON_BAR_HEIGHTS = [35, 60, 25, 70, 45, 85, 30, 55, 75, 40, 65, 50, 80, 45]
+
 export default function GitHubActivity() {
   const [data, setData] = useState<GitHubData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -23,7 +27,9 @@ export default function GitHubActivity() {
   useEffect(() => {
     async function fetchActivity() {
       try {
-        const response = await fetch('/api/github')
+        const response = await fetch('/api/github', {
+          headers: getPostHogDistinctIdHeader(),
+        })
         if (!response.ok) throw new Error('Failed to fetch')
         const json = await response.json()
         setData(json)
@@ -44,24 +50,29 @@ export default function GitHubActivity() {
     })
   }
 
-  // Graceful — hide on error
+  const available =
+    !error && (isLoading || Boolean(data && data.daily_activity.length > 0))
+  useBannerAvailability(available)
+  const panelPad = useBannerPanelPad()
+
+  // Graceful — hide on error so BannerRotator can drop this slide
   if (error) return null
 
   // Loading skeleton
   if (isLoading) {
     return (
-      <div className="w-full border-b border-[var(--border-dim)] bg-[var(--bg-surface)] font-mono">
-        <div className="max-w-7xl mx-auto px-4 py-2">
+      <div className="min-h-12 w-full border-b border-[var(--border-dim)] bg-[var(--bg-surface)] font-mono">
+        <div className={panelPad}>
           <div className="flex items-center gap-4">
             <p className="text-[var(--text-muted)] text-[10px] uppercase tracking-wider shrink-0">
               GitHub Activity
             </p>
             <div className="flex items-end gap-[2px] h-[24px] flex-1">
-              {Array.from({ length: 14 }).map((_, i) => (
+              {SKELETON_BAR_HEIGHTS.map((height, i) => (
                 <div
                   key={i}
                   className="flex-1 bg-[var(--bg-body)] border border-[var(--border-dim)] rounded-sm animate-pulse"
-                  style={{ height: `${Math.random() * 60 + 20}%` }}
+                  style={{ height: `${height}%` }}
                 />
               ))}
             </div>
@@ -76,8 +87,8 @@ export default function GitHubActivity() {
   const maxCount = Math.max(...data.daily_activity.map((d) => d.count), 1)
 
   return (
-    <div className="w-full border-b border-[var(--border-dim)] bg-[var(--bg-surface)] font-mono">
-      <div className="max-w-7xl mx-auto px-4 py-2">
+    <div className="min-h-12 w-full border-b border-[var(--border-dim)] bg-[var(--bg-surface)] font-mono">
+      <div className={panelPad}>
         <div className="flex items-center gap-4">
           <p className="text-[var(--text-muted)] text-[10px] uppercase tracking-wider shrink-0">
             GitHub Activity
@@ -89,6 +100,7 @@ export default function GitHubActivity() {
             target="_blank"
             rel="noopener noreferrer"
             onClick={handleClick}
+            aria-label="GitHub activity, last 14 days"
             className="flex items-end gap-[2px] h-[24px] flex-1 group cursor-pointer"
           >
             {data.daily_activity.map((day) => {

@@ -1,7 +1,7 @@
 # Implementation Plan — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-02-08
-**Status:** Phase 0 complete (MVP shipped). Phases 1-5 sequenced below.
+**Last Updated:** 2026-09-26
+**Status:** House cut implemented (title card, sleeves, full crate, signal cut, agent files, logo mark). Person page frozen except wordmark.
 **Previous plan:** `IMPLEMENTATION_PLAN_DISCOGS_ARCHIVED.md` (completed Discogs widget build)
 
 ---
@@ -11,13 +11,14 @@
 **Goal:** Ship the MVP portfolio with AI chat, JD analyzer, career timeline, and analytics.
 
 **What shipped:**
+
 - Single-page portfolio (`app/page.tsx`)
 - Hero with SprayText animation
 - Career Timeline from Supabase `experiences` table
 - AI Chat via Supabase Edge Functions + Claude API
 - JD Fit Analyzer with Firecrawl URL scraping
 - Marquee ticker
-- Recent Digs (Discogs) banner widget
+- Recent Digs (Discogs) banner widget — **removed from `/keeganmoody33`**; crate lives at house `/collection`
 - Activity Stream sidebar with theme toggle
 - Publications section (inside Timeline)
 - PostHog analytics (client + server)
@@ -53,30 +54,23 @@
 - **Visual:** Retro vertical bars, 14-day breakdown, lime accent with glow on today's bar
 - **PostHog:** `github_activity_clicked`
 
-### Step 1.3 — Worthy Reads Widget
+### Step 1.3 — Worthy Reads Widget (CANCELLED)
 
-- **Goal:** Curated reading list (3-5 items)
-- **Output:** `components/WorthyReads.tsx`
-- **Technical:** Data source TBD -- likely JSON config file or Supabase table
-- **Display:** Title, source, link for each item
-- **PostHog:** `worthy_reads_link_clicked`
-- **Validation:** Links render, open in new tab
-- **Blocker:** Need to decide data source before building (see PRD.md open questions)
+- **Status:** CANCELLED 2026-07-24 — feature descoped
 
-### Step 1.4 — Banner Section Layout
+### Step 1.4 — Banner Section Layout (DONE)
 
-- **Goal:** Arrange all 4 widgets (YouTube, GitHub, Discogs, Worthy Reads) in banner
-- **Output:** Update `app/page.tsx` to compose widgets in banner section
-- **Technical:** Layout TBD in Aura per spec, but must be responsive
-- **Validation:** All 4 widgets visible on desktop and mobile, hover stops marquee scroll
+- **Status:** Completed — `BannerRotator` on `/keeganmoody33` now cycles YouTube + GitHub. Recent Digs removed; crate lives at house `/collection`.
+- **Output:** `components/BannerRotator.tsx` composes widgets in a single rotating slot below Marquee — 8s auto-rotate, pause-on-hover, dot indicators
+- **Validation:** Remaining widgets visible on desktop and mobile, hover pauses rotation
 
 ---
 
-## Phase 2: Turntable Loading Experience
+## Phase 2: Turntable Loading Experience (SUPERSEDED)
 
 **Goal:** Entry experience with needle drop = play button = enter site.
 
-**Status:** Ready to build. Phase 1 Step 1.1 (YouTube player) is complete. sessionStorage handoff contract is in place.
+**Status:** SUPERSEDED 2026-09-26 by the house cut: turntable root and hasVisitedPortfolio redirect removed; `/` is the lecturesfrom house.
 
 **Inputs:** `docs/TURNTABLE_LOADING_SPEC.md`, `FRONTEND_GUIDELINES.md`
 
@@ -102,9 +96,10 @@
 
 ### Step 2.3 — Return Visitor Bypass
 
+- **Status:** SUPERSEDED 2026-09-26 by the house cut: turntable root and hasVisitedPortfolio redirect removed; `/` is the lecturesfrom house.
 - **Goal:** Return visitors skip turntable, go straight to portfolio
-- **Technical:** `localStorage` flag set after first visit
-- **Validation:** First visit shows turntable. Subsequent visits skip to portfolio.
+- **Technical:** `localStorage` flag set after first visit — do not restore. Returning visitors land on the house root.
+- **Validation:** First visit shows turntable. Subsequent visits skip to portfolio. — void. `/` never redirects to `/keeganmoody33`.
 
 ### Step 2.4 — Integration
 
@@ -114,9 +109,9 @@
 
 ---
 
-## Phase 3: Alan Iverson Chat Persona (DEFERRED)
+## Phase 3: Alan Iverson Chat Persona (CANCELLED)
 
-**Status:** Backlogged. Deprioritized as of 2026-02-09 -- too large to tackle before Phases 1-2 are complete. See LEC-23 (moved to Backlog in Linear).
+**Status:** CANCELLED 2026-07-24 — feature descoped.
 
 **Goal:** Add Alan Iverson character to chat experience.
 
@@ -180,7 +175,7 @@
 ### Step 4.4 — Stack of Wax (Discogs Collection)
 
 - **Goal:** Full vinyl collection browsing via Discogs API
-- **Output:** `components/StackOfWax.tsx`, potentially updated `/api/discogs` route
+- **Output:** `components/StackOfWax.tsx` on house `/collection` via `/api/discogs/collection`. Career-only `/api/discogs` (recent-5) has been removed — do not revive it.
 - **Validation:** Grid shows collection, clicking tile opens Discogs page
 
 ---
@@ -225,11 +220,11 @@
 ```
 Phase 0 (DONE)
     │
-    ├── Phase 1: Banner Widgets
+    ├── Phase 1: Banner Widgets (Steps 1.1-1.4 DONE, Step 1.3 CANCELLED)
     │       │
-    │       └── Phase 2: Turntable (needs YouTube player from 1.1)
+    │       └── Phase 2: Turntable (SUPERSEDED 2026-09-26 by the house cut: turntable root and hasVisitedPortfolio redirect removed; / is the lecturesfrom house.)
     │
-    ├── Phase 3: Alan Iverson (independent, needs Chat from Phase 0)
+    ├── Phase 3: Alan Iverson (CANCELLED)
     │
     ├── Phase 4: Navigation + Vinyl Grid (independent)
     │       │
@@ -237,7 +232,13 @@ Phase 0 (DONE)
     │
 ```
 
-Phases 1, 3, and 4 can run in parallel after Phase 0.
+Phases 1 and 4 can run in parallel after Phase 0. Phase 3 is cancelled.
+
+### House brand mark (DONE — this PR)
+
+- **Output:** `components/house/LogoMark.tsx` on the root title card; `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`; house `opengraph-image` / `twitter-image` from `brand/house-share.png`.
+- **Globe:** `LogoGlobe` layers stay. Shared `.lf-logo-globe-spin` wrapper coins-spins the whole mark (`rotateY` 12s). Core stays `animation: none` (face-on). Owner override of house "No 3D", scoped to this mark. HouseFooter Motion switch for WCAG 2.2.2; composed with SignalCut via pause-only CSS attributes on `<html>`. Root layout blocking script applies a saved pause before first paint (`suppressHydrationWarning` on `<html>`).
+- **Validation:** lint / typecheck / build; `/keeganmoody33` `og:image` stays `/og.jpg`.
 
 ---
 

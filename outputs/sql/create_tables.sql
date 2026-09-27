@@ -1,12 +1,13 @@
+-- NOTE: This file has been corrected to match the live Supabase schema (2026-07-24). Original had wrong table/column names.
 -- Supabase Schema for Keegan Moody Portfolio
 -- Generated: 2026-01-19
 -- Source: Portfolio Assembly Agent System v2.1
 
 -- ============================================
--- TABLE: candidate_profiles
+-- TABLE: candidate_profile
 -- Core identity and summary information
 -- ============================================
-CREATE TABLE candidate_profiles (
+CREATE TABLE candidate_profile (
   id TEXT PRIMARY KEY,
   first_name TEXT NOT NULL,
   last_name TEXT NOT NULL,
@@ -31,7 +32,7 @@ CREATE TABLE candidate_profiles (
 -- ============================================
 CREATE TABLE experiences (
   id TEXT PRIMARY KEY,
-  candidate_id TEXT REFERENCES candidate_profiles(id) ON DELETE CASCADE,
+  candidate_id TEXT REFERENCES candidate_profile(id) ON DELETE CASCADE,
   company_name TEXT NOT NULL,
   company_url TEXT,
   role_title TEXT NOT NULL,
@@ -44,7 +45,7 @@ CREATE TABLE experiences (
   company_funding TEXT,
   company_industry TEXT,
   description TEXT,
-  key_deliverables TEXT[],
+  public_bullets TEXT[],  -- Public-facing bullet points (live schema column name)
   metrics JSONB,        -- Flexible storage for role-specific metrics
   honest_assessment TEXT,
   exit_reason TEXT,
@@ -62,7 +63,7 @@ CREATE TABLE experiences (
 -- ============================================
 CREATE TABLE skills (
   id TEXT PRIMARY KEY,
-  candidate_id TEXT REFERENCES candidate_profiles(id) ON DELETE CASCADE,
+  candidate_id TEXT REFERENCES candidate_profile(id) ON DELETE CASCADE,
   category TEXT NOT NULL, -- GTM / Sales, Technical / Tools, Research / Analysis, etc.
   skill_name TEXT NOT NULL,
   proficiency_level TEXT NOT NULL, -- STRONG, MODERATE, GAP
@@ -78,7 +79,7 @@ CREATE TABLE skills (
 -- ============================================
 CREATE TABLE achievements (
   id TEXT PRIMARY KEY,
-  candidate_id TEXT REFERENCES candidate_profiles(id) ON DELETE CASCADE,
+  candidate_id TEXT REFERENCES candidate_profile(id) ON DELETE CASCADE,
   experience_id TEXT REFERENCES experiences(id) ON DELETE SET NULL,
   achievement_type TEXT, -- METHODOLOGY, DISCOVERY, QUOTA, REVENUE, DEAL_VELOCITY, PUBLICATION, etc.
   title TEXT NOT NULL,
@@ -98,7 +99,7 @@ CREATE TABLE achievements (
 -- ============================================
 CREATE TABLE ai_instructions (
   id TEXT PRIMARY KEY,
-  candidate_id TEXT REFERENCES candidate_profiles(id) ON DELETE CASCADE,
+  candidate_id TEXT REFERENCES candidate_profile(id) ON DELETE CASCADE,
   version TEXT,
   voice_guidelines JSONB,      -- {tone, perspective_portfolio, perspective_bios, do_say[], dont_say[]}
   critical_distinctions JSONB, -- [{context, incorrect, correct, reason}]
@@ -129,7 +130,7 @@ CREATE INDEX idx_achievements_featured ON achievements(is_featured) WHERE is_fea
 -- ============================================
 -- ROW LEVEL SECURITY (Enable for production)
 -- ============================================
--- ALTER TABLE candidate_profiles ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE candidate_profile ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE experiences ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE skills ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE achievements ENABLE ROW LEVEL SECURITY;
@@ -146,8 +147,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER update_candidate_profiles_updated_at
-  BEFORE UPDATE ON candidate_profiles
+CREATE TRIGGER update_candidate_profile_updated_at
+  BEFORE UPDATE ON candidate_profile
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_experiences_updated_at
@@ -161,7 +162,7 @@ CREATE TRIGGER update_ai_instructions_updated_at
 -- ============================================
 -- COMMENTS
 -- ============================================
-COMMENT ON TABLE candidate_profiles IS 'Core identity and career summary';
+COMMENT ON TABLE candidate_profile IS 'Core identity and career summary';
 COMMENT ON TABLE experiences IS 'Work history with verified metrics and honest assessments';
 COMMENT ON TABLE skills IS 'Categorized skills with evidence-based proficiency levels';
 COMMENT ON TABLE achievements IS 'Verified accomplishments with supporting metrics';

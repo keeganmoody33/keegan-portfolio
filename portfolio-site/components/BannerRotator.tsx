@@ -1,7 +1,65 @@
 'use client'
 
-import { Children, useState, useEffect, type ReactNode } from 'react'
+import {
+  Children,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
 import posthog from 'posthog-js'
+import { flushNowPlayingFocusHandoff } from '@/lib/youtube-playback-errors'
+
+export const BannerAvailabilityContext = createContext<
+  (available: boolean) => void
+>(() => undefined)
+
+const BannerChromeContext = createContext({ showDots: false })
+
+/** Widgets call this so a null/error render drops their slide and dot. */
+export function useBannerAvailability(available: boolean) {
+  const report = useContext(BannerAvailabilityContext)
+  useEffect(() => {
+    report(available)
+    return () => {
+      report(false)
+    }
+  }, [available, report])
+}
+
+/** Inner content pad: `pr-16` only when dots are visible so the bar stays full-bleed. */
+export function useBannerPanelPad() {
+  const { showDots } = useContext(BannerChromeContext)
+  return showDots
+    ? 'max-w-7xl mx-auto py-2 pl-4 pr-16'
+    : 'max-w-7xl mx-auto px-4 py-2'
+}
+
+function BannerSlot({
+  index,
+  onAvailability,
+  children,
+}: {
+  index: number
+  onAvailability: (index: number, available: boolean) => void
+  children: ReactNode
+}) {
+  const report = useCallback(
+    (available: boolean) => {
+      onAvailability(index, available)
+    },
+    [index, onAvailability]
+  )
+
+  return (
+    <BannerAvailabilityContext.Provider value={report}>
+      {children}
+    </BannerAvailabilityContext.Provider>
+  )
+}
 
 interface BannerRotatorProps {
   children: ReactNode
@@ -15,6 +73,7 @@ interface BannerRotatorProps {
  * Rotating banner — mounts all panels simultaneously (critical for
  * YouTubePlayer whose iframe must stay alive) but displays only the
  * active one. Crossfade transition, auto-rotates, pauses on hover.
+ * Failed or empty panels are dropped from rotation and from the dots.
  */
 export default function BannerRotator({
   children,
@@ -24,19 +83,82 @@ export default function BannerRotator({
   const panels = Children.toArray(children)
   const count = panels.length
 
+  const [available, setAvailable] = useState<boolean[]>(() =>
+    Array.from({ length: count }, () => true)
+  )
   const [activeIndex, setActiveIndex] = useState(0)
   const [paused, setPaused] = useState(false)
+  const [reduceMotion, setReduceMotion] = useState(false)
 
-  // Auto-rotate
   useEffect(() => {
-    if (paused || count <= 1) return
+    setAvailable((prev) => {
+      if (prev.length === count) return prev
+      return Array.from({ length: count }, (_, i) => prev[i] ?? true)
+    })
+  }, [count])
+
+  const onAvailability = useCallback((index: number, isAvailable: boolean) => {
+    setAvailable((prev) => {
+      const current = prev[index]
+      if (current === isAvailable) return prev
+      const next = prev.slice()
+      next[index] = isAvailable
+      return next
+    })
+  }, [])
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const apply = () => setReduceMotion(media.matches)
+    apply()
+    media.addEventListener('change', apply)
+    return () => media.removeEventListener('change', apply)
+  }, [])
+
+  const visibleIndices = useMemo(
+    () =>
+      Array.from({ length: count }, (_, index) => index).filter(
+        (index) => available[index] !== false
+      ),
+    [available, count]
+  )
+
+  const firstVisible = visibleIndices[0]
+  const resolvedActiveIndex =
+    firstVisible !== undefined && !visibleIndices.includes(activeIndex)
+      ? firstVisible
+      : activeIndex
+
+  useEffect(() => {
+    if (firstVisible === undefined) return
+    if (resolvedActiveIndex !== activeIndex) {
+      setActiveIndex(firstVisible)
+    }
+  }, [visibleIndices, activeIndex, firstVisible, resolvedActiveIndex])
+
+  useEffect(() => {
+    flushNowPlayingFocusHandoff()
+  }, [visibleIndices, resolvedActiveIndex])
+
+  useEffect(() => {
+    if (paused || reduceMotion || visibleIndices.length <= 1) return
     const timer = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % count)
+      setActiveIndex((prev) => {
+        const position = visibleIndices.indexOf(prev)
+        const nextPosition =
+          position === -1 ? 0 : (position + 1) % visibleIndices.length
+        return visibleIndices[nextPosition] ?? prev
+      })
     }, intervalMs)
     return () => clearInterval(timer)
-  }, [paused, count, intervalMs])
+  }, [paused, reduceMotion, visibleIndices, intervalMs])
 
-  // Track panel switches
+  if (visibleIndices.length === 0) {
+    return null
+  }
+
+  const showDots = visibleIndices.length > 1
+
   const goTo = (index: number) => {
     if (index === activeIndex) return
     posthog.capture('banner_panel_switched', {
@@ -48,49 +170,71 @@ export default function BannerRotator({
   }
 
   return (
-    <div
-      className="relative w-full"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-    >
-      {/* All panels rendered; only active one is visible */}
-      {panels.map((child, i) => (
-        <div
-          key={i}
-          className={`
-            transition-opacity duration-500 ease-in-out
-            ${i === activeIndex
-              ? 'relative opacity-100 z-10'
-              : 'absolute top-0 left-0 right-0 opacity-0 z-0 pointer-events-none'
-            }
-          `}
-        >
-          {child}
-        </div>
-      ))}
+    <BannerChromeContext.Provider value={{ showDots }}>
+      <div
+        className="relative w-full"
+        data-banner-rotator=""
+        tabIndex={-1}
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+      >
+        {panels.map((child, i) => {
+          const isAvailable = available[i] !== false
+          const isActive = i === resolvedActiveIndex
+          const suppress = !isAvailable || !isActive
 
-      {/* Indicator dots — right edge, vertically centered */}
-      <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex items-center gap-1">
-        {panels.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => goTo(i)}
-            className="p-1.5 -m-0.5"
-            aria-label={labels[i] || `Banner ${i + 1}`}
-            title={labels[i] || undefined}
-          >
-            <span
-              className={`
-                block w-1.5 h-1.5 rounded-full transition-all duration-200
-                ${i === activeIndex
-                  ? 'bg-[var(--accent-lime)]'
-                  : 'bg-[var(--border-dim)] hover:bg-[var(--text-muted)]'
+          return (
+            <BannerSlot key={i} index={i} onAvailability={onAvailability}>
+              <div
+                data-banner-panel=""
+                className={
+                  !isAvailable
+                    ? 'hidden'
+                    : `
+                      min-h-12
+                      transition-opacity duration-500 ease-in-out
+                      ${isActive
+                        ? 'relative opacity-100 z-10'
+                        : 'absolute top-0 left-0 right-0 opacity-0 z-0 pointer-events-none'
+                      }
+                    `
                 }
-              `}
-            />
-          </button>
-        ))}
+                aria-hidden={suppress || undefined}
+                {...(suppress ? { inert: true } : {})}
+              >
+                {child}
+              </div>
+            </BannerSlot>
+          )
+        })}
+
+        {showDots && (
+          <div
+            data-banner-dots=""
+            className="absolute right-3 top-1/2 z-20 flex -translate-y-1/2 items-center gap-1"
+          >
+            {visibleIndices.map((i) => (
+              <button
+                key={i}
+                onClick={() => goTo(i)}
+                className="relative flex h-6 w-6 shrink-0 items-center justify-center"
+                aria-label={labels[i] ? `Switch to ${labels[i]}` : `Switch to banner ${i + 1}`}
+                title={labels[i] || undefined}
+              >
+                <span
+                  className={`
+                    pointer-events-none block h-1.5 w-1.5 rounded-full transition-all duration-200
+                    ${i === activeIndex
+                      ? 'bg-[var(--accent-lime)]'
+                      : 'bg-[var(--border-dim)] hover:bg-[var(--text-muted)]'
+                    }
+                  `}
+                />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
-    </div>
+    </BannerChromeContext.Provider>
   )
 }

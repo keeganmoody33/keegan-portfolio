@@ -3,8 +3,8 @@
 // Updated with Strategic Positioning Framework - Jan 2026
 // Deployed to: https://cvkcwvmlnghwwvdqudod.supabase.co/functions/v1/chat
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
+import { skillBucket } from "../_shared/skillBucket.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,7 +31,7 @@ interface PortfolioContext {
   ai_instructions: AIInstruction[];
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -115,7 +115,7 @@ async function fetchPortfolioContext(supabase: any): Promise<PortfolioContext> {
 function buildSystemPrompt(context: PortfolioContext): string {
   const instructions = context.ai_instructions;
   const profile = context.profile;
-  
+
   // Group instructions by type
   const byType: Record<string, string[]> = {};
   for (const inst of instructions) {
@@ -313,11 +313,13 @@ ${bullets.map((b: string) => `- ${b}`).join("\n")}
   }
 
   portfolioText += "\n## MY SKILLS\n";
-  
-  // Group skills by category - lead with strengths
-  const strong = skills.filter((s: any) => s.category === 'strong');
-  const moderate = skills.filter((s: any) => s.category === 'moderate');
-  const developing = skills.filter((s: any) => s.category === 'gap' || s.category === 'developing');
+
+  // Derive the chat bucket from either the new category field or the legacy
+  // proficiency_level field so both old (domain category + STRONG/MODERATE/GAP)
+  // and new (bucket category + descriptive label) skill rows surface correctly.
+  const strong = skills.filter((s: any) => skillBucket(s) === 'strong');
+  const moderate = skills.filter((s: any) => skillBucket(s) === 'moderate');
+  const developing = skills.filter((s: any) => skillBucket(s) === 'developing');
 
   // FIXED: Removed honest_notes (too self-critical) - just use evidence
   if (strong.length > 0) {
@@ -328,8 +330,15 @@ ${bullets.map((b: string) => `- ${b}`).join("\n")}
   }
 
   if (moderate.length > 0) {
-    portfolioText += "\n### Developing Skills\n";
+    portfolioText += "\n### Intermediate Skills\n";
     for (const skill of moderate) {
+      portfolioText += `- **${skill.skill_name}**: ${skill.evidence || ""}\n`;
+    }
+  }
+
+  if (developing.length > 0) {
+    portfolioText += "\n### Developing Skills\n";
+    for (const skill of developing) {
       portfolioText += `- **${skill.skill_name}**: ${skill.evidence || ""}\n`;
     }
   }

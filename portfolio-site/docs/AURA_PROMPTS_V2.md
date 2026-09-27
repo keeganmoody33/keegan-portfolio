@@ -173,10 +173,6 @@ WIDGETS (inside the marquee):
    - Artist - Album title (truncated)
    - "Recent Dig" label
 
-4. WORTHY READS
-   - Link icon + article title (truncated)
-   - Muted text, lime on hover
-
 BEHAVIOR:
 - Widgets separated by subtle vertical dividers
 - Hover on any widget: slight background lift
@@ -270,46 +266,7 @@ Export as HTML/Tailwind.
 
 ---
 
-## Prompt 5: Alan Iverson Chat
-
-```
-Using the lecturesfrom design system (Dark #121212 base, Lime #CCFF00 accent, Orange #FF5F1F secondary):
-
-Design a chat interface with a mascot character.
-
-CHAT CONTAINER:
-- Modal or slide-in panel from right
-- Dark surface background
-- Header: "Ask Alan" with close button
-
-CHARACTER AREA (right side of chat):
-- Placeholder for "Alan" character (circle avatar for now)
-- 75-85% opacity when idle
-- Speech bubble capability
-
-CHAT FLOW:
-- First message from Alan: "We talkin' about practice. Not a game."
-- Second bubble: "Alright—Keegan's got you. Ask away."
-- Then standard chat interface
-
-MESSAGES:
-- User messages: right-aligned, lime background, dark text
-- AI messages: left-aligned, surface background, bright text
-- Timestamps in muted, text-xs
-
-INPUT:
-- Bottom of chat
-- Dark input field with subtle border
-- Send button (lime)
-
-Keep it clean but with personality in the character area.
-
-Export as HTML/Tailwind.
-```
-
----
-
-## Prompt 6: Theme Toggle (Light/Dark + Grid Pattern)
+## Prompt 5: Theme Toggle (Light/Dark + Grid Pattern)
 
 ```
 Using the lecturesfrom design system:
@@ -371,7 +328,7 @@ Export as HTML/Tailwind with CSS variables for theme switching.
 
 ---
 
-## Prompt 7: Turntable Loading Page
+## Prompt 6: Turntable Loading Page
 
 ```
 Using the lecturesfrom design system (Dark #121212 base, Lime #CCFF00 accent, Orange #FF5F1F secondary):
@@ -407,7 +364,7 @@ Export as HTML/Tailwind. Turntable itself is placeholder - we'll add 3D/Unicorn 
 
 ---
 
-## Prompt 8: Experience Timeline
+## Prompt 7: Experience Timeline
 
 ```
 Using the lecturesfrom design system (Dark #121212 base, Lime #CCFF00 accent, Orange #FF5F1F secondary):
@@ -442,7 +399,7 @@ Export as HTML/Tailwind.
 
 ---
 
-## Prompt 9: Machine Mode View
+## Prompt 8: Machine Mode View
 
 ```
 Using the lecturesfrom design system (Dark #121212 base):
@@ -464,6 +421,7 @@ CONTENT RENDERING:
 
 EXAMPLE SECTION (About):
 ```
+
 # About
 
 Name: Keegan Moody
@@ -471,13 +429,16 @@ Role: GTM Engineer
 Location: Atlanta, GA
 
 ## Skills
+
 - Go-to-market infrastructure
 - Sales automation (Clay, SmartLead, Apollo)
 - AI/ML integration (Claude, MCP)
 
 ## Links
+
 - [GitHub](https://github.com/keeganmoody33)
 - [LinkedIn](https://linkedin.com/in/keeganmoody33)
+
 ```
 
 This is raw, functional, developer-facing. Maximum information density.
@@ -496,6 +457,7 @@ After running prompts in Aura:
 3. **Drop the files here** or paste the code
 
 I'll then:
+
 - Extract components into your Next.js structure
 - Wire up interactions and state
 - Connect to Supabase where needed
@@ -509,8 +471,8 @@ I'll then:
 |-------|---------|--------------|
 | 1 | Prompt 0 + 1 | Design system + Shell |
 | 2 | Prompt 2 + 3 | Banner + Vinyl Grid |
-| 3 | Prompt 4 + 5 + 6 | Project Page + Chat + Toggle |
-| 4 | Prompt 7 + 8 + 9 | Turntable + Timeline + Machine Mode |
+| 3 | Prompt 4 + 5 | Project Page + Toggle |
+| 4 | Prompt 6 + 7 + 8 | Turntable + Timeline + Machine Mode |
 
 Start with Round 1. Get the foundation right before details.
 

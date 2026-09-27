@@ -1,14 +1,14 @@
 # PRD — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-02-09
-**Status:** MVP Shipped, Iterating
-**Live URL:** [lecturesfrom.com/keeganmoody33](https://lecturesfrom.com/keeganmoody33)
+**Last Updated:** 2026-09-26
+**Status:** House cut in preview. Person page remains at /keeganmoody33.
+**Live URL:** [lecturesfrom.com](https://www.lecturesfrom.com) (house) · [lecturesfrom.com/keeganmoody33](https://www.lecturesfrom.com/keeganmoody33) (principal)
 
 ---
 
 ## Product Definition
 
-An AI-queryable portfolio site for Keegan Moody at **lecturesfrom.com**. Not a static resume. Not a content brand. An interactive system where recruiters, hiring managers, and potential collaborators can query Keegan's background directly -- via AI chat, JD fit analysis, or career timeline browsing.
+An AI-queryable portfolio for Keegan Moody, now entered through the lecturesfrom house. `/` is the company title card and crate. The principal channel remains `/keeganmoody33` with chat, JD fit analysis, and career timeline.
 
 The site is the product. The product demonstrates the builder.
 
@@ -38,29 +38,31 @@ Everything that serves the core purpose: help visitors understand who Keegan is,
 | JD Fit Analyzer | `JDAnalyzer.tsx`, `/api/jd-analyzer`, `jd-analyzer` Edge Function | **Shipped** |
 | Spray Paint Hero | `SprayText.tsx` | **Shipped** |
 | Marquee Ticker | `Marquee.tsx` | **Shipped** |
-| Recent Digs (Discogs) | `RecentDigs.tsx`, `/api/discogs` | **Shipped** |
+| Recent Digs (Discogs) | `RecentDigs.tsx`, `/api/discogs` | **Removed from `/keeganmoody33`** — crate lives at house `/collection` |
 | Activity Stream Sidebar | `ActivityStream.tsx` | **Shipped** |
 | Publications Section | `Publications.tsx` (inside Timeline) | **Shipped** |
 | PostHog Analytics | Client + server-side tracking | **Shipped** |
 | Vercel Deployment | Auto-deploy on push to main | **Shipped** |
 | Dark/Light Theme Toggle | ActivityStream theme buttons, CSS custom properties | **Shipped** |
+| YouTube Persistent Player | `YouTubePlayer.tsx`, `types/youtube.d.ts` | **Shipped** |
+| GitHub Activity Widget | `GitHubActivity.tsx`, `/api/github` | **Shipped** |
+| Turntable Loading Page | `TurntableCanvas.tsx` (left on disk, not mounted at `/`) | **Retired from `/`** — 2026-09-26 house cut |
+| House title card + crate | `app/(house)/page.tsx`, `lib/catalog.ts`, `components/house/*` | **Shipped** |
+| lecturesfrom logo mark + favicon + house share image | `LogoMark.tsx`, `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`, `app/(house)/opengraph-image.png` | **Shipped** |
+| Sleeves | `/catalog`, `/catalog/[slug]` | **Shipped (this PR)** |
+| Full Discogs crate | `/collection`, `/api/discogs/collection` | **Shipped** — durable Redis last-good when Upstash env is set |
+| SignalCut | `components/SignalCut.tsx` | **Shipped (this PR)** — house ↔ person only |
 
 ### Spec-Locked (Not Yet Built)
 
 | Feature | Spec Doc | Status |
 |---------|----------|--------|
 | Banner Widget Section | `docs/BANNER_WIDGETS_SPEC.md` | **Spec Locked** |
-| YouTube Persistent Player | `docs/BANNER_WIDGETS_SPEC.md` Section 1 | **Spec Locked** |
-| GitHub Activity Widget | `docs/BANNER_WIDGETS_SPEC.md` Section 2 | **Spec Locked** |
-| Worthy Reads Widget | `docs/BANNER_WIDGETS_SPEC.md` Section 4 | **Spec Locked** |
-| Turntable Loading Page | `docs/TURNTABLE_LOADING_SPEC.md` | **Spec Locked** |
-| Alan Iverson Chat Persona | `docs/ALAN_IVERSON_SPEC.md` | **Spec Locked** |
 | Human/Machine Toggle | `docs/HUMAN_MACHINE_TOGGLE_SPEC.md` | **Spec Locked** |
 | Navigation Pathways + Vinyl Grid | `docs/NAVIGATION_PATHWAYS_SPEC.md` | **Spec Locked** |
 
 ### Parking Lot (Ideas, Not Scoped)
 
-- Turntable loading screen
 - Stack of Wax (vinyl grid overlay for Discogs collection)
 - Physical Products placeholder page
 - Easter eggs (Konami code, hidden /practice route)
@@ -76,7 +78,8 @@ These are explicitly **not** what this site is:
 - **Not a blog** -- Keegan has Substack for that
 - **Not a content brand** -- the work matters more than the visibility (per `source-interviews/06_LECTURES_FROM.md`)
 - **Not a job board** -- visitors evaluate Keegan, not the other way around
-- **Not a SaaS product** -- single-candidate portfolio, not a platform
+- **Not a services menu** -- house copy is issued, not "we help teams scale"
+- **Not Ask AI / JD analyzer on the house** -- those stay on `/keeganmoody33`
 
 ---
 
@@ -91,15 +94,15 @@ These are explicitly **not** what this site is:
 
 ### Visitor / Collaborator
 
-5. **As a visitor**, I want to see what records Keegan recently bought so I get a sense of personality beyond work.
-6. **As a collaborator**, I want to find LinkedIn/GitHub/Substack links so I can connect on other platforms.
-7. **As a visitor**, I want the site to load fast and look good on my phone so I can browse during a commute.
+1. **As a visitor**, I want to browse the house crate at `/collection` so I can see the lecturesfrom record collection.
+2. **As a collaborator**, I want to find LinkedIn/GitHub/Substack links so I can connect on other platforms.
+3. **As a visitor**, I want the site to load fast and look good on my phone so I can browse during a commute.
 
 ### Keegan (Operator)
 
-8. **As the operator**, I want AI behavior tuned via `ai_instructions` table so I can adjust tone without redeploying code.
-9. **As the operator**, I want PostHog tracking on every interaction so I can see what visitors actually do.
-10. **As the operator**, I want the AI to lead with value and only acknowledge gaps when directly asked.
+1. **As the operator**, I want AI behavior tuned via `ai_instructions` table so I can adjust tone without redeploying code.
+2. **As the operator**, I want PostHog tracking on every interaction so I can see what visitors actually do.
+3. **As the operator**, I want the AI to lead with value and only acknowledge gaps when directly asked.
 
 ---
 
@@ -113,7 +116,7 @@ These are explicitly **not** what this site is:
 | Mobile usable | Core actions work on phone | Chat, Timeline, JD Analyzer all functional |
 | AI leads with value | No self-sabotaging language unprompted | Zero instances of volunteering firing history |
 | Analytics flowing | PostHog captures events | All shipped features tracked |
-| Discogs live | Recent Digs shows real data | 5 records from lecturesfrom collection |
+| Discogs live | House `/collection` shows the live crate | Full lecturesfrom collection (not on `/keeganmoody33`) |
 
 ---
 
@@ -130,10 +133,7 @@ These are explicitly **not** what this site is:
 
 ## Open Questions
 
-1. **Worthy Reads data source** -- JSON config file, Supabase table, or manual entry? (per `BANNER_WIDGETS_SPEC.md`)
-2. **Alan Iverson art style** -- Street 3D or 60s Comic? Both prototyped in Aura, winner TBD.
-3. **Navigation redesign** -- Current top nav vs. fixed left sidebar (per `FRONTEND_GUIDELINES.md` and `docs/NAVIGATION_PATHWAYS_SPEC.md`). When to ship?
-4. **YouTube playlist integration** -- Does turntable need to ship before the banner YouTube player? Or can banner player stand alone?
+1. **Navigation redesign** -- Current top nav vs. fixed left sidebar (per `FRONTEND_GUIDELINES.md` and `docs/NAVIGATION_PATHWAYS_SPEC.md`). When to ship?
 
 ---
 

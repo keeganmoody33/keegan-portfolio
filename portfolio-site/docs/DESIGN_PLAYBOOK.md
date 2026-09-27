@@ -218,6 +218,7 @@ The orbital/satellite logo is a mark, not a mascot. It appears when it earns its
 ### Buttons
 
 **Primary (Lime)**
+
 ```
 bg: --accent-primary
 text: --bg-deep (dark on lime)
@@ -226,6 +227,7 @@ font: JetBrains Mono
 ```
 
 **Secondary (Ghost)**
+
 ```
 bg: transparent
 border: --border
@@ -234,6 +236,7 @@ hover: bg --bg-elevated
 ```
 
 **Danger**
+
 ```
 bg: --accent-danger
 text: white
@@ -335,7 +338,7 @@ Inspired by: "Only selling what I truly believe in"
 
 - Konami code triggers something
 - Clicking the logo X times does something
-- Hidden page at /practice (Alan Iverson reference)
+- Hidden page at /practice (CANCELLED — Alan Iverson feature descoped 2026-07-24)
 - Machine mode has its own secrets
 - Console.log has a message
 - Certain hover combos reveal hidden elements
@@ -500,21 +503,23 @@ The site should make them lean in, not lean back.
 | Cards | Surface bg, dim border, lime hover | Evolve to vinyl aesthetic |
 | Nav | Top bar, horizontal | Shift to fixed left sidebar |
 | Motion | Grid shifts, marquee scrolls | Still until engaged |
-| Character | None currently | Add Alan Iverson |
+| Character | None currently | CANCELLED (Alan Iverson descoped 2026-07-24) |
 | Toggle | None currently | Add Human/Machine |
 
 ### What Stays
+
 - Color palette (lime + orange on dark)
 - Typography (Space Grotesk + Roboto Mono)
 - Sketch button style
 - Tech pills aesthetic
 
 ### What Evolves
+
 - Navigation → left sidebar
 - Cards → vinyl/album cover style
 - Add turntable loading page
 - Add banner widgets
-- Add Alan Iverson chat character
+- ~~Add Alan Iverson chat character~~ (CANCELLED 2026-07-24)
 - Add Human/Machine toggle
 
 ---

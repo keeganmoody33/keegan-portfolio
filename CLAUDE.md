@@ -1,6 +1,6 @@
 # Keegan Moody — Portfolio Context
 
-**Last Updated:** 2026-02-08
+**Last Updated:** 2026-08-22
 **Status:** Actively seeking GTM Engineer / Founding Growth roles
 **Location:** Atlanta, GA or Remote
 **Live Site:** [lecturesfrom.com/keeganmoody33](https://lecturesfrom.com/keeganmoody33)
@@ -72,6 +72,7 @@ Read these before any implementation work. They are the source of truth.
 | `IMPLEMENTATION_PLAN.md` | Phased build sequence with dependencies and validation steps |
 
 **Session persistence files (also in `portfolio-site/`):**
+
 - `progress.txt` -- What's done, in progress, next. Read at session start. Update after every feature.
 - `lessons.md` -- Mistakes and patterns. Review at session start. Update after every correction.
 
@@ -89,10 +90,12 @@ skills: skill_name, category, evidence
 ```
 
 **Edge Functions:**
+
 - `supabase/functions/chat/index.ts` — Portfolio AI chat
 - `supabase/functions/jd-analyzer/index.ts` — Job description fit analyzer
 
 **Environment Variable Conventions:**
+
 - Env var names in `.env.local` must exactly match what the code references (e.g. `process.env.DISCOGS_TOKEN`).
 - Convention: use the service's own naming (e.g. `DISCOGS_TOKEN`, not `DISCOGS_API_TOKEN`) so config and code stay in sync.
 - When adding a new integration, grep the codebase for the expected var name before creating the `.env.local` entry.
@@ -102,17 +105,21 @@ skills: skill_name, category, evidence
 ## AI Behavior Guidelines
 
 ### Lead with Value
+
 - They came to you. Represent someone worth talking to.
 - Lead with strengths, acknowledge gaps only when directly asked.
 - Ask questions to understand what visitors need.
 
 ### Tone
+
 - Confident but humble — let the work speak
 - 2-4 sentences default, longer only when asked
 - Warm, direct, like talking to a smart friend
 
 ### When Asked About Gaps/Short Stints
+
 Only address if directly asked. Frame as growth:
+
 - "I've been increasingly intentional about fit. Looking for the right long-term home."
 - "I learned that results alone aren't enough — optics and communication matter too."
 
@@ -123,17 +130,20 @@ Only address if directly asked. Frame as growth:
 ## Key Wins (Use These)
 
 ### Trace Air
+
 - $220K generated in 90 days from greenfield territory
 - 23 demos in first fully onboarded month
 - 78% self-sourced from outside the CRM
 - Built territory from scratch for new AE
 
 ### Biofourmis
+
 - Co-founding SDR feeding 6 AEs across North America
 - Originated Orlando Health deal: fastest close in company history
 - Enterprise healthcare: hospitals, academic medical centers
 
 ### Mixmax
+
 - Built complete GTM infrastructure from zero
 - 53-inbox email system across multiple providers
 - ICP validation: 280 customers, $4.79M ARR analyzed
@@ -156,7 +166,23 @@ Only surface when directly asked. Frame constructively.
 
 ## Recent Sessions
 
+**2026-07-24:** Debt + polish sweep (5 parallel loops)
+
+- Rate limiting on all 4 API routes (lib/rate-limit.ts): chat/jd-analyzer 10/min, discogs/github 30/min
+- Discogs API route: added 5-min cache (next: { revalidate: 300 })
+- ARIA labels added to all interactive elements (YouTubePlayer, Marquee, Chat, JDAnalyzer, BannerRotator, Timeline, nav buttons)
+- Mobile responsive fixes: hero text, padding, nav gap, footer stacking, timeline columns, card padding
+- ActivityStream component removed from page (fake data; GitHub Activity widget covers real activity)
+- Edge Functions modernized: deprecated std@0.168.0/http/server.ts → built-in Deno.serve(); pinned @supabase/supabase-js@2.90.1
+- Edge Functions deployed: chat v14, jd-analyzer v13 (both live)
+- Schema drift fixed in archived SQL files (candidate_profiles→candidate_profile, bullet_points→public_bullets, key_deliverables→public_bullets)
+- Worthy Reads and Alan Iverson CANCELLED — scrubbed from all docs, ALAN_IVERSON_SPEC.md deleted
+- Phase 2 turntable marked COMPLETED, Phase 1.4 banner layout marked DONE
+- Commit 2e9fc67 pushed to origin/main, Vercel auto-deployed, site live (200 OK)
+- Next: Phase 4 (Navigation pathways + Vinyl grid), Phase 5 (Human/Machine toggle)
+
 **2026-02-08 (night):** YouTube player + Turntable prep
+
 - Built YouTube persistent player widget (Phase 1, Step 1.1): components/YouTubePlayer.tsx, types/youtube.d.ts
 - Hidden iframe with custom retro control bar (play/pause, next/prev on hover, progress, volume)
 - sessionStorage handoff contract at 'yt-player-state' -- ready for Phase 2 Turntable
@@ -167,6 +193,7 @@ Only surface when directly asked. Frame constructively.
 - Deployment strategy locked: feature branch -> Vercel preview -> test -> merge to main
 
 **2026-02-09 (evening):** Site copy updates, Supabase data sync, doc alignment
+
 - Updated page title to "Keegan Moody | lecturesfrom" (LEC-25)
 - Replaced hero taglines with Set Q: "Revenue systems. Built from zero." / "Useful in every room." / "Here for the long build." (LEC-26)
 - Added Discord + Bluesky footer links (LEC-27)
@@ -174,17 +201,19 @@ Only surface when directly asked. Frame constructively.
 - Synced FRONTEND_GUIDELINES.md to match actual component behavior (LEC-29)
 - Cross-verified all Supabase experiences against resume — fixed dates (TraceAir, Chapel Hill), title (Barbour), enriched Mixmax (8 bullets) and Biofourmis (7 bullets), added Mercer + Community Ambulance rows for chat context (LEC-30)
 - Fixed Supabase MCP config: wrong project_ref and read_only flag
-- Moved LEC-23 (Alan Iverson) to Backlog
+- Moved LEC-23 (Alan Iverson) to Backlog (later CANCELLED 2026-07-24 — feature descoped)
 - Cleaned up git: merged docs branch, deleted 5 stale branches
 - Principal engineer review of all canonical docs — fixed 8 issues
 
 **2026-02-09 (earlier):** Created canonical documentation system
+
 - Drafted all six canonical docs: PRD, APP_FLOW, TECH_STACK (existed), FRONTEND_GUIDELINES, BACKEND_STRUCTURE, IMPLEMENTATION_PLAN
 - Folded DESIGN_PLAYBOOK.md content into FRONTEND_GUIDELINES.md
 - Archived Discogs-specific IMPLEMENTATION_PLAN, created master site-wide plan
 - Updated CLAUDE.md, .cursorrules, and progress.txt to reference all docs
 
 **2026-01-31:** Fixed self-sabotaging AI behavior
+
 - Updated Edge Functions to use correct database columns
 - Rewrote system prompts to lead with value
 - Updated public_bullets for key experiences

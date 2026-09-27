@@ -1,12 +1,45 @@
 # Lessons Learned
-Updated: 2026-02-10
+
+Updated: 2026-09-27
+
+## Discogs durable snapshot (2026-09-26)
+
+- **Durable last-good lives in Upstash Redis, not module memory.** Memory is per serverless instance; a cold instance that hits Discogs 429 has nothing to serve. Store a complete crawl at `lf:discogs:collection:v1` (preview/dev: `lf:preview:discogs:collection:v1` when `VERCEL_ENV !== 'production'`). Serve Redis first. Refresh ~daily via `after()` + `SET NX EX`. Only a complete crawl (`releases.length === pagination.items`) may overwrite. Missing Redis env must behave exactly as before — no crash, no Redis reads or writes during `next build`.
+- **`Redis.fromEnv()` only warns when vars are missing.** Resolve `KV_REST_API_URL`/`KV_REST_API_TOKEN` (then `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`) yourself and skip the client when the pair is absent. Do not mix KV URL with UPSTASH token.
+- **Never Data-Cache an empty Redis MGET.** `force-cache` + `revalidate: 300` stored the empty build-time read, so a cold `next start` never hit Redis and treated a real snapshot as missing. Redis reads use `cache: 'no-store'`. Skip Redis entirely when `NEXT_PHASE === 'phase-production-build'` so SSG of `/collection` only uses Discogs `next.revalidate: 300` and stays ISR (`○` 5m). Writes and the lock stay `no-store` inside `after()`.
+- **Never cache a failed or partial Discogs crawl as last-good.** Last-good is only a complete crawl whose `releases.length` equals Discogs `pagination.items`. 429 / exhausted `X-Discogs-Ratelimit-Remaining` mid-paginate: serve last-good, or HTTP 429 + `Retry-After`. Put `Cache-Control: no-store` on error responses — route `revalidate = 300` will otherwise ISR-cache a 429 for five minutes.
+- **Never leak Discogs bodies** to the client, rendered page errors, or PostHog `error_message`. Map to generic `Too many requests` / `Failed to fetch from Discogs`.
+- **`DISCOGS_TOKEN` is optional** for the public `lecturesfrom` collection. Requiring it 500s `/collection` in previews that lack the env. User-Agent must be `lecturesfrom/1.0` on every Discogs request.
+- **House crate is `/api/discogs/collection` + `/collection`.** Career `/api/discogs` and RecentDigs were removed (#24). Do not put Discogs back on `/keeganmoody33`.
+- **Route `export const revalidate` must be a numeric literal.** `export const revalidate = DISCOGS_REVALIDATE_SECONDS` fails Next 16 with "Invalid segment configuration export". Use `export const revalidate = 300`.
+
+## House logo / lockup (2026-09-27)
+
+- **WCAG 2.2.2 pause lives in the shared house footer, not the lockup.** `LogoGlobe` is `aria-hidden` on the title card. A control inside that tree is invisible to AT. `MotionSwitch` in `HouseFooter` (`/`, `/catalog`, `/collection`, `/legal`) sets `data-logo-paused` on `<html>` because the footer is not an ancestor of the mark. `/keeganmoody33` does not share this footer.
+- **Compose pause attributes; never set `animation-play-state: running`.** User toggle writes `html[data-logo-paused="true"]` (remove the attribute when playing). SignalCut writes `data-lf-signal-cut` on `html`. Both CSS rules only set `paused`. Dropping one cannot un-pause the other. Inline `running` on resume would punch through SignalCut.
+- **Hide the switch with CSS under `prefers-reduced-motion: reduce`.** Do not omit it in JS — that hydrates differently from the server. `display: none` also removes it from the tab order. Read sessionStorage via `useSyncExternalStore` (`getServerSnapshot` is playing) only to keep the html pause attribute in sync after toggles. A parser-blocking head script sets `data-logo-paused` before first paint; `useLayoutEffect` is only for toggles after hydration. `useLayoutEffect` alone cannot prevent a first-paint spin.
+- **Do not bind `aria-checked` / `aria-label` to `useSyncExternalStore`.** `getServerSnapshot` is playing, so React would paint `motion: on` / `aria-checked="true"` on hydrate and warn (or flip the AX name) even with `suppressHydrationWarning`. Key both off `html[data-logo-paused]` from the head bootstrap and a parser-blocking sibling script. CSS already picks the visible word from the same attribute.
+- **Do not let the first layout effect undo the head-script pause.** Hydration still renders `paused=false` (`getServerSnapshot`). Applying that snapshot would remove `data-logo-paused` for a frame, then re-pause at a random angle. Apply `getSnapshot()` in the effect. `suppressHydrationWarning` on `<html>` because the attribute is set before React hydrates. Parser-blocking `<script dangerouslySetInnerHTML>` in `<head>` — not `next/script` `beforeInteractive`, which does not block first paint.
+- **Decorative globe stays `pointer-events: none`.** The lockup no longer hosts a control, so do not wrap the mark in `.lf-logo-lockup`.
+
+## House logo / lockup (2026-09-26)
+
+- **House wordmark must fit its slot.** Resting `scrollWidth` stays inside the slot at 320–1440. Chakra Petch 600 at `-0.01em` is wider than Space Grotesk 600 at `-0.045em`, so the cap is `11.5rem` / `16.5cqi` (0.961 of the old `12rem` / `17.2cqi`). Do not clip the last glyph. Keep a plain-text `h1` so rest matches the base.
+- **Title-card LogoMark is `aria-hidden`.** The `h1` wordmark is the name. Do not also `aria-label` the SVG next to it. Keep `#lf-ring` / `#lf-core` ids; `LogoGlobe` wraps `layer="ring"` + `layer="core"`.
+- **Coin spin lives on the shared wrapper, not the core.** Owner override of house "No 3D", scoped to the title-card mark. `.lf-logo-globe-spin` is `rotateY` 12s linear infinite; `.lf-logo-globe-core` stays `animation: none; transform: none` so ring and core cannot drift. Perspective is `8rem` on the reserved box (parent of the transform) — 4× the 2rem mark. Do not use `cqw` on the same element as `container-type`; it is not a query container for itself and `400cqw` resolved to the viewport (~180×, a flat squash). Pause via `html[data-lf-signal-cut="active"]` and `html[data-logo-paused="true"]`.
+- **House wordmark entrance is opacity only.** `houseLockup` is 700ms `opacity: 0 → 1`. Do not animate `letter-spacing`. Resting tracking is `-0.01em` on Chakra Petch 600 (was `-0.045em` on Space Grotesk). Instant under `prefers-reduced-motion`.
+- **`houseMetadata()` must set `openGraph.images`.** Nested house routes replace the inherited `openGraph` object, which drops the file-convention `og:image`. Point `images` at `/opengraph-image`. Do not put `opengraph-image` at `app/` root or it inherits onto `/keeganmoody33`. Person stays `/og.jpg`.
 
 ## Schema
+
 - Multiple SQL files in repo root reference wrong column names. Always verify against live Supabase schema before writing SQL.
 - The live table is `candidate_profile` (singular), NOT `candidate_profiles` (plural).
 - experiences table uses `public_bullets` (not `bullet_points`, not `key_deliverables`).
+- The live schema can be substantially narrower than committed documentation. On 2026-08-22, `experiences`, `skills`, and `gaps_weaknesses` lacked the documented `metrics`, `description`, `company_stage`, `company_funding`, `company_industry`, `exit_reason`, `verification_status`, `verification_sources`, `is_featured`, `years_experience`, `notes`, `created_at`, and `gap_name`-style columns.
+- A migration was authored twice against columns that never existed and would have aborted. Introspect the live PostgREST OpenAPI document at `/rest/v1/` first, then write migration SQL from the observed schema instead of trusting committed docs.
 
 ## Process
+
 - Never paste API keys in chat or AI interfaces.
 - Update progress.txt after every completed feature.
 - Reference canonical docs by name in prompts, not by describing them.
@@ -15,19 +48,33 @@ Updated: 2026-02-10
 - **Don't reference files that don't exist yet.** FEATURE_FLAGS.md was referenced in IMPLEMENTATION_PLAN.md before it was created. Remove references until the file exists.
 
 ## Content Source of Truth
+
 - **The resume (`profile/KMOODY_02-2026_RESUME.md`) is the single source of truth for experience content** — role titles, company names, dates, and bullet text. Do not overwrite or regenerate experience markdown files (e.g. `experiences/01-mixmax.md`, `02-mobb-ai.md`) from other sources (e.g. `role_templates_public_private.md`) without aligning to the resume first. We introduced wrong Mixmax bullets and wrong Mobb AI dates by regenerating from `role_templates_public_private.md` instead of the resume.
 - When in doubt about role dates or bullet text, check the resume before making changes. It is the most current and verified document.
 - **The portfolio chat reads only from the Supabase database** (`candidate_profile`, `experiences.public_bullets`, `ai_instructions`, etc.) — it does NOT read `experiences/*.md` or any markdown files. Editing experience markdown does not change chat behavior or sentiment. Only DB content and `ai_instructions` rows control what the chat says.
 
 ## Patterns
+
 - API proxy pattern: browser → Next.js route handler (keeps keys server-side) → external API. All new API integrations follow this pattern.
 - All components are 'use client' and live in portfolio-site/components/.
 - PostHog tracking is added to every API route and interactive component.
-- **When a component calls an API route, pass `X-POSTHOG-DISTINCT-ID: posthog.get_distinct_id()` in the request headers.** Chat.tsx and JDAnalyzer.tsx both do this. RecentDigs.tsx was built without it — server-side events silently fell back to `'anonymous_server'` instead of the real user. The fetch worked fine, so the bug was invisible unless you checked PostHog. Treat header forwarding as part of the API proxy contract, not optional.
+- **When a component calls an API route, pass PostHog headers with `getPostHogDistinctIdHeader()` from `lib/posthog-client.ts`.** Chat.tsx, JDAnalyzer.tsx, GitHubActivity.tsx, and Marquee.tsx need the `X-POSTHOG-DISTINCT-ID` contract so server-side events don't silently fall back to `'anonymous_server'`. Do not call `posthog.get_distinct_id()` directly in page-load fetches; PostHog may not be initialized yet, and local/dev can otherwise send the literal string `'undefined'`.
+- **Avoid non-deterministic values during SSR/client render.** `GitHubActivity` used `Math.random()` for loading skeleton bar heights, causing React hydration mismatches because the server-rendered styles did not match the client render. Use stable constants for skeleton variation.
+- **Use `useId()` for DOM ids that must be stable across SSR and hydration.** `YouTubePlayer` originally generated the hidden iframe container id with `Math.random()`, which produced a different server/client `id` and caused a hydration warning even though playback still worked.
 - **Check Tailwind config before adding inline styles.** `font-mono` was already mapped to Roboto Mono in `tailwind.config.js`. The first pass used inline `fontFamily` which worked but violated the project's no-inline-styles rule and duplicated config. Always grep tailwind.config for existing mappings first.
 - **Error boundaries are the one exception to "no class components."** React requires error boundaries to be class components — there is no hook equivalent. When wrapping third-party or async widgets, add a lightweight error boundary that renders `null` on failure so a single widget crash never takes down the page.
+- **`aria-hidden` does not remove descendants from the tab order.** BannerRotator kept inactive YouTube/GitHub panels mounted (`opacity-0`) for iframe audio. That left play/link controls focusable behind `aria-hidden` (axe `aria-hidden-focus`). Pair `aria-hidden` with `inert` on every inactive or hidden panel; drop `inert` when the panel is active. Do not render `aria-hidden="false"` on the active panel (`suppress || undefined`).
+- **A hidden YouTube iframe is still in the tab order.** `aria-hidden` + `pointer-events: none` on the 1×1 wrapper does not stop Tab from entering the IFrame API embed (first stop on `/keeganmoody33`, five stops with Now Playing active). Set `inert` on the wrapper and `tabIndex = -1` on `player.getIframe()` in `onReady`. Leave the visible Play/Pause outside the wrapper so audio still works.
+- **Do not leave a stale Now Playing slide after 100/101/150.** Those codes (and 2/5) mean this video cannot play. Call `nextVideo()` and increment the streak only from a real `onError`. After 3 in a row, or the playlist length if shorter, `setError(true)`. Reset the streak on `onReady` and PLAYING. Do not restart a fresh 10s on every BUFFERING/CUED — slow networks false-drop, and churn extends recovery forever. After a skip, deadline is `now + 10s`; the first BUFFERING/CUED/new id extends to a hard cap of `errorTime + 25s`; later signals do not move that cap. Only PLAYING clears the stall (2b: BUFFERING at 2.5s then PLAYING still stays; BUFFERING held 12s then PLAYING also stays). A hung BUFFERING drops at the cap. Keep the iframe mounted while skipping so `inert` / `tabIndex=-1` stay in place. Do not focus rotator dots — they unmount when one slide is left. Do not flush focus in a microtask while Play is still mounted (that target unmounts and focus falls to body). Do not `focus()` a leftover slide while it is still `inert` — the browser rejects it and dumps to body. Skip `[data-now-playing]` / Play / Pause; keep the handoff pending until the leftover `[data-banner-panel]` is active. Use the rotator (`tabIndex={-1}`) only when a leftover slide will survive; focusing it on a full collapse dumps to body. Then nav. Mount `#yt-now-playing-live` empty at page load via React (`sr-only` must be in the Tailwind content scan — `lib/` was missing, so the announcement rendered as visible text under the footer). While recovering, dim Play with `aria-disabled`/`aria-busy`, show "Track unavailable, skipping…", blank the author, drop Play `hover:` lime, and use `cursor-not-allowed`. Do not treat `document.body` as lost Play — a mouse click then scroll leaves focus on body, and a handoff plus `focus()` without `preventScroll` jumps `scrollY` 800→0 on every drop path. Arm the handoff when `activeElement` is anywhere inside the banner rotator (Now Playing slide or `[data-banner-dots]`); the dots unmount when one slide is left, so a focused "Switch to Now Playing" dot must hand off or focus falls to body. Do not arm for `body` or for nav / anything outside the rotator. Always `focus({ preventScroll: true })`. Do not scan `./lib/**` in Tailwind — catalog prose (`top-10`) emits unused utilities; keep `sr-only` safelisted and the live region in `components/`.
+- **Do not pad the rotator root.** `pr-12` / `md:pr-4` on the rotator shrinks the widget background and still lets 32px dots overlap `/ 7d` from 768–1311. Keep the bar full-bleed; pad panel *content* with `pr-16` only when dots are shown so two 24×24 hit areas (`right-3` + gap-1) clear widget text.
+- **Dot hit area ≠ visible dot.** A `p-1.5` button around an `h-1.5` span is only 18×18. Use a `h-6 w-6` flex hit box and keep the 6px span. Do not use negative margin to enlarge the target — that overlaps neighbors.
+- **Do not force career nav onto one row at 320.** UX passed wrap: items stay `whitespace-nowrap` (no mid-label break), the nav `flex-wrap`s into rows with `gap-x-3 gap-y-2`, and nothing overflows. Forcing `flex-nowrap` or shrinking type to fit one row is a regression.
+- **YouTube load timeout must start on mount.** A timeout inside Script `onLoad` never fires if the script stalls, so the skeleton can rotate 30s+. Start the 10s clock in a mount `useEffect`.
+- **Keep `<footer>` a sibling of `<main>`, not nested in it.** House 404 (`HouseShell`) already does this. `/keeganmoody33` had the contact footer inside `<main>`, which nests a contentinfo landmark in the main landmark. One `<main>` on the page; footer sits beside it.
+- **A rotator that keeps a null child still spends time on a blank slide.** `GitHubActivity` and `YouTubePlayer` return `null` on error; `BannerRotator` used to auto-cycle those empty slots (8s blank, 48px jump, dots on the marquee; both failing left two orphaned dots). Widgets must call `useBannerAvailability`; drop the slide and its dot. One panel = static, no dots. Zero panels = collapse the rotator. Do not rely on `ResizeObserver` once wrappers have `min-h-12` — that fakes height. `WidgetErrorBoundary` must also report unavailable, because a first-render throw never runs the child's `useEffect` cleanup.
 
 ## Component Architecture
+
 - **Never gate a `<Script>` tag behind loading state that the script itself resolves.** The YouTubePlayer had `<Script src="youtube.com/iframe_api">` inside the "ready" return path, but `isLoading` was only set to `false` by the `onReady` callback — which required the script to have loaded. Classic deadlock on cold loads. It only worked in dev because hot-reload kept `window.YT.Player` alive from the previous render. Fix: always render the `<Script>` and hidden iframe, use a ternary for the skeleton vs. controls below them.
 - **Don't read React state from callbacks that fire synchronously after `setState`.** `persistState` captured `playing` from its `useCallback` closure, then `onStateChange` called `setPlaying(true)` and immediately `persistState()`. The closure still held the old value because `setState` is async. Fix: read the authoritative value from the source-of-truth API (`player.getPlayerState()`) instead of React state. This also removes the state variable from the dependency array, making the callback a stable reference.
 - **Banner widgets should be single-row, inline-label layouts.** The original RecentDigs used `flex-1 aspect-square` covers (~250px each on desktop) with metadata text below, consuming massive vertical space. The fix: fixed-width thumbnails (72px desktop / 60px mobile), inline labels, no metadata text (title on hover). Same pattern for GitHubActivity: label + chart + push count all on one row.
@@ -35,17 +82,36 @@ Updated: 2026-02-10
 - **`YT.Player` replaces its target `<div>` with an `<iframe>`; `destroy()` removes it from the DOM entirely.** React doesn't know the element was removed (it happened outside the reconciler), so it won't re-create it. In strict mode (mount → cleanup → mount), `destroy()` in the cleanup leaves no container for the second `initPlayer()` call, causing silent failure. Fix: before calling `new YT.Player(id, ...)`, check `document.getElementById(id)` and re-create the element inside a wrapper ref if missing.
 
 ## Local Development
+
 - **The dev server serves the portfolio at `/`, not `/keeganmoody33`.** The `/keeganmoody33` path is a Vercel rewrite that only exists in production. Locally, navigate to `http://localhost:3000`. The `next.config.js` has no rewrites configured.
 
 ## Environment Variables
+
 - Env var names must match exactly between .env.local and code. DISCOGS_API_TOKEN in .env.local vs DISCOGS_TOKEN in code caused a silent failure -- the API call got `undefined` with no error.
+- **Discogs is a house surface.** `/api/discogs/collection` paginates the full crate for `/collection`. Do not re-add Recent Digs or `/api/discogs` (recent-5) to `/keeganmoody33`. Do not collapse the full-crate API into a recent-5 list.
+- **`DISCOGS_TOKEN` is optional** for the public `lecturesfrom` collection. Requiring it 500s `/collection` in previews that lack the env. User-Agent must be `lecturesfrom/1.0` on every Discogs request.
 
 ## Database Content Management
+
 - **Enriching DB bullets doesn't change the website display** — the Timeline component renders `public_bullets` as a joined paragraph. Adding more bullets to the array makes the paragraph longer on the site. If you want richer chat context without changing the website, you'd need a separate column (e.g. `chat_bullets`). For now, the enriched bullets serve both.
+- **Never execute SQL before an audit gate.** `DATABASE_UPDATES.md` was shipping `INSERT` statements with wrong column names (`company`, `role`, `description`, `honest_context`) and the wrong table name (`candidate_profiles`). Always cross-check markdown claims, mark verified vs. unverified metrics, and produce a single consolidated migration file for owner sign-off.
 - **Use `display_order >= 100` for chat-only rows.** Mercer University and Community Ambulance are in the database for AI chat context but shouldn't dominate the timeline. Camp Horizon is at 99, so anything 100+ sorts after it.
 - **When the Supabase MCP times out, the REST API still works.** `curl` against `NEXT_PUBLIC_SUPABASE_URL/rest/v1/` with the anon key is reliable for reads. For writes, you need either the MCP (with correct `project_ref` and `read_only=false`) or `psql` with the database password.
 - **Cross-verify Supabase data against the resume periodically.** Dates, titles, and bullet content drift over time as different sessions make different updates. The resume is the source of truth — run a comparison at least once a month.
 
 ## MCP / External Tool Config
+
 - **Supabase MCP `project_ref` must match `.env.local`.** The Cursor MCP config (`~/.cursor/mcp.json`) had `project_ref=krywcgrrrdpudysphgbp` while the actual project was `cvkcwvmlnghwwvdqudod`. This caused "Connection timeout" on SQL queries and "Project not found" on every other MCP call. The error messages gave no hint that the project ref was wrong — it looked like a network issue. When Supabase MCP fails, check `project_ref` in `~/.cursor/mcp.json` against `NEXT_PUBLIC_SUPABASE_URL` in `.env.local` first.
 - **Set `read_only=false` in the MCP URL if you need to write SQL.** The default Supabase MCP setup URL uses `read_only=true`, which silently blocks mutations. If you're planning to run INSERT/UPDATE/DELETE via MCP, flip it before you start.
+
+## Descoped Features
+
+- Worthy Reads widget and Alan Iverson chat persona were cancelled on 2026-07-24. Both have been removed from all planning docs. Do not reintroduce them without explicit request.
+
+## Edge Function Deployment
+
+- **`import { serve } from "https://deno.land/std@0.168.0/http/server.ts"` is deprecated.** Use the built-in `Deno.serve()` instead. The std/http server module was the old pattern; modern Deno has `Deno.serve` as a global. Both Edge Functions were updated 2026-07-24.
+- **Pin `@supabase/supabase-js` in Edge Functions.** The original used `@2` (floating major). Pin to a patch version (e.g. `@2.90.1`) for reproducibility — matches the version in package.json.
+- **`request.ip` is not in the standard `NextRequest` type.** Next.js exposes it at runtime but TypeScript doesn't know about it. Use `(request as NextRequest & { ip?: string }).ip` to access it without TS errors. The rate-limit.ts helper handles this; API routes that reference `request.ip` directly in PostHog properties need the same cast.
+- **In-memory rate limiting is a stopgap for Vercel.** Each serverless instance has its own memory, so rate limits won't be accurate across multiple instances. Acceptable for a low-traffic portfolio site. For production-grade, use Upstash Redis or Vercel KV.
+- **Always grep all docs after cancelling a feature.** Cancelling Worthy Reads + Alan Iverson required edits across 10+ files (PRD, IMPLEMENTATION_PLAN, BANNER_WIDGETS_SPEC, AURA_PROMPTS, AURA_PROMPTS_V2, DESIGN_PLAYBOOK, TURNTABLE_LOADING_SPEC, NAVIGATION_PATHWAYS_SPEC, HUMAN_MACHINE_TOGGLE_SPEC, lessons.md, progress.txt). The first subagent pass missed references in spec docs that weren't in the original task list. A final grep caught them.
