@@ -3,7 +3,7 @@
 **Last Updated:** 2026-09-27
 **Supersedes:** `docs/DESIGN_PLAYBOOK.md` (archived -- all content folded into this doc)
 **CSS Framework:** Tailwind CSS 3.4.19 + CSS Custom Properties
-**Fonts:** Google Fonts (Space Grotesk, Roboto Mono, Roboto Slab)
+**Fonts:** Google Fonts (Chakra Petch, Doto, Space Grotesk, Roboto Mono, Roboto Slab)
 
 ---
 
@@ -19,8 +19,8 @@
 
 **Two visual dialects. Do not homogenize.**
 
-- **House** (`/`, `/catalog`, `/collection`, `/legal`): near-black `#0a0a0a`, grotesque / tight-tracked meta, one accent = print orange `#E23D00`. Hairlines. No terminal chrome. No lime spray type. Display name always lowercase `lecturesfrom` (`lecturesfrom LLC` allowed in footer/legal). The line-mark on the title card is modest (`2rem`), `currentColor` / house ink, above the wordmark — not a hero graphic and not inside `.house-wordmark-slot`.
-- **Person** (`/keeganmoody33`): existing lime/orange terminal. Untouched except the wordmark becoming a SignalCut link to `/`.
+- **House** (`/`, `/catalog`, `/collection`, `/legal`): near-black `#0a0a0a`, grotesque / tight-tracked meta, one accent = print orange `#e23d00`. Display face is Chakra Petch 600 (wordmark, page-title h1/h2, `.house-spine-title`). Body on `.house` stays Space Grotesk. Meta stays Roboto Mono. Hairlines. No terminal chrome. No lime spray type. Display name always lowercase `lecturesfrom` (`lecturesfrom LLC` allowed in footer/legal). The line-mark on the title card is modest (`2rem`), `currentColor` / house ink, above the wordmark — not a hero graphic and not inside `.house-wordmark-slot`.
+- **Person** (`/keeganmoody33`): existing lime/orange terminal and Space Grotesk. Untouched except the wordmark becoming a SignalCut link to `/`. Do not apply house display type or house light tokens here.
 
 **Information density:** Sparse surface, dense on engagement. First screen is clean, intriguing, spacious. Interaction reveals depth.
 
@@ -72,6 +72,42 @@
 4. Hard shadows flip: lime on dark (`#CCFF00`), dark on light
 5. Dark mode is the primary experience; light mode is the alternative
 
+### House tokens (v3, Sep 27 2026)
+
+Dark is the live default on `.house` and on `html:has(.house)` (body and the scrollbar sit outside `.house`, so the six core colors are mirrored there). Light swaps those six when `data-theme="light"` is on `.house` (`html:has(.house[data-theme="light"])` mirrors them). No house control sets that attribute yet. Person light mode (`[data-theme="light"]` on the document, warm paper / olive) is a different palette.
+
+| Token | Dark | Light | Usage |
+|-------|------|-------|-------|
+| `--house-bg` | `#0a0a0a` | `#ffffff` | Page background |
+| `--house-ink` | `#ececec` | `#0a0a0a` | Primary text |
+| `--house-muted` | `#8a8a8a` | `#666666` | Meta labels |
+| `--house-dim` | `#7a7a7a` | `#757575` | Catalog numbers, footer nav |
+| `--house-line` | `#242424` | `#e3e3e3` | Hairlines only |
+| `--house-orange` | `#e23d00` | `#d73100` | The one key: hover, issue plates |
+
+Add-ons are the same in both modes. Defined, not applied to chrome. Cobalt has no job. Cable colors are for system diagrams only.
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--house-stripe-red` | `#ea4d30` | 1980 stripe |
+| `--house-stripe-orange` | `#ec7c3a` | 1980 stripe |
+| `--house-stripe-amber` | `#f1ac4b` | 1980 stripe |
+| `--house-key` | `#eca50b` | Open-window key |
+| `--house-lcd` | `#afc875` | LCD chip background |
+| `--house-lcd-ink` | `#0a0a0a` | Text on the LCD chip |
+| `--house-pad` | `#7f8085` | Hardware surfaces |
+| `--house-cable-audio` | `#b8c95e` | System diagrams |
+| `--house-cable-usb` | `#49b0d3` | System diagrams |
+| `--house-cable-midi` | `#ca77b3` | System diagrams |
+| `--house-cobalt` | `#2842ba` | No job yet |
+
+| Token | Value |
+|-------|-------|
+| `--house-font-display` | Chakra Petch |
+| `--house-font-mono` | Roboto Mono |
+| `--house-font-lcd` | Doto |
+| `--house-font-sans` | Space Grotesk |
+
 ---
 
 ## Design Tokens -- Typography
@@ -80,16 +116,19 @@
 
 | Role | Font | Weights | Usage |
 |------|------|---------|-------|
-| Headings + Body | Space Grotesk | 300, 400, 500, 600, 700 | H1-H3, hero text, paragraphs, descriptions |
-| UI / Code / Metadata | Roboto Mono | 300, 400, 500 | Tech pills, nav items, timestamps, buttons |
+| House display | Chakra Petch | 600 (400 and 700 loaded) | Wordmark, house page-title h1/h2, `.house-spine-title`. Tracking `-0.01em`. |
+| House body | Space Grotesk | 300, 400, 500, 600, 700 | Base on `.house`. Person headings and body. |
+| House LCD | Doto | 800 on `.house-lcd` (variable 100–900 loaded) | Sampler screen and lab readouts. No screen UI uses it yet. |
+| UI / Code / Metadata | Roboto Mono | 300, 400, 500 | Tech pills, nav items, timestamps, buttons, house meta |
 | Accent (available) | Roboto Slab | 300, 400, 500, 600 | Loaded but minimally used currently |
 
 ### Tailwind Font Families
 
 ```
-font-space: 'Space Grotesk', sans-serif   ← default body font
-font-mono: 'Roboto Mono', monospace       ← technical elements
-font-slab: 'Roboto Slab', serif           ← accent use
+font-space: 'Space Grotesk', sans-serif              ← person body, and the base on .house
+font-display: var(--house-font-display), sans-serif ← house display (Chakra Petch)
+font-mono: 'Roboto Mono', monospace                 ← technical elements
+font-slab: 'Roboto Slab', serif                     ← accent use
 ```
 
 ### Type Scale (from DESIGN_PLAYBOOK)
@@ -109,8 +148,8 @@ font-slab: 'Roboto Slab', serif           ← accent use
 
 ### Typography Rules
 
-1. Headlines in Space Grotesk Bold -- confident, geometric
-2. Body in Space Grotesk Regular -- readable, friendly
+1. Person headlines in Space Grotesk Bold. House page titles use `font-display font-semibold tracking-[-0.01em]` (Chakra Petch 600).
+2. Body in Space Grotesk Regular -- readable, friendly. House running text and meta stay Roboto Mono.
 3. Anything technical (buttons, chips, code, labels) in Roboto Mono
 4. Line height: 1.5 for body, 1.2 for headlines
 5. Max body width: 65ch for readable line length
@@ -250,8 +289,9 @@ Animated 60px x 60px grid pattern on body:
 | `.log-warn` | Orange log entry | `color: var(--accent-orange)` |
 | `.log-info` | Muted log entry | `color: var(--text-muted)` |
 | `.house-meta` | House metadata | Roboto Mono, 0.625rem, 0.22em tracking, uppercase |
+| `.house-lcd` | LCD chip | `--house-lcd` on `--house-lcd-ink`, Doto 800, `10px 16px` padding. Defined, unused. |
 | `.house-rail` | House top rail | Three columns; atl / issue / year always visible; gutters `px-6 sm:px-10` |
-| `.house-wordmark` | Root lockup | `min(12rem, 17.2cqi)` so `lecturesfrom` fits its slot; 12rem cap on desktop. Entrance is a 700ms opacity fade (`houseLockup`). Resting tracking stays `-0.045em` on a plain-text `h1`. Instant under `prefers-reduced-motion`. Slot `overflow-x: clip`. |
+| `.house-wordmark` | Root lockup | Chakra Petch 600, tracking `-0.01em`, `line-height: 0.85`. `min(11.5rem, 16.5cqi)` so `lecturesfrom` keeps the Space Grotesk width (0.961 of `min(12rem, 17.2cqi)`). Entrance is a 700ms opacity fade (`houseLockup`). Instant under `prefers-reduced-motion`. Slot `overflow-x: clip`. |
 | `.house-logo-mark` | Root mark box | `2rem` square, `aspect-ratio: 1`, reserves size before paint |
 | `.lf-logo-globe` | Logo mark box | Square `aspect-ratio: 1`; reserves size before paint (CLS 0). `perspective: 8rem` (4× the 2rem title-card mark) on this box. Title card wraps `LogoMark` `layer="ring"` + `layer="core"`. |
 | `.lf-logo-globe-spin` | Coin spin | Shared wrapper around both layers. `rotateY(0→360deg)` 12s linear infinite (west→east). `backface-visibility: visible`. Pauses on `html[data-lf-signal-cut="active"]` or `html[data-logo-paused="true"]` (either attribute; never `running`). `animation: none` under `prefers-reduced-motion`. Owner override of house "No 3D", scoped to this mark. |
@@ -404,11 +444,11 @@ Person-page components render the same layout across breakpoints.
 
 ## Dark/Light Mode
 
-- **Strategy:** Tailwind `class` dark mode + `data-theme` attribute on root
+- **Strategy:** Tailwind `class` dark mode + `data-theme` attribute on root for the person palette. House light is separate: `data-theme="light"` on `.house`.
 - **Default:** Dark mode
-- **Toggle:** Buttons in Activity Stream sidebar
+- **Toggle:** Person theme buttons live in the Activity Stream sidebar. House has no toggle.
 - **Persistence:** None currently (resets on page load)
-- **Implementation:** CSS custom properties swap all values when `[data-theme="light"]` is set
+- **Implementation:** Person CSS custom properties swap when `[data-theme="light"]` is set on the document. House core colors swap on `.house[data-theme="light"]` and `html:has(.house[data-theme="light"])`. Add-on house colors do not swap.
 
 ---
 

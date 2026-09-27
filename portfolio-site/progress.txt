@@ -1,3 +1,9 @@
+COMPLETED (2026-09-27 — House tokens v3):
+- Display face is Chakra Petch 600 (`--house-font-display`). Wordmark tracking `-0.01em`, size `clamp(2.4rem, 14.2vw, 11.5rem)` and `min(11.5rem, 16.5cqi)`. Lockup fade and clip unchanged.
+- Page-title h1/h2 and `.house-spine-title` use `font-display`. `h2.house-meta` and `/keeganmoody33` stay Space Grotesk / Roboto Mono.
+- Add-on tokens (stripe, key, lcd, pad, cables, cobalt) and `.house-lcd` are defined and unused. Light mode is `.house[data-theme="light"]` plus the same six colors on `html:has(.house)` so body and the scrollbar track follow `--house-bg`. No house theme toggle.
+- Google Fonts import adds Chakra Petch and Doto. Person lime theme unchanged.
+
 COMPLETED (2026-09-27 — MotionSwitch hydration: suppress on the button):
 - QA blocked #23 at 45f328b: in `next dev`, every HouseFooter route logged a React hydration mismatch on `<MotionSwitch>` `<button role=switch>` for `aria-checked` and `aria-label` (motion on and off). Cause: the sibling/head script writes those attributes; React props omit them; `suppressHydrationWarning` on `<html>` (layout.tsx) only covers that element's own attributes. A production `next start` build stays silent, which is why an earlier "0 console messages" claim was wrong.
 - Fix: `suppressHydrationWarning` on the switch button. Visible labels stay in CSS child spans (`aria-hidden`); the script does not rewrite children. React still does not declare `aria-checked` or `aria-label` — putting them on the vnode would make React own them and a post-toggle re-render would reset the DOM. Optional SSR defaults for JS-off `aria-required-attr` were skipped for that reason.

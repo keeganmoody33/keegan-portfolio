@@ -46,7 +46,7 @@ export default async function CollectionPage() {
       <HouseRail left="atl 33.70n" center="lf-00" right="live" />
       <div className="px-6 py-12 sm:px-10">
         <p className="house-meta">crate · lf-00 · issued</p>
-        <h1 className="mt-4 font-space text-4xl tracking-tight sm:text-6xl">collection</h1>
+        <h1 className="mt-4 font-display text-4xl font-semibold tracking-[-0.01em] sm:text-6xl">collection</h1>
         {collectionSleeve && (
           <p className="mt-3 max-w-xl font-mono text-sm text-[var(--house-muted)]">
             {collectionSleeve.notes}
