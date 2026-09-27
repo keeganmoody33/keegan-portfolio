@@ -1,5 +1,5 @@
 COMPLETED (2026-09-27 — logo orbit inset):
-- `#lf-core` is `scale(0.84)` in `brand/lecturesfrom-mark.svg` and `LogoMark`. The orbit no longer shares the ring radius. Inner paths scale with it. Ring, stroke `0.0625`, and group ids unchanged.
+- `#lf-core` is `scale(0.74)` in `brand/lecturesfrom-mark.svg` and `LogoMark`. The orbit no longer shares the ring radius. Inner paths scale with it. Ring, stroke `0.0625`, and group ids unchanged.
 - Regenerated `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`, and `brand/house-share.png`.
 
 COMPLETED (2026-09-27 — House tokens v3):
