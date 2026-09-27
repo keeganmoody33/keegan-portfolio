@@ -4,7 +4,7 @@
 Letterforms are filled outlines (not offset strokes, not a live font).
 Weight and roundness follow Cooper Black / Souvenir Bold as references.
 Metrics from the Hathaway brief: stem ~24% of x-height, ascenders ~1.3x,
-1–2% neighbour kiss, o-dot as the only flourish.
+≤1% neighbour kiss, o-dot as the only flourish.
 """
 
 from __future__ import annotations
@@ -26,8 +26,14 @@ XH_TOP = BASE - XH  # 30
 R = STEM / 2.0  # 12
 BULB = R * 1.18  # slightly bulbous terminals vs a round-cap stroke
 SHADOW_STEP = 4.0
-KISS = 1.7  # ~1–2% of a typical bowl width
+KISS_PCT = 0.01  # CD: 1% overlap at most
+N_WIDTH = 94.0  # one n/u arch; m is two of these sharing a stem
 QUAD = 48
+
+FACE_INK = "#ececec"  # --house-ink on dark
+SHADOW_NEAR = "#8A8A8A"  # --house-muted
+SHADOW_MID = "#5A5A5A"
+SHADOW_FAR = "#333333"
 
 OUT_DIR = Path(__file__).resolve().parents[1] / "public" / "brand"
 
@@ -113,18 +119,29 @@ def letter_l():
 
 
 def letter_e():
-    """Round 70s e: heavy left, open eye, bar locked into the ring walls."""
+    """Open-aperture e: horizontal bar, lower-right mouth. Not a theta / closed o."""
     cx, cy = 52.0, XH_TOP + XH / 2.0
     r_out = 52.0
-    r_in = 33.0
+    r_in = 32.5
     outer = disc(cx, cy, r_out)
-    inner = disc(cx + 4.0, cy - 1.0, r_in)
+    inner = disc(cx + 3.0, cy - 2.0, r_in)
     ring = outer.difference(inner)
+    # Bite only the lower right so the eye stays above the bar and the mouth is open.
+    a0, a1 = 18.0, 80.0
+    opening = pie(cx + 1.0, cy, r_out + 22.0, a0, a1)
+    body = ring.difference(opening)
     bar_h = 13.0
-    bar_y = cy - 4.0
-    # Bar must overlap the ring walls or it floats as a second polygon inside the eye.
-    bar = round_rect(cx - r_out + 10.0, bar_y, cx + r_out - 6.0, bar_y + bar_h, bar_h * 0.42)
-    return inflate(ring.union(bar), 0.55)
+    bar_y = cy - 5.0
+    # Bar locks into the left wall and ends as the upper lip of the aperture.
+    bar = round_rect(cx - r_out + 10.0, bar_y, cx + r_out - 3.0, bar_y + bar_h, 5.0)
+    spine = (r_out + r_in) / 2.0
+    top_term = disc(cx + r_out - 9.0, bar_y + bar_h / 2.0, 8.8)
+    bot_term = disc(
+        cx + spine * math.cos(math.radians(a1)),
+        cy + spine * math.sin(math.radians(a1)),
+        9.0,
+    )
+    return inflate(unary_union([body, bar, top_term, bot_term]), 0.4)
 
 
 def letter_c():
@@ -172,8 +189,9 @@ def letter_f():
 
     bar_h = 14.0
     bar_y = XH_TOP
-    bar = round_rect(1.0, bar_y, 56.0, bar_y + bar_h, 5.2)
-    bar_term = disc(53.5, bar_y + bar_h / 2.0, 8.6)
+    # Bar starts at the stem — no left overhang into s. Right terminal may kiss r.
+    bar = round_rect(stem_x + 1.5, bar_y, 58.0, bar_y + bar_h, 5.2)
+    bar_term = disc(55.5, bar_y + bar_h / 2.0, 8.6)
 
     # Arc centre in the stem cap; sweep over the top and end to the right.
     hx = stem_x + STEM * 0.20
@@ -197,12 +215,12 @@ def letter_f():
 
 
 def letter_u():
-    """Inverted n: round trough, two even stems, open at the top."""
-    w = 92.0
+    """Inverted n: round trough, two even stems, open at the top. Same arch as m."""
+    w = N_WIDTH
     g = n_arch(w, 0.0, XH, STEM)
     g = affinity.scale(g, xfact=1.0, yfact=-1.0, origin=(w / 2.0, XH / 2.0))
     g = affinity.translate(g, yoff=XH_TOP)
-    return inflate(g, 0.6)
+    return inflate(g, 0.5)
 
 
 def letter_r():
@@ -221,29 +239,27 @@ def letter_r():
 
 
 def letter_s():
-    r_out = 30.0
-    wall = THIN + 0.5
+    """Overlapping offset bowls so the waist is a continuous S-spine, not two C's.
+
+    Outer terminals only — discs at the inner cuts blob the spine into an 8.
+    """
+    r_out = 33.0
+    wall = THIN + 0.6
     r_in = r_out - wall
-    u_cx, u_cy = 36.0, XH_TOP + 31.5
-    l_cx, l_cy = 50.0, BASE - 31.5
-    # Upper bowl opens right; lower bowl opens left. Matching round terminals.
-    upper = disc(u_cx, u_cy, r_out).difference(disc(u_cx + 2.4, u_cy, r_in))
-    upper = upper.difference(pie(u_cx, u_cy, r_out + 12.0, -44.0, 56.0))
-    lower = disc(l_cx, l_cy, r_out).difference(disc(l_cx - 2.4, l_cy, r_in))
-    lower = lower.difference(pie(l_cx, l_cy, r_out + 12.0, 136.0, 236.0))
-    spine_u = (r_out + r_in) / 2.0
-    spine_l = (r_out + r_in) / 2.0
-    t_r = 10.8
+    u_cx, u_cy = 30.0, XH_TOP + 32.5
+    l_cx, l_cy = 54.0, BASE - 32.5
+    upper = disc(u_cx, u_cy, r_out).difference(disc(u_cx + 2.4, u_cy - 0.7, r_in))
+    upper = upper.difference(pie(u_cx, u_cy, r_out + 18.0, -50.0, 78.0))
+    lower = disc(l_cx, l_cy, r_out).difference(disc(l_cx - 2.4, l_cy + 0.7, r_in))
+    lower = lower.difference(pie(l_cx, l_cy, r_out + 18.0, 102.0, 230.0))
+    spine_r = (r_out + r_in) / 2.0
+    t_r = 10.0
     caps = [
-        disc(u_cx + spine_u * math.cos(math.radians(-44.0)), u_cy + spine_u * math.sin(math.radians(-44.0)), t_r),
-        disc(u_cx + spine_u * math.cos(math.radians(56.0)), u_cy + spine_u * math.sin(math.radians(56.0)), t_r),
-        disc(l_cx + spine_l * math.cos(math.radians(136.0)), l_cy + spine_l * math.sin(math.radians(136.0)), t_r),
-        disc(l_cx + spine_l * math.cos(math.radians(236.0)), l_cy + spine_l * math.sin(math.radians(236.0)), t_r),
+        disc(u_cx + spine_r * math.cos(math.radians(-50.0)), u_cy + spine_r * math.sin(math.radians(-50.0)), t_r),
+        disc(l_cx + spine_r * math.cos(math.radians(230.0)), l_cy + spine_r * math.sin(math.radians(230.0)), t_r),
     ]
-    # Thin waist where the bowls meet — filled connection, no extra blob above x-height.
-    waist = disc((u_cx + l_cx) / 2.0, (u_cy + l_cy) / 2.0, 10.2)
-    face = unary_union([upper, lower, waist, *caps])
-    return inflate(clip_y(face, XH_TOP - 1.5, BASE + 1.5), 0.45)
+    face = unary_union([upper, lower, *caps])
+    return inflate(clip_y(face, XH_TOP - 1.5, BASE + 1.5), 0.4)
 
 
 def letter_o():
@@ -279,12 +295,12 @@ def n_arch(w: float, y_top: float, y_bot: float, wall: float = STEM):
 
 
 def letter_m():
-    """Two full, even arches sharing a middle stem. Not rn, not a clipped round-rect."""
-    unit = 80.0
+    """Two full even arches, each the same width as the u/n counter. Not rn."""
+    unit = N_WIDTH
     wall = STEM
     left = n_arch(unit, XH_TOP, BASE, wall)
     right = affinity.translate(n_arch(unit, XH_TOP, BASE, wall), xoff=unit - wall)
-    return inflate(left.union(right), 0.5)
+    return inflate(left.union(right), 0.45)
 
 
 MAKERS = {
@@ -333,47 +349,93 @@ def _ink_overlap(a, b) -> float:
     return inter.area
 
 
-def _band(g, y0, y1):
-    band = g.intersection(box(-8000.0, y0, 8000.0, y1))
-    return band
+def _mid_band(g):
+    """Facing edges at x-height, including t/f bars, excluding ascender hooks and baseline bulbs."""
+    return g.intersection(box(-8000.0, XH_TOP + 3.0, 8000.0, BASE - 16.0))
+
+
+def _left_stem(g):
+    """Vertical ink in the left of the glyph, below the x-height bar — the stem, not a crossbar."""
+    minx, _, _, _ = g.bounds
+    return g.intersection(box(minx - 1.0, XH_TOP + 22.0, minx + 38.0, BASE + 2.0))
+
+
+def _contact_left(g, ch: str) -> float:
+    if ch == "f":
+        stem = _left_stem(g)
+        if not stem.is_empty:
+            return stem.bounds[0]
+    band = _mid_band(g)
+    if band.is_empty:
+        return g.bounds[0]
+    return band.bounds[0]
+
+
+def _contact_right(g, ch: str) -> float:
+    band = _mid_band(g)
+    if band.is_empty:
+        return g.bounds[2]
+    return band.bounds[2]
+
+
+def _contact_overlap(prev, trial, prev_ch: str, ch: str) -> float:
+    return _contact_right(prev, prev_ch) - _contact_left(trial, ch)
 
 
 def place_with_kiss(prev, geom, ch: str, prev_ch: str):
-    """Nudge until a 1–2% bowl/baseline kiss. No weld discs. No merged blobs."""
-    # Kiss in the x-height band so an f hook / t bar cannot fake a bbox overlap.
-    prev_k = _band(prev, XH_TOP + 6.0, BASE - 4.0)
-    geom_k = _band(geom, XH_TOP + 6.0, BASE - 4.0)
-    if prev_k.is_empty or geom_k.is_empty:
-        prev_k, geom_k = prev, geom
-    width = geom_k.bounds[2] - geom_k.bounds[0]
-    prev_w = prev_k.bounds[2] - prev_k.bounds[0]
-    x_flush = prev_k.bounds[2] - geom_k.bounds[0]
-    round_pair = prev_ch in "ecos" and ch in "ecos"
-    goal_bbox = min(width, prev_w) * (0.010 if round_pair else 0.014)
-    goal_bbox = min(max(goal_bbox, 0.9), 2.2 if round_pair else 2.6)
-    high_band = box(-4000.0, -80.0, 4000.0, XH_TOP - 0.5)
-    best_x = x_flush - goal_bbox
-    best_score = 1e9
-    max_ink = 6.0 if round_pair else 8.5
-    for i in range(-40, 28):
-        dx = i * 0.25
-        trial = affinity.translate(geom, xoff=x_flush + dx)
-        ov = _ink_overlap(prev, trial)
-        trial_k = _band(trial, XH_TOP + 6.0, BASE - 4.0)
-        bbox_ov = prev_k.bounds[2] - (trial_k.bounds[0] if not trial_k.is_empty else trial.bounds[0])
+    """Just-touch in the contact band, then bite 1% of the larger letter.
+
+    f/r: full-glyph touch so the f bar may kiss r; stems stay separate.
+    """
+    prev_w = prev.bounds[2] - prev.bounds[0]
+    this_w = geom.bounds[2] - geom.bounds[0]
+    cap = max(prev_w, this_w) * KISS_PCT
+    use_band = not (prev_ch == "f" and ch == "r")
+
+    def pieces(p, g, gch):
+        if not use_band:
+            return p, g
+        a = _mid_band(p)
+        b = _left_stem(g) if gch == "f" else _mid_band(g)
+        if a.is_empty or b.is_empty:
+            return p, g
+        return a, b
+
+    x_deep = prev.bounds[0] - geom.bounds[0]
+    x_gap = prev.bounds[2] - geom.bounds[0] + 16.0
+    lo, hi = x_deep, x_gap
+    touch_x = x_gap
+    for _ in range(36):
+        mid = (lo + hi) / 2.0
+        trial = affinity.translate(geom, xoff=mid)
+        a, b = pieces(prev, trial, ch)
+        if _ink_overlap(a, b) > 0.0 or a.distance(b) <= 1e-6:
+            lo = mid
+            touch_x = mid
+        else:
+            hi = mid
+
+    kiss_x = touch_x - cap
+    trial = affinity.translate(geom, xoff=kiss_x)
+
+    if prev_ch == "f" and ch == "r":
+        while _ink_overlap(_left_stem(prev), _left_stem(trial)) > 0.04:
+            kiss_x += 0.12
+            trial = affinity.translate(geom, xoff=kiss_x)
+            if kiss_x > touch_x + 4.0:
+                break
+
+    if prev_ch == "s" and ch == "f":
+        high_band = box(-4000.0, -80.0, 4000.0, XH_TOP - 0.5)
         high = prev.intersection(trial).intersection(high_band)
-        high_a = 0.0 if high.is_empty else high.area
-        if prev_ch == "s" and ch == "f" and high_a > 0.5:
-            continue
-        score = abs(bbox_ov - goal_bbox) + abs(ov - 1.4) * 0.4
-        if ov > max_ink:
-            score += (ov - max_ink) * 3.0
-        if ov < 0.08:
-            score += 14.0
-        if score < best_score:
-            best_score = score
-            best_x = x_flush + dx
-    return affinity.translate(geom, xoff=best_x)
+        n = 0
+        while not high.is_empty and high.area > 0.5 and n < 40:
+            kiss_x += 0.12
+            trial = affinity.translate(geom, xoff=kiss_x)
+            high = prev.intersection(trial).intersection(high_band)
+            n += 1
+
+    return trial
 
 
 def build_word(word: str = "lecturesfrom"):
@@ -400,28 +462,6 @@ def build_word(word: str = "lecturesfrom"):
         xs.append(x)
         prev_ch = ch
 
-    high_band = box(-4000.0, -80.0, 4000.0, XH_TOP - 0.5)
-    for i in range(1, len(placed_bodies)):
-        nudge = 0.0
-        for _ in range(36):
-            ov = placed_bodies[i - 1].intersection(placed_bodies[i])
-            area = 0.0 if ov.is_empty else ov.area
-            if area >= 0.45:
-                break
-            trial = affinity.translate(placed_bodies[i], xoff=-0.30)
-            high = placed_bodies[i - 1].intersection(trial).intersection(high_band)
-            if not high.is_empty and high.area > 0.5:
-                break
-            if _ink_overlap(placed_bodies[i - 1], trial) > 9.0:
-                break
-            placed_bodies[i] = trial
-            nudge -= 0.30
-        if nudge:
-            xs[i] += nudge
-            for j in range(i + 1, len(placed_bodies)):
-                placed_bodies[j] = affinity.translate(placed_bodies[j], xoff=nudge)
-                xs[j] += nudge
-
     dots = []
     boxes = {}
     for i, (ch, geom, dot) in enumerate(raw):
@@ -439,19 +479,19 @@ def build_word(word: str = "lecturesfrom"):
 def svg_wrap(path_d: str, vb, small: bool) -> str:
     vx, vy, vw, vh = vb
     if small:
-        steps = [(SHADOW_STEP, "#7A7A7A")]
+        steps = [(SHADOW_STEP, SHADOW_MID)]
     else:
         steps = [
-            (SHADOW_STEP * 3, "#A8A8A8"),
-            (SHADOW_STEP * 2, "#7A7A7A"),
-            (SHADOW_STEP * 1, "#4A4A4A"),
+            (SHADOW_STEP * 3, SHADOW_FAR),
+            (SHADOW_STEP * 2, SHADOW_MID),
+            (SHADOW_STEP * 1, SHADOW_NEAR),
         ]
     uses = []
     for off, color in steps:
         uses.append(
             f'    <use href="#lf-wordmark-face" x="{off:.2f}" y="{off:.2f}" fill="{color}"/>'
         )
-    uses.append('    <use href="#lf-wordmark-face" fill="#111111"/>')
+    uses.append(f'    <use href="#lf-wordmark-face" fill="{FACE_INK}"/>')
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg"
      viewBox="{vx:.2f} {vy:.2f} {vw:.2f} {vh:.2f}"
@@ -461,8 +501,8 @@ def svg_wrap(path_d: str, vb, small: bool) -> str:
   <title>lecturesfrom</title>
   <!-- Custom lowercase lecturesfrom, drawn as filled outline path data (not a live font).
        Cooper Black / Souvenir Bold used only as weight and roundness references.
-       Stem ~24% of x-height, ascenders ~1.3×, o center dot, 1–2% neighbour kiss.
-       Face #111111 with equal 4% down-right shadow steps (print layers, not extrusion). -->
+       Stem ~24% of x-height, ascenders ~1.3×, o center dot, ≤1% neighbour kiss.
+       Dark house: face house-ink #ececec, steps #8A8A8A / #5A5A5A / #333333. -->
   <defs>
     <path id="lf-wordmark-face" d="{path_d}"/>
   </defs>
@@ -482,7 +522,19 @@ def main() -> None:
         ov = _ink_overlap(bodies[i - 1], bodies[i])
         high = bodies[i - 1].intersection(bodies[i]).intersection(high_band0)
         high_a = 0.0 if high.is_empty else high.area
-        print(f"  {word[i - 1]}{word[i]} ink={ov:.2f} high={high_a:.2f}")
+        prev_w = bodies[i - 1].bounds[2] - bodies[i - 1].bounds[0]
+        this_w = bodies[i].bounds[2] - bodies[i].bounds[0]
+        bbox_ov = bodies[i - 1].bounds[2] - bodies[i].bounds[0]
+        cov = _contact_overlap(bodies[i - 1], bodies[i], word[i - 1], word[i])
+        dist = bodies[i - 1].distance(bodies[i])
+        print(
+            f"  {word[i - 1]}{word[i]} ink={ov:.2f} dist={dist:.3f} high={high_a:.2f} "
+            f"contact%={100 * cov / max(1, max(prev_w, this_w)):.1f} "
+            f"bbox%={100 * bbox_ov / max(1, max(prev_w, this_w)):.1f}"
+        )
+    f_body = bodies[word.index("f")]
+    r_after_f = bodies[word.index("f") + 1]
+    print("f/r stem ink (should be 0):", round(_ink_overlap(_left_stem(f_body), _left_stem(r_after_f)), 3))
 
     minx, miny, maxx, maxy = face.bounds
     face = affinity.translate(face, xoff=-minx, yoff=-miny)

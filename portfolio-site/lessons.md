@@ -5,13 +5,14 @@ Updated: 2026-09-27
 ## Brand / wordmark
 
 - Draw the Hathaway `lecturesfrom` face as filled outlines, not offset capsules. Capsule/round-cap strokes read as Avant Garde / Futura, not Cooper Black / Souvenir.
-- `f` is an open arc hook curving right off the stem, plus a crossbar on the x-height, with a gap under the hook so it cannot enclose an eye. A stem + bar + disc finial reads as `t` with a stray dot (`lecturestrom`). A filled-c / oval hook unions with the stem and becomes a loop (same misread).
-- Do not weld neighbours with extra discs. Those become stray marks (especially between `s` and `f` above x-height). Kiss at bowls/baseline with ~1–2% overlap; if ink does not meet, nudge the later letter, never add a blob.
-- `m` is two even n-arches sharing a stem, not one round-rect (a wide round-rect clips the top-right and reads as `rn`).
+- `e` is an open-aperture e: horizontal crossbar, lower-right mouth open, one eye above the bar. A closed ring with a bar reads as θ or o (v3 mistake). The bar must still overlap the left wall or evenodd leaves it as a second polygon inside the eye.
+- `s` is two offset bowls with a continuous S-channel. Inner discs at the waist blob the spine into an 8; a separate diagonal bar splits it into two C's. Outer terminals only.
+- `f` is an open arc hook curving right off the stem, plus a crossbar on the x-height, with a gap under the hook so it cannot enclose an eye. A stem + bar + disc finial reads as `t` with a stray dot (`lecturestrom`). Do not extend the f bar left of the stem — that is the 8% s-f overlap. The f crossbar may kiss `r`; the stems never merge (measure stem-stem ink, not bbox).
+- Do not weld neighbours with extra discs. Those become stray marks (especially between `s` and `f` above x-height). Kiss at the contact band: just-touch then 1% of the larger letter. CD 1% max wins over the brief's 1–2%. Round-letter bbox can still read 1–4% because extrema are not the tangent.
+- `m` is two even n-arches sharing a stem, each the same width as `u`/`n`. A wide round-rect clips and reads as `rn`.
 - `c` terminals are matching round discs on the cut, not stretched teardrops.
-- Keep e/o counters open at 32px: bowl walls ~17–20% of x-height (stems stay 24%). A theta `e` whose bar overlaps the ring walls beats a two-hole `e` (that reads as 8) and beats a floating pill bar (evenodd island).
-- The e-bar must overlap the ring walls or evenodd leaves it as a second polygon inside the eye.
-- Shadow must be equal `<use>` translations, not a tapered extrusion. Face `#111111` then `#4A4A4A` `#7A7A7A` `#A8A8A8`. One `#7A7A7A` step under 24px.
+- Keep e/o counters open at 32px: bowl walls ~17–20% of x-height (stems stay 24%).
+- Shadow must be equal `<use>` translations, not a tapered extrusion. Site is dark (`#0a0a0a`): face `--house-ink` `#ececec`, then `#8A8A8A` / `#5A5A5A` / `#333333` outward. One `#5A5A5A` step under 24px. Proofs render on `#0a0a0a`, not white. XML comments cannot contain `--` (breaks cairosvg); write `house-ink`, not `--house-ink`.
 - Union + evenodd: the o-dot is a second polygon inside the o hole. Do not evenodd-overlap letter bodies or they punch holes in each other.
 
 

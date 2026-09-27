@@ -1,3 +1,9 @@
+COMPLETED (2026-09-27 — Hathaway wordmark CD pass, assets only):
+- Open-aperture `e` (horizontal bar, lower-right mouth; not θ). `s` offset bowls with a clear S-spine, no inner waist discs. `f` bar does not overhang left of the stem; f/r stems stay unmerged (bar may kiss). `m` two even arches, same unit as `u`
+- Neighbour kiss: just-touch then 1% of the larger letter (CD 1% max). Face `#ececec` on `#0a0a0a`; shadow steps `#8A8A8A` / `#5A5A5A` / `#333333`. Small variant: one `#5A5A5A` step
+- Files: `public/brand/wordmark-hathaway.svg`, `public/brand/wordmark-hathaway-sm.svg`. Regenerator: `scripts/build-wordmark-hathaway.py`
+- Not wired. Header integration waits on PR #23 (`cursor/lf-logo-globe`) and Keegan PNG approval (stop rule 6)
+
 COMPLETED (2026-09-27 — lecturesfrom Hathaway wordmark redraw, assets only):
 - Redrew filled-outline letters: open `f` hook (no enclosed eye) + x-height crossbar, two even `m` arches, matching `c` terminals, no stray mark between `s` and `f`
 - Neighbour kiss at bowls/baseline in the x-height band (no weld discs). Face still one evenodd path + o-dot; same `<use>` shadow stack and small variant
