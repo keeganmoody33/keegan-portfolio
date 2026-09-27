@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
+import Script from 'next/script'
 import { PostHogProvider } from './providers'
 import { rootHouseMetadata } from '@/lib/metadata'
+import { JamMetadata } from './jam-metadata'
 import './globals.css'
 
 export const metadata: Metadata = rootHouseMetadata()
@@ -16,8 +18,20 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: LOGO_PAUSE_BOOTSTRAP }} />
+        <meta name="jam:team" content="1fa5e16b-202b-4eae-8b03-dbac1fcc4157" />
+        <Script
+          src="https://js.jam.dev/recorder.js"
+          type="module"
+          strategy="beforeInteractive"
+        />
+        <Script
+          src="https://js.jam.dev/capture.js"
+          type="module"
+          strategy="beforeInteractive"
+        />
       </head>
       <body className="antialiased min-h-screen">
+        <JamMetadata />
         <PostHogProvider>{children}</PostHogProvider>
       </body>
     </html>

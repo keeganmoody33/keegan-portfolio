@@ -17,6 +17,7 @@ All versions are pinned from `portfolio-site/package-lock.json`.
 | @upstash/redis | 1.35.6 | REST Redis client for the durable Discogs last-good snapshot |
 | posthog-js | 1.336.4 | Client-side analytics (components, page events) |
 | posthog-node | 5.21.2 | Server-side analytics (API routes via lib/posthog-server.ts) |
+| @jam.dev/sdk | 1.0.1 | Jam session recording metadata client |
 
 ---
 

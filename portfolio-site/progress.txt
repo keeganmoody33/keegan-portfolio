@@ -1,3 +1,7 @@
+COMPLETED (2026-09-27 — Jam recording instrumentation):
+- Added Jam team metadata and recorder/capture scripts to the root layout, beside the logo-pause bootstrap. `suppressHydrationWarning` on `<html>` stays.
+- Jam metadata records the current route only. The app has no user accounts or workspace identity source, so example IDs are not used as production data.
+
 COMPLETED (2026-09-27 — logo orbit inset):
 - `#lf-core` is `scale(0.74)` in `brand/lecturesfrom-mark.svg` and `LogoMark`. The orbit no longer shares the ring radius. Inner paths scale with it. Ring, stroke `0.0625`, and group ids unchanged.
 - Regenerated `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`, and `brand/house-share.png`.
