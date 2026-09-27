@@ -12,7 +12,7 @@
 
 | Route            | File                         | What It Shows                                                   |
 |------------------|------------------------------|-----------------------------------------------------------------|
-| `/`              | `app/(house)/page.tsx`               | House title card + crate (Server Component). LogoGlobe wraps LogoMark (ring + core) above the wordmark at the same 2rem size. The shared wrapper coins-spins the whole mark; core stays face-on. HouseFooter Motion switch (WCAG 2.2.2) pauses the spin via `html[data-logo-paused]`; hidden under reduced motion. Wordmark entrance is a 700ms opacity fade. No page turntable. No return-visit redirect. |
+| `/`              | `app/(house)/page.tsx`               | House title card + crate (Server Component). LogoGlobe wraps LogoMark (ring + core) above the wordmark at the same 2rem size. The shared wrapper coins-spins the whole mark; core stays face-on. HouseFooter Motion switch (WCAG 2.2.2) pauses the spin via `html[data-logo-paused]`. Root layout head script sets the attribute from `sessionStorage['lf-logo-paused']` before first paint; `useLayoutEffect` keeps it in sync after hydration/toggles. Hidden under reduced motion. Wordmark entrance is a 700ms opacity fade. No page turntable. No return-visit redirect. |
 | `/catalog`       | `app/(house)/catalog/page.tsx`       | Crate permalink (same spines as `/`)                            |
 | `/catalog/[slug]`| `app/(house)/catalog/[slug]/page.tsx`| Sleeve (cover, liner, tracks). Unknown slugs 404.               |
 | `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate                                         |

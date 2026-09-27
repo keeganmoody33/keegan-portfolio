@@ -35,7 +35,11 @@ function applyHtmlPaused(paused: boolean): void {
  * Lives in the shared house footer (not next to the decorative mark).
  * Renders on the server as motion: on so there is no hydration mismatch
  * or CLS. sessionStorage is read via useSyncExternalStore
- * (`getServerSnapshot` is always playing). Pause is CSS-only via
+ * (`getServerSnapshot` is always playing). A parser-blocking head script
+ * in `app/layout.tsx` sets `data-logo-paused` before first paint so the
+ * mark never spins then freezes. This layout effect keeps `<html>` in
+ * sync after hydration and toggles; it reads `getSnapshot()` so the
+ * first pass does not clear the pre-paint pause. Pause is CSS-only via
  * `html[data-logo-paused="true"]` — never inline `animation-play-state`,
  * never `running`, so SignalCut's `data-lf-signal-cut` pause still holds
  * after a user resume and vice versa.
@@ -45,7 +49,7 @@ export default function MotionSwitch() {
   const motionOn = !paused
 
   useLayoutEffect(() => {
-    applyHtmlPaused(paused)
+    applyHtmlPaused(getSnapshot())
   }, [paused])
 
   const onToggle = useCallback(() => {
