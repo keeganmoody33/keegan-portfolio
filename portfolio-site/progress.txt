@@ -1,3 +1,10 @@
+COMPLETED (2026-09-27 — Hathaway wordmark v6 from Fraunces outlines, assets only):
+- Method change: outlined Fraunces (SIL OFL) wght 900, SOFT 100, WONK 0, opsz 144. Did not redraw f/s/e/m/r skeletons
+- Custom only: neighbour kiss (1% max), solid o-dot, rounded serif ends. Face `#ececec` on `#0a0a0a`; steps `#C8C8C8` / `#A8A8A8` / `#8A8A8A`; small variant one `#A8A8A8` step
+- At 32px: stem 6.65px, shadow step 1.60px, total offset 4.79px (0.72 stem). 32px cold read is lecturesfrom
+- Source + OFL: `brand/fraunces/`. Regenerator: `scripts/build-wordmark-hathaway.py`. Hand-drawn generator archived as `scripts/build-wordmark-hathaway-handdrawn.py`
+- Files: `public/brand/wordmark-hathaway.svg`, `public/brand/wordmark-hathaway-sm.svg`. Not wired. Waits on PR #23 and Keegan PNG approval
+
 COMPLETED (2026-09-27 — Hathaway wordmark shadow colour update, assets only):
 - Face stays `--house-ink` `#ececec` on `#0a0a0a`. Shadow steps outward `#C8C8C8` / `#A8A8A8` / `#8A8A8A`. Small variant: one `#A8A8A8` step
 - 32px + 4x nearest proofs: first step reads as a distinct layer vs the face (stop-rule PASS). Did not invent colours
