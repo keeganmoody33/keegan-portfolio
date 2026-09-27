@@ -2,10 +2,38 @@
 
 Updated: 2026-09-27
 
+## Brand / nameplate wordmark (assets only)
+
+- The nameplate is Archivo Narrow Bold outlines, not a 70s serif. Hathaway/Fraunces files stay in the repo as a separate unused direction. Neither is the live lockup.
+- **Do not redraw letterforms.** Dump OFL outlines with fontTools. Only tracking (+2–4% em) and the hairline rule are custom.
+- **Pick the condensed face by 24px e/s counters, not by how tight it looks at display size.** Archivo Narrow Bold keeps those counters more open than Barlow Condensed 700. Barlow's heavier stem pinches the e-eye and s apertures at 24px.
+- **The nameplate rule is not a link underline.** Stroke = 1/6 of the `l` stem, inset half a stem from the left of `l` and the right of `m`, fill `#8a8a8a` (`--house-muted`, not the letter ink), with ~0.16em air under the baseline. No plate border, rivets, bevel, gradient, or shadow — the brief's stamped/embossed mood is not a rendering instruction.
+- Nameplate SVGs live in `brand/`. Live `.house-wordmark` is Chakra Petch 600.
+
+## Brand / Hathaway wordmark (assets only)
+
+- Do not hand-draw the Hathaway `lecturesfrom` skeletons. Five hand-drawn drafts failed a 32px cold read (`lecturestrom`: f looked like t, s like a reversed hook). Build from outlined Fraunces (SIL OFL) at wght 900, SOFT 100, WONK 0, opsz 144. Customize only kiss spacing (1% max), the o-dot, and rounding sharp serif ends. Keep the OFL text next to the VF in `brand/fraunces/`.
+- Capsule/round-cap strokes read as Avant Garde / Futura, not Cooper. Fraunces 900 SOFT 100 already has the weight and roundness.
+- Shadow must be equal `<use>` translations, not a tapered extrusion. Site is dark (`#0a0a0a`): face `--house-ink` `#ececec`, then `#C8C8C8` / `#A8A8A8` / `#8A8A8A` (`--house-muted`) outward. One `#A8A8A8` step under 24px. Proofs render on `#0a0a0a`, not white. XML comments cannot contain `--` (breaks cairosvg); write `house-ink`, not `--house-ink`.
+- At 32px, total shadow offset should be one stem width or less so the grey halo does not take over. v6: stem 6.65px, step 1.60px, total 4.79px. `#C8C8C8` vs face is ~1.42:1; if three bands do not read as separate layers, report FAIL — do not invent greys.
+- Union + evenodd: the o-dot is a second polygon inside the o hole. Do not evenodd-overlap letter bodies or they punch holes in each other.
+- Historical (why hand-draw failed): a stem+bar+disc `f` reads as `t`; inner discs blob the `s` spine; a wide `m` reads as `rn`; a closed-bar `e` reads as θ. Do not go back to those constructions.
+
+## Discogs durable snapshot (2026-09-26)
+
+- **Durable last-good lives in Upstash Redis, not module memory.** Memory is per serverless instance; a cold instance that hits Discogs 429 has nothing to serve. Store a complete crawl at `lf:discogs:collection:v1` (preview/dev: `lf:preview:discogs:collection:v1` when `VERCEL_ENV !== 'production'`). Serve Redis first. Refresh ~daily via `after()` + `SET NX EX`. Only a complete crawl (`releases.length === pagination.items`) may overwrite. Missing Redis env must behave exactly as before — no crash, no Redis reads or writes during `next build`.
+- **`Redis.fromEnv()` only warns when vars are missing.** Resolve `KV_REST_API_URL`/`KV_REST_API_TOKEN` (then `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`) yourself and skip the client when the pair is absent. Do not mix KV URL with UPSTASH token.
+- **Never Data-Cache an empty Redis MGET.** `force-cache` + `revalidate: 300` stored the empty build-time read, so a cold `next start` never hit Redis and treated a real snapshot as missing. Redis reads use `cache: 'no-store'`. Skip Redis entirely when `NEXT_PHASE === 'phase-production-build'` so SSG of `/collection` only uses Discogs `next.revalidate: 300` and stays ISR (`○` 5m). Writes and the lock stay `no-store` inside `after()`.
+- **Never cache a failed or partial Discogs crawl as last-good.** Last-good is only a complete crawl whose `releases.length` equals Discogs `pagination.items`. 429 / exhausted `X-Discogs-Ratelimit-Remaining` mid-paginate: serve last-good, or HTTP 429 + `Retry-After`. Put `Cache-Control: no-store` on error responses — route `revalidate = 300` will otherwise ISR-cache a 429 for five minutes.
+- **Never leak Discogs bodies** to the client, rendered page errors, or PostHog `error_message`. Map to generic `Too many requests` / `Failed to fetch from Discogs`.
+- **`DISCOGS_TOKEN` is optional** for the public `lecturesfrom` collection. Requiring it 500s `/collection` in previews that lack the env. User-Agent must be `lecturesfrom/1.0` on every Discogs request.
+- **House crate is `/api/discogs/collection` + `/collection`.** Career `/api/discogs` and RecentDigs were removed (#24). Do not put Discogs back on `/keeganmoody33`.
+- **Route `export const revalidate` must be a numeric literal.** `export const revalidate = DISCOGS_REVALIDATE_SECONDS` fails Next 16 with "Invalid segment configuration export". Use `export const revalidate = 300`.
+
 ## House logo / lockup (2026-09-27)
 
 - **Wordmark o is a static mark, not a second globe.** Do not wrap the in-word `LogoMark` in `LogoGlobe`. Do not attach spin, `preserve-3d`, the rim wall, or `html[data-logo-paused]` to that instance. The 2rem coin above the wordmark stays the only spinning mark.
-- **Size the o-slot from font metrics, in em.** Space Grotesk SemiBold (Google Fonts v22 wght 600, UPM 1000): o advance `613` → `0.613em`; OS/2 sxHeight `486` → `0.486em`. Do not use px. An out-of-flow `.sr-only` o plus `inline-block` width `0.613em` is ~11px wide of the plain word at 12rem because `letter-spacing` on an inline-block does not match a glyph. Keep an in-flow transparent `o` for advance, overlay the mark at x-height, and put the full word in `.sr-only` so the accessible name stays `lecturesfrom` (not `lecturesfr o m`). Omit `#lf-ring` / `#lf-core` on the in-word SVG so those ids stay unique on the title-card globe.
+- **Size the o-slot from the live display face, in em.** Chakra Petch 600 (Google Fonts v13, UPM 1000): o advance `585` → `0.585em`; OS/2 sxHeight `498` → `0.498em`; hhea descent `308` → `0.308em`. Do not use the old Space Grotesk numbers (`0.613em` / `0.486em` / `0.292em`). Keep an in-flow transparent `o` for advance, overlay the mark at x-height, and put the full word in `.sr-only` so the accessible name stays `lecturesfrom`. Omit `#lf-ring` / `#lf-core` on the in-word SVG so those ids stay unique on the title-card globe. Core stays `scale(0.74)`.
 - **Sit the mark on the alphabetic baseline, not the font-box floor.** A `position: relative` inline's abspos containing block is the font bounding box (`ascent+descent`). `bottom: 0` parks the globe in the descent. Use hhea descent `292/1000 = 0.292em`.
 - **In-word o is the lecturesfrom logo, not a custom glyph.** Put the canonical `LogoMark` (ring + core) in the o slot. Do not retune stroke, drop inner detail, or invent an in-word orbit. Title-card globe / favicon / og already own that geometry. Keep the slot from font metrics, sit it on the alphabetic baseline, omit `#lf-ring` / `#lf-core`, and do not wrap it in `LogoGlobe`. Snapshots of the failed retunes: `cursor/hero-wordmark-slash-0.6` @ `e114076`, `cursor/hero-wordmark-ring-only-fallback` @ `da2b814`.
 - **Hero wordmark never drops below 32px.** `font-size` is `clamp(2.5rem, …)` so the floor is 40px; at 320 it is ~46.8px. Do not add a favicon-style inner-detail branch for this instance.
@@ -18,10 +46,10 @@ Updated: 2026-09-27
 
 ## House logo / lockup (2026-09-26)
 
-- **House wordmark must fit its slot.** Resting `scrollWidth` stays inside the slot at 320–1440. Cap at `12rem` on desktop; use `cqi`/`clamp` below that. Do not clip the last glyph. Keep a plain-text `h1` so rest matches the base.
+- **House wordmark must fit its slot.** Resting `scrollWidth` stays inside the slot at 320–1440. Chakra Petch 600 at `-0.01em` is wider than Space Grotesk 600 at `-0.045em`, so the cap is `11.5rem` / `16.5cqi` (0.961 of the old `12rem` / `17.2cqi`). Do not clip the last glyph. The last `o` is a transparent glyph plus `LogoMark`; the accessible name is the `.sr-only` word.
 - **Title-card LogoMark is `aria-hidden`.** The `h1` wordmark is the name. Do not also `aria-label` the SVG next to it. Keep `#lf-ring` / `#lf-core` ids; `LogoGlobe` wraps `layer="ring"` + `layer="core"`.
 - **Coin spin lives on the shared wrapper, not the core.** Owner override of house "No 3D", scoped to the title-card mark. `.lf-logo-globe-spin` is `rotateY` 12s linear infinite; `.lf-logo-globe-core` stays `animation: none; transform: none` so ring and core cannot drift. Perspective is `8rem` on the reserved box (parent of the transform) — 4× the 2rem mark. Do not use `cqw` on the same element as `container-type`; it is not a query container for itself and `400cqw` resolved to the viewport (~180×, a flat squash). Pause via `html[data-lf-signal-cut="active"]` and `html[data-logo-paused="true"]`.
-- **House wordmark entrance is opacity only.** `houseLockup` is 700ms `opacity: 0 → 1`. Do not animate `letter-spacing` — tracking-in only happened at 1440+. Resting tracking stays `-0.045em`. Instant under `prefers-reduced-motion`.
+- **House wordmark entrance is opacity only.** `houseLockup` is 700ms `opacity: 0 → 1`. Do not animate `letter-spacing`. Resting tracking is `-0.01em` on Chakra Petch 600 (was `-0.045em` on Space Grotesk). Instant under `prefers-reduced-motion`.
 - **`houseMetadata()` must set `openGraph.images`.** Nested house routes replace the inherited `openGraph` object, which drops the file-convention `og:image`. Point `images` at `/opengraph-image`. Do not put `opengraph-image` at `app/` root or it inherits onto `/keeganmoody33`. Person stays `/og.jpg`.
 
 ## Schema

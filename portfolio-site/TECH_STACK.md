@@ -14,8 +14,10 @@ All versions are pinned from `portfolio-site/package-lock.json`.
 | react | 19.2.4 | UI library |
 | react-dom | 19.2.4 | React DOM renderer |
 | @supabase/supabase-js | 2.90.1 | Supabase client; queries candidate_profile, experiences, etc. |
+| @upstash/redis | 1.35.6 | REST Redis client for the durable Discogs last-good snapshot |
 | posthog-js | 1.336.4 | Client-side analytics (components, page events) |
 | posthog-node | 5.21.2 | Server-side analytics (API routes via lib/posthog-server.ts) |
+| @jam.dev/sdk | 1.0.1 | Jam session recording metadata client |
 
 ---
 
@@ -56,9 +58,10 @@ Runtime: **Deno**. Imports use URL specifiers with pinned versions where availab
 | PostHog | <https://us.i.posthog.com> | Project key in client init | NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST |
 | Discogs | <https://api.discogs.com> | Header: `Authorization: Discogs token=<token>`, User-Agent required | DISCOGS_TOKEN (Next.js env) |
 | GitHub | <https://api.github.com/users/keeganmoody33/events/public> | None (unauthenticated, 60 req/hr) | (none — `/api/github` does not read a token) |
+| Upstash Redis | REST (`KV_REST_API_URL` / `UPSTASH_REDIS_REST_URL`) | Bearer token | KV_REST_API_URL, KV_REST_API_TOKEN (preferred); UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN (fallback) |
 | Supabase | NEXT_PUBLIC_SUPABASE_URL/functions/v1/* | Header: `Authorization: Bearer <anon_key>` | NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY |
 
-**Discogs:** `api.discogs.com`; optional `DISCOGS_TOKEN` (public `lecturesfrom` collection). Full crate paginated at `/api/discogs/collection` with `revalidate: 300` for house `/collection`. User-Agent: `lecturesfrom/1.0`. Last-good cache on Discogs 429; errors use `Cache-Control: no-store`. Not used on `/keeganmoody33`.
+**Discogs:** `api.discogs.com`; optional `DISCOGS_TOKEN` (public `lecturesfrom` collection). Full crate (`fetchFullCollection()`) at `/api/discogs/collection` and house `/collection` serves a durable last-good copy from Upstash Redis when configured; Discogs is crawled at most about once a day behind a `SET NX EX` lock. Redis reads are `cache: 'no-store'` (empty MGETs must not enter Next's Data Cache) and are skipped during `next build`, so `/collection` stays ISR (`revalidate = 300`). User-Agent: `lecturesfrom/1.0`. Missing Redis env = today's in-memory last-good + Discogs crawl. Errors use `Cache-Control: no-store`. Do not call `Redis.fromEnv()` (it only warns, then fails later). Not used on `/keeganmoody33` (career `/api/discogs` / RecentDigs removed).
 
 ---
 
@@ -77,6 +80,8 @@ Runtime: **Deno**. Imports use URL specifiers with pinned versions where availab
 - **Platform:** Vercel
 - **Live URL:** lecturesfrom.com (house) and lecturesfrom.com/keeganmoody33 (principal)
 - **Build:** Next.js (`next build`); auto-deploy on push to main
+
+**Brand asset toolchain (not runtime):** `scripts/generate-wordmark.py` uses Python 3 + fontTools + rsvg-convert (Pillow for proofs). These are not Next.js dependencies. Do not add them to `package.json`.
 
 ---
 

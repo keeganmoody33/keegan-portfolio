@@ -12,10 +12,10 @@
 
 | Route            | File                         | What It Shows                                                   |
 |------------------|------------------------------|-----------------------------------------------------------------|
-| `/`              | `app/(house)/page.tsx`               | House title card + crate (Server Component). LogoGlobe wraps LogoMark (ring + core) above the wordmark at the same 2rem size. The shared wrapper coins-spins the whole mark; core stays face-on. HouseFooter Motion switch (WCAG 2.2.2) pauses the spin via `html[data-logo-paused]`. Root layout head script sets the attribute from `sessionStorage['lf-logo-paused']` before first paint; `useLayoutEffect` keeps it in sync after hydration/toggles. Hidden under reduced motion. Wordmark (`HouseWordmark`) entrance is a 700ms opacity fade. The last `o` in `from` is a static `LogoMark` (no globe spin, no rim, no pause attribute). No page turntable. No return-visit redirect. |
+| `/`              | `app/(house)/page.tsx`               | House title card + crate (Server Component). LogoGlobe wraps LogoMark (ring + core) above the wordmark at the same 2rem size. The shared wrapper coins-spins the whole mark; core stays face-on. HouseFooter Motion switch (WCAG 2.2.2) pauses the spin via `html[data-logo-paused]`. Root layout head script sets the attribute from `sessionStorage['lf-logo-paused']` before first paint; `useLayoutEffect` keeps it in sync after hydration/toggles. Hidden under reduced motion. Wordmark (`HouseWordmark`, Chakra Petch) entrance is a 700ms opacity fade. The last `o` in `from` is a static `LogoMark` (no globe spin, no rim, no pause attribute). Nameplate and Hathaway SVGs are not mounted. No page turntable. No return-visit redirect. |
 | `/catalog`       | `app/(house)/catalog/page.tsx`       | Crate permalink (same spines as `/`)                            |
 | `/catalog/[slug]`| `app/(house)/catalog/[slug]/page.tsx`| Sleeve (cover, liner, tracks). Unknown slugs 404.               |
-| `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate                                         |
+| `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate (ISR 300s; durable last-good in Redis when configured) |
 | `/legal`         | `app/(house)/legal/page.tsx`         | Entity + long about                                             |
 | `/icon.svg`      | `app/icon.svg`                       | Site icon; `prefers-color-scheme` stroke. Applies to house and person. |
 | `/favicon.ico`   | `app/favicon.ico`                    | 16/32/48 ico: `#ececec` rounded plate, mark `#20262b` (matches apple-icon). |
@@ -39,7 +39,7 @@
 | Route | Method | File | Purpose |
 |-------|--------|------|---------|
 | `/api/chat` | POST | `app/api/chat/route.ts` | Proxy to Supabase `chat` Edge Function |
-| `/api/discogs/collection` | GET | `app/api/discogs/collection/route.ts` | Full paginated Discogs crate (`revalidate: 300`) |
+| `/api/discogs/collection` | GET | `app/api/discogs/collection/route.ts` | Full Discogs crate (`revalidate: 300`, Redis last-good when configured). Career `/api/discogs` was removed. |
 | `/api/github` | GET | `app/api/github/route.ts` | Proxy to GitHub public events API |
 | `/api/jd-analyzer` | POST | `app/api/jd-analyzer/route.ts` | Proxy to Supabase `jd-analyzer` Edge Function |
 
@@ -48,8 +48,13 @@
 ## Provider Hierarchy
 
 ```
-<html lang="en">
+<html lang="en" suppressHydrationWarning>
+  <head>
+    logo-pause bootstrap
+    Jam team metadata + recorder scripts
+  </head>
   <body>
+    <JamMetadata />          ← current route only
     <PostHogProvider>        ← Client-side analytics (providers.tsx)
       <Page />               ← app/(house)/page.tsx (house) or app/keeganmoody33/page.tsx
     </PostHogProvider>
@@ -57,7 +62,7 @@
 </html>
 ```
 
-PostHog initializes on mount if `NEXT_PUBLIC_POSTHOG_KEY` exists. No-ops silently if missing.
+PostHog initializes on mount if `NEXT_PUBLIC_POSTHOG_KEY` exists. No-ops silently if missing. Jam recorder scripts load before hydration; metadata records the current route only; the site has no authentication or workspace identity source, so example IDs are not used.
 
 ---
 
@@ -311,7 +316,9 @@ Supabase DB
     │   └── jd-analyzer/index.ts ──→ /api/jd-analyzer ──→ JDAnalyzer component
     │
 Discogs API
-    └── /api/discogs/collection ──→ house `/collection` (not the person page)
+    └── fetchFullCollection() ──→ house `/collection`, `/api/discogs/collection`, `/collection.md`
+            └── Upstash Redis last-good (`lf:discogs:collection:v1`) when env is set
+            └── not used on `/keeganmoody33` (career `/api/discogs` / RecentDigs removed)
 
 YouTube IFrame API (client-side, no proxy)
     └── youtube.com/iframe_api ──→ YouTubePlayer component

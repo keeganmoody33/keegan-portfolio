@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500&family=Roboto+Slab:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Doto:wght@100..900&family=Roboto+Mono:wght@300;400;500&family=Roboto+Slab:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -160,33 +160,89 @@ body {
 .log-warn { color: var(--accent-orange); }
 .log-info { color: var(--text-muted); }
 
-/* House dialect — near-black + print orange. Do not leak lime terminal chrome. */
-.house {
+/* House dialect — near-black + print orange. Do not leak lime terminal chrome.
+   Core colors also live on html:has(.house) so body and the scrollbar, which
+   sit outside .house, follow the same mode. Add-ons are the same in both modes. */
+html:has(.house) {
   --house-bg: #0a0a0a;
   --house-ink: #ececec;
   --house-muted: #8a8a8a;
   --house-dim: #7a7a7a;
   --house-line: #242424;
-  --house-orange: #E23D00;
+  --house-orange: #e23d00;
+}
+
+html:has(.house[data-theme="light"]) {
+  --house-bg: #ffffff;
+  --house-ink: #0a0a0a;
+  --house-muted: #666666;
+  --house-dim: #757575;
+  --house-line: #e3e3e3;
+  --house-orange: #d73100;
+}
+
+.house {
+  --house-bg: #0a0a0a;
+  --house-ink: #ececec;     /* 16.76:1 */
+  --house-muted: #8a8a8a;   /*  5.73:1  meta labels */
+  --house-dim: #7a7a7a;     /*  4.61:1  catalog numbers, footer nav */
+  --house-line: #242424;    /*  1.28:1  hairlines only */
+  --house-orange: #e23d00;  /*  4.62:1  the one key: hover, issue plates */
+
+  /* add ons, official Sep 27 2026. Same in both modes. */
+  --house-stripe-red: #ea4d30;
+  --house-stripe-orange: #ec7c3a;
+  --house-stripe-amber: #f1ac4b;
+  --house-key: #eca50b;
+  --house-lcd: #afc875;
+  --house-lcd-ink: #0a0a0a;
+  --house-pad: #7f8085;
+  --house-cable-audio: #b8c95e;
+  --house-cable-usb: #49b0d3;
+  --house-cable-midi: #ca77b3;
+  --house-cobalt: #2842ba;
+
+  --house-font-display: "Chakra Petch", sans-serif;
+  --house-font-mono: "Roboto Mono", monospace;
+  --house-font-lcd: "Doto", monospace;
+  --house-font-sans: "Space Grotesk", sans-serif;
+
   min-height: 100vh;
   background: var(--house-bg);
   color: var(--house-ink);
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--house-font-sans);
+}
+
+.house[data-theme="light"] {
+  --house-bg: #ffffff;
+  --house-ink: #0a0a0a;     /* 19.80:1 */
+  --house-muted: #666666;   /*  5.74:1 */
+  --house-dim: #757575;     /*  4.61:1 */
+  --house-line: #e3e3e3;    /*  1.28:1 */
+  --house-orange: #d73100;  /*  4.85:1, same hue as #e23d00, one step deeper */
 }
 
 html:has(.house) body {
-  background-color: #0a0a0a;
+  background-color: var(--house-bg);
   background-image: none;
   animation: none;
-  color: #ececec;
+  color: var(--house-ink);
 }
 
-html:has(.house)::-webkit-scrollbar-track { background: #0a0a0a; }
+html:has(.house)::-webkit-scrollbar-track { background: var(--house-bg); }
 html:has(.house)::-webkit-scrollbar-thumb {
   background: #1a1a1a;
-  border: 1px solid #E23D00;
+  border: 1px solid var(--house-orange);
 }
-html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
+html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange); }
+
+.house-lcd {
+  background: var(--house-lcd);
+  color: var(--house-lcd-ink);
+  font-family: var(--house-font-lcd);
+  font-weight: 800;
+  padding: 10px 16px;
+}
 
 .house-meta {
   font-family: 'Roboto Mono', monospace;
@@ -242,25 +298,24 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 }
 
 .house-wordmark {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--house-font-display);
   font-weight: 600;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.01em;
   line-height: 0.85;
   white-space: nowrap;
-  /* 12rem on wide desktops; scale to the slot so 12 glyphs never overflow. */
-  font-size: clamp(2.5rem, 14.8vw, 12rem);
+  /* 0.961 of the Space Grotesk lockup so Chakra Petch 600 keeps the same width. */
+  font-size: clamp(2.4rem, 14.2vw, 11.5rem);
   animation: houseLockup 700ms ease-out both;
   /*
-   * Space Grotesk SemiBold — Google Fonts v22 wght 600 instance, UPM 1000.
-   * TTF: fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj42Vksj.ttf
-   * o hmtx advance = 613 → 0.613em
-   * OS/2 sxHeight = 486 → 0.486em
-   * hhea descent = 292 → 0.292em (alphabetic baseline from font box bottom)
-   * o ink (not used for layout): xMin 49 yMin -14 xMax 564 yMax 508
+   * Chakra Petch 600 — Google Fonts v13, UPM 1000.
+   * TTF: fonts.gstatic.com/s/chakrapetch/v13/cIflMapbsEk7TDLdtEz1BwkeQI5FQA.ttf
+   * o hmtx advance = 585 → 0.585em
+   * OS/2 sxHeight = 498 → 0.498em
+   * hhea descent = 308 → 0.308em (alphabetic baseline from font box bottom)
    */
-  --lf-wordmark-o-advance: 0.613em;
-  --lf-wordmark-o-x-height: 0.486em;
-  --lf-wordmark-o-descent: 0.292em;
+  --lf-wordmark-o-advance: 0.585em;
+  --lf-wordmark-o-x-height: 0.498em;
+  --lf-wordmark-o-descent: 0.308em;
 }
 
 /*
@@ -298,7 +353,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 
 @supports (font-size: 1cqi) {
   .house-wordmark {
-    font-size: min(12rem, 17.2cqi);
+    font-size: min(11.5rem, 16.5cqi);
   }
 }
 

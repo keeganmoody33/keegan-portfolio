@@ -3,7 +3,7 @@ import LogoMark from '@/components/house/LogoMark'
 /**
  * Root title-card wordmark. The last o in "from" is the lecturesfrom
  * LogoMark — same geometry as the title-card globe / favicon / og —
- * sized to Space Grotesk SemiBold's x-height and sitting on the
+ * sized to Chakra Petch 600's x-height and sitting on the
  * baseline over an in-flow transparent o (exact advance). Face-on, no
  * LogoGlobe, no spin, no rim wall, no `data-logo-paused`.
  *

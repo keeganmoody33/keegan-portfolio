@@ -1,9 +1,59 @@
 COMPLETED (2026-09-27 — hero wordmark o is the static globe):
-- Root `h1` (`HouseWordmark`) keeps lowercase `lecturesfrom`. The last o in `from` is the lecturesfrom `LogoMark` (canonical ring + core, no `LogoGlobe`, no spin, no rim, no `data-logo-paused`).
-- In-flow transparent o keeps glyph advance + tracking (a fake `0.613em` inline-block plus letter-spacing does not match). Mark square is OS/2 sxHeight (`486/1000 = 0.486em`) on the alphabetic baseline (`bottom: 292/1000 = 0.292em` hhea descent, not the font-box floor). em units relative to the wordmark font-size.
+- Root `h1` (`HouseWordmark`) keeps lowercase `lecturesfrom` in Chakra Petch 600. The last o in `from` is the lecturesfrom `LogoMark` (canonical ring + core at `scale(0.74)`, no `LogoGlobe`, no spin, no rim, no `data-logo-paused`).
+- In-flow transparent o keeps glyph advance + tracking. Mark square is OS/2 sxHeight (`498/1000 = 0.498em`) on the alphabetic baseline (`bottom: 308/1000 = 0.308em` hhea descent). em units relative to the wordmark font-size.
 - Full word is `.sr-only` so the accessible name is `lecturesfrom` (not `lecturesfr o m`). Painted run is `aria-hidden`. Mark is `aria-hidden` + `focusable="false"`. Group ids omitted so `#lf-ring` / `#lf-core` stay unique on the spinning title-card globe.
-- Standalone spinning mark, footer Motion switch, favicon, and og unchanged.
-- In-word mark is the lecturesfrom `LogoMark` (same ring + core as the title-card globe). No custom stroke, no dropped inner detail, no in-word orbit. Hero wordmark `font-size` floor is `2.5rem` (40px); at 320 it is ~46.8px.
+- Standalone spinning mark, footer Motion switch, favicon, and og unchanged. Wordmark size stays `clamp(2.4rem, 14.2vw, 11.5rem)` / `min(11.5rem, 16.5cqi)`.
+
+COMPLETED (2026-09-27 — lecturesfrom nameplate wordmark, assets only):
+- Archivo Narrow Bold (OFL) outlines → `brand/lecturesfrom-wordmark.svg` (+ dark `#ececec` / light `#111`). Tracking +3% em, hairline rule = `l` stem/6, inset half a stem each end, fill `#8a8a8a` (`--house-muted`). Letterforms not edited.
+- Generator: `scripts/generate-wordmark.py`. Font + OFL in `brand/archivo-narrow/`.
+- Not wired into header, TitleCard, or any page. Live lockup stays Chakra Petch. Hathaway vectors stay in the repo as a separate unused direction.
+- Picked Archivo Narrow Bold over Barlow Condensed 700 because e/s counters stay more open at 24px.
+
+COMPLETED (2026-09-27 — Hathaway wordmark v6 from Fraunces outlines, assets only):
+- Method change: outlined Fraunces (SIL OFL) wght 900, SOFT 100, WONK 0, opsz 144. Did not redraw f/s/e/m/r skeletons
+- Custom only: neighbour kiss (1% max), solid o-dot, rounded serif ends. Face `#ececec` on `#0a0a0a`; steps `#C8C8C8` / `#A8A8A8` / `#8A8A8A`; small variant one `#A8A8A8` step
+- At 32px: stem 6.65px, shadow step 1.60px, total offset 4.79px (0.72 stem). 32px cold read is lecturesfrom
+- Source + OFL: `brand/fraunces/`. Regenerator: `scripts/build-wordmark-hathaway.py`. Hand-drawn generator archived as `scripts/build-wordmark-hathaway-handdrawn.py`
+- Files: `public/brand/wordmark-hathaway.svg`, `public/brand/wordmark-hathaway-sm.svg`. Not wired. Live title card stays the Chakra Petch lockup.
+
+COMPLETED (2026-09-27 — Hathaway wordmark shadow colour update, assets only):
+- Face stays `--house-ink` `#ececec` on `#0a0a0a`. Shadow steps outward `#C8C8C8` / `#A8A8A8` / `#8A8A8A`. Small variant: one `#A8A8A8` step
+- 32px + 4x nearest proofs: first step reads as a distinct layer vs the face (stop-rule PASS). Did not invent colours
+- Files: `public/brand/wordmark-hathaway.svg`, `public/brand/wordmark-hathaway-sm.svg`. Regenerator: `scripts/build-wordmark-hathaway.py`
+- Not wired. Header integration waits on PR #23 (`cursor/lf-logo-globe`) and Keegan PNG approval (stop rule 6)
+
+COMPLETED (2026-09-27 — Hathaway wordmark CD pass, assets only):
+- Open-aperture `e` (horizontal bar, lower-right mouth; not θ). `s` offset bowls with a clear S-spine, no inner waist discs. `f` bar does not overhang left of the stem; f/r stems stay unmerged (bar may kiss). `m` two even arches, same unit as `u`
+- Neighbour kiss: just-touch then 1% of the larger letter (CD 1% max). Face `#ececec` on `#0a0a0a`; shadow steps `#8A8A8A` / `#5A5A5A` / `#333333`. Small variant: one `#5A5A5A` step
+- Files: `public/brand/wordmark-hathaway.svg`, `public/brand/wordmark-hathaway-sm.svg`. Regenerator: `scripts/build-wordmark-hathaway.py`
+- Not wired. Header integration waits on PR #23 (`cursor/lf-logo-globe`) and Keegan PNG approval (stop rule 6)
+
+COMPLETED (2026-09-27 — lecturesfrom Hathaway wordmark redraw, assets only):
+- Redrew filled-outline letters: open `f` hook (no enclosed eye) + x-height crossbar, two even `m` arches, matching `c` terminals, no stray mark between `s` and `f`
+- Neighbour kiss at bowls/baseline in the x-height band (no weld discs). Face still one evenodd path + o-dot; same `<use>` shadow stack and small variant
+- Files: `public/brand/wordmark-hathaway.svg`, `public/brand/wordmark-hathaway-sm.svg`. Regenerator: `scripts/build-wordmark-hathaway.py`
+- Not wired. Header integration waits on PR #23 (`cursor/lf-logo-globe`) and Keegan PNG approval (stop rule 6)
+
+COMPLETED (2026-09-27 — lecturesfrom Hathaway wordmark, assets only):
+- Custom lowercase `lecturesfrom` as SVG path data (not a live font). Cooper Black / Souvenir Bold used only as weight/roundness references
+- Face is one evenodd path; three equal 4% down-right `<use>` shadows (#4A4A4A / #7A7A7A / #A8A8A8) plus face #111111. Small variant: one #7A7A7A step
+- Files: `public/brand/wordmark-hathaway.svg`, `public/brand/wordmark-hathaway-sm.svg`. Regenerator: `scripts/build-wordmark-hathaway.py`
+- Not wired. Header integration waits on PR #23 (`cursor/lf-logo-globe`) and Keegan PNG approval (stop rule 6)
+
+COMPLETED (2026-09-27 — Jam recording instrumentation):
+- Added Jam team metadata and recorder/capture scripts to the root layout, beside the logo-pause bootstrap. `suppressHydrationWarning` on `<html>` stays.
+- Jam metadata records the current route only. The app has no user accounts or workspace identity source, so example IDs are not used as production data.
+
+COMPLETED (2026-09-27 — logo orbit inset):
+- `#lf-core` is `scale(0.74)` in `brand/lecturesfrom-mark.svg` and `LogoMark`. The orbit no longer shares the ring radius. Inner paths scale with it. Ring, stroke `0.0625`, and group ids unchanged.
+- Regenerated `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`, and `brand/house-share.png`.
+
+COMPLETED (2026-09-27 — House tokens v3):
+- Display face is Chakra Petch 600 (`--house-font-display`). Wordmark tracking `-0.01em`, size `clamp(2.4rem, 14.2vw, 11.5rem)` and `min(11.5rem, 16.5cqi)`. Lockup fade and clip unchanged.
+- Page-title h1/h2 and `.house-spine-title` use `font-display`. `h2.house-meta` and `/keeganmoody33` stay Space Grotesk / Roboto Mono.
+- Add-on tokens (stripe, key, lcd, pad, cables, cobalt) and `.house-lcd` are defined and unused. Light mode is `.house[data-theme="light"]` plus the same six colors on `html:has(.house)` so body and the scrollbar track follow `--house-bg`. No house theme toggle.
+- Google Fonts import adds Chakra Petch and Doto. Person lime theme unchanged.
 
 COMPLETED (2026-09-27 — MotionSwitch hydration: suppress on the button):
 - QA blocked #23 at 45f328b: in `next dev`, every HouseFooter route logged a React hydration mismatch on `<MotionSwitch>` `<button role=switch>` for `aria-checked` and `aria-label` (motion on and off). Cause: the sibling/head script writes those attributes; React props omit them; `suppressHydrationWarning` on `<html>` (layout.tsx) only covers that element's own attributes. A production `next start` build stays silent, which is why an earlier "0 console messages" claim was wrong.
@@ -113,6 +163,17 @@ COMPLETED (2026-09-26 — career Discogs removal):
 - Left house `/collection`, `/api/discogs/collection`, `lib/discogs.ts`, and Discogs tests untouched
 - No career-only records route existed; no new redirect added
 - Ask AI / JD Fit Analyzer / chat / github APIs / `/og.jpg` untouched
+
+COMPLETED (2026-09-26 — durable Discogs collection in Upstash Redis):
+- Last-good crate snapshot in Redis (`lf:discogs:collection:v1` / `lf:preview:…` when `VERCEL_ENV !== 'production'`), plus meta + lock keys
+- `fetchFullCollection()` contract unchanged; `/collection` page not edited
+- Serve Redis first (cold instance never 429s when a snapshot exists); throw 429 only if Redis and memory are empty
+- Refresh ~once a day via `after()` + `SET NX EX` (120s); only a complete crawl overwrites; 429/partial keeps the old copy
+- Redis reads use `cache: 'no-store'` so empty MGETs are not Data-Cached; skip Redis reads and writes during `next build` so `/collection` stays ISR (`○` 5m)
+- Missing KV/UPSTASH env = today's in-memory last-good + Discogs crawl; `Redis.fromEnv()` not used
+- `mapRelease` never emits `/release/0`; tiles still link to `https://www.discogs.com/release/<id>`
+- Tests: `node --experimental-strip-types --test lib/discogs.test.ts` (fake store; existing tests still pass)
+- Career `/api/discogs` is gone (#24); house crate is `/api/discogs/collection` only. No cron; no new secrets
 
 COMPLETED (2026-08-22 session — live Supabase sync execution):
 - Received owner sign-off and executed `sql/2026-08-22_sync_recent_experiences.sql` against production project `cvkcwvmlnghwwvdqudod` via equivalent PostgREST calls.

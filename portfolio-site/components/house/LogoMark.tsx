@@ -16,6 +16,8 @@
  *   (wordmark o) so `#lf-ring` / `#lf-core` stay unique on the title-card globe.
  * - `focusable` (default omit): pass `false` for the wordmark o so the SVG is
  *   not a tab stop. The title-card globe omits this; it stays as before.
+ *   The core group is scale(0.74) so the orbit sits inside the ring instead of
+ *   sharing its radius. Motion's globe spin wraps these layers.
  *
  * Strokes are `currentColor` so the mark inherits house ink on `/` (and any
  * future parent color). Favicons cannot use currentColor — see `app/icon.svg`.
@@ -45,7 +47,7 @@ function Ring({ grouped }: { grouped: boolean }) {
 
 function Core({ grouped }: { grouped: boolean }) {
   return (
-    <g id={grouped ? 'lf-core' : undefined}>
+    <g id={grouped ? 'lf-core' : undefined} transform="scale(0.74)">
       <ellipse rx="1" ry="0.43" transform="rotate(-60)" />
       <path d="M 0.605385 -0.384961 C 0.86 -0.09 0.94 0.22 0.852000 0.501000" />
       <path d="M 0.605385 -0.384961 L 0 0 L 0.852000 0.501000 M 0 0 L 0.837356 0.000000 M 0 0 L 0.237000 -0.482000" />
