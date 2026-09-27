@@ -1,3 +1,7 @@
+COMPLETED (2026-09-27 — logo orbit inset):
+- `#lf-core` is `scale(0.84)` in `brand/lecturesfrom-mark.svg` and `LogoMark`. The orbit no longer shares the ring radius. Inner paths scale with it. Ring, stroke `0.0625`, and group ids unchanged.
+- Regenerated `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`, and `brand/house-share.png`.
+
 COMPLETED (2026-09-27 — House tokens v3):
 - Display face is Chakra Petch 600 (`--house-font-display`). Wordmark tracking `-0.01em`, size `clamp(2.4rem, 14.2vw, 11.5rem)` and `min(11.5rem, 16.5cqi)`. Lockup fade and clip unchanged.
 - Page-title h1/h2 and `.house-spine-title` use `font-display`. `h2.house-meta` and `/keeganmoody33` stay Space Grotesk / Roboto Mono.
