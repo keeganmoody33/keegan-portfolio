@@ -1,5 +1,10 @@
+COMPLETED (2026-09-27 — MotionSwitch hydration: suppress on the button):
+- QA blocked #23 at 45f328b: in `next dev`, every HouseFooter route logged a React hydration mismatch on `<MotionSwitch>` `<button role=switch>` for `aria-checked` and `aria-label` (motion on and off). Cause: the sibling/head script writes those attributes; React props omit them; `suppressHydrationWarning` on `<html>` (layout.tsx) only covers that element's own attributes. A production `next start` build stays silent, which is why an earlier "0 console messages" claim was wrong.
+- Fix: `suppressHydrationWarning` on the switch button. Visible labels stay in CSS child spans (`aria-hidden`); the script does not rewrite children. React still does not declare `aria-checked` or `aria-label` — putting them on the vnode would make React own them and a post-toggle re-render would reset the DOM. Optional SSR defaults for JS-off `aria-required-attr` were skipped for that reason.
+- `next dev` console on `/`, `/catalog`, `/catalog/punch2pen`, `/catalog/proper-respect`, `/catalog/yadiggg`, `/collection`, `/legal`, and a 404: 0 hydration warnings, 0 errors, motion on and off.
+
 COMPLETED (2026-09-27 — rim-flat a11y: key switch off html[data-logo-paused]):
-- Visible label, `aria-checked`, and `aria-label` all follow `html[data-logo-paused]` (head bootstrap + sibling script). React does not bind those attributes, so a motion-off reload keeps `motion: off` / `aria-checked="false"` through hydration with no hydration warning.
+- Visible label, `aria-checked`, and `aria-label` all follow `html[data-logo-paused]` (head bootstrap + sibling script). React does not bind those attributes, so a motion-off reload keeps `motion: off` / `aria-checked="false"` through hydration. The attributes still mismatch the React vnode in `next dev` until `suppressHydrationWarning` on the button (see entry above); production builds do not log that warning.
 - Coin period is 12s linear infinite on `.lf-logo-globe-spin` (not 24s). Rim wall is a 2D sibling on the same 12s clock.
 
 COMPLETED (2026-09-27 — Motion pause before first paint):
