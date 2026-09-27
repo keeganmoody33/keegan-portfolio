@@ -250,6 +250,42 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   /* 12rem on wide desktops; scale to the slot so 12 glyphs never overflow. */
   font-size: clamp(2.5rem, 14.8vw, 12rem);
   animation: houseLockup 700ms ease-out both;
+  /*
+   * Space Grotesk SemiBold — Google Fonts v22 wght 600 instance, UPM 1000.
+   * TTF: fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj42Vksj.ttf
+   * o hmtx advance = 613 → 0.613em
+   * OS/2 sxHeight = 486 → 0.486em
+   * o ink (not used for layout): xMin 49 yMin -14 xMax 564 yMax 508
+   */
+  --lf-wordmark-o-advance: 0.613em;
+  --lf-wordmark-o-x-height: 0.486em;
+}
+
+/*
+ * Last o in "from": real glyph is .sr-only (accessible name + copy).
+ * Slot width is the o's advance so tracking and total width match the
+ * plain-text wordmark. Mark is the static LogoMark square sized to
+ * x-height, centered in the advance, sitting on the baseline. Face-on;
+ * this instance is not .lf-logo-globe and does not spin.
+ */
+.house-wordmark-o {
+  display: inline-block;
+  position: relative;
+  width: var(--lf-wordmark-o-advance);
+  height: var(--lf-wordmark-o-x-height);
+  vertical-align: baseline;
+}
+
+.house-wordmark-o-mark.house-logo-mark {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin-inline: auto;
+  width: var(--lf-wordmark-o-x-height);
+  height: var(--lf-wordmark-o-x-height);
+  pointer-events: none;
+  user-select: none;
 }
 
 @supports (font-size: 1cqi) {
