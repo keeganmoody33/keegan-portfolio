@@ -317,7 +317,10 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
  *
  * Owner override (title-card mark only): the shared spin wrapper turns
  * ring+core as one coin. Perspective lives on this box so it applies to
- * the child transform (4× the mark: coin edge, not a flat squash).
+ * the child transform. 8rem is 4× the 2rem title-card mark — a coin edge
+ * rather than a flat squash. (400cqw cannot be used here: this element
+ * is not a query container for its own properties, so cqw resolved to
+ * the viewport and became ~180× the mark.)
  */
 .lf-logo-globe {
   position: relative;
@@ -325,8 +328,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   width: 100%;
   aspect-ratio: 1 / 1;
   flex-shrink: 0;
-  container-type: size;
-  perspective: 400cqw;
+  perspective: 8rem;
   perspective-origin: 50% 50%;
 }
 
