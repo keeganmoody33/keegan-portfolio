@@ -1,7 +1,7 @@
 # Implementation Plan — lecturesfrom.com Portfolio
 
 **Last Updated:** 2026-09-27
-**Status:** House cut implemented (title card, sleeves, full crate, signal cut, agent files, logo mark). Person page frozen except wordmark. Hathaway wordmark assets (`public/brand/wordmark-hathaway.svg`) are outlined from Fraunces (OFL) and are not the live lockup.
+**Status:** House cut implemented (title card, sleeves, full crate, signal cut, agent files, logo mark). Person page frozen except wordmark. Live lockup is Chakra Petch. Hathaway (`public/brand/wordmark-hathaway.svg`) and nameplate (`brand/lecturesfrom-wordmark.svg`) vectors are assets only and are not mounted.
 **Previous plan:** `IMPLEMENTATION_PLAN_DISCOGS_ARCHIVED.md` (completed Discogs widget build)
 
 ---
@@ -26,6 +26,25 @@
 - Canonical documentation (PRD, APP_FLOW, TECH_STACK, FRONTEND_GUIDELINES, BACKEND_STRUCTURE)
 
 **Validation:** Live at [lecturesfrom.com/keeganmoody33](https://lecturesfrom.com/keeganmoody33). All features functional.
+
+---
+
+## House identity assets (assets on disk, not mounted)
+
+**Goal:** Industrial nameplate wordmark as SVG assets. Not mounted in the header or any page. Live lockup stays Chakra Petch. Hathaway vectors remain a separate unused direction.
+
+**Inputs:** nameplate brief. `FRONTEND_GUIDELINES.md` house tokens (`#ececec` on `#0a0a0a`, light `#111`, rule `--house-muted` / `#8a8a8a`).
+
+**Outputs:**
+
+- `brand/lecturesfrom-wordmark.svg` (currentColor), `-dark.svg`, `-light.svg`
+- `brand/archivo-narrow/` — Archivo Narrow Bold source (OFL) + license
+- `scripts/generate-wordmark.py` — fontTools outline dump; tracking + rule only
+- `scripts/wordmark-assets.test.mjs`
+
+**Validation:** `node --test scripts/wordmark-assets.test.mjs`. Re-run `python3 scripts/generate-wordmark.py` after any tracking/rule change. Do not edit letterforms.
+
+**Not in this step:** wiring into `TitleCard`, person-page nav, or favicons.
 
 ---
 
