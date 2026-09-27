@@ -1,5 +1,5 @@
 IN PROGRESS (2026-09-27 — lecturesfrom nameplate wordmark, assets only):
-- Archivo Narrow Bold (OFL) outlines → `brand/lecturesfrom-wordmark.svg` (+ dark `#ececec` / light `#111`). Tracking +3% em, hairline rule = `l` stem/6. Letterforms not edited.
+- Archivo Narrow Bold (OFL) outlines → `brand/lecturesfrom-wordmark.svg` (+ dark `#ececec` / light `#111`). Tracking +3% em, hairline rule = `l` stem/6, inset half a stem each end, fill `#8a8a8a` (`--house-muted`). Letterforms not edited.
 - Generator: `scripts/generate-wordmark.py`. Font + OFL in `brand/archivo-narrow/`.
 - Not wired into header, TitleCard, or any page. Hathaway/Fraunces PR direction is void. Awaiting Keegan PNG approval before merge.
 - Picked Archivo Narrow Bold over Barlow Condensed 700 because e/s counters stay more open at 24px.

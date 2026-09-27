@@ -33,7 +33,7 @@
 
 **Goal:** Industrial nameplate wordmark as SVG assets. Not mounted in the header or any page until Keegan approves the PNGs.
 
-**Inputs:** nameplate brief (supersedes Hathaway/Fraunces, void). `FRONTEND_GUIDELINES.md` house tokens (`#ececec` on `#0a0a0a`, light `#111`).
+**Inputs:** nameplate brief (supersedes Hathaway/Fraunces, void). `FRONTEND_GUIDELINES.md` house tokens (`#ececec` on `#0a0a0a`, light `#111`, rule `--house-muted` / `#8a8a8a`).
 
 **Outputs:**
 

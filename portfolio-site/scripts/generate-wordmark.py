@@ -3,7 +3,8 @@
 
 Letterforms are copied from the font with no redraw, reshape, or outline edit.
 The only custom geometry is tracking (+3% of the em) and a hairline rule under
-the word (full ink width, stroke = 1/6 of the `l` stem).
+the word (inset half an `l` stem at each end, stroke = 1/6 of the stem,
+fill #8a8a8a / --house-muted).
 
 Requires: fonttools, Pillow, rsvg-convert (proofs only).
 
@@ -42,7 +43,9 @@ BASELINE_GAP_EM = 0.16  # air between baseline and rule (not a link underline)
 STEM_RULE_RATIO = 6  # rule = stem / 6
 HOUSE_BG = "#0a0a0a"
 HOUSE_INK = "#ececec"
+HOUSE_MUTED = "#8a8a8a"
 LIGHT_INK = "#111"
+RULE_FILL_CURRENT = "var(--house-muted, #8a8a8a)"
 
 # Globe mark from cursor/lf-logo-globe (read-only; not merged).
 GLOBE_REF = "origin/cursor/lf-logo-globe:portfolio-site/brand/lecturesfrom-mark.svg"
@@ -78,6 +81,9 @@ class Wordmark:
     bottom: float
     rule_top: float
     rule_bottom: float
+    rule_x: float
+    rule_width: float
+    rule_inset: float
     view_w: float
     view_h: float
     min_letter_gap: float
@@ -160,9 +166,12 @@ def draw_word(font: TTFont, tracking_em: float = TRACKING_EM) -> Wordmark:
     stem = measure_stem(font, cmap, glyph_set, upem)
     rule = stem / STEM_RULE_RATIO
     gap = BASELINE_GAP_EM * upem
+    inset = stem / 2
 
     left = min(g.x_min for g in glyphs)
     right = max(g.x_max for g in glyphs)
+    rule_x = left + inset
+    rule_width = (right - left) - stem  # half-stem inset at each end
     top = max(g.y_max for g in glyphs)
     ink_bottom = min(g.y_min for g in glyphs)
     rule_top = -gap
@@ -195,6 +204,9 @@ def draw_word(font: TTFont, tracking_em: float = TRACKING_EM) -> Wordmark:
         bottom=bottom,
         rule_top=rule_top,
         rule_bottom=rule_bottom,
+        rule_x=rule_x,
+        rule_width=rule_width,
+        rule_inset=inset,
         view_w=right - left,
         view_h=top - bottom,
         min_letter_gap=min_gap,
@@ -261,40 +273,54 @@ def raster_svg(svg: str, width: int, height: int) -> str:
     return png
 
 
-def svg_markup(mark: Wordmark, fill: str, *, background: str | None = None) -> str:
+def svg_markup(
+    mark: Wordmark,
+    letter_fill: str,
+    rule_fill: str,
+    *,
+    background: str | None = None,
+    include_rule: bool = True,
+) -> str:
     # Font space is y-up. Flip into SVG y-down with a tight viewBox on the ink + rule.
     tx = -mark.left
     ty = mark.top
     paths = "\n    ".join(f'<path d="{g.path}"/>' for g in mark.glyphs)
-    rule = (
-        f'<rect x="{fmt(mark.left)}" y="{fmt(mark.rule_bottom)}" '
-        f'width="{fmt(mark.word_width)}" height="{fmt(mark.rule)}" />'
-    )
+    rule = ""
+    if include_rule:
+        rule = (
+            f'\n    <rect x="{fmt(mark.rule_x)}" y="{fmt(mark.rule_bottom)}" '
+            f'width="{fmt(mark.rule_width)}" height="{fmt(mark.rule)}" fill="{rule_fill}" />'
+        )
     bg = (
         f'  <rect width="{fmt(mark.view_w)}" height="{fmt(mark.view_h)}" fill="{background}"/>\n'
         if background
         else ""
     )
-    return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {fmt(mark.view_w)} {fmt(mark.view_h)}" fill="{fill}" role="img" aria-label="lecturesfrom" focusable="false">
-  <!-- Outlines: Archivo Narrow Bold (SIL OFL). Tracking +3% em. Rule = l-stem/6. Letterforms not edited. -->
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {fmt(mark.view_w)} {fmt(mark.view_h)}" fill="{letter_fill}" role="img" aria-label="lecturesfrom" focusable="false">
+  <!-- Outlines: Archivo Narrow Bold (SIL OFL). Tracking +3% em. Rule = l-stem/6, inset half stem, fill house-muted #8a8a8a. Letterforms not edited. -->
 {bg}  <g transform="translate(0 {fmt(ty)}) scale(1 -1) translate({fmt(tx)} 0)">
-    {paths}
-    {rule}
+    {paths}{rule}
   </g>
 </svg>
 '''
+
+
+def dark_svg(mark: Wordmark, *, include_rule: bool = True) -> str:
+    return svg_markup(mark, HOUSE_INK, HOUSE_MUTED, include_rule=include_rule)
 
 
 def write_svgs(mark: Wordmark) -> dict[str, Path]:
     BRAND.mkdir(parents=True, exist_ok=True)
     files = {
         "currentColor": BRAND / "lecturesfrom-wordmark.svg",
-        HOUSE_INK: BRAND / "lecturesfrom-wordmark-dark.svg",
-        LIGHT_INK: BRAND / "lecturesfrom-wordmark-light.svg",
+        "dark": BRAND / "lecturesfrom-wordmark-dark.svg",
+        "light": BRAND / "lecturesfrom-wordmark-light.svg",
     }
-    files["currentColor"].write_text(svg_markup(mark, "currentColor"), encoding="utf-8")
-    files[HOUSE_INK].write_text(svg_markup(mark, HOUSE_INK), encoding="utf-8")
-    files[LIGHT_INK].write_text(svg_markup(mark, LIGHT_INK), encoding="utf-8")
+    files["currentColor"].write_text(
+        svg_markup(mark, "currentColor", RULE_FILL_CURRENT), encoding="utf-8"
+    )
+    files["dark"].write_text(svg_markup(mark, HOUSE_INK, HOUSE_MUTED), encoding="utf-8")
+    files["light"].write_text(svg_markup(mark, LIGHT_INK, HOUSE_MUTED), encoding="utf-8")
     return files
 
 
@@ -315,7 +341,7 @@ def counter_aperture(
     x1 = (g.x_max - mark.left) * s + pad
     y0 = (mark.top - g.y_max) * s - pad
     y1 = (mark.top - g.y_min) * s + pad
-    svg = svg_markup(mark, "#ffffff")
+    svg = dark_svg(mark)
     full_w = max(1, int(round(mark.view_w * s)))
     png_path = raster_svg(svg, full_w, h)
     img = Image.open(png_path).convert("L")
@@ -429,30 +455,33 @@ def write_proofs(mark: Wordmark, font: TTFont, out_dir: Path) -> dict:
     from PIL import Image
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    dark_svg = svg_markup(mark, HOUSE_INK)
+    built = dark_svg(mark)
     aspect = mark.view_w / mark.view_h
+    cap_font = next(g.y_max for g in mark.glyphs if g.char == "l")
 
-    # 1. 400px-wide sheet (image is 400px wide; modest vertical pad only)
+    # 1. 400px-wide sheet with ~1 cap-height of #0a0a0a on every side
+    #    so l and m are not cropped at the frame.
     sheet_w = 400
-    sheet_h = int(round(sheet_w / aspect))
-    sheet_png = raster_svg(dark_svg, sheet_w, sheet_h)
-    sheet = Image.new("RGB", (400, sheet_h + 32), HOUSE_BG)
+    sheet_h = max(1, int(round(sheet_w / aspect)))
+    pad = max(1, int(round(cap_font * (sheet_w / mark.view_w))))
+    sheet_png = raster_svg(built, sheet_w, sheet_h)
     mark_im = Image.open(sheet_png).convert("RGBA")
-    sheet.paste(mark_im, (0, 16), mark_im)
-    save_proof(sheet, out_dir / "wordmark_400px_sheet.png")
     os.unlink(sheet_png)
+    sheet = Image.new("RGB", (sheet_w + pad * 2, sheet_h + pad * 2), HOUSE_BG)
+    sheet.paste(mark_im, (pad, pad), mark_im)
+    save_proof(sheet, out_dir / "wordmark_400px_sheet.png")
 
     # 2. 32px and 24px tall, no labels
     for h in (32, 24):
         w = max(1, int(round(h * aspect)))
-        png = raster_svg(dark_svg, w, h)
+        png = raster_svg(built, w, h)
         save_proof(composite_on_bg(png, HOUSE_BG, pad=16), out_dir / f"wordmark_{h}px.png")
         os.unlink(png)
 
     # 3. 320px-wide viewport (mobile header: 16px inset, 24px-tall lockup)
     vp = Image.new("RGB", (320, 72), HOUSE_BG)
     w24 = max(1, int(round(24 * aspect)))
-    png24 = raster_svg(dark_svg, w24, 24)
+    png24 = raster_svg(built, w24, 24)
     mark24 = Image.open(png24).convert("RGBA")
     os.unlink(png24)
     vp.paste(mark24, (16, (72 - 24) // 2), mark24)
@@ -471,7 +500,7 @@ def write_proofs(mark: Wordmark, font: TTFont, out_dir: Path) -> dict:
     plain_letter_h = plain.top - min(g.y_min for g in plain.glyphs)
     plain_h = max(1, int(round(letter_h)))
     plain_w = max(1, int(round(plain_h * ((plain.right - plain.left) / plain_letter_h))))
-    built_png = raster_svg(dark_svg, built_w, built_h)
+    built_png = raster_svg(built, built_w, built_h)
     plain_png = raster_svg(plain_svg, plain_w, plain_h)
     built_im = Image.open(built_png).convert("RGBA")
     plain_im = Image.open(plain_png).convert("RGBA")
@@ -492,7 +521,7 @@ def write_proofs(mark: Wordmark, font: TTFont, out_dir: Path) -> dict:
     globe_im = Image.open(globe_png).convert("RGBA")
     os.unlink(globe_png)
     w32 = max(1, int(round(32 * aspect)))
-    word_png = raster_svg(dark_svg, w32, 32)
+    word_png = raster_svg(built, w32, 32)
     word_im = Image.open(word_png).convert("RGBA")
     os.unlink(word_png)
     lockup_gap = 10
@@ -531,6 +560,8 @@ def write_metrics(mark: Wordmark, proofs: dict, out_dir: Path) -> dict:
             "rule_stem_ratio": round(rule / stem, 4),
             "baseline_to_rule_gap_px": round(px_at(mark, h, mark.gap), 3),
             "min_letter_gap_px": round(px_at(mark, h, mark.min_letter_gap), 3),
+            "rule_start_from_l_left_px": round(px_at(mark, h, mark.rule_inset), 3),
+            "rule_end_from_m_right_px": round(px_at(mark, h, mark.rule_inset), 3),
             "globe_ring_stroke_px": round(globe_stroke_px(h if h == 32 else 32), 3),
         }
     # Globe is 32px in the header lockup regardless of wordmark height.
@@ -561,6 +592,10 @@ def write_metrics(mark: Wordmark, proofs: dict, out_dir: Path) -> dict:
         "tracking_em": TRACKING_EM,
         "stem_font_units": mark.stem,
         "rule_font_units": mark.rule,
+        "rule_inset_font_units": mark.rule_inset,
+        "rule_x_font_units": mark.rule_x,
+        "rule_width_font_units": mark.rule_width,
+        "rule_fill": HOUSE_MUTED,
         "gap_font_units": mark.gap,
         "min_letter_gap_font_units": mark.min_letter_gap,
         "viewBox": [0, 0, mark.view_w, mark.view_h],
@@ -578,15 +613,17 @@ def write_metrics(mark: Wordmark, proofs: dict, out_dir: Path) -> dict:
         json.dumps(payload, indent=2) + "\n", encoding="utf-8"
     )
     lines = [
-        "| CSS height | `l` stem | rule stroke | rule/stem | baseline→rule gap | min letter gap | e/s 24px | globe ring (32px) |",
-        "|---|---|---|---|---|---|---|---|",
+        "| CSS height | `l` stem | rule stroke | rule/stem | baseline→rule gap | min letter gap | rule start (from `l` left) | rule end (from `m` right) | e/s 24px | globe ring (32px) |",
+        "|---|---|---|---|---|---|---|---|---|---|",
     ]
     e_s = f"e {proofs['crops']['e']['status']} / s {proofs['crops']['s']['status']}"
     for h in ("32", "24"):
         t = table[h]
         lines.append(
             f"| {h}px | {t['l_stem_px']} | {t['rule_stroke_px']} | {t['rule_stem_ratio']} | "
-            f"{t['baseline_to_rule_gap_px']} | {t['min_letter_gap_px']} | {e_s} | {t['globe_ring_stroke_px']} |"
+            f"{t['baseline_to_rule_gap_px']} | {t['min_letter_gap_px']} | "
+            f"+{t['rule_start_from_l_left_px']} | −{t['rule_end_from_m_right_px']} | "
+            f"{e_s} | {t['globe_ring_stroke_px']} |"
         )
     (out_dir / "wordmark-measurements.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print("\n".join(lines))
@@ -607,7 +644,8 @@ def main() -> int:
     write_svgs(mark)
     print(
         f"wordmark {WORD}  tracking={TRACKING_EM:.0%}  stem={mark.stem:.2f}  "
-        f"rule={mark.rule:.2f}  gap={mark.gap:.2f}  min_letter_gap={mark.min_letter_gap:.2f}  "
+        f"rule={mark.rule:.2f}  inset={mark.rule_inset:.2f}  gap={mark.gap:.2f}  "
+        f"min_letter_gap={mark.min_letter_gap:.2f}  "
         f"viewBox={mark.view_w:.1f}×{mark.view_h:.1f}"
     )
     if args.proofs:
