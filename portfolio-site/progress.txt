@@ -1,5 +1,5 @@
 COMPLETED (2026-09-27 — WCAG 2.2.2 Motion switch in house footer):
-- Removed the lockup pause button. TitleCard renders `LogoGlobe` with `house-logo-mark mb-6` directly. `MotionSwitch` in `HouseFooter` (`role="switch"`, `Motion: on` / `Motion: off`). Shared on `/`, `/catalog`, `/collection`, `/legal`. `/keeganmoody33` does not share this footer.
+- Removed the lockup pause button. TitleCard renders `LogoGlobe` with `house-logo-mark mb-6` directly. `MotionSwitch` in `HouseFooter` (`role="switch"`, `motion: on` / `motion: off`). Shared on `/`, `/catalog`, `/collection`, `/legal`. `/keeganmoody33` does not share this footer.
 - Pause is `html[data-logo-paused="true"] .lf-logo-globe-spin { animation-play-state: paused }` composed with `html[data-lf-signal-cut="active"]`. Neither writes `running`. sessionStorage `lf-logo-paused`. Hidden under `prefers-reduced-motion: reduce`.
 
 COMPLETED (2026-09-27 — logo coin spin, owner override):

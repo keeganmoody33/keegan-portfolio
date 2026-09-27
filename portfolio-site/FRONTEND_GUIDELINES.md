@@ -255,7 +255,7 @@ Animated 60px x 60px grid pattern on body:
 | `.house-logo-mark` | Root mark box | `2rem` square, `aspect-ratio: 1`, reserves size before paint |
 | `.lf-logo-globe` | Logo mark box | Square `aspect-ratio: 1`; reserves size before paint (CLS 0). `perspective: 8rem` (4× the 2rem title-card mark) on this box. Title card wraps `LogoMark` `layer="ring"` + `layer="core"`. |
 | `.lf-logo-globe-spin` | Coin spin | Shared wrapper around both layers. `rotateY(0→360deg)` 12s linear infinite (west→east). `backface-visibility: visible`. Pauses on `html[data-lf-signal-cut="active"]` or `html[data-logo-paused="true"]` (either attribute; never `running`). `animation: none` under `prefers-reduced-motion`. Owner override of house "No 3D", scoped to this mark. |
-| `.lf-motion-switch` | Footer Motion | HouseFooter `role="switch"` (`Motion: on` / `Motion: off`). Min 24×24, house muted/ink, `:focus-visible` 2px `--house-ink` outline. Hidden (`display: none`) under `prefers-reduced-motion: reduce`. Writes `data-logo-paused` on `<html>`. |
+| `.lf-motion-switch` | Footer Motion | HouseFooter `role="switch"` (`motion: on` / `motion: off`). Min 24×24, house muted/ink, `:focus-visible` 2px `--house-ink` outline. Hidden (`display: none`) under `prefers-reduced-motion: reduce`. Writes `data-logo-paused` on `<html>`. |
 | `.lf-logo-globe-core` | Core layer | Face-on rest pose. `animation: none; transform: none`. No independent spin. |
 | `.house-spine` | Crate row | 3 columns below `sm` (format/catno on a second title line); 5 columns from `md` |
 

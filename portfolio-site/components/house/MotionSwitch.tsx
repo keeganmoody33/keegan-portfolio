@@ -33,7 +33,7 @@ function applyHtmlPaused(paused: boolean): void {
 /**
  * WCAG 2.2.2 pause control for the title-card coin spin.
  * Lives in the shared house footer (not next to the decorative mark).
- * Renders on the server as Motion: on so there is no hydration mismatch
+ * Renders on the server as motion: on so there is no hydration mismatch
  * or CLS. sessionStorage is read via useSyncExternalStore
  * (`getServerSnapshot` is always playing). Pause is CSS-only via
  * `html[data-logo-paused="true"]` — never inline `animation-play-state`,
@@ -65,7 +65,7 @@ export default function MotionSwitch() {
       className="lf-motion-switch mt-2 font-mono text-[11px] tracking-wide text-[var(--house-muted)]"
       onClick={onToggle}
     >
-      Motion: {motionOn ? 'on' : 'off'}
+      motion: {motionOn ? 'on' : 'off'}
     </button>
   )
 }
