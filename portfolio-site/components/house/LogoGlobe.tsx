@@ -29,8 +29,8 @@ export type LogoGlobeProps = {
   core?: ReactNode
 }
 
-/** Behind-the-face ring copies. 0.5px steps, 2.5px total depth, centered on z=0. */
-const RIM_Z_PX = [-0.5, -1, -1.5, -2, -2.5] as const
+/** Behind-the-face ring copies. 0.25px steps, 2.5px total depth. */
+const RIM_Z_PX = [-0.25, -0.5, -0.75, -1, -1.25, -1.5, -1.75, -2, -2.25, -2.5] as const
 
 function layerClassName(svg: LogoGlobeSvg, extra: string): string {
   const prev = svg.props.className

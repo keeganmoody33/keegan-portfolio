@@ -357,18 +357,16 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 }
 
 /*
- * Rim: thin ring copies behind the face. Same ink as the front stroke so
- * they hide under it when face-on; stacked translateZ is the coin edge.
- * No extra scale — compensating scale sat outside the stroke as a halo.
+ * Rim: thin ring copies behind the face. Same ink as the front stroke.
+ * Scale counters perspective so they sit under the stroke when face-on.
  */
 .lf-logo-globe-rim {
   pointer-events: none;
-  z-index: 0;
-  transform: translate3d(0, 0, var(--lf-rim-z, 0px));
+  transform: translate3d(0, 0, var(--lf-rim-z, 0px))
+    scale(calc((8rem - var(--lf-rim-z, 0px)) / 8rem));
 }
 
 .lf-logo-globe-ring {
-  z-index: 1;
   transform: translate3d(0, 0, 0);
 }
 
@@ -393,7 +391,6 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 
 /* Core stays face-on on the front plane. No independent spin. */
 .lf-logo-globe-core {
-  z-index: 2;
   transform: translate3d(0, 0, 0);
   will-change: auto;
   animation: none;
@@ -415,6 +412,11 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   /* Rims may stay in the DOM; hide them so the static face matches 4c4869d. */
   .lf-logo-globe-rim {
     visibility: hidden;
+  }
+
+  .lf-logo-globe-ring,
+  .lf-logo-globe-core {
+    transform: none;
   }
 }
 
