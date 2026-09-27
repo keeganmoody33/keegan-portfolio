@@ -47,9 +47,13 @@ function cloneLayer(svg: LogoGlobeSvg, extra: string): LogoGlobeSvg {
 /**
  * Lecturesfrom logo globe. Ring and core stay stacked and face-on to
  * each other. The shared `.lf-logo-globe-spin` wrapper turns the whole
- * mark as one coin (`rotateY` 12s linear infinite, west→east). Core
- * stays `animation: none` / `transform: none` so the layers cannot
- * drift. Pause is CSS-only via `html[data-lf-signal-cut="active"]`
+ * mark as one coin (`rotateY` 12s linear infinite, west→east, `flat`
+ * so Chrome rasterizes the SVG at device DPR). Core stays
+ * `animation: none` / `transform: none` so the layers cannot drift.
+ * The rim wall is a 2D sibling of the spin (not a 3D child) so
+ * `preserve-3d` is not required. Both animations share the same 12s
+ * linear infinite clock and live in the SSR markup so they start in
+ * the same frame. Pause is CSS-only via `html[data-lf-signal-cut="active"]`
  * and `html[data-logo-paused="true"]` — never inline animation-play-state,
  * never the SignalCut debug hook. Either attribute pauses; dropping
  * one cannot resume while the other is set.
@@ -93,7 +97,6 @@ export default function LogoGlobe({
       aria-hidden={decorative ? true : undefined}
     >
       <div className="lf-logo-globe-spin" aria-hidden="true">
-        <div className="lf-logo-globe-rim-wall" aria-hidden="true" />
         <div className="lf-logo-globe-layer lf-logo-globe-ring">
           {ringNode}
         </div>
@@ -101,6 +104,7 @@ export default function LogoGlobe({
           {coreNode}
         </div>
       </div>
+      <div className="lf-logo-globe-rim-wall" aria-hidden="true" />
     </div>
   )
 }
