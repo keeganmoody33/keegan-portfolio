@@ -12,7 +12,8 @@ Updated: 2026-09-27
 - `m` is two even n-arches sharing a stem, each the same width as `u`/`n`. A wide round-rect clips and reads as `rn`.
 - `c` terminals are matching round discs on the cut, not stretched teardrops.
 - Keep e/o counters open at 32px: bowl walls ~17–20% of x-height (stems stay 24%).
-- Shadow must be equal `<use>` translations, not a tapered extrusion. Site is dark (`#0a0a0a`): face `--house-ink` `#ececec`, then `#8A8A8A` / `#5A5A5A` / `#333333` outward. One `#5A5A5A` step under 24px. Proofs render on `#0a0a0a`, not white. XML comments cannot contain `--` (breaks cairosvg); write `house-ink`, not `--house-ink`.
+- Shadow must be equal `<use>` translations, not a tapered extrusion. Site is dark (`#0a0a0a`): face `--house-ink` `#ececec`, then `#C8C8C8` / `#A8A8A8` / `#8A8A8A` (`--house-muted`) outward. One `#A8A8A8` step under 24px. Proofs render on `#0a0a0a`, not white. XML comments cannot contain `--` (breaks cairosvg); write `house-ink`, not `--house-ink`.
+- `#C8C8C8` vs face `#ececec` is only ~1.42:1. At 32px each 4-unit step is ~0.85 CSS px, so the first-step raster can land as an anti-aliased 213 rather than pure 200. 4x nearest of that 32px raster still shows a distinct band (face 236 → C8 → A8 → 8A). If those bands do not read as separate layers, report FAIL — do not invent greys.
 - Union + evenodd: the o-dot is a second polygon inside the o hole. Do not evenodd-overlap letter bodies or they punch holes in each other.
 
 

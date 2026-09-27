@@ -31,9 +31,9 @@ N_WIDTH = 94.0  # one n/u arch; m is two of these sharing a stem
 QUAD = 48
 
 FACE_INK = "#ececec"  # --house-ink on dark
-SHADOW_NEAR = "#8A8A8A"  # --house-muted
-SHADOW_MID = "#5A5A5A"
-SHADOW_FAR = "#333333"
+SHADOW_NEAR = "#C8C8C8"  # first step, closest to the face
+SHADOW_MID = "#A8A8A8"  # second step; also the under-24px single step
+SHADOW_FAR = "#8A8A8A"  # --house-muted, farthest, fades into the page
 
 OUT_DIR = Path(__file__).resolve().parents[1] / "public" / "brand"
 
@@ -502,7 +502,7 @@ def svg_wrap(path_d: str, vb, small: bool) -> str:
   <!-- Custom lowercase lecturesfrom, drawn as filled outline path data (not a live font).
        Cooper Black / Souvenir Bold used only as weight and roundness references.
        Stem ~24% of x-height, ascenders ~1.3×, o center dot, ≤1% neighbour kiss.
-       Dark house: face house-ink #ececec, steps #8A8A8A / #5A5A5A / #333333. -->
+       Dark house: face house-ink #ececec, steps #C8C8C8 / #A8A8A8 / #8A8A8A. -->
   <defs>
     <path id="lf-wordmark-face" d="{path_d}"/>
   </defs>
