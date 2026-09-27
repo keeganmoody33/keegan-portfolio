@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import MotionSwitch from '@/components/house/MotionSwitch'
 
 export default function HouseFooter() {
   return (
@@ -9,6 +10,7 @@ export default function HouseFooter() {
       <p className="mt-2 font-mono text-[11px] tracking-wide text-[var(--house-muted)]">
         we think through every thing we ship.
       </p>
+      <MotionSwitch />
       <nav className="mt-4 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--house-dim)]">
         <Link href="/" className="hover:text-[var(--house-orange)]">
           root

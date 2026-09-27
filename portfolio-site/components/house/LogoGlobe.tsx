@@ -50,7 +50,7 @@ function cloneLayer(svg: LogoGlobeSvg, extra: string): LogoGlobeSvg {
  * mark as one coin (`rotateY` 12s linear infinite, west→east). Core
  * stays `animation: none` / `transform: none` so the layers cannot
  * drift. Pause is CSS-only via `html[data-lf-signal-cut="active"]`
- * and `[data-logo-paused="true"]` — never inline animation-play-state,
+ * and `html[data-logo-paused="true"]` — never inline animation-play-state,
  * never the SignalCut debug hook. Either attribute pauses; dropping
  * one cannot resume while the other is set.
  *
