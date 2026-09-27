@@ -342,7 +342,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   position: absolute;
   inset: 0;
   transform-origin: 50% 50%;
-  transform-style: flat;
+  transform-style: preserve-3d;
   backface-visibility: visible;
   will-change: transform;
   animation: lf-logo-globe-spin 12s linear infinite;
@@ -351,6 +351,21 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 .lf-logo-globe-layer {
   position: absolute;
   inset: 0;
+}
+
+/*
+ * Rim: dimmer ring copies behind the face. Scale counters perspective so
+ * they sit under the front stroke when face-on (rest pose stays identical).
+ */
+.lf-logo-globe-rim {
+  color: var(--house-dim);
+  pointer-events: none;
+  transform: translateZ(var(--lf-rim-z, 0px))
+    scale(calc((8rem - var(--lf-rim-z, 0px)) / 8rem));
+}
+
+.lf-logo-globe-ring {
+  transform: translateZ(0);
 }
 
 .lf-logo-globe-layer .house-logo-mark {
@@ -372,9 +387,9 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   visibility: hidden;
 }
 
-/* Core stays face-on relative to the wrapper. No independent spin. */
+/* Core stays face-on on the front plane. No independent spin. */
 .lf-logo-globe-core {
-  transform: none;
+  transform: translateZ(0);
   will-change: auto;
   animation: none;
 }

@@ -29,6 +29,9 @@ export type LogoGlobeProps = {
   core?: ReactNode
 }
 
+/** Behind-the-face ring copies. 0.5px steps, 2.5px total depth, centered on z=0. */
+const RIM_Z_PX = [-0.5, -1, -1.5, -2, -2.5] as const
+
 function layerClassName(svg: LogoGlobeSvg, extra: string): string {
   const prev = svg.props.className
   return [typeof prev === 'string' ? prev : undefined, 'lf-logo-globe-svg', extra]
@@ -44,13 +47,21 @@ function cloneLayer(svg: LogoGlobeSvg, extra: string): LogoGlobeSvg {
   })
 }
 
+function cloneRimRing(ring: ReactNode): ReactNode {
+  if (!isValidElement(ring) || typeof ring.type === 'string') return ring
+  return cloneElement(ring as ReactElement<{ groupIds?: boolean }>, {
+    groupIds: false,
+  })
+}
+
 /**
  * Lecturesfrom logo globe. Ring and core stay stacked and face-on to
  * each other. The shared `.lf-logo-globe-spin` wrapper turns the whole
  * mark as one coin (`rotateY` 12s linear infinite, west→east). Core
- * stays `animation: none` / `transform: none` so the layers cannot
- * drift. Pause is CSS-only via `html[data-lf-signal-cut="active"]` —
- * never the SignalCut debug hook.
+ * stays `animation: none` on the front plane so the layers cannot
+ * drift. Dimmer ring copies behind z=0 give the edge a rim when the
+ * coin is edge-on. Pause is CSS-only via `html[data-lf-signal-cut="active"]`
+ * — never the SignalCut debug hook.
  *
  * Server Component. No JS animation loop. Title-card placement wraps
  * LogoMark `layer="ring"` + `layer="core"` at the mark's existing size.
@@ -91,6 +102,16 @@ export default function LogoGlobe({
       aria-hidden={decorative ? true : undefined}
     >
       <div className="lf-logo-globe-spin" aria-hidden="true">
+        {RIM_Z_PX.map((z) => (
+          <div
+            key={z}
+            className="lf-logo-globe-layer lf-logo-globe-rim"
+            style={{ '--lf-rim-z': `${z}px` } as CSSProperties}
+            aria-hidden="true"
+          >
+            {cloneRimRing(ringNode)}
+          </div>
+        ))}
         <div className="lf-logo-globe-layer lf-logo-globe-ring">
           {ringNode}
         </div>

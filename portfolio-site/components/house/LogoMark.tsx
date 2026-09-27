@@ -13,6 +13,8 @@
  *   SVG. `'ring'` / `'core'` render that group only, so a wrapper can stack two
  *   same-size layers without duplicate ids. Geometry and group ids stay locked;
  *   Motion's globe spin should wrap these layers rather than rewrite the markup.
+ * - `groupIds` (default true): set false on rim clones so `#lf-ring` / `#lf-core`
+ *   are not duplicated. Front ring and core keep the ids.
  *
  * Strokes are `currentColor` so the mark inherits house ink on `/` (and any
  * future parent color). Favicons cannot use currentColor — see `app/icon.svg`.
@@ -24,19 +26,21 @@ export type LogoMarkProps = {
   className?: string
   decorative?: boolean
   layer?: LogoMarkLayer
+  /** When false, omit `#lf-ring` / `#lf-core` so rim clones do not duplicate ids. */
+  groupIds?: boolean
 }
 
-function Ring() {
+function Ring({ groupIds }: { groupIds: boolean }) {
   return (
-    <g id="lf-ring">
+    <g id={groupIds ? 'lf-ring' : undefined}>
       <circle r="1" />
     </g>
   )
 }
 
-function Core() {
+function Core({ groupIds }: { groupIds: boolean }) {
   return (
-    <g id="lf-core">
+    <g id={groupIds ? 'lf-core' : undefined}>
       <ellipse rx="1" ry="0.43" transform="rotate(-60)" />
       <path d="M 0.605385 -0.384961 C 0.86 -0.09 0.94 0.22 0.852000 0.501000" />
       <path d="M 0.605385 -0.384961 L 0 0 L 0.852000 0.501000 M 0 0 L 0.837356 0.000000 M 0 0 L 0.237000 -0.482000" />
@@ -50,6 +54,7 @@ export default function LogoMark({
   className,
   decorative = true,
   layer = 'all',
+  groupIds = true,
 }: LogoMarkProps) {
   const named = !decorative
 
@@ -73,8 +78,8 @@ export default function LogoMark({
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          {layer === 'core' ? null : <Ring />}
-          {layer === 'ring' ? null : <Core />}
+          {layer === 'core' ? null : <Ring groupIds={groupIds} />}
+          {layer === 'ring' ? null : <Core groupIds={groupIds} />}
         </g>
       </svg>
     </div>
