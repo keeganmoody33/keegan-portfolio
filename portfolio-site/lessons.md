@@ -2,6 +2,15 @@
 
 Updated: 2026-09-27
 
+## Brand / Hathaway wordmark (assets only)
+
+- Do not hand-draw the Hathaway `lecturesfrom` skeletons. Five hand-drawn drafts failed a 32px cold read (`lecturestrom`: f looked like t, s like a reversed hook). Build from outlined Fraunces (SIL OFL) at wght 900, SOFT 100, WONK 0, opsz 144. Customize only kiss spacing (1% max), the o-dot, and rounding sharp serif ends. Keep the OFL text next to the VF in `brand/fraunces/`.
+- Capsule/round-cap strokes read as Avant Garde / Futura, not Cooper. Fraunces 900 SOFT 100 already has the weight and roundness.
+- Shadow must be equal `<use>` translations, not a tapered extrusion. Site is dark (`#0a0a0a`): face `--house-ink` `#ececec`, then `#C8C8C8` / `#A8A8A8` / `#8A8A8A` (`--house-muted`) outward. One `#A8A8A8` step under 24px. Proofs render on `#0a0a0a`, not white. XML comments cannot contain `--` (breaks cairosvg); write `house-ink`, not `--house-ink`.
+- At 32px, total shadow offset should be one stem width or less so the grey halo does not take over. v6: stem 6.65px, step 1.60px, total 4.79px. `#C8C8C8` vs face is ~1.42:1; if three bands do not read as separate layers, report FAIL — do not invent greys.
+- Union + evenodd: the o-dot is a second polygon inside the o hole. Do not evenodd-overlap letter bodies or they punch holes in each other.
+- Historical (why hand-draw failed): a stem+bar+disc `f` reads as `t`; inner discs blob the `s` spine; a wide `m` reads as `rn`; a closed-bar `e` reads as θ. Do not go back to those constructions.
+
 ## Discogs durable snapshot (2026-09-26)
 
 - **Durable last-good lives in Upstash Redis, not module memory.** Memory is per serverless instance; a cold instance that hits Discogs 429 has nothing to serve. Store a complete crawl at `lf:discogs:collection:v1` (preview/dev: `lf:preview:discogs:collection:v1` when `VERCEL_ENV !== 'production'`). Serve Redis first. Refresh ~daily via `after()` + `SET NX EX`. Only a complete crawl (`releases.length === pagination.items`) may overwrite. Missing Redis env must behave exactly as before — no crash, no Redis reads or writes during `next build`.

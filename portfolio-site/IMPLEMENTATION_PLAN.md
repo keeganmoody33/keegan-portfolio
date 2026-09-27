@@ -1,7 +1,7 @@
 # Implementation Plan — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-09-26
-**Status:** House cut implemented (title card, sleeves, full crate, signal cut, agent files, logo mark). Person page frozen except wordmark.
+**Last Updated:** 2026-09-27
+**Status:** House cut implemented (title card, sleeves, full crate, signal cut, agent files, logo mark). Person page frozen except wordmark. Hathaway wordmark assets (`public/brand/wordmark-hathaway.svg`) are outlined from Fraunces (OFL) and are not the live lockup.
 **Previous plan:** `IMPLEMENTATION_PLAN_DISCOGS_ARCHIVED.md` (completed Discogs widget build)
 
 ---
