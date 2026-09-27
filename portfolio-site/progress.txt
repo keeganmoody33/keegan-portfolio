@@ -1,6 +1,6 @@
-COMPLETED (2026-09-27 — WCAG 2.2.2 pause toggle on title-card spin):
-- Sibling `<button type="button">` next to the mark (not inside the decorative globe). Label swap `Pause logo animation` / `Play logo animation`. 24×24 hit, house tokens, `:focus-visible` ink outline.
-- Pause is `[data-logo-paused="true"] .lf-logo-globe-spin { animation-play-state: paused }` composed with `html[data-lf-signal-cut="active"]`. Neither writes `running`. sessionStorage `lf-logo-paused`. Hidden under `prefers-reduced-motion: reduce`.
+COMPLETED (2026-09-27 — WCAG 2.2.2 Motion switch in house footer):
+- Removed the lockup pause button. TitleCard renders `LogoGlobe` with `house-logo-mark mb-6` directly. `MotionSwitch` in `HouseFooter` (`role="switch"`, `Motion: on` / `Motion: off`). Shared on `/`, `/catalog`, `/collection`, `/legal`. `/keeganmoody33` does not share this footer.
+- Pause is `html[data-logo-paused="true"] .lf-logo-globe-spin { animation-play-state: paused }` composed with `html[data-lf-signal-cut="active"]`. Neither writes `running`. sessionStorage `lf-logo-paused`. Hidden under `prefers-reduced-motion: reduce`.
 
 COMPLETED (2026-09-27 — logo coin spin, owner override):
 - Whole title-card mark (ring + core) turns as one coin: `rotateY(0→360deg)` 12s linear infinite on `.lf-logo-globe-spin`. Core stays face-on (`animation: none; transform: none`).
