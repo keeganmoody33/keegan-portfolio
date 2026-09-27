@@ -1,3 +1,46 @@
+COMPLETED (2026-09-27 — MotionSwitch hydration: suppress on the button):
+- QA blocked #23 at 45f328b: in `next dev`, every HouseFooter route logged a React hydration mismatch on `<MotionSwitch>` `<button role=switch>` for `aria-checked` and `aria-label` (motion on and off). Cause: the sibling/head script writes those attributes; React props omit them; `suppressHydrationWarning` on `<html>` (layout.tsx) only covers that element's own attributes. A production `next start` build stays silent, which is why an earlier "0 console messages" claim was wrong.
+- Fix: `suppressHydrationWarning` on the switch button. Visible labels stay in CSS child spans (`aria-hidden`); the script does not rewrite children. React still does not declare `aria-checked` or `aria-label` — putting them on the vnode would make React own them and a post-toggle re-render would reset the DOM. Optional SSR defaults for JS-off `aria-required-attr` were skipped for that reason.
+- `next dev` console on `/`, `/catalog`, `/catalog/punch2pen`, `/catalog/proper-respect`, `/catalog/yadiggg`, `/collection`, `/legal`, and a 404: 0 hydration warnings, 0 errors, motion on and off.
+
+COMPLETED (2026-09-27 — rim-flat a11y: key switch off html[data-logo-paused]):
+- Visible label, `aria-checked`, and `aria-label` all follow `html[data-logo-paused]` (head bootstrap + sibling script). React does not bind those attributes, so a motion-off reload keeps `motion: off` / `aria-checked="false"` through hydration. The attributes still mismatch the React vnode in `next dev` until `suppressHydrationWarning` on the button (see entry above); production builds do not log that warning.
+- Coin period is 12s linear infinite on `.lf-logo-globe-spin` (not 24s). Rim wall is a 2D sibling on the same 12s clock.
+
+COMPLETED (2026-09-27 — Motion pause before first paint):
+- Root layout (`app/layout.tsx`, owns `<html>`) injects a parser-blocking head script: if `sessionStorage['lf-logo-paused']` is `'1'`, sets `document.documentElement.dataset.logoPaused = 'true'` before first paint. `suppressHydrationWarning` on `<html>`. `MotionSwitch` `useLayoutEffect` still applies toggles; it reads `getSnapshot()` so hydration does not clear the pre-paint pause. Never writes `running`.
+
+COMPLETED (2026-09-27 — WCAG 2.2.2 Motion switch in house footer):
+- Removed the lockup pause button. TitleCard renders `LogoGlobe` with `house-logo-mark mb-6` directly. `MotionSwitch` in `HouseFooter` (`role="switch"`, `motion: on` / `motion: off`). Shared on `/`, `/catalog`, `/collection`, `/legal`. `/keeganmoody33` does not share this footer.
+- Pause is `html[data-logo-paused="true"] .lf-logo-globe-spin { animation-play-state: paused }` composed with `html[data-lf-signal-cut="active"]`. Neither writes `running`. sessionStorage `lf-logo-paused`. Hidden under `prefers-reduced-motion: reduce`.
+
+COMPLETED (2026-09-27 — logo coin spin, owner override):
+- Whole title-card mark (ring + core) turns as one coin: `rotateY(0→360deg)` 12s linear infinite on `.lf-logo-globe-spin`. Core stays face-on (`animation: none; transform: none`).
+- Perspective `8rem` (4× the reserved 2rem box) on `.lf-logo-globe` so the child transform reads as a coin, not a squash. `backface-visibility: visible`. Pause on `html[data-lf-signal-cut="active"]`. Reduced motion: face-on, no animation.
+- Did not touch lockup fade, favicon, `clearCrossingFlag`, mark size/stroke/placement.
+
+COMPLETED (2026-09-26 — merge origin/main #24 into #23):
+- Merge commit of `4590edb` (career Discogs removal + banner/YouTube/a11y) into `cursor/lf-logo-globe`. Conflicts in `FRONTEND_GUIDELINES.md` and `progress.txt`; both sides kept.
+
+COMPLETED (2026-09-26 — PR #23 review batch):
+- Globe core ships `animation: none` (house spec: no 3D). Layers, keyframes, and SignalCut `data-lf-signal-cut` stay for a one-line restore. Face-on rest pose.
+- Wordmark entrance is a 700ms opacity fade; letter-spacing no longer animates. Resting tracking `-0.045em`. `--lf-track-from` removed.
+- `favicon.ico` 16/32/48 on a `#ececec` rounded plate, mark `#20262b`. `icon.svg` prefers-color-scheme unchanged.
+- `houseMetadata()` sets `openGraph.images` to `/opengraph-image` so `/catalog`, `/collection`, `/legal`, and sleeves keep the house still. `/keeganmoody33` stays `/og.jpg`.
+- `fallbackNavigate` last-resort catch calls `clearCrossingFlag()`.
+
+COMPLETED (2026-09-26 — LogoGlobe + lockup clip):
+- Entrance lockup is 700ms opacity + `letter-spacing` on a plain-text `h1`. Resting tracking stays `-0.045em`. Slot `overflow-x: clip`. Start tracking is `min(0.28em, −0.045em + (100cqi − 5.70em − 2px) / 12)` so the last glyph never starts past the clip edge.
+- `LogoGlobe` Server Component: static ring, core face-on (`animation: none`). Shared wrapper `rotateY` 12s linear infinite (was 24s; period is 12s), perspective 4× box, paused via `html[data-lf-signal-cut="active"]`. Title card wraps existing `LogoMark` `layer="ring"` + `layer="core"` without changing mark size or placement.
+- SignalCut sets `data-lf-signal-cut="active"` for the whole crossing and removes it in `teardown()`. Pause is CSS-only, never `window.__lfSignalCut`.
+
+COMPLETED (2026-09-26 — lecturesfrom logo mark):
+- Server Component `components/house/LogoMark.tsx` on the root title card (decorative, 2rem, outside the wordmark clip slot)
+- Groups `#lf-ring` / `#lf-core` locked; `layer` prop for Motion's stacked globe wrappers
+- Favicon/app icon from the same SVG: `app/icon.svg` (prefers-color-scheme), `app/favicon.ico` 16/32/48, `app/apple-icon.png` 180
+- House OG/twitter still (1200×630) via `app/(house)/opengraph-image.tsx` so `/keeganmoody33` keeps `/og.jpg`
+- Canonical vector: `brand/lecturesfrom-mark.svg`; regenerate with `npm run generate:brand`
+
 COMPLETED (2026-09-26 — QA amendment: rotator-dot handoff + drop lib/ Tailwind glob):
 - Arm the drop handoff when focus is anywhere inside the banner rotator (Now Playing slide or `[data-banner-dots]`). Still never arm for `body` or anything outside the rotator. Always `focus({ preventScroll: true })`. Landing target is the leftover slide's first focusable, then the first nav link on collapse
 - Tailwind content no longer scans `./lib/**` (that emitted `.top-10` from catalog prose). `.sr-only` stays safelisted; the live region lives in `components/`

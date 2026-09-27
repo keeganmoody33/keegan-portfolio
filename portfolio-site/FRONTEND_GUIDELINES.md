@@ -1,6 +1,6 @@
 # Frontend Guidelines — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-09-26
+**Last Updated:** 2026-09-27
 **Supersedes:** `docs/DESIGN_PLAYBOOK.md` (archived -- all content folded into this doc)
 **CSS Framework:** Tailwind CSS 3.4.19 + CSS Custom Properties
 **Fonts:** Google Fonts (Space Grotesk, Roboto Mono, Roboto Slab)
@@ -19,7 +19,7 @@
 
 **Two visual dialects. Do not homogenize.**
 
-- **House** (`/`, `/catalog`, `/collection`, `/legal`): near-black `#0a0a0a`, grotesque / tight-tracked meta, one accent = print orange `#E23D00`. Hairlines. No terminal chrome. No lime spray type. Display name always lowercase `lecturesfrom` (`lecturesfrom LLC` allowed in footer/legal).
+- **House** (`/`, `/catalog`, `/collection`, `/legal`): near-black `#0a0a0a`, grotesque / tight-tracked meta, one accent = print orange `#E23D00`. Hairlines. No terminal chrome. No lime spray type. Display name always lowercase `lecturesfrom` (`lecturesfrom LLC` allowed in footer/legal). The line-mark on the title card is modest (`2rem`), `currentColor` / house ink, above the wordmark — not a hero graphic and not inside `.house-wordmark-slot`.
 - **Person** (`/keeganmoody33`): existing lime/orange terminal. Untouched except the wordmark becoming a SignalCut link to `/`.
 
 **Information density:** Sparse surface, dense on engagement. First screen is clean, intriguing, spacious. Interaction reveals depth.
@@ -225,7 +225,7 @@ Animated 60px x 60px grid pattern on body:
 
 ### Rules for All Components
 
-1. All components are `'use client'` (client components)
+1. Person-page components in `components/` are `'use client'`. House components in `components/house/` are Server Components by default (`LogoMark` included). Do not add `'use client'` to the title card just to host the mark. `MotionSwitch` is the house exception: a client child of `HouseFooter`.
 2. All components live in `portfolio-site/components/`
 3. Functional components with hooks (no class components)
 4. No inline styles -- always Tailwind classes or CSS custom properties
@@ -251,7 +251,12 @@ Animated 60px x 60px grid pattern on body:
 | `.log-info` | Muted log entry | `color: var(--text-muted)` |
 | `.house-meta` | House metadata | Roboto Mono, 0.625rem, 0.22em tracking, uppercase |
 | `.house-rail` | House top rail | Three columns; atl / issue / year always visible; gutters `px-6 sm:px-10` |
-| `.house-wordmark` | Root lockup | `min(12rem, 17.2cqi)` so `lecturesfrom` fits its slot; 12rem cap on desktop |
+| `.house-wordmark` | Root lockup | `min(12rem, 17.2cqi)` so `lecturesfrom` fits its slot; 12rem cap on desktop. Entrance is a 700ms opacity fade (`houseLockup`). Resting tracking stays `-0.045em` on a plain-text `h1`. Instant under `prefers-reduced-motion`. Slot `overflow-x: clip`. |
+| `.house-logo-mark` | Root mark box | `2rem` square, `aspect-ratio: 1`, reserves size before paint |
+| `.lf-logo-globe` | Logo mark box | Square `aspect-ratio: 1`; reserves size before paint (CLS 0). `perspective: 8rem` (4× the 2rem title-card mark) on this box. Title card wraps `LogoMark` `layer="ring"` + `layer="core"`. |
+| `.lf-logo-globe-spin` | Coin spin | Shared wrapper around both layers. `rotateY(0→360deg)` 12s linear infinite (west→east). `backface-visibility: visible`. Pauses on `html[data-lf-signal-cut="active"]` or `html[data-logo-paused="true"]` (either attribute; never `running`). `animation: none` under `prefers-reduced-motion`. Owner override of house "No 3D", scoped to this mark. |
+| `.lf-motion-switch` | Footer Motion | HouseFooter `role="switch"` (`motion: on` / `motion: off`). Min 24×24, house muted/ink, `:focus-visible` 2px `--house-ink` outline. Hidden (`display: none`) under `prefers-reduced-motion: reduce`. Writes `data-logo-paused` on `<html>` after hydration; root layout head script sets the same attribute before first paint when `sessionStorage['lf-logo-paused']` is `'1'`. |
+| `.lf-logo-globe-core` | Core layer | Face-on rest pose. `animation: none; transform: none`. No independent spin. |
 | `.house-spine` | Crate row | 3 columns below `sm` (format/catno on a second title line); 5 columns from `md` |
 
 
@@ -296,6 +301,7 @@ Animated 60px x 60px grid pattern on body:
 | `gridShift` | 8s | linear infinite | Body grid background movement |
 | `sprayStroke` | 0.15s | cubic-bezier(0.25, 0.46, 0.45, 0.94) | Hero name character reveal |
 | `marquee` | 40s | linear infinite | Horizontal ticker scroll |
+| `houseLockup` | 700ms | ease-out both | Root wordmark opacity fade (`0` → `1`). No letter-spacing. Instant under `prefers-reduced-motion`. |
 | SIGNAL CUT first | 420ms | tear 0–60 / snow 60–280 / black 280–360 / fade 360–420 | House <-> person, first crossing in the tab |
 | SIGNAL CUT repeat | 160ms | tear 0–40 / black 40–120 / fade 120–160 | Later crossings in the same tab |
 | SIGNAL CUT reduced | 80ms | instant black, no tear/snow/id/fade | `prefers-reduced-motion: reduce` |
@@ -375,6 +381,8 @@ Person-page components render the same layout across breakpoints.
 ### What Exists
 
 - Images have `alt` attributes
+- Root title-card `LogoMark` is `aria-hidden` so the `h1` wordmark is the only accessible name. Standalone uses pass `decorative={false}` (`<title>` lecturesfrom).
+- HouseFooter Motion switch (WCAG 2.2.2) pauses the title-card coin spin. Shared on `/`, `/catalog`, `/collection`, `/legal`. Hidden under `prefers-reduced-motion`. Root layout head script applies a saved pause before first paint. `/keeganmoody33` does not share this footer (marquee / `gridShift` remain).
 - External links have `target="_blank"` and `rel="noopener noreferrer"`
 - Form submission via Enter key (Chat)
 - Disabled states on buttons during loading

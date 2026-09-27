@@ -1,7 +1,7 @@
 # Implementation Plan — lecturesfrom.com Portfolio
 
 **Last Updated:** 2026-09-26
-**Status:** House cut implemented (title card, sleeves, full crate, signal cut, agent files). Person page frozen except wordmark.
+**Status:** House cut implemented (title card, sleeves, full crate, signal cut, agent files, logo mark). Person page frozen except wordmark.
 **Previous plan:** `IMPLEMENTATION_PLAN_DISCOGS_ARCHIVED.md` (completed Discogs widget build)
 
 ---
@@ -233,6 +233,12 @@ Phase 0 (DONE)
 ```
 
 Phases 1 and 4 can run in parallel after Phase 0. Phase 3 is cancelled.
+
+### House brand mark (DONE — this PR)
+
+- **Output:** `components/house/LogoMark.tsx` on the root title card; `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`; house `opengraph-image` / `twitter-image` from `brand/house-share.png`.
+- **Globe:** `LogoGlobe` layers stay. Shared `.lf-logo-globe-spin` wrapper coins-spins the whole mark (`rotateY` 12s). Core stays `animation: none` (face-on). Owner override of house "No 3D", scoped to this mark. HouseFooter Motion switch for WCAG 2.2.2; composed with SignalCut via pause-only CSS attributes on `<html>`. Root layout blocking script applies a saved pause before first paint (`suppressHydrationWarning` on `<html>`).
+- **Validation:** lint / typecheck / build; `/keeganmoody33` `og:image` stays `/og.jpg`.
 
 ---
 

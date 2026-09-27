@@ -32,6 +32,8 @@ All versions are pinned from `portfolio-site/package-lock.json`.
 | postcss | 8.5.6 | CSS processing pipeline |
 | autoprefixer | 10.4.23 | Vendor prefixes for CSS |
 
+**Brand assets:** `npm run generate:brand` (`scripts/generate-brand-assets.mjs`) rebuilds `icon.svg`, `favicon.ico`, `apple-icon.png`, and house OG/twitter PNGs from `brand/lecturesfrom-mark.svg`. Needs system `rsvg-convert` and `python3-pil`. Not an npm dependency.
+
 ---
 
 ## Supabase Edge Functions (Deno)
