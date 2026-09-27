@@ -311,9 +311,13 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 }
 
 /*
- * LogoGlobe — ring static, core rotateY. SVG contract: square viewBox,
+ * LogoGlobe — reserved square box. SVG contract: square viewBox,
  * <g id="lf-ring"> outer circle, <g id="lf-core"> everything else,
  * strokes currentColor. Duplicate the SVG once per layer.
+ *
+ * Owner override (title-card mark only): the shared spin wrapper turns
+ * ring+core as one coin. Perspective lives on this box so it applies to
+ * the child transform (4× the mark: coin edge, not a flat squash).
  */
 .lf-logo-globe {
   position: relative;
@@ -330,6 +334,16 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 .lf-logo-globe.house-logo-mark {
   width: 2rem;
   height: 2rem;
+}
+
+.lf-logo-globe-spin {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 50%;
+  transform-style: flat;
+  backface-visibility: visible;
+  will-change: transform;
+  animation: lf-logo-globe-spin 24s linear infinite;
 }
 
 .lf-logo-globe-layer {
@@ -356,14 +370,10 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   visibility: hidden;
 }
 
+/* Core stays face-on relative to the wrapper. No independent spin. */
 .lf-logo-globe-core {
-  transform-origin: 50% 50%;
-  transform-style: flat;
-  backface-visibility: visible;
   transform: none;
   will-change: auto;
-  /* House spec: no 3D. One-line restore:
-     animation: lf-logo-globe-spin 24s linear infinite; will-change: transform; */
   animation: none;
 }
 
@@ -374,13 +384,13 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lf-logo-globe-core {
+  .lf-logo-globe-spin {
     animation: none;
     will-change: auto;
     transform: none;
   }
 }
 
-html[data-lf-signal-cut='active'] .lf-logo-globe-core {
+html[data-lf-signal-cut='active'] .lf-logo-globe-spin {
   animation-play-state: paused;
 }

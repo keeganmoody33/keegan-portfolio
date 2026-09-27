@@ -45,14 +45,16 @@ function cloneLayer(svg: LogoGlobeSvg, extra: string): LogoGlobeSvg {
 }
 
 /**
- * Lecturesfrom logo globe. Ring and core stay stacked. The core ships
- * static (`animation: none`, face-on) per house spec (no 3D). Keyframes
- * stay in globals.css so restoring 24s `rotateY` is a one-line CSS revert.
- * Pause is CSS-only via `html[data-lf-signal-cut="active"]` — never the
- * SignalCut debug hook.
+ * Lecturesfrom logo globe. Ring and core stay stacked and face-on to
+ * each other. The shared `.lf-logo-globe-spin` wrapper turns the whole
+ * mark as one coin (`rotateY` 24s linear infinite, west→east). Core
+ * stays `animation: none` / `transform: none` so the layers cannot
+ * drift. Pause is CSS-only via `html[data-lf-signal-cut="active"]` —
+ * never the SignalCut debug hook.
  *
  * Server Component. No JS animation loop. Title-card placement wraps
  * LogoMark `layer="ring"` + `layer="core"` at the mark's existing size.
+ * Owner override of the house "No 3D" rule, scoped to this mark.
  */
 export default function LogoGlobe({
   className,
@@ -88,11 +90,13 @@ export default function LogoGlobe({
       aria-label={decorative ? undefined : 'lecturesfrom'}
       aria-hidden={decorative ? true : undefined}
     >
-      <div className="lf-logo-globe-layer lf-logo-globe-ring" aria-hidden="true">
-        {ringNode}
-      </div>
-      <div className="lf-logo-globe-layer lf-logo-globe-core" aria-hidden="true">
-        {coreNode}
+      <div className="lf-logo-globe-spin" aria-hidden="true">
+        <div className="lf-logo-globe-layer lf-logo-globe-ring">
+          {ringNode}
+        </div>
+        <div className="lf-logo-globe-layer lf-logo-globe-core">
+          {coreNode}
+        </div>
       </div>
     </div>
   )

@@ -237,7 +237,7 @@ Phases 1 and 4 can run in parallel after Phase 0. Phase 3 is cancelled.
 ### House brand mark (DONE — this PR)
 
 - **Output:** `components/house/LogoMark.tsx` on the root title card; `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`; house `opengraph-image` / `twitter-image` from `brand/house-share.png`.
-- **Globe:** `LogoGlobe` layers stay; core ships `animation: none` (house spec: no 3D). Keyframes kept for a one-line restore.
+- **Globe:** `LogoGlobe` layers stay. Shared `.lf-logo-globe-spin` wrapper coins-spins the whole mark (`rotateY` 24s). Core stays `animation: none` (face-on). Owner override of house "No 3D", scoped to this mark.
 - **Validation:** lint / typecheck / build; `/keeganmoody33` `og:image` stays `/og.jpg`.
 
 ---

@@ -253,7 +253,9 @@ Animated 60px x 60px grid pattern on body:
 | `.house-rail` | House top rail | Three columns; atl / issue / year always visible; gutters `px-6 sm:px-10` |
 | `.house-wordmark` | Root lockup | `min(12rem, 17.2cqi)` so `lecturesfrom` fits its slot; 12rem cap on desktop. Entrance is a 700ms opacity fade (`houseLockup`). Resting tracking stays `-0.045em` on a plain-text `h1`. Instant under `prefers-reduced-motion`. Slot `overflow-x: clip`. |
 | `.house-logo-mark` | Root mark box | `2rem` square, `aspect-ratio: 1`, reserves size before paint |
-| `.lf-logo-globe` | Logo globe | Square `aspect-ratio: 1`; ring + core layers. Core ships `animation: none` (face-on; house spec: no 3D). Keyframes kept for a one-line restore. Pause hook `html[data-lf-signal-cut="active"]` remains. Title card wraps `LogoMark` `layer="ring"` + `layer="core"`. |
+| `.lf-logo-globe` | Logo mark box | Square `aspect-ratio: 1`; reserves size before paint (CLS 0). `perspective: 400cqw` (4× the mark) on this box. Title card wraps `LogoMark` `layer="ring"` + `layer="core"`. |
+| `.lf-logo-globe-spin` | Coin spin | Shared wrapper around both layers. `rotateY(0→360deg)` 24s linear infinite (west→east). `backface-visibility: visible`. Pauses on `html[data-lf-signal-cut="active"]`; `animation: none` under `prefers-reduced-motion`. Owner override of house "No 3D", scoped to this mark. |
+| `.lf-logo-globe-core` | Core layer | Face-on rest pose. `animation: none; transform: none`. No independent spin. |
 | `.house-spine` | Crate row | 3 columns below `sm` (format/catno on a second title line); 5 columns from `md` |
 
 
