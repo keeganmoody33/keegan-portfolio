@@ -13,11 +13,12 @@
  *   SVG. `'ring'` / `'core'` render that group only, so a wrapper can stack two
  *   same-size layers without duplicate ids.
  * - `groupIds` (default true): set false when a second mark shares the page
- *   (wordmark o) so `#lf-ring` / `#lf-core` stay unique on the title-card globe.
- * - `focusable` (default omit): pass `false` for the wordmark o so the SVG is
- *   not a tab stop. The title-card globe omits this; it stays as before.
+ *   so `#lf-ring` / `#lf-core` stay unique. The title card renders exactly
+ *   one mark tree (the wordmark-o globe), so the default is fine there.
+ * - `focusable` (default omit): pass `false` when the SVG must not be a tab
+ *   stop. The wordmark-o globe omits this; it stays aria-hidden instead.
  *   The core group is scale(0.74) so the orbit sits inside the ring instead of
- *   sharing its radius. Motion's globe spin wraps these layers.
+ *   sharing its radius. LogoGlobe's coin spin wraps these layers.
  *
  * Strokes are `currentColor` so the mark inherits house ink on `/` (and any
  * future parent color). Favicons cannot use currentColor — see `app/icon.svg`.

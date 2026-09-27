@@ -1,4 +1,11 @@
-COMPLETED (2026-09-27 — hero wordmark o is the static globe):
+COMPLETED (2026-09-27 — wordmark o is the spinning globe; standalone coin removed):
+- Owner call: the static o read as a lackluster logo attempt. The spinning `LogoGlobe` moved from above the wordmark into the o slot of `from`; `TitleCard` no longer renders a separate coin.
+- `HouseWordmark` wraps `LogoGlobe` (`decorative`, `className="house-wordmark-o-mark"`) around `LogoMark` `layer="ring"` + `layer="core"`. Same slot math: square = OS/2 sxHeight (`0.498em`), `bottom: 0.308em` (hhea descent), in-flow transparent o keeps glyph advance, full word `.sr-only`, painted run `aria-hidden`.
+- Globe chrome scales with the mark: wordmark-o perspective `calc(var(--lf-wordmark-o-x-height) * 4)` (4× ratio preserved from the 2rem/8rem coin); rim wall `width: max(1.125px, 3.52%)`, `border-radius: 999px`.
+- One globe on the title card → `#lf-ring` / `#lf-core` unique without `groupIds={false}`. Pause contract unchanged: `html[data-logo-paused]` + SignalCut selectors target the same `.lf-logo-globe-spin` / `.lf-logo-globe-rim-wall` classes; footer Motion switch still controls it.
+- Verified: typecheck/lint/build pass; served HTML has the globe inside the o slot; spin animates (frame diff); mobile (390px) wordmark extent identical to base.
+
+SUPERSEDED (2026-09-27 — hero wordmark o is the static globe):
 - Root `h1` (`HouseWordmark`) keeps lowercase `lecturesfrom` in Chakra Petch 600. The last o in `from` is the lecturesfrom `LogoMark` (canonical ring + core at `scale(0.74)`, no `LogoGlobe`, no spin, no rim, no `data-logo-paused`).
 - In-flow transparent o keeps glyph advance + tracking. Mark square is OS/2 sxHeight (`498/1000 = 0.498em`) on the alphabetic baseline (`bottom: 308/1000 = 0.308em` hhea descent). em units relative to the wordmark font-size.
 - Full word is `.sr-only` so the accessible name is `lecturesfrom` (not `lecturesfr o m`). Painted run is `aria-hidden`. Mark is `aria-hidden` + `focusable="false"`. Group ids omitted so `#lf-ring` / `#lf-core` stay unique on the spinning title-card globe.
