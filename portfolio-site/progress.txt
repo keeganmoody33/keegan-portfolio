@@ -1,3 +1,8 @@
+COMPLETED (2026-09-27 — logo coin spin, owner override):
+- Whole title-card mark (ring + core) turns as one coin: `rotateY(0→360deg)` 12s linear infinite on `.lf-logo-globe-spin`. Core stays face-on (`animation: none; transform: none`).
+- Perspective `8rem` (4× the reserved 2rem box) on `.lf-logo-globe` so the child transform reads as a coin, not a squash. `backface-visibility: visible`. Pause on `html[data-lf-signal-cut="active"]`. Reduced motion: face-on, no animation.
+- Did not touch lockup fade, favicon, `clearCrossingFlag`, mark size/stroke/placement.
+
 COMPLETED (2026-09-26 — merge origin/main #24 into #23):
 - Merge commit of `4590edb` (career Discogs removal + banner/YouTube/a11y) into `cursor/lf-logo-globe`. Conflicts in `FRONTEND_GUIDELINES.md` and `progress.txt`; both sides kept.
 
