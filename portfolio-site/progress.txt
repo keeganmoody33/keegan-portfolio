@@ -1,3 +1,69 @@
+COMPLETED (2026-09-26 — QA amendment: rotator-dot handoff + drop lib/ Tailwind glob):
+- Arm the drop handoff when focus is anywhere inside the banner rotator (Now Playing slide or `[data-banner-dots]`). Still never arm for `body` or anything outside the rotator. Always `focus({ preventScroll: true })`. Landing target is the leftover slide's first focusable, then the first nav link on collapse
+- Tailwind content no longer scans `./lib/**` (that emitted `.top-10` from catalog prose). `.sr-only` stays safelisted; the live region lives in `components/`
+
+COMPLETED (2026-09-26 — UX P1-B / P2-H / P2-I drop scroll + recovery chrome):
+- Focus handoff only when `document.activeElement` is inside `[data-now-playing]` / the player root. Body is not a lost-Play signal — a mouse user who clicks Play then scrolls must keep scrollY
+- Every post-drop `focus()` uses `{ preventScroll: true }`
+- Recovering Play drops `hover:` lime and uses `cursor-not-allowed`
+- Author is blank while recovering; PLAYING restores it
+
+COMPLETED (2026-09-26 — UX P1-A / P2-D/E/F/G around the stall):
+- Tailwind safelists `sr-only` and the live region lives in `components/` so the production CSS hides it (do not scan `./lib/**`)
+- `#yt-now-playing-live` is an empty React region on the career page at load; drop only writes the text
+- Focus handoff skips rotator dots and `[data-now-playing]` / Play / Pause; BannerRotator flushes after the slide count updates, to leftover `[data-banner-panel]` or nav. Pending stays until a target exists (GitHub-up must not dump to body)
+- Recovery chrome while the stall is armed: aria-busy/aria-disabled Play, "Track unavailable, skipping…", no time
+- After a skip, stall deadline is 10s; the first BUFFERING / CUED / new video id extends to a hard cap of errorTime + 25s. Churn does not extend past the cap. PLAYING clears. Silence drops at ~10s; hung BUFFERING drops at the cap (2b still stays)
+
+COMPLETED (2026-09-26 — YouTube 150 stall window, not skip-chain):
+- Only a real onError (2/5/100/101/150) increments the streak; a stall timer never does
+- After an error-triggered skip, one 10s stall window drops if nothing progresses
+- Three real errors (or playlist length if shorter) still drop; 1-video playlist still drops on first 150
+
+COMPLETED (2026-09-26 — YouTube 150 skip-then-drop):
+- Playback errors 2/5/100/101/150 call `nextVideo()` instead of leaving a stale Play button
+- After 3 in a row (or playlist length if shorter) `setError(true)` drops the slide
+- Streak resets on `onReady` and PLAYING; inert wrapper and tabIndex=-1 unchanged
+
+COMPLETED (2026-09-26 — hidden YouTube iframe out of tab order):
+- Hidden iframe wrapper in YouTubePlayer is `inert` + `aria-hidden`
+- `onReady` (and video-level `onError` if the embed already exists) sets `player.getIframe().tabIndex = -1`
+- Video-level `onError` does not unmount a mounted iframe
+- BannerRotator active panel no longer renders `aria-hidden="false"` (`suppress || undefined`)
+- Visible Play/Pause stays outside the wrapper so audio still works
+
+COMPLETED (2026-09-26 — QA Gate tap targets):
+- Nav Ask AI is `inline-flex min-h-11 items-center` (44px tall; look unchanged beyond height)
+- Banner rotator dots keep a 6px visible span inside a 24×24 (`h-6 w-6`) hit box; no negative margin
+- Dotted panel content pad is `pr-16` so two 24×24 hits at `right-3` + `gap-1` stay in the gutter and miss `/ 7d`
+- Career nav at 320 still wraps into rows (`flex-wrap` + `whitespace-nowrap`); do not force one row
+
+COMPLETED (2026-09-26 — banner inert + full-bleed + YT mount timeout):
+- Inactive/hidden BannerRotator panels get `inert` with `aria-hidden` (axe aria-hidden-focus)
+- Rotator root is unpadded; `pr-12` is on panel content only when dots show
+- YouTube 10s timeout starts on mount so a stalled script drops the slide
+- If GitHub already failed, header stays on the YouTube skeleton until that timeout, then collapses (no blank frame)
+
+COMPLETED (2026-09-26 — QA Gate landmark + docs):
+- `/keeganmoody33` footer is a sibling of `<main>` (one main landmark), matching house 404
+- `IMPLEMENTATION_PLAN.md` Step 4.4 no longer points at the removed career `/api/discogs` route
+
+COMPLETED (2026-09-26 — banner failure + polish):
+- BannerRotator drops failed/empty panels and their dots (`useBannerAvailability`)
+- One panel left → static, no dots; zero panels → rotator collapses (no blank slot, no orphaned dots)
+- WidgetErrorBoundary reports unavailable on catch; YouTube Script `onError` + 10s timeout set the same path
+- Shared `min-h-12` on banner panels; mobile `pr-12` so dots miss `/ 7d`
+- Career nav: `whitespace-nowrap` on items, `gap-x-3 gap-y-2` on the right group
+- `prefers-reduced-motion`: marquee animation none; banner does not auto-rotate (dots/manual stay)
+- `/api/github` still has no token env var; still `next: { revalidate: 300 }`
+
+COMPLETED (2026-09-26 — career Discogs removal):
+- Removed Recent Digs from `/keeganmoody33` (`BannerRotator` now YouTube + GitHub only)
+- Deleted unused `components/RecentDigs.tsx` and career-only `app/api/discogs/route.ts`
+- Left house `/collection`, `/api/discogs/collection`, `lib/discogs.ts`, and Discogs tests untouched
+- No career-only records route existed; no new redirect added
+- Ask AI / JD Fit Analyzer / chat / github APIs / `/og.jpg` untouched
+
 COMPLETED (2026-08-22 session — live Supabase sync execution):
 - Received owner sign-off and executed `sql/2026-08-22_sync_recent_experiences.sql` against production project `cvkcwvmlnghwwvdqudod` via equivalent PostgREST calls.
 - Synced four experiences, bringing `experiences` to 15 rows ordered by `display_order`; inserted 11 new skills, bringing `skills` to 25 rows.

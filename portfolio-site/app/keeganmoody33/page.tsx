@@ -7,18 +7,23 @@ import JDAnalyzer from '@/components/JDAnalyzer'
 import SprayText from '@/components/SprayText'
 import Timeline from '@/components/Timeline'
 import Marquee from '@/components/Marquee'
-import RecentDigs from '@/components/RecentDigs'
 import GitHubActivity from '@/components/GitHubActivity'
 import YouTubePlayer from '@/components/YouTubePlayer'
-import BannerRotator from '@/components/BannerRotator'
+import BannerRotator, {
+  BannerAvailabilityContext,
+} from '@/components/BannerRotator'
+import NowPlayingLiveRegion from '@/components/NowPlayingLiveRegion'
 import SignalCut from '@/components/SignalCut'
 import posthog from 'posthog-js'
 
-/** Error boundary — Discogs API failure never crashes the page */
+/** Error boundary — a single widget failure never crashes the page */
 class WidgetErrorBoundary extends Component<
   { children: ReactNode },
   { hasError: boolean }
 > {
+  static contextType = BannerAvailabilityContext
+  declare context: (available: boolean) => void
+
   constructor(props: { children: ReactNode }) {
     super(props)
     this.state = { hasError: false }
@@ -28,6 +33,7 @@ class WidgetErrorBoundary extends Component<
   }
   componentDidCatch(error: Error) {
     console.error('WidgetErrorBoundary caught:', error)
+    this.context(false)
   }
   render() {
     if (this.state.hasError) return null
@@ -107,29 +113,26 @@ export default function Home() {
   }, [])
 
   return (
-    <div className="min-h-screen">
-      {/* Marquee Ticker */}
-      <Marquee />
+    <div className="min-h-screen overflow-x-hidden">
+      <NowPlayingLiveRegion />
+      <header>
+        {/* Marquee Ticker */}
+        <Marquee />
 
-      {/* Rotating Banner — one widget visible at a time, auto-cycles */}
-      <BannerRotator labels={['Now Playing', 'Recent Digs', 'GitHub']}>
-        <WidgetErrorBoundary>
-          <YouTubePlayer />
-        </WidgetErrorBoundary>
-        <WidgetErrorBoundary>
-          <RecentDigs />
-        </WidgetErrorBoundary>
-        <WidgetErrorBoundary>
-          <GitHubActivity />
-        </WidgetErrorBoundary>
-      </BannerRotator>
+        {/* Rotating Banner — one widget visible at a time, auto-cycles */}
+        <BannerRotator labels={['Now Playing', 'GitHub']}>
+          <WidgetErrorBoundary>
+            <YouTubePlayer />
+          </WidgetErrorBoundary>
+          <WidgetErrorBoundary>
+            <GitHubActivity />
+          </WidgetErrorBoundary>
+        </BannerRotator>
+      </header>
 
-      {/* Main Layout */}
-      <div className="flex">
-        {/* Main Content */}
-        <main className="flex-1 px-4 sm:px-8 lg:px-16 py-8">
+      <main className="min-w-0 px-4 sm:px-8 lg:px-16 py-8">
           {/* Navigation */}
-          <nav className="flex items-center justify-between mb-12 sm:mb-16">
+          <nav className="mb-12 flex flex-wrap items-center justify-between gap-3 sm:mb-16">
             <div className="flex items-center gap-2">
               <span className="text-[var(--text-muted)] font-mono text-sm">/</span>
               <SignalCut
@@ -140,20 +143,20 @@ export default function Home() {
                 lecturesfrom
               </SignalCut>
             </div>
-            <div className="flex items-center gap-3 sm:gap-8">
-              <a href="#experience" className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-x-8">
+              <a href="#experience" className="whitespace-nowrap text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
                 XP
               </a>
-              <a href="#projects" className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
+              <a href="#projects" className="whitespace-nowrap text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
                 Projects <span className="text-[var(--text-muted)]">[P]</span>
               </a>
-              <a href="#contact" className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
+              <a href="#contact" className="whitespace-nowrap text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
                 Contact <span className="text-[var(--text-muted)]">[C]</span>
               </a>
               <button
                 onClick={handleOpenChat}
                 aria-label="Ask AI"
-                className="ask-ai-btn px-3 py-2 sm:px-4 font-mono text-sm"
+                className="ask-ai-btn inline-flex min-h-11 items-center whitespace-nowrap px-3 py-2 sm:px-4 font-mono text-sm"
               >
                 Ask AI
               </button>
@@ -235,74 +238,71 @@ export default function Home() {
             </p>
             <JDAnalyzer />
           </section>
+      </main>
 
-          {/* Footer */}
-          <footer id="contact" className="border-t border-[var(--border-dim)] pt-8">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <span className="text-[var(--text-muted)] font-mono text-sm">
-                © 2026 lecturesfrom
-              </span>
-              <div className="flex flex-wrap gap-4 sm:gap-6">
-                <a
-                  href={profile?.linkedin_url || 'https://linkedin.com/in/keeganmoody33'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleExternalLinkClick('linkedin', profile?.linkedin_url || 'https://linkedin.com/in/keeganmoody33')}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
-                >
-                  LINKEDIN
-                </a>
-                <a
-                  href="https://x.com/keeganmoody33"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleExternalLinkClick('x', 'https://x.com/keeganmoody33')}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
-                >
-                  X
-                </a>
-                <a
-                  href="https://substack.com/@keeganmoody33"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleExternalLinkClick('substack', 'https://substack.com/@keeganmoody33')}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
-                >
-                  SUBSTACK
-                </a>
-                <a
-                  href={profile?.github_url || 'https://github.com/keeganmoody33'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleExternalLinkClick('github', profile?.github_url || 'https://github.com/keeganmoody33')}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
-                >
-                  GITHUB
-                </a>
-                <a
-                  href="https://discord.com/users/lecturesfrom"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleExternalLinkClick('discord', 'https://discord.com/users/lecturesfrom')}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
-                >
-                  DISCORD
-                </a>
-                <a
-                  href="https://bsky.app/profile/lecturesfrom.bsky.social"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleExternalLinkClick('bluesky', 'https://bsky.app/profile/lecturesfrom.bsky.social')}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
-                >
-                  BLUESKY
-                </a>
-              </div>
-            </div>
-          </footer>
-        </main>
-
-      </div>
+      <footer id="contact" className="border-t border-[var(--border-dim)] px-4 pb-8 pt-8 sm:px-8 lg:px-16">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <span className="text-[var(--text-muted)] font-mono text-sm">
+            © 2026 lecturesfrom
+          </span>
+          <div className="flex flex-wrap gap-4 sm:gap-6">
+            <a
+              href={profile?.linkedin_url || 'https://linkedin.com/in/keeganmoody33'}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => handleExternalLinkClick('linkedin', profile?.linkedin_url || 'https://linkedin.com/in/keeganmoody33')}
+              className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+            >
+              LINKEDIN
+            </a>
+          <a
+            href="https://x.com/keeganmoody33"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => handleExternalLinkClick('x', 'https://x.com/keeganmoody33')}
+            className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+          >
+            X
+          </a>
+          <a
+            href="https://substack.com/@keeganmoody33"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => handleExternalLinkClick('substack', 'https://substack.com/@keeganmoody33')}
+            className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+          >
+            SUBSTACK
+          </a>
+          <a
+            href={profile?.github_url || 'https://github.com/keeganmoody33'}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => handleExternalLinkClick('github', profile?.github_url || 'https://github.com/keeganmoody33')}
+            className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+          >
+            GITHUB
+          </a>
+          <a
+            href="https://discord.com/users/lecturesfrom"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => handleExternalLinkClick('discord', 'https://discord.com/users/lecturesfrom')}
+            className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+          >
+            DISCORD
+          </a>
+          <a
+            href="https://bsky.app/profile/lecturesfrom.bsky.social"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => handleExternalLinkClick('bluesky', 'https://bsky.app/profile/lecturesfrom.bsky.social')}
+            className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+          >
+            BLUESKY
+          </a>
+          </div>
+        </div>
+      </footer>
 
       {/* Chat Modal */}
       {showChat && (

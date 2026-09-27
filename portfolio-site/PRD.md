@@ -38,7 +38,7 @@ Everything that serves the core purpose: help visitors understand who Keegan is,
 | JD Fit Analyzer | `JDAnalyzer.tsx`, `/api/jd-analyzer`, `jd-analyzer` Edge Function | **Shipped** |
 | Spray Paint Hero | `SprayText.tsx` | **Shipped** |
 | Marquee Ticker | `Marquee.tsx` | **Shipped** |
-| Recent Digs (Discogs) | `RecentDigs.tsx`, `/api/discogs` | **Shipped** |
+| Recent Digs (Discogs) | `RecentDigs.tsx`, `/api/discogs` | **Removed from `/keeganmoody33`** — crate lives at house `/collection` |
 | Activity Stream Sidebar | `ActivityStream.tsx` | **Shipped** |
 | Publications Section | `Publications.tsx` (inside Timeline) | **Shipped** |
 | PostHog Analytics | Client + server-side tracking | **Shipped** |
@@ -93,7 +93,7 @@ These are explicitly **not** what this site is:
 
 ### Visitor / Collaborator
 
-1. **As a visitor**, I want to see what records Keegan recently bought so I get a sense of personality beyond work.
+1. **As a visitor**, I want to browse the house crate at `/collection` so I can see the lecturesfrom record collection.
 2. **As a collaborator**, I want to find LinkedIn/GitHub/Substack links so I can connect on other platforms.
 3. **As a visitor**, I want the site to load fast and look good on my phone so I can browse during a commute.
 
@@ -115,7 +115,7 @@ These are explicitly **not** what this site is:
 | Mobile usable | Core actions work on phone | Chat, Timeline, JD Analyzer all functional |
 | AI leads with value | No self-sabotaging language unprompted | Zero instances of volunteering firing history |
 | Analytics flowing | PostHog captures events | All shipped features tracked |
-| Discogs live | Recent Digs shows real data | 5 records from lecturesfrom collection |
+| Discogs live | House `/collection` shows the live crate | Full lecturesfrom collection (not on `/keeganmoody33`) |
 
 ---
 

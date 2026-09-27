@@ -53,9 +53,10 @@ Runtime: **Deno**. Imports use URL specifiers with pinned versions where availab
 | Firecrawl | <https://api.firecrawl.dev/v1/scrape> | Header: `Authorization: Bearer <token>` | FIRECRAWL_API_KEY (Supabase secrets) |
 | PostHog | <https://us.i.posthog.com> | Project key in client init | NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST |
 | Discogs | <https://api.discogs.com> | Header: `Authorization: Discogs token=<token>`, User-Agent required | DISCOGS_TOKEN (Next.js env) |
+| GitHub | <https://api.github.com/users/keeganmoody33/events/public> | None (unauthenticated, 60 req/hr) | (none — `/api/github` does not read a token) |
 | Supabase | NEXT_PUBLIC_SUPABASE_URL/functions/v1/* | Header: `Authorization: Bearer <anon_key>` | NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY |
 
-**Discogs:** `api.discogs.com`; optional `DISCOGS_TOKEN` (public `lecturesfrom` collection). Recent-5 for Recent Digs (`/api/discogs`). Full crate paginated at `/api/discogs/collection` with `revalidate: 300`. User-Agent: `lecturesfrom/1.0`. Last-good cache on Discogs 429; errors use `Cache-Control: no-store`.
+**Discogs:** `api.discogs.com`; optional `DISCOGS_TOKEN` (public `lecturesfrom` collection). Full crate paginated at `/api/discogs/collection` with `revalidate: 300` for house `/collection`. User-Agent: `lecturesfrom/1.0`. Last-good cache on Discogs 429; errors use `Cache-Control: no-store`. Not used on `/keeganmoody33`.
 
 ---
 
