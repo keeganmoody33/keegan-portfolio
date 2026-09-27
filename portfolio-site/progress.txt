@@ -1,3 +1,7 @@
+COMPLETED (2026-09-27 — WCAG 2.2.2 pause toggle on title-card spin):
+- Sibling `<button type="button">` next to the mark (not inside the decorative globe). Label swap `Pause logo animation` / `Play logo animation`. 24×24 hit, house tokens, `:focus-visible` ink outline.
+- Pause is `[data-logo-paused="true"] .lf-logo-globe-spin { animation-play-state: paused }` composed with `html[data-lf-signal-cut="active"]`. Neither writes `running`. sessionStorage `lf-logo-paused`. Hidden under `prefers-reduced-motion: reduce`.
+
 COMPLETED (2026-09-27 — logo coin spin, owner override):
 - Whole title-card mark (ring + core) turns as one coin: `rotateY(0→360deg)` 12s linear infinite on `.lf-logo-globe-spin`. Core stays face-on (`animation: none; transform: none`).
 - Perspective `8rem` (4× the reserved 2rem box) on `.lf-logo-globe` so the child transform reads as a coin, not a squash. `backface-visibility: visible`. Pause on `html[data-lf-signal-cut="active"]`. Reduced motion: face-on, no animation.
@@ -15,7 +19,7 @@ COMPLETED (2026-09-26 — PR #23 review batch):
 
 COMPLETED (2026-09-26 — LogoGlobe + lockup clip):
 - Entrance lockup is 700ms opacity + `letter-spacing` on a plain-text `h1`. Resting tracking stays `-0.045em`. Slot `overflow-x: clip`. Start tracking is `min(0.28em, −0.045em + (100cqi − 5.70em − 2px) / 12)` so the last glyph never starts past the clip edge.
-- `LogoGlobe` Server Component: static ring, core `rotateY` 24s linear infinite, perspective 4× box, paused via `html[data-lf-signal-cut="active"]`. Title card wraps existing `LogoMark` `layer="ring"` + `layer="core"` without changing mark size or placement.
+- `LogoGlobe` Server Component: static ring, core `rotateY` 12s linear infinite, perspective 4× box, paused via `html[data-lf-signal-cut="active"]`. Title card wraps existing `LogoMark` `layer="ring"` + `layer="core"` without changing mark size or placement.
 - SignalCut sets `data-lf-signal-cut="active"` for the whole crossing and removes it in `teardown()`. Pause is CSS-only, never `window.__lfSignalCut`.
 
 COMPLETED (2026-09-26 — lecturesfrom logo mark):

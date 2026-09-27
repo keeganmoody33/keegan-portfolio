@@ -338,6 +338,46 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
   height: 2rem;
 }
 
+.lf-logo-lockup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lf-logo-pause {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  min-width: 24px;
+  min-height: 24px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--house-muted);
+  cursor: pointer;
+}
+
+.lf-logo-pause:hover {
+  color: var(--house-ink);
+}
+
+.lf-logo-pause:focus {
+  outline: 2px solid var(--house-ink);
+  outline-offset: 2px;
+}
+
+.lf-logo-pause:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.lf-logo-pause svg {
+  display: block;
+  pointer-events: none;
+}
+
 .lf-logo-globe-spin {
   position: absolute;
   inset: 0;
@@ -391,8 +431,18 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
     will-change: auto;
     transform: none;
   }
+
+  .lf-logo-pause {
+    display: none;
+  }
 }
 
-html[data-lf-signal-cut='active'] .lf-logo-globe-spin {
+/*
+ * Pause is attribute-only. Never set animation-play-state: running —
+ * user resume and SignalCut teardown both drop their own attribute so
+ * the other can still hold the animation paused.
+ */
+html[data-lf-signal-cut='active'] .lf-logo-globe-spin,
+[data-logo-paused='true'] .lf-logo-globe-spin {
   animation-play-state: paused;
 }

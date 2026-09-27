@@ -1,12 +1,18 @@
 # Lessons Learned
 
-Updated: 2026-09-26
+Updated: 2026-09-27
+
+## House logo / lockup (2026-09-27)
+
+- **WCAG 2.2.2 pause is a sibling, not a child of the decorative mark.** `LogoGlobe` is `aria-hidden` on the title card. A pause control inside that tree is invisible to AT. Keep the button in `LogoGlobePauseToggle` next to the mark.
+- **Compose pause attributes; never set `animation-play-state: running`.** User toggle writes `data-logo-paused`. SignalCut writes `data-lf-signal-cut` on `html`. Both CSS rules only set `paused`. Dropping one cannot un-pause the other. Inline `running` on resume would punch through SignalCut.
+- **Hide the toggle with CSS under `prefers-reduced-motion: reduce`.** Do not omit it in JS — that hydrates differently from the server. `display: none` also removes it from the tab order. Read sessionStorage in an effect; default render is playing.
 
 ## House logo / lockup (2026-09-26)
 
 - **House wordmark must fit its slot.** Resting `scrollWidth` stays inside the slot at 320–1440. Cap at `12rem` on desktop; use `cqi`/`clamp` below that. Do not clip the last glyph. Keep a plain-text `h1` so rest matches the base.
 - **Title-card LogoMark is `aria-hidden`.** The `h1` wordmark is the name. Do not also `aria-label` the SVG next to it. Keep `#lf-ring` / `#lf-core` ids; `LogoGlobe` wraps `layer="ring"` + `layer="core"`.
-- **Coin spin lives on the shared wrapper, not the core.** Owner override of house "No 3D", scoped to the title-card mark. `.lf-logo-globe-spin` is `rotateY` 12s linear infinite; `.lf-logo-globe-core` stays `animation: none; transform: none` so ring and core cannot drift. Perspective is `8rem` on the reserved box (parent of the transform) — 4× the 2rem mark. Do not use `cqw` on the same element as `container-type`; it is not a query container for itself and `400cqw` resolved to the viewport (~180×, a flat squash). Pause via `html[data-lf-signal-cut="active"]`.
+- **Coin spin lives on the shared wrapper, not the core.** Owner override of house "No 3D", scoped to the title-card mark. `.lf-logo-globe-spin` is `rotateY` 12s linear infinite; `.lf-logo-globe-core` stays `animation: none; transform: none` so ring and core cannot drift. Perspective is `8rem` on the reserved box (parent of the transform) — 4× the 2rem mark. Do not use `cqw` on the same element as `container-type`; it is not a query container for itself and `400cqw` resolved to the viewport (~180×, a flat squash). Pause via `html[data-lf-signal-cut="active"]` and `[data-logo-paused="true"]`.
 - **House wordmark entrance is opacity only.** `houseLockup` is 700ms `opacity: 0 → 1`. Do not animate `letter-spacing` — tracking-in only happened at 1440+. Resting tracking stays `-0.045em`. Instant under `prefers-reduced-motion`.
 - **`houseMetadata()` must set `openGraph.images`.** Nested house routes replace the inherited `openGraph` object, which drops the file-convention `og:image`. Point `images` at `/opengraph-image`. Do not put `opengraph-image` at `app/` root or it inherits onto `/keeganmoody33`. Person stays `/og.jpg`.
 
