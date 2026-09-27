@@ -1,3 +1,9 @@
+COMPLETED (2026-09-27 — lecturesfrom Hathaway wordmark redraw, assets only):
+- Redrew filled-outline letters: open `f` hook (no enclosed eye) + x-height crossbar, two even `m` arches, matching `c` terminals, no stray mark between `s` and `f`
+- Neighbour kiss at bowls/baseline in the x-height band (no weld discs). Face still one evenodd path + o-dot; same `<use>` shadow stack and small variant
+- Files: `public/brand/wordmark-hathaway.svg`, `public/brand/wordmark-hathaway-sm.svg`. Regenerator: `scripts/build-wordmark-hathaway.py`
+- Not wired. Header integration waits on PR #23 (`cursor/lf-logo-globe`) and Keegan PNG approval (stop rule 6)
+
 COMPLETED (2026-09-27 — lecturesfrom Hathaway wordmark, assets only):
 - Custom lowercase `lecturesfrom` as SVG path data (not a live font). Cooper Black / Souvenir Bold used only as weight/roundness references
 - Face is one evenodd path; three equal 4% down-right `<use>` shadows (#4A4A4A / #7A7A7A / #A8A8A8) plus face #111111. Small variant: one #7A7A7A step
