@@ -257,14 +257,14 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: #E23D00; }
    * OS/2 sxHeight = 486 → 0.486em
    * hhea descent = 292 → 0.292em (alphabetic baseline from font box bottom)
    * vertical stem (l 73–188; m stems 115/114/115 at sxHeight/2) = 115 → 0.115em
-   * in-word ring stroke = 0.95 × stem = 0.10925em (grows inward; see LogoMark)
+   * in-word ring+orbit stroke = stem × LF_WORDMARK_STROKE_TO_STEM (shared; grows inward)
    * o ink (not used for layout): xMin 49 yMin -14 xMax 564 yMax 508
    */
   --lf-wordmark-o-advance: 0.613em;
   --lf-wordmark-o-x-height: 0.486em;
   --lf-wordmark-o-descent: 0.292em;
   --lf-wordmark-stem: 0.115em;
-  --lf-wordmark-ring-stroke: 0.10925em;
+  --lf-wordmark-ring-stroke: 0.069em;
 }
 
 /*
