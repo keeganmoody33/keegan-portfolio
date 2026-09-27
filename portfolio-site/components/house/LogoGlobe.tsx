@@ -49,8 +49,10 @@ function cloneLayer(svg: LogoGlobeSvg, extra: string): LogoGlobeSvg {
  * each other. The shared `.lf-logo-globe-spin` wrapper turns the whole
  * mark as one coin (`rotateY` 12s linear infinite, west→east). Core
  * stays `animation: none` / `transform: none` so the layers cannot
- * drift. Pause is CSS-only via `html[data-lf-signal-cut="active"]` —
- * never the SignalCut debug hook.
+ * drift. Pause is CSS-only via `html[data-lf-signal-cut="active"]`
+ * and `[data-logo-paused="true"]` — never inline animation-play-state,
+ * never the SignalCut debug hook. Either attribute pauses; dropping
+ * one cannot resume while the other is set.
  *
  * Server Component. No JS animation loop. Title-card placement wraps
  * LogoMark `layer="ring"` + `layer="core"` at the mark's existing size.
