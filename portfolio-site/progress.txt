@@ -1,3 +1,9 @@
+IN PROGRESS (2026-09-27 — lecturesfrom nameplate wordmark, assets only):
+- Archivo Narrow Bold (OFL) outlines → `brand/lecturesfrom-wordmark.svg` (+ dark `#ececec` / light `#111`). Tracking +3% em, hairline rule = `l` stem/6. Letterforms not edited.
+- Generator: `scripts/generate-wordmark.py`. Font + OFL in `brand/archivo-narrow/`.
+- Not wired into header, TitleCard, or any page. Hathaway/Fraunces PR direction is void. Awaiting Keegan PNG approval before merge.
+- Picked Archivo Narrow Bold over Barlow Condensed 700 because e/s counters stay more open at 24px.
+
 COMPLETED (2026-09-26 — QA amendment: rotator-dot handoff + drop lib/ Tailwind glob):
 - Arm the drop handoff when focus is anywhere inside the banner rotator (Now Playing slide or `[data-banner-dots]`). Still never arm for `body` or anything outside the rotator. Always `focus({ preventScroll: true })`. Landing target is the leftover slide's first focusable, then the first nav link on collapse
 - Tailwind content no longer scans `./lib/**` (that emitted `.top-10` from catalog prose). `.sr-only` stays safelisted; the live region lives in `components/`

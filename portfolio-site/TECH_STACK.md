@@ -76,6 +76,8 @@ Runtime: **Deno**. Imports use URL specifiers with pinned versions where availab
 - **Live URL:** lecturesfrom.com (house) and lecturesfrom.com/keeganmoody33 (principal)
 - **Build:** Next.js (`next build`); auto-deploy on push to main
 
+**Brand asset toolchain (not runtime):** `scripts/generate-wordmark.py` uses Python 3 + fontTools + rsvg-convert (Pillow for proofs). These are not Next.js dependencies. Do not add them to `package.json`.
+
 ---
 
 ## Related Docs

@@ -1,6 +1,6 @@
 # App Flow — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-09-26
+**Last Updated:** 2026-09-27
 **Framework:** Next.js (App Router)
 **Deployment:** Vercel (auto-deploy on push to main)
 
@@ -12,7 +12,7 @@
 
 | Route            | File                         | What It Shows                                                   |
 |------------------|------------------------------|-----------------------------------------------------------------|
-| `/`              | `app/page.tsx`               | House title card + crate (Server Component). No turntable. No return-visit redirect. |
+| `/`              | `app/page.tsx`               | House title card + crate (Server Component). No turntable. No return-visit redirect. Live wordmark is still typeset `.house-wordmark`; nameplate SVGs in `brand/` are not mounted. |
 | `/catalog`       | `app/catalog/page.tsx`       | Crate permalink (same spines as `/`)                            |
 | `/catalog/[slug]`| `app/catalog/[slug]/page.tsx`| Sleeve (cover, liner, tracks). Unknown slugs 404.               |
 | `/collection`    | `app/collection/page.tsx`    | Full live Discogs crate                                         |

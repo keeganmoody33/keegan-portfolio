@@ -1,7 +1,7 @@
 # Implementation Plan — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-09-26
-**Status:** House cut implemented (title card, sleeves, full crate, signal cut, agent files). Person page frozen except wordmark.
+**Last Updated:** 2026-09-27
+**Status:** House cut implemented (title card, sleeves, full crate, signal cut, agent files). Person page frozen except wordmark. Nameplate wordmark SVGs are assets-only (not wired).
 **Previous plan:** `IMPLEMENTATION_PLAN_DISCOGS_ARCHIVED.md` (completed Discogs widget build)
 
 ---
@@ -26,6 +26,25 @@
 - Canonical documentation (PRD, APP_FLOW, TECH_STACK, FRONTEND_GUIDELINES, BACKEND_STRUCTURE)
 
 **Validation:** Live at [lecturesfrom.com/keeganmoody33](https://lecturesfrom.com/keeganmoody33). All features functional.
+
+---
+
+## House identity assets (IN PROGRESS — awaiting PNG approval)
+
+**Goal:** Industrial nameplate wordmark as SVG assets. Not mounted in the header or any page until Keegan approves the PNGs.
+
+**Inputs:** nameplate brief (supersedes Hathaway/Fraunces, void). `FRONTEND_GUIDELINES.md` house tokens (`#ececec` on `#0a0a0a`, light `#111`).
+
+**Outputs:**
+
+- `brand/lecturesfrom-wordmark.svg` (currentColor), `-dark.svg`, `-light.svg`
+- `brand/archivo-narrow/` — Archivo Narrow Bold source (OFL) + license
+- `scripts/generate-wordmark.py` — fontTools outline dump; tracking + rule only
+- `scripts/wordmark-assets.test.mjs`
+
+**Validation:** `node --test scripts/wordmark-assets.test.mjs`. Re-run `python3 scripts/generate-wordmark.py` after any tracking/rule change. Do not edit letterforms.
+
+**Not in this step:** wiring into `TitleCard`, person-page nav, or favicons.
 
 ---
 

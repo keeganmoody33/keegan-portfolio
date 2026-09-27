@@ -1,6 +1,6 @@
 # PRD — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-09-26
+**Last Updated:** 2026-09-27
 **Status:** House cut in preview. Person page remains at /keeganmoody33.
 **Live URL:** [lecturesfrom.com](https://www.lecturesfrom.com) (house) · [lecturesfrom.com/keeganmoody33](https://www.lecturesfrom.com/keeganmoody33) (principal)
 
@@ -51,6 +51,7 @@ Everything that serves the core purpose: help visitors understand who Keegan is,
 | Sleeves | `/catalog`, `/catalog/[slug]` | **Shipped (this PR)** |
 | Full Discogs crate | `/collection`, `/api/discogs/collection` | **Shipped (this PR)** |
 | SignalCut | `components/SignalCut.tsx` | **Shipped (this PR)** — house ↔ person only |
+| lecturesfrom nameplate wordmark (assets) | `brand/lecturesfrom-wordmark.svg`, `scripts/generate-wordmark.py` | **Assets only — awaiting PNG approval.** Not wired into header or pages. Hathaway/Fraunces direction is void. |
 
 ### Spec-Locked (Not Yet Built)
 

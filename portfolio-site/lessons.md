@@ -1,6 +1,14 @@
 # Lessons Learned
 
-Updated: 2026-08-22
+Updated: 2026-09-27
+
+## Brand / wordmark
+
+- **Do not reuse the Hathaway/Fraunces wordmark.** That direction is void. The nameplate is Archivo Narrow Bold outlines, not a 70s serif.
+- **Do not redraw letterforms.** Dump OFL outlines with fontTools. Only tracking (+2–4% em) and the hairline rule are custom.
+- **Pick the condensed face by 24px e/s counters, not by how tight it looks at display size.** Archivo Narrow Bold keeps those counters more open than Barlow Condensed 700. Barlow's heavier stem pinches the e-eye and s apertures at 24px.
+- **The nameplate rule is not a link underline.** Stroke = 1/6 of the `l` stem, full ink width (left of `l` to right of `m`), with ~0.16em air under the baseline. No plate border, rivets, bevel, gradient, or shadow — the brief's stamped/embossed mood is not a rendering instruction.
+- **Do not wire the SVG into the header until Keegan PNG-approves it.** Assets live in `brand/`; live `.house-wordmark` stays Space Grotesk.
 
 ## Schema
 
