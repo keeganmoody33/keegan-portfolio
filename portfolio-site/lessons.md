@@ -2,7 +2,7 @@
 
 Updated: 2026-09-27
 
-## Brand / wordmark
+## Brand / Hathaway wordmark (assets only)
 
 - Do not hand-draw the Hathaway `lecturesfrom` skeletons. Five hand-drawn drafts failed a 32px cold read (`lecturestrom`: f looked like t, s like a reversed hook). Build from outlined Fraunces (SIL OFL) at wght 900, SOFT 100, WONK 0, opsz 144. Customize only kiss spacing (1% max), the o-dot, and rounding sharp serif ends. Keep the OFL text next to the VF in `brand/fraunces/`.
 - Capsule/round-cap strokes read as Avant Garde / Futura, not Cooper. Fraunces 900 SOFT 100 already has the weight and roundness.
@@ -10,6 +10,34 @@ Updated: 2026-09-27
 - At 32px, total shadow offset should be one stem width or less so the grey halo does not take over. v6: stem 6.65px, step 1.60px, total 4.79px. `#C8C8C8` vs face is ~1.42:1; if three bands do not read as separate layers, report FAIL — do not invent greys.
 - Union + evenodd: the o-dot is a second polygon inside the o hole. Do not evenodd-overlap letter bodies or they punch holes in each other.
 - Historical (why hand-draw failed): a stem+bar+disc `f` reads as `t`; inner discs blob the `s` spine; a wide `m` reads as `rn`; a closed-bar `e` reads as θ. Do not go back to those constructions.
+
+## Discogs durable snapshot (2026-09-26)
+
+- **Durable last-good lives in Upstash Redis, not module memory.** Memory is per serverless instance; a cold instance that hits Discogs 429 has nothing to serve. Store a complete crawl at `lf:discogs:collection:v1` (preview/dev: `lf:preview:discogs:collection:v1` when `VERCEL_ENV !== 'production'`). Serve Redis first. Refresh ~daily via `after()` + `SET NX EX`. Only a complete crawl (`releases.length === pagination.items`) may overwrite. Missing Redis env must behave exactly as before — no crash, no Redis reads or writes during `next build`.
+- **`Redis.fromEnv()` only warns when vars are missing.** Resolve `KV_REST_API_URL`/`KV_REST_API_TOKEN` (then `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`) yourself and skip the client when the pair is absent. Do not mix KV URL with UPSTASH token.
+- **Never Data-Cache an empty Redis MGET.** `force-cache` + `revalidate: 300` stored the empty build-time read, so a cold `next start` never hit Redis and treated a real snapshot as missing. Redis reads use `cache: 'no-store'`. Skip Redis entirely when `NEXT_PHASE === 'phase-production-build'` so SSG of `/collection` only uses Discogs `next.revalidate: 300` and stays ISR (`○` 5m). Writes and the lock stay `no-store` inside `after()`.
+- **Never cache a failed or partial Discogs crawl as last-good.** Last-good is only a complete crawl whose `releases.length` equals Discogs `pagination.items`. 429 / exhausted `X-Discogs-Ratelimit-Remaining` mid-paginate: serve last-good, or HTTP 429 + `Retry-After`. Put `Cache-Control: no-store` on error responses — route `revalidate = 300` will otherwise ISR-cache a 429 for five minutes.
+- **Never leak Discogs bodies** to the client, rendered page errors, or PostHog `error_message`. Map to generic `Too many requests` / `Failed to fetch from Discogs`.
+- **`DISCOGS_TOKEN` is optional** for the public `lecturesfrom` collection. Requiring it 500s `/collection` in previews that lack the env. User-Agent must be `lecturesfrom/1.0` on every Discogs request.
+- **House crate is `/api/discogs/collection` + `/collection`.** Career `/api/discogs` and RecentDigs were removed (#24). Do not put Discogs back on `/keeganmoody33`.
+- **Route `export const revalidate` must be a numeric literal.** `export const revalidate = DISCOGS_REVALIDATE_SECONDS` fails Next 16 with "Invalid segment configuration export". Use `export const revalidate = 300`.
+
+## House logo / lockup (2026-09-27)
+
+- **WCAG 2.2.2 pause lives in the shared house footer, not the lockup.** `LogoGlobe` is `aria-hidden` on the title card. A control inside that tree is invisible to AT. `MotionSwitch` in `HouseFooter` (`/`, `/catalog`, `/collection`, `/legal`) sets `data-logo-paused` on `<html>` because the footer is not an ancestor of the mark. `/keeganmoody33` does not share this footer.
+- **Compose pause attributes; never set `animation-play-state: running`.** User toggle writes `html[data-logo-paused="true"]` (remove the attribute when playing). SignalCut writes `data-lf-signal-cut` on `html`. Both CSS rules only set `paused`. Dropping one cannot un-pause the other. Inline `running` on resume would punch through SignalCut.
+- **Hide the switch with CSS under `prefers-reduced-motion: reduce`.** Do not omit it in JS — that hydrates differently from the server. `display: none` also removes it from the tab order. Read sessionStorage via `useSyncExternalStore` (`getServerSnapshot` is playing) only to keep the html pause attribute in sync after toggles. A parser-blocking head script sets `data-logo-paused` before first paint; `useLayoutEffect` is only for toggles after hydration. `useLayoutEffect` alone cannot prevent a first-paint spin.
+- **Do not bind `aria-checked` / `aria-label` to `useSyncExternalStore`.** `getServerSnapshot` is playing, so React would paint `motion: on` / `aria-checked="true"` on hydrate and warn (or flip the AX name) even with `suppressHydrationWarning`. Key both off `html[data-logo-paused]` from the head bootstrap and a parser-blocking sibling script. CSS already picks the visible word from the same attribute.
+- **Do not let the first layout effect undo the head-script pause.** Hydration still renders `paused=false` (`getServerSnapshot`). Applying that snapshot would remove `data-logo-paused` for a frame, then re-pause at a random angle. Apply `getSnapshot()` in the effect. `suppressHydrationWarning` on `<html>` because the attribute is set before React hydrates. Parser-blocking `<script dangerouslySetInnerHTML>` in `<head>` — not `next/script` `beforeInteractive`, which does not block first paint.
+- **Decorative globe stays `pointer-events: none`.** The lockup no longer hosts a control, so do not wrap the mark in `.lf-logo-lockup`.
+
+## House logo / lockup (2026-09-26)
+
+- **House wordmark must fit its slot.** Resting `scrollWidth` stays inside the slot at 320–1440. Chakra Petch 600 at `-0.01em` is wider than Space Grotesk 600 at `-0.045em`, so the cap is `11.5rem` / `16.5cqi` (0.961 of the old `12rem` / `17.2cqi`). Do not clip the last glyph. Keep a plain-text `h1` so rest matches the base.
+- **Title-card LogoMark is `aria-hidden`.** The `h1` wordmark is the name. Do not also `aria-label` the SVG next to it. Keep `#lf-ring` / `#lf-core` ids; `LogoGlobe` wraps `layer="ring"` + `layer="core"`.
+- **Coin spin lives on the shared wrapper, not the core.** Owner override of house "No 3D", scoped to the title-card mark. `.lf-logo-globe-spin` is `rotateY` 12s linear infinite; `.lf-logo-globe-core` stays `animation: none; transform: none` so ring and core cannot drift. Perspective is `8rem` on the reserved box (parent of the transform) — 4× the 2rem mark. Do not use `cqw` on the same element as `container-type`; it is not a query container for itself and `400cqw` resolved to the viewport (~180×, a flat squash). Pause via `html[data-lf-signal-cut="active"]` and `html[data-logo-paused="true"]`.
+- **House wordmark entrance is opacity only.** `houseLockup` is 700ms `opacity: 0 → 1`. Do not animate `letter-spacing`. Resting tracking is `-0.01em` on Chakra Petch 600 (was `-0.045em` on Space Grotesk). Instant under `prefers-reduced-motion`.
+- **`houseMetadata()` must set `openGraph.images`.** Nested house routes replace the inherited `openGraph` object, which drops the file-convention `og:image`. Point `images` at `/opengraph-image`. Do not put `opengraph-image` at `app/` root or it inherits onto `/keeganmoody33`. Person stays `/og.jpg`.
 
 ## Schema
 

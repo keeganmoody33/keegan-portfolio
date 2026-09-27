@@ -34,7 +34,7 @@ export default function Crate() {
             <>
               <span className="font-mono text-[11px] text-[var(--house-dim)]">{row.crateNo}</span>
               <span className="flex min-w-0 flex-col">
-                <span className="house-spine-title font-space text-base sm:text-lg">{title(row)}</span>
+                <span className="house-spine-title font-display text-base font-semibold tracking-[-0.01em] sm:text-lg">{title(row)}</span>
                 <span className="mt-0.5 whitespace-nowrap font-mono text-[11px] tracking-[0.16em] uppercase text-[var(--house-muted)] sm:hidden">
                   {formatTag(row)} / {catno(row)}
                 </span>

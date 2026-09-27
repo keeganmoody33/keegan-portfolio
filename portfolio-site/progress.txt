@@ -3,7 +3,7 @@ COMPLETED (2026-09-27 — Hathaway wordmark v6 from Fraunces outlines, assets on
 - Custom only: neighbour kiss (1% max), solid o-dot, rounded serif ends. Face `#ececec` on `#0a0a0a`; steps `#C8C8C8` / `#A8A8A8` / `#8A8A8A`; small variant one `#A8A8A8` step
 - At 32px: stem 6.65px, shadow step 1.60px, total offset 4.79px (0.72 stem). 32px cold read is lecturesfrom
 - Source + OFL: `brand/fraunces/`. Regenerator: `scripts/build-wordmark-hathaway.py`. Hand-drawn generator archived as `scripts/build-wordmark-hathaway-handdrawn.py`
-- Files: `public/brand/wordmark-hathaway.svg`, `public/brand/wordmark-hathaway-sm.svg`. Not wired. Waits on PR #23 and Keegan PNG approval
+- Files: `public/brand/wordmark-hathaway.svg`, `public/brand/wordmark-hathaway-sm.svg`. Not wired. Live title card stays the Chakra Petch lockup.
 
 COMPLETED (2026-09-27 — Hathaway wordmark shadow colour update, assets only):
 - Face stays `--house-ink` `#ececec` on `#0a0a0a`. Shadow steps outward `#C8C8C8` / `#A8A8A8` / `#8A8A8A`. Small variant: one `#A8A8A8` step
@@ -28,6 +28,63 @@ COMPLETED (2026-09-27 — lecturesfrom Hathaway wordmark, assets only):
 - Face is one evenodd path; three equal 4% down-right `<use>` shadows (#4A4A4A / #7A7A7A / #A8A8A8) plus face #111111. Small variant: one #7A7A7A step
 - Files: `public/brand/wordmark-hathaway.svg`, `public/brand/wordmark-hathaway-sm.svg`. Regenerator: `scripts/build-wordmark-hathaway.py`
 - Not wired. Header integration waits on PR #23 (`cursor/lf-logo-globe`) and Keegan PNG approval (stop rule 6)
+
+COMPLETED (2026-09-27 — Jam recording instrumentation):
+- Added Jam team metadata and recorder/capture scripts to the root layout, beside the logo-pause bootstrap. `suppressHydrationWarning` on `<html>` stays.
+- Jam metadata records the current route only. The app has no user accounts or workspace identity source, so example IDs are not used as production data.
+
+COMPLETED (2026-09-27 — logo orbit inset):
+- `#lf-core` is `scale(0.74)` in `brand/lecturesfrom-mark.svg` and `LogoMark`. The orbit no longer shares the ring radius. Inner paths scale with it. Ring, stroke `0.0625`, and group ids unchanged.
+- Regenerated `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`, and `brand/house-share.png`.
+
+COMPLETED (2026-09-27 — House tokens v3):
+- Display face is Chakra Petch 600 (`--house-font-display`). Wordmark tracking `-0.01em`, size `clamp(2.4rem, 14.2vw, 11.5rem)` and `min(11.5rem, 16.5cqi)`. Lockup fade and clip unchanged.
+- Page-title h1/h2 and `.house-spine-title` use `font-display`. `h2.house-meta` and `/keeganmoody33` stay Space Grotesk / Roboto Mono.
+- Add-on tokens (stripe, key, lcd, pad, cables, cobalt) and `.house-lcd` are defined and unused. Light mode is `.house[data-theme="light"]` plus the same six colors on `html:has(.house)` so body and the scrollbar track follow `--house-bg`. No house theme toggle.
+- Google Fonts import adds Chakra Petch and Doto. Person lime theme unchanged.
+
+COMPLETED (2026-09-27 — MotionSwitch hydration: suppress on the button):
+- QA blocked #23 at 45f328b: in `next dev`, every HouseFooter route logged a React hydration mismatch on `<MotionSwitch>` `<button role=switch>` for `aria-checked` and `aria-label` (motion on and off). Cause: the sibling/head script writes those attributes; React props omit them; `suppressHydrationWarning` on `<html>` (layout.tsx) only covers that element's own attributes. A production `next start` build stays silent, which is why an earlier "0 console messages" claim was wrong.
+- Fix: `suppressHydrationWarning` on the switch button. Visible labels stay in CSS child spans (`aria-hidden`); the script does not rewrite children. React still does not declare `aria-checked` or `aria-label` — putting them on the vnode would make React own them and a post-toggle re-render would reset the DOM. Optional SSR defaults for JS-off `aria-required-attr` were skipped for that reason.
+- `next dev` console on `/`, `/catalog`, `/catalog/punch2pen`, `/catalog/proper-respect`, `/catalog/yadiggg`, `/collection`, `/legal`, and a 404: 0 hydration warnings, 0 errors, motion on and off.
+
+COMPLETED (2026-09-27 — rim-flat a11y: key switch off html[data-logo-paused]):
+- Visible label, `aria-checked`, and `aria-label` all follow `html[data-logo-paused]` (head bootstrap + sibling script). React does not bind those attributes, so a motion-off reload keeps `motion: off` / `aria-checked="false"` through hydration. The attributes still mismatch the React vnode in `next dev` until `suppressHydrationWarning` on the button (see entry above); production builds do not log that warning.
+- Coin period is 12s linear infinite on `.lf-logo-globe-spin` (not 24s). Rim wall is a 2D sibling on the same 12s clock.
+
+COMPLETED (2026-09-27 — Motion pause before first paint):
+- Root layout (`app/layout.tsx`, owns `<html>`) injects a parser-blocking head script: if `sessionStorage['lf-logo-paused']` is `'1'`, sets `document.documentElement.dataset.logoPaused = 'true'` before first paint. `suppressHydrationWarning` on `<html>`. `MotionSwitch` `useLayoutEffect` still applies toggles; it reads `getSnapshot()` so hydration does not clear the pre-paint pause. Never writes `running`.
+
+COMPLETED (2026-09-27 — WCAG 2.2.2 Motion switch in house footer):
+- Removed the lockup pause button. TitleCard renders `LogoGlobe` with `house-logo-mark mb-6` directly. `MotionSwitch` in `HouseFooter` (`role="switch"`, `motion: on` / `motion: off`). Shared on `/`, `/catalog`, `/collection`, `/legal`. `/keeganmoody33` does not share this footer.
+- Pause is `html[data-logo-paused="true"] .lf-logo-globe-spin { animation-play-state: paused }` composed with `html[data-lf-signal-cut="active"]`. Neither writes `running`. sessionStorage `lf-logo-paused`. Hidden under `prefers-reduced-motion: reduce`.
+
+COMPLETED (2026-09-27 — logo coin spin, owner override):
+- Whole title-card mark (ring + core) turns as one coin: `rotateY(0→360deg)` 12s linear infinite on `.lf-logo-globe-spin`. Core stays face-on (`animation: none; transform: none`).
+- Perspective `8rem` (4× the reserved 2rem box) on `.lf-logo-globe` so the child transform reads as a coin, not a squash. `backface-visibility: visible`. Pause on `html[data-lf-signal-cut="active"]`. Reduced motion: face-on, no animation.
+- Did not touch lockup fade, favicon, `clearCrossingFlag`, mark size/stroke/placement.
+
+COMPLETED (2026-09-26 — merge origin/main #24 into #23):
+- Merge commit of `4590edb` (career Discogs removal + banner/YouTube/a11y) into `cursor/lf-logo-globe`. Conflicts in `FRONTEND_GUIDELINES.md` and `progress.txt`; both sides kept.
+
+COMPLETED (2026-09-26 — PR #23 review batch):
+- Globe core ships `animation: none` (house spec: no 3D). Layers, keyframes, and SignalCut `data-lf-signal-cut` stay for a one-line restore. Face-on rest pose.
+- Wordmark entrance is a 700ms opacity fade; letter-spacing no longer animates. Resting tracking `-0.045em`. `--lf-track-from` removed.
+- `favicon.ico` 16/32/48 on a `#ececec` rounded plate, mark `#20262b`. `icon.svg` prefers-color-scheme unchanged.
+- `houseMetadata()` sets `openGraph.images` to `/opengraph-image` so `/catalog`, `/collection`, `/legal`, and sleeves keep the house still. `/keeganmoody33` stays `/og.jpg`.
+- `fallbackNavigate` last-resort catch calls `clearCrossingFlag()`.
+
+COMPLETED (2026-09-26 — LogoGlobe + lockup clip):
+- Entrance lockup is 700ms opacity + `letter-spacing` on a plain-text `h1`. Resting tracking stays `-0.045em`. Slot `overflow-x: clip`. Start tracking is `min(0.28em, −0.045em + (100cqi − 5.70em − 2px) / 12)` so the last glyph never starts past the clip edge.
+- `LogoGlobe` Server Component: static ring, core face-on (`animation: none`). Shared wrapper `rotateY` 12s linear infinite (was 24s; period is 12s), perspective 4× box, paused via `html[data-lf-signal-cut="active"]`. Title card wraps existing `LogoMark` `layer="ring"` + `layer="core"` without changing mark size or placement.
+- SignalCut sets `data-lf-signal-cut="active"` for the whole crossing and removes it in `teardown()`. Pause is CSS-only, never `window.__lfSignalCut`.
+
+COMPLETED (2026-09-26 — lecturesfrom logo mark):
+- Server Component `components/house/LogoMark.tsx` on the root title card (decorative, 2rem, outside the wordmark clip slot)
+- Groups `#lf-ring` / `#lf-core` locked; `layer` prop for Motion's stacked globe wrappers
+- Favicon/app icon from the same SVG: `app/icon.svg` (prefers-color-scheme), `app/favicon.ico` 16/32/48, `app/apple-icon.png` 180
+- House OG/twitter still (1200×630) via `app/(house)/opengraph-image.tsx` so `/keeganmoody33` keeps `/og.jpg`
+- Canonical vector: `brand/lecturesfrom-mark.svg`; regenerate with `npm run generate:brand`
 
 COMPLETED (2026-09-26 — QA amendment: rotator-dot handoff + drop lib/ Tailwind glob):
 - Arm the drop handoff when focus is anywhere inside the banner rotator (Now Playing slide or `[data-banner-dots]`). Still never arm for `body` or anything outside the rotator. Always `focus({ preventScroll: true })`. Landing target is the leftover slide's first focusable, then the first nav link on collapse
@@ -94,6 +151,17 @@ COMPLETED (2026-09-26 — career Discogs removal):
 - Left house `/collection`, `/api/discogs/collection`, `lib/discogs.ts`, and Discogs tests untouched
 - No career-only records route existed; no new redirect added
 - Ask AI / JD Fit Analyzer / chat / github APIs / `/og.jpg` untouched
+
+COMPLETED (2026-09-26 — durable Discogs collection in Upstash Redis):
+- Last-good crate snapshot in Redis (`lf:discogs:collection:v1` / `lf:preview:…` when `VERCEL_ENV !== 'production'`), plus meta + lock keys
+- `fetchFullCollection()` contract unchanged; `/collection` page not edited
+- Serve Redis first (cold instance never 429s when a snapshot exists); throw 429 only if Redis and memory are empty
+- Refresh ~once a day via `after()` + `SET NX EX` (120s); only a complete crawl overwrites; 429/partial keeps the old copy
+- Redis reads use `cache: 'no-store'` so empty MGETs are not Data-Cached; skip Redis reads and writes during `next build` so `/collection` stays ISR (`○` 5m)
+- Missing KV/UPSTASH env = today's in-memory last-good + Discogs crawl; `Redis.fromEnv()` not used
+- `mapRelease` never emits `/release/0`; tiles still link to `https://www.discogs.com/release/<id>`
+- Tests: `node --experimental-strip-types --test lib/discogs.test.ts` (fake store; existing tests still pass)
+- Career `/api/discogs` is gone (#24); house crate is `/api/discogs/collection` only. No cron; no new secrets
 
 COMPLETED (2026-08-22 session — live Supabase sync execution):
 - Received owner sign-off and executed `sql/2026-08-22_sync_recent_experiences.sql` against production project `cvkcwvmlnghwwvdqudod` via equivalent PostgREST calls.

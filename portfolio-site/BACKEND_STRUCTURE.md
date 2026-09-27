@@ -259,7 +259,7 @@ Full paginated Discogs crate for `/collection`. Paginates `per_page=100` until `
 
 **Auth:** `DISCOGS_TOKEN` if present. Missing token does not 500.
 
-**Cache:** `next: { revalidate: 300 }` and route `revalidate = 300`. Last-good in-memory cache is saved only after a complete crawl whose release count equals Discogs `pagination.items`. On Discogs 429 or exhausted `X-Discogs-Ratelimit-Remaining` mid-crawl, serve last-good if present; otherwise HTTP 429. Partial/failed crawls are never stored as last-good. No webhook; 5-minute ISR is the contract.
+**Cache:** `next: { revalidate: 300 }` and route `revalidate = 300`. Last-good is a complete crawl only (`releases.length === pagination.items`). When Upstash Redis env is present, that copy is stored at `lf:discogs:collection:v1` (production) or `lf:preview:discogs:collection:v1` (preview/dev) plus `…:meta:v1` and `…:lock:v1`. Reads serve Redis first so a cold instance never 429s if a snapshot exists. Refresh is at most ~once a day via `after()`, guarded by `SET NX EX` (120s). Partial/failed/429 refreshes keep the old copy and record a generic error kind on meta. Redis reads use `cache: 'no-store'` so an empty/missing MGET is never kept in Next's Data Cache; skip Redis reads and writes entirely during `next build` (`NEXT_PHASE === 'phase-production-build'`) so `/collection` SSG stays ISR (`○` 5m) via Discogs `next.revalidate: 300`. Writes and the lock use `cache: 'no-store'` only inside `after()`. Missing Redis env = in-memory last-good + Discogs crawl as before. On Discogs 429 with empty Redis and empty memory: HTTP 429 + Retry-After. No webhook; 5-minute ISR is the HTML contract. Each `discogsUrl` is `https://www.discogs.com/release/<id>` with no `/release/0`.
 
 **PostHog events:** `api_discogs_collection_request`, `api_discogs_error`, `api_rate_limited`
 
@@ -333,6 +333,25 @@ Proxies to Supabase `jd-analyzer` Edge Function.
 
 ---
 
+## Static metadata files
+
+House share images live in the `(house)` route group so they do **not** inherit onto `/keeganmoody33`. Nested house pages (`/catalog`, `/collection`, `/legal`, sleeves) set their own `openGraph` via `houseMetadata()`, which replaces the file-convention image — so `houseMetadata()` includes `openGraph.images` pointing at `/opengraph-image`. `personMetadata()` keeps `/og.jpg`.
+
+| File | URL | Notes |
+|------|-----|--------|
+| `app/icon.svg` | `/icon.svg` | Stroke via `prefers-color-scheme` (`#20262b` light / `#ececec` dark). No `currentColor`. |
+| `app/favicon.ico` | `/favicon.ico` | 16 / 32 / 48 on a `#ececec` rounded plate, mark `#20262b`. |
+| `app/apple-icon.png` | `/apple-icon.png` | 180×180, solid `#ececec` ground, mark `#20262b`. |
+| `app/(house)/opengraph-image.tsx` | hashed `/opengraph-image-*` | Injects house `og:image`. |
+| `app/opengraph-image/route.ts` | `/opengraph-image` | Stable 1200×630 PNG from `brand/house-share.png`. |
+| `app/(house)/twitter-image.tsx` | hashed `/twitter-image-*` | Injects house `twitter:image`. |
+| `app/twitter-image/route.ts` | `/twitter-image` | Same still as OG. |
+| `public/og.jpg` | `/og.jpg` | GTM certificate. Person metadata only (`personMetadata()`). |
+
+Regenerate rasters with `npm run generate:brand`. Canonical vector: `brand/lecturesfrom-mark.svg`.
+
+---
+
 ## Client-Side Integrations (No API Route)
 
 ### YouTube IFrame Player API
@@ -388,6 +407,10 @@ Both deployed via `supabase functions deploy <name>`. Source in `supabase/functi
 | `NEXT_PUBLIC_POSTHOG_KEY` | Public (client + server) | No | `providers.tsx`, `lib/posthog-server.ts` |
 | `NEXT_PUBLIC_POSTHOG_HOST` | Public (client + server) | No | Defaults to `https://us.i.posthog.com` |
 | `DISCOGS_TOKEN` | Server-only | No | `/api/discogs/collection` (sent when present; public collection works without it) |
+| `KV_REST_API_URL` | Server-only | No | Durable Discogs snapshot (Vercel Marketplace Upstash for Redis). Preferred over UPSTASH_*. |
+| `KV_REST_API_TOKEN` | Server-only | No | Pair with `KV_REST_API_URL`. Read-write token; do not use `KV_REST_API_READ_ONLY_TOKEN`. |
+| `UPSTASH_REDIS_REST_URL` | Server-only | No | Fallback if KV_* pair is missing. |
+| `UPSTASH_REDIS_REST_TOKEN` | Server-only | No | Fallback if KV_* pair is missing. |
 
 ### Supabase Secrets (set via `supabase secrets set`)
 
@@ -430,7 +453,7 @@ All API routes follow the same pattern:
 
 - `achievements` table is populated but not queried by any Edge Function
 - In-memory rate limiting is per-instance (stopgap for Vercel)
-- Discogs collection uses 5-minute ISR plus last-good cache; no Discogs webhook
+- Discogs collection uses 5-minute ISR plus a durable Redis last-good snapshot when Upstash env is set; no Discogs webhook; no cron
 - Supabase client in `lib/supabase.ts` uses non-null assertion -- will throw if env vars missing at module load
 - Deno std lib in Edge Functions pinned to `0.168.0` (~45 versions behind)
 

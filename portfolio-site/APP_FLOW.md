@@ -1,6 +1,6 @@
 # App Flow — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-09-26
+**Last Updated:** 2026-09-27
 **Framework:** Next.js (App Router)
 **Deployment:** Vercel (auto-deploy on push to main)
 
@@ -12,11 +12,15 @@
 
 | Route            | File                         | What It Shows                                                   |
 |------------------|------------------------------|-----------------------------------------------------------------|
-| `/`              | `app/page.tsx`               | House title card + crate (Server Component). No turntable. No return-visit redirect. |
-| `/catalog`       | `app/catalog/page.tsx`       | Crate permalink (same spines as `/`)                            |
-| `/catalog/[slug]`| `app/catalog/[slug]/page.tsx`| Sleeve (cover, liner, tracks). Unknown slugs 404.               |
-| `/collection`    | `app/collection/page.tsx`    | Full live Discogs crate                                         |
-| `/legal`         | `app/legal/page.tsx`         | Entity + long about                                             |
+| `/`              | `app/(house)/page.tsx`               | House title card + crate (Server Component). LogoGlobe wraps LogoMark (ring + core) above the wordmark at the same 2rem size. The shared wrapper coins-spins the whole mark; core stays face-on. HouseFooter Motion switch (WCAG 2.2.2) pauses the spin via `html[data-logo-paused]`. Root layout head script sets the attribute from `sessionStorage['lf-logo-paused']` before first paint; `useLayoutEffect` keeps it in sync after hydration/toggles. Hidden under reduced motion. Wordmark entrance is a 700ms opacity fade. No page turntable. No return-visit redirect. |
+| `/catalog`       | `app/(house)/catalog/page.tsx`       | Crate permalink (same spines as `/`)                            |
+| `/catalog/[slug]`| `app/(house)/catalog/[slug]/page.tsx`| Sleeve (cover, liner, tracks). Unknown slugs 404.               |
+| `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate (ISR 300s; durable last-good in Redis when configured) |
+| `/legal`         | `app/(house)/legal/page.tsx`         | Entity + long about                                             |
+| `/icon.svg`      | `app/icon.svg`                       | Site icon; `prefers-color-scheme` stroke. Applies to house and person. |
+| `/favicon.ico`   | `app/favicon.ico`                    | 16/32/48 ico: `#ececec` rounded plate, mark `#20262b` (matches apple-icon). |
+| `/apple-icon.png`| `app/apple-icon.png`                 | 180px, light ground, mark `#20262b`                             |
+| `/opengraph-image` | `app/(house)/opengraph-image.tsx`  | House share image 1200×630. Person page keeps `/og.jpg`.        |
 | `/keeganmoody33` | `app/keeganmoody33/page.tsx` | Principal / person page (Ask AI, JD Fit Analyzer, timeline)     |
 | `/keegan`        | next.config + vercel.json    | 301 → `/keeganmoody33`                                          |
 
@@ -28,14 +32,14 @@
 | Redirect (301) | `/keeganMoody33` | `/keeganmoody33` | Case normalization  |
 | Redirect (301) | `/keegan`        | `/keeganmoody33` | Short alias         |
 
-**Result:** Visitors land on `lecturesfrom.com` and see the house title card + crate. `/` never redirects to the person page. The person page is at `/keeganmoody33`. House ↔ person crossings use `SignalCut` (not a global layout animation). Ask AI and JD Fit Analyzer stay on the person page only.
+**Result:** Visitors land on `lecturesfrom.com` and see the house title card + crate. `/` never redirects to the person page. The person page is at `/keeganmoody33`. House ↔ person crossings use `SignalCut` (not a global layout animation). Ask AI and JD Fit Analyzer stay on the person page only. `LogoGlobe` wraps the title-card `LogoMark` (`layer="ring"` + `layer="core"`); geometry stays in LogoMark. The globe core is static (`animation: none`). `HouseFooter` (including the Motion switch) is shared on `/`, `/catalog`, `/collection`, `/legal`. `/keeganmoody33` has its own footer.
 
 ### API Routes
 
 | Route | Method | File | Purpose |
 |-------|--------|------|---------|
 | `/api/chat` | POST | `app/api/chat/route.ts` | Proxy to Supabase `chat` Edge Function |
-| `/api/discogs/collection` | GET | `app/api/discogs/collection/route.ts` | Full paginated Discogs crate (`revalidate: 300`) |
+| `/api/discogs/collection` | GET | `app/api/discogs/collection/route.ts` | Full Discogs crate (`revalidate: 300`, Redis last-good when configured). Career `/api/discogs` was removed. |
 | `/api/github` | GET | `app/api/github/route.ts` | Proxy to GitHub public events API |
 | `/api/jd-analyzer` | POST | `app/api/jd-analyzer/route.ts` | Proxy to Supabase `jd-analyzer` Edge Function |
 
@@ -44,16 +48,21 @@
 ## Provider Hierarchy
 
 ```
-<html lang="en">
+<html lang="en" suppressHydrationWarning>
+  <head>
+    logo-pause bootstrap
+    Jam team metadata + recorder scripts
+  </head>
   <body>
+    <JamMetadata />          ← current route only
     <PostHogProvider>        ← Client-side analytics (providers.tsx)
-      <Page />               ← app/page.tsx
+      <Page />               ← app/(house)/page.tsx (house) or app/keeganmoody33/page.tsx
     </PostHogProvider>
   </body>
 </html>
 ```
 
-PostHog initializes on mount if `NEXT_PUBLIC_POSTHOG_KEY` exists. No-ops silently if missing.
+PostHog initializes on mount if `NEXT_PUBLIC_POSTHOG_KEY` exists. No-ops silently if missing. Jam recorder scripts load before hydration; metadata records the current route only; the site has no authentication or workspace identity source, so example IDs are not used.
 
 ---
 
@@ -307,7 +316,9 @@ Supabase DB
     │   └── jd-analyzer/index.ts ──→ /api/jd-analyzer ──→ JDAnalyzer component
     │
 Discogs API
-    └── /api/discogs/collection ──→ house `/collection` (not the person page)
+    └── fetchFullCollection() ──→ house `/collection`, `/api/discogs/collection`, `/collection.md`
+            └── Upstash Redis last-good (`lf:discogs:collection:v1`) when env is set
+            └── not used on `/keeganmoody33` (career `/api/discogs` / RecentDigs removed)
 
 YouTube IFrame API (client-side, no proxy)
     └── youtube.com/iframe_api ──→ YouTubePlayer component

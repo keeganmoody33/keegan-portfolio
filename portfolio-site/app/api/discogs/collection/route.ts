@@ -4,7 +4,7 @@ import { checkRateLimit } from '@/lib/rate-limit'
 import {
   discogsErrorHttp,
   fetchFullCollection,
-  peekLastGoodCollection,
+  readCachedCollection,
 } from '@/lib/discogs'
 
 export const revalidate = 300
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 
   const rateLimit = checkRateLimit(request, 'api/discogs/collection', 30, 60 * 1000)
   if (!rateLimit.success) {
-    const cached = peekLastGoodCollection()
+    const cached = await readCachedCollection()
     posthog.capture({
       distinctId,
       event: 'api_rate_limited',
