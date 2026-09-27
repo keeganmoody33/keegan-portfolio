@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { markdownTwinPath } from '@/lib/agent'
 import {
   HOUSE_DESCRIPTION,
+  HOUSE_OG_IMAGE,
   HOUSE_TITLE,
   OG_IMAGE_PATH,
   PERSON_DESCRIPTION,
@@ -34,6 +35,7 @@ export function houseMetadata(path: string, title: string, description: string):
       siteName: HOUSE_TITLE,
       title,
       description,
+      images: [HOUSE_OG_IMAGE],
     },
   }
 }
