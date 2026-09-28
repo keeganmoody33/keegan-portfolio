@@ -19,7 +19,7 @@
 
 **Two visual dialects. Do not homogenize.**
 
-- **House** (`/`, `/catalog`, `/collection`, `/legal`): near-black `#0a0a0a`, grotesque / tight-tracked meta, one accent = print orange `#e23d00`. Display face is Chakra Petch 600 (wordmark, page-title h1/h2, `.house-spine-title`). Body on `.house` stays Space Grotesk. Meta stays Roboto Mono. Hairlines. No terminal chrome. No lime spray type. Display name always lowercase `lecturesfrom` (`lecturesfrom LLC` allowed in footer/legal). The last `o` in the root wordmark is the static filled `LogoMark` — geometry, strokes, and layer order traced from the owner PNG (outer circle, tilted ellipse, stem + flag, yellow pie, blue / lavender / green wedges; outlines `currentColor` / house ink; fills `var(--lf-mark-*)`, flag `var(--house-orange)`; no white disc), sized so the circle's outer ink hits Chakra Petch 600 x-height (`0.498em`); there is no standalone coin above the wordmark. Favicon / og remain the older line-mark and now mismatch the live mark.
+- **House** (`/`, `/catalog`, `/collection`, `/legal`): near-black `#0a0a0a`, grotesque / tight-tracked meta, one accent = print orange `#e23d00`. Display face is Chakra Petch 600 (wordmark, page-title h1/h2, `.house-spine-title`). Body on `.house` stays Space Grotesk. Meta stays Roboto Mono. Hairlines. No terminal chrome. No lime spray type. Display name always lowercase `lecturesfrom` (`lecturesfrom LLC` allowed in footer/legal). The last `o` in the root wordmark is the static filled `LogoMark` — geometry, strokes, and layer order traced from the owner PNG (outer circle, tilted ellipse, stem + flag, yellow pie, blue / lavender / green as a sector of the inner arc that meets the ring at the green ray; outlines `currentColor` / house ink; fills `var(--lf-mark-*)`, flag `var(--house-orange)`; no white disc), sized so the circle's outer ink hits Chakra Petch 600 x-height (`0.498em`); there is no standalone coin above the wordmark. Favicon / og remain the older line-mark and now mismatch the live mark.
 - **Person** (`/keeganmoody33`): existing lime/orange terminal and Space Grotesk. Untouched except the wordmark becoming a SignalCut link to `/`. Do not apply house display type or house light tokens here.
 
 **Information density:** Sparse surface, dense on engagement. First screen is clean, intriguing, spacious. Interaction reveals depth.
@@ -106,10 +106,10 @@ Mark fills live on `.house-logo-mark` only. Locked. The flag is `var(--house-ora
 | Token | Value | Region |
 |-------|-------------|--------|
 | `--lf-mark-ellipse` | `#e8f3fb` | Tilted ellipse |
-| `--lf-mark-wedge-up-in` | `#9cbaef` | Upper wedge inside the ellipse |
-| `--lf-mark-wedge-up-out` | `#e6e8f7` | Upper wedge outside the ellipse |
-| `--lf-mark-wedge-low-in` | `#bcd5c5` | Lower wedge inside the ellipse |
-| `--lf-mark-wedge-low-out` | `#e4f0e4` | Lower wedge outside the ellipse |
+| `--lf-mark-wedge-up-in` | `#9cbaef` | Upper sector inside the ellipse (blue) |
+| `--lf-mark-wedge-up-out` | `#e6e8f7` | Upper sector between ellipse and inner arc (lavender) |
+| `--lf-mark-wedge-low-in` | `#bcd5c5` | Lower sector inside the ellipse (green) |
+| `--lf-mark-wedge-low-out` | `#e4f0e4` | Lower sector between ellipse and inner arc |
 | `--lf-mark-angle` | `#f6eda0` | Yellow angle |
 | `--lf-mark-square` | `var(--house-orange)` | Flag square |
 

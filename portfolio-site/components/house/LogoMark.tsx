@@ -7,6 +7,12 @@
  * behind the ring. Outlines are `currentColor` (house ink `#ececec`
  * on `/`). Favicon / og stay the older line-mark and now mismatch.
  *
+ * Wedges are a sector of the PNG's inner circle: radii from the
+ * pivot, outer boundary a circular arc (its own stroke) that meets
+ * the outer ring at the green ray. The blue apex is the triple of
+ * the upper radius, the ellipse, and that arc. The horizontal radius
+ * ends on the arc.
+ *
  * Prop API
  * - `size` (default 32): reserved square in px. Width/height + `.house-logo-mark`
  *   (`aspect-ratio: 1`) so the box exists before the SVG paints (CLS 0).
@@ -55,11 +61,16 @@ export const LF_MARK_FILLS = {
 export const LF_MARK_ELLIPSE_RY = 0.425
 export const LF_MARK_ELLIPSE_ROTATE = -59.5
 export const LF_MARK_STEM_DEG = -66.8
-export const LF_MARK_BLUE_TOP_DEG = -29.2
+export const LF_MARK_BLUE_TOP_DEG = -32.2
 export const LF_MARK_HORIZ_DEG = 0
-export const LF_MARK_GREEN_DEG = 31.6
+export const LF_MARK_GREEN_DEG = 31.5
 export const LF_MARK_YELLOW_R = 0.172
 export const LF_MARK_FLAG_INNER_R = 0.562
+
+/** Inner-arc circle (unit space). Through the blue/ellipse triple, the +x hit, and the ring at green. */
+export const LF_MARK_ARC_CX = 0.012355144
+export const LF_MARK_ARC_CY = 0.2667892433
+export const LF_MARK_ARC_R = 0.8783314707
 
 export type LogoMarkLayer = 'all' | 'ring' | 'core'
 
@@ -77,22 +88,49 @@ function polar(deg: number, r = 1): string {
   return `${(r * Math.cos(a)).toFixed(6)} ${(r * Math.sin(a)).toFixed(6)}`
 }
 
-function piePath(fromDeg: number, toDeg: number, r = 1): string {
+function rayArcR(deg: number): number {
+  const a = (deg * Math.PI) / 180
+  const ux = Math.cos(a)
+  const uy = Math.sin(a)
+  const b = -2 * (ux * LF_MARK_ARC_CX + uy * LF_MARK_ARC_CY)
+  const c =
+    LF_MARK_ARC_CX * LF_MARK_ARC_CX +
+    LF_MARK_ARC_CY * LF_MARK_ARC_CY -
+    LF_MARK_ARC_R * LF_MARK_ARC_R
+  const disc = b * b - 4 * c
+  const t1 = (-b - Math.sqrt(disc)) / 2
+  const t2 = (-b + Math.sqrt(disc)) / 2
+  const ts = [t1, t2].filter((t) => t > 1e-6)
+  return Math.min(...ts)
+}
+
+function piePath(fromDeg: number, toDeg: number, r: number): string {
   const large = Math.abs(toDeg - fromDeg) > 180 ? 1 : 0
   const sweep = toDeg > fromDeg ? 1 : 0
   return `M 0 0 L ${polar(fromDeg, r)} A ${r} ${r} 0 ${large} ${sweep} ${polar(toDeg, r)} Z`
 }
 
-const BLUE_PIE = piePath(LF_MARK_BLUE_TOP_DEG, LF_MARK_HORIZ_DEG)
-const GREEN_PIE = piePath(LF_MARK_HORIZ_DEG, LF_MARK_GREEN_DEG)
+function sectorPath(fromDeg: number, toDeg: number): string {
+  const r0 = rayArcR(fromDeg)
+  const r1 = rayArcR(toDeg)
+  return `M 0 0 L ${polar(fromDeg, r0)} A ${LF_MARK_ARC_R.toFixed(6)} ${LF_MARK_ARC_R.toFixed(6)} 0 0 1 ${polar(toDeg, r1)} Z`
+}
+
+const R_BLUE = rayArcR(LF_MARK_BLUE_TOP_DEG)
+const R_HORIZ = rayArcR(LF_MARK_HORIZ_DEG)
+const R_GREEN = rayArcR(LF_MARK_GREEN_DEG)
+
+const BLUE_PIE = sectorPath(LF_MARK_BLUE_TOP_DEG, LF_MARK_HORIZ_DEG)
+const GREEN_PIE = sectorPath(LF_MARK_HORIZ_DEG, LF_MARK_GREEN_DEG)
 const YELLOW_PIE = piePath(LF_MARK_STEM_DEG, LF_MARK_BLUE_TOP_DEG, LF_MARK_YELLOW_R)
 const YELLOW_ARC = `M ${polar(LF_MARK_STEM_DEG, LF_MARK_YELLOW_R)} A ${LF_MARK_YELLOW_R} ${LF_MARK_YELLOW_R} 0 0 1 ${polar(LF_MARK_BLUE_TOP_DEG, LF_MARK_YELLOW_R)}`
 const FLAG =
   'M 0.161861 -0.542136 L 0.187180 -0.601242 L 0.250948 -0.573925 L 0.225628 -0.514819 Z'
 const STEM = `M 0 0 L ${polar(LF_MARK_STEM_DEG, LF_MARK_FLAG_INNER_R)}`
-const RAY_BLUE = `M 0 0 L ${polar(LF_MARK_BLUE_TOP_DEG)}`
-const RAY_HORIZ = `M 0 0 L ${polar(LF_MARK_HORIZ_DEG)}`
-const RAY_GREEN = `M 0 0 L ${polar(LF_MARK_GREEN_DEG)}`
+const RAY_BLUE = `M 0 0 L ${polar(LF_MARK_BLUE_TOP_DEG, R_BLUE)}`
+const RAY_HORIZ = `M 0 0 L ${polar(LF_MARK_HORIZ_DEG, R_HORIZ)}`
+const RAY_GREEN = `M 0 0 L ${polar(LF_MARK_GREEN_DEG, R_GREEN)}`
+const WEDGE_ARC = `M ${polar(LF_MARK_BLUE_TOP_DEG, R_BLUE)} A ${LF_MARK_ARC_R.toFixed(6)} ${LF_MARK_ARC_R.toFixed(6)} 0 0 1 ${polar(LF_MARK_GREEN_DEG, R_GREEN)}`
 
 function Ring({ grouped }: { grouped: boolean }) {
   return (
@@ -148,6 +186,7 @@ function Core({ grouped, ids }: { grouped: boolean; ids: Record<string, string> 
       <path d={RAY_BLUE} fill="none" />
       <path d={RAY_HORIZ} fill="none" />
       <path d={RAY_GREEN} fill="none" />
+      <path d={WEDGE_ARC} fill="none" />
       <path d={YELLOW_ARC} fill="none" />
       <path d={FLAG} fill="none" />
     </g>
