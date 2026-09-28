@@ -9,13 +9,17 @@
  * token map is a CSS-variable swap. Do not invent fill palettes until
  * the house tokens are locked.
  *
- * Stroke width 0.0181 of ring radius (source ring ~8.25px on ~455.6px
- * midline).
+ * Box math keeps stroke 0.0181 of ring radius (source ring ~8.25px on
+ * ~455.6px midline) so the o-slot and ring centerline do not move.
+ * Painted stroke is CSS `vector-effect: non-scaling-stroke` with
+ * `stroke-width: clamp(1.25px, 0.013em, 2.5px)` on `.house-logo-mark`.
  *
- * Wedges are a sector of the PNG's inner circle: radii from the
- * pivot, outer boundary a circular arc that meets the outer ring at
- * the green ray. The blue apex is the triple of the upper radius,
- * the ellipse, and that arc. The horizontal radius ends on the arc.
+ * Ellipse centre is offset from the ring; rays meet 5 viewBox units
+ * up-left of the ring centre. Wedges are a sector of the PNG's inner
+ * circle: radii from that pivot, outer boundary a circular arc that
+ * meets the outer ring at the green ray. The blue apex is the triple
+ * of the upper radius, the ellipse, and that arc. The horizontal
+ * radius ends on the arc.
  *
  * Prop API
  * - `size` (default 32): reserved square in px. Width/height + `.house-logo-mark`
@@ -43,7 +47,7 @@
 
 export const LF_MARK_VIEWBOX = 512
 export const LF_MARK_GEOMETRY_SCALE = 248
-/** Source ring: 8.25px on 455.625px midline. */
+/** Source ring: 8.25px on 455.625px midline. Box math only. */
 export const LF_MARK_STROKE_WIDTH = 0.018107
 export const LF_MARK_OUTER_DIAMETER =
   2 * LF_MARK_GEOMETRY_SCALE * (1 + LF_MARK_STROKE_WIDTH / 2)
@@ -76,14 +80,23 @@ export const LF_MARK_FILL_REGION_NAMES = [
   'square',
 ] as const
 
-export const LF_MARK_ELLIPSE_RY = 0.424
-export const LF_MARK_ELLIPSE_ROTATE = -57
-export const LF_MARK_STEM_DEG = -66.9
-export const LF_MARK_BLUE_TOP_DEG = -30.75
-export const LF_MARK_HORIZ_DEG = 0
-export const LF_MARK_GREEN_DEG = 30.14
-export const LF_MARK_YELLOW_R = 0.178
+/** Ellipse centre relative to the ring centre (unit space). */
+export const LF_MARK_ELLIPSE_CX = -0.016
+export const LF_MARK_ELLIPSE_CY = 0
+export const LF_MARK_ELLIPSE_RY = 0.4115
+export const LF_MARK_ELLIPSE_ROTATE = -57.87
+
+/** Rays meet 5 viewBox units up-left of the ring centre. */
+export const LF_MARK_PIVOT_X = -5 / LF_MARK_GEOMETRY_SCALE
+export const LF_MARK_PIVOT_Y = -5 / LF_MARK_GEOMETRY_SCALE
+
+/** Flag inner point is origin-polar; stem is pivot → that point. */
+export const LF_MARK_FLAG_ORIGIN_DEG = -66.9
 export const LF_MARK_FLAG_INNER_R = 0.537076
+export const LF_MARK_BLUE_TOP_DEG = -31.631847
+export const LF_MARK_HORIZ_DEG = 0
+export const LF_MARK_GREEN_DEG = 30.548655
+export const LF_MARK_YELLOW_R = 0.178
 
 /** Inner-arc circle (unit space). Green is arc ∩ unit ring. */
 export const LF_MARK_ARC_CX = -0.130098
@@ -93,6 +106,14 @@ export const LF_MARK_ARC_R = 1.014266
 export const LF_MARK_VARIANTS = ['line'] as const
 export type LogoMarkVariant = (typeof LF_MARK_VARIANTS)[number]
 export type LogoMarkLayer = 'all' | 'ring' | 'core'
+
+type EllipseAttrs = {
+  cx: number
+  cy: number
+  rx: number
+  ry: number
+  transform: string
+}
 
 export function parseLogoMarkVariant(
   value: string | undefined,
@@ -111,20 +132,44 @@ export type LogoMarkProps = {
   variant?: LogoMarkVariant
 }
 
-function polar(deg: number, r = 1): string {
-  const a = (deg * Math.PI) / 180
-  return `${(r * Math.cos(a)).toFixed(6)} ${(r * Math.sin(a)).toFixed(6)}`
+function fmt(x: number, y: number): string {
+  return `${x.toFixed(6)} ${y.toFixed(6)}`
 }
+
+function along(
+  deg: number,
+  r: number,
+  ox = 0,
+  oy = 0,
+): readonly [number, number] {
+  const a = (deg * Math.PI) / 180
+  return [ox + r * Math.cos(a), oy + r * Math.sin(a)]
+}
+
+function fromPivot(deg: number, r: number): readonly [number, number] {
+  return along(deg, r, LF_MARK_PIVOT_X, LF_MARK_PIVOT_Y)
+}
+
+const FLAG_INNER = along(LF_MARK_FLAG_ORIGIN_DEG, LF_MARK_FLAG_INNER_R)
+
+/** Stem angle from the ray pivot, not the ring centre. */
+export const LF_MARK_STEM_DEG =
+  (Math.atan2(
+    FLAG_INNER[1] - LF_MARK_PIVOT_Y,
+    FLAG_INNER[0] - LF_MARK_PIVOT_X,
+  ) *
+    180) /
+  Math.PI
 
 function rayArcR(deg: number): number {
   const a = (deg * Math.PI) / 180
   const ux = Math.cos(a)
   const uy = Math.sin(a)
-  const b = -2 * (ux * LF_MARK_ARC_CX + uy * LF_MARK_ARC_CY)
+  const dx = LF_MARK_PIVOT_X - LF_MARK_ARC_CX
+  const dy = LF_MARK_PIVOT_Y - LF_MARK_ARC_CY
+  const b = 2 * (ux * dx + uy * dy)
   const c =
-    LF_MARK_ARC_CX * LF_MARK_ARC_CX +
-    LF_MARK_ARC_CY * LF_MARK_ARC_CY -
-    LF_MARK_ARC_R * LF_MARK_ARC_R
+    dx * dx + dy * dy - LF_MARK_ARC_R * LF_MARK_ARC_R
   const disc = b * b - 4 * c
   const t1 = (-b - Math.sqrt(disc)) / 2
   const t2 = (-b + Math.sqrt(disc)) / 2
@@ -135,13 +180,13 @@ function rayArcR(deg: number): number {
 function piePath(fromDeg: number, toDeg: number, r: number): string {
   const large = Math.abs(toDeg - fromDeg) > 180 ? 1 : 0
   const sweep = toDeg > fromDeg ? 1 : 0
-  return `M 0 0 L ${polar(fromDeg, r)} A ${r} ${r} 0 ${large} ${sweep} ${polar(toDeg, r)} Z`
+  return `M ${fmt(LF_MARK_PIVOT_X, LF_MARK_PIVOT_Y)} L ${fmt(...fromPivot(fromDeg, r))} A ${r} ${r} 0 ${large} ${sweep} ${fmt(...fromPivot(toDeg, r))} Z`
 }
 
 function sectorPath(fromDeg: number, toDeg: number): string {
   const r0 = rayArcR(fromDeg)
   const r1 = rayArcR(toDeg)
-  return `M 0 0 L ${polar(fromDeg, r0)} A ${LF_MARK_ARC_R.toFixed(6)} ${LF_MARK_ARC_R.toFixed(6)} 0 0 1 ${polar(toDeg, r1)} Z`
+  return `M ${fmt(LF_MARK_PIVOT_X, LF_MARK_PIVOT_Y)} L ${fmt(...fromPivot(fromDeg, r0))} A ${LF_MARK_ARC_R.toFixed(6)} ${LF_MARK_ARC_R.toFixed(6)} 0 0 1 ${fmt(...fromPivot(toDeg, r1))} Z`
 }
 
 const FLAG_CORNERS: ReadonlyArray<readonly [number, number]> = [
@@ -183,12 +228,12 @@ export const LF_MARK_REGION_ANGLE = piePath(
 )
 export const LF_MARK_REGION_SQUARE = flagPath(1)
 
-const YELLOW_ARC = `M ${polar(LF_MARK_STEM_DEG, LF_MARK_YELLOW_R)} A ${LF_MARK_YELLOW_R} ${LF_MARK_YELLOW_R} 0 0 1 ${polar(LF_MARK_BLUE_TOP_DEG, LF_MARK_YELLOW_R)}`
-const STEM = `M 0 0 L ${polar(LF_MARK_STEM_DEG, LF_MARK_FLAG_INNER_R)}`
-const RAY_BLUE = `M 0 0 L ${polar(LF_MARK_BLUE_TOP_DEG, R_BLUE)}`
-const RAY_HORIZ = `M 0 0 L ${polar(LF_MARK_HORIZ_DEG, R_HORIZ)}`
-const RAY_GREEN = `M 0 0 L ${polar(LF_MARK_GREEN_DEG, R_GREEN)}`
-const WEDGE_ARC = `M ${polar(LF_MARK_BLUE_TOP_DEG, R_BLUE)} A ${LF_MARK_ARC_R.toFixed(6)} ${LF_MARK_ARC_R.toFixed(6)} 0 0 1 ${polar(LF_MARK_GREEN_DEG, R_GREEN)}`
+const YELLOW_ARC = `M ${fmt(...fromPivot(LF_MARK_STEM_DEG, LF_MARK_YELLOW_R))} A ${LF_MARK_YELLOW_R} ${LF_MARK_YELLOW_R} 0 0 1 ${fmt(...fromPivot(LF_MARK_BLUE_TOP_DEG, LF_MARK_YELLOW_R))}`
+const STEM = `M ${fmt(LF_MARK_PIVOT_X, LF_MARK_PIVOT_Y)} L ${fmt(...FLAG_INNER)}`
+const RAY_BLUE = `M ${fmt(LF_MARK_PIVOT_X, LF_MARK_PIVOT_Y)} L ${fmt(...fromPivot(LF_MARK_BLUE_TOP_DEG, R_BLUE))}`
+const RAY_HORIZ = `M ${fmt(LF_MARK_PIVOT_X, LF_MARK_PIVOT_Y)} L ${fmt(...fromPivot(LF_MARK_HORIZ_DEG, R_HORIZ))}`
+const RAY_GREEN = `M ${fmt(LF_MARK_PIVOT_X, LF_MARK_PIVOT_Y)} L ${fmt(...fromPivot(LF_MARK_GREEN_DEG, R_GREEN))}`
+const WEDGE_ARC = `M ${fmt(...fromPivot(LF_MARK_BLUE_TOP_DEG, R_BLUE))} A ${LF_MARK_ARC_R.toFixed(6)} ${LF_MARK_ARC_R.toFixed(6)} 0 0 1 ${fmt(...fromPivot(LF_MARK_GREEN_DEG, R_GREEN))}`
 
 function Ring({ grouped }: { grouped: boolean }) {
   return (
@@ -198,11 +243,7 @@ function Ring({ grouped }: { grouped: boolean }) {
   )
 }
 
-function CoreStrokes({
-  ell,
-}: {
-  ell: { rx: number; ry: number; transform: string }
-}) {
+function CoreStrokes({ ell }: { ell: EllipseAttrs }) {
   return (
     <>
       <ellipse {...ell} fill="none" />
@@ -222,7 +263,7 @@ function FillRegions({
   ell,
 }: {
   ids: Record<string, string>
-  ell: { rx: number; ry: number; transform: string }
+  ell: EllipseAttrs
 }) {
   const fill = LF_MARK_FILLS
   return (
@@ -230,34 +271,39 @@ function FillRegions({
       <ellipse
         {...ell}
         fill={fill.ellipse}
+        stroke="none"
         data-lf-region="ellipse"
       />
       <g clipPath={`url(#${ids.green})`} data-lf-region="wedge-low-in">
-        <ellipse {...ell} fill={fill.wedgeLowIn} />
+        <ellipse {...ell} fill={fill.wedgeLowIn} stroke="none" />
       </g>
       <path
         d={LF_MARK_REGION_WEDGE_LOW}
         fill={fill.wedgeLowOut}
+        stroke="none"
         mask={`url(#${ids.out})`}
         data-lf-region="wedge-low-out"
       />
       <g clipPath={`url(#${ids.ell})`} data-lf-region="wedge-up-in">
-        <path d={LF_MARK_REGION_WEDGE_UP} fill={fill.wedgeUpIn} />
+        <path d={LF_MARK_REGION_WEDGE_UP} fill={fill.wedgeUpIn} stroke="none" />
       </g>
       <path
         d={LF_MARK_REGION_WEDGE_UP}
         fill={fill.wedgeUpOut}
+        stroke="none"
         mask={`url(#${ids.out})`}
         data-lf-region="wedge-up-out"
       />
       <path
         d={LF_MARK_REGION_ANGLE}
         fill={fill.angle}
+        stroke="none"
         data-lf-region="angle"
       />
       <path
         d={LF_MARK_REGION_SQUARE}
         fill={fill.square}
+        stroke="none"
         data-lf-region="square"
       />
     </g>
@@ -271,10 +317,12 @@ function Core({
   grouped: boolean
   ids: Record<string, string>
 }) {
-  const ell = {
+  const ell: EllipseAttrs = {
+    cx: LF_MARK_ELLIPSE_CX,
+    cy: LF_MARK_ELLIPSE_CY,
     rx: 1,
     ry: LF_MARK_ELLIPSE_RY,
-    transform: `rotate(${LF_MARK_ELLIPSE_ROTATE})`,
+    transform: `rotate(${LF_MARK_ELLIPSE_ROTATE} ${LF_MARK_ELLIPSE_CX} ${LF_MARK_ELLIPSE_CY})`,
   }
 
   return (
