@@ -1,9 +1,9 @@
 COMPLETED (2026-09-28 — pivot (−4, −3); ring contrast sampled on the ring):
 - Pivot is (−4, −3) viewBox units from the ring centre (`−4/248`, `−3/248`). Drawing ~−3.95, −3.07. Blue −32.339552° (ellipse ∩ inner-arc from the new pivot), horiz 0° ends on the arc, green 30.27366° (arc ∩ ring). Ellipse, hairline, line-only, transparent `--lf-mark-*`, favicon / og unchanged.
-- Ring contrast is sampled on the outer-ring annulus only. The mark-wide peak (ray-pivot overlap) is not a ring pixel.
+- Ring contrast is polar samples on the outer-ring annulus (pivot excluded). Recapture vs `#0a0a0a`: 375 DPR1 ring brightest `#8c8c8c` 5.89:1 (top-of-ring AA hotspot; also the mark-wide peak), typical/median `#373737` 1.66:1; pivot overlap `#8a8a8a` 5.73:1. 40px box ring brightest `#9a9a9a` 7.04:1 (green∩ring; also the mark-wide peak), typical `#494949` 2.20:1; pivot overlap `#898989` 5.66:1. 512 overlay Hausdorff 4.24px, median 1.00, p95 2.83.
 
 SUPERSEDED (2026-09-28 — keep hairline; P2 ellipse/ray refit):
-- P1 withdrawn: proportional hairline kept. P2 ellipse kept. Pivot was (−5, −5); superseded by (−4, −3) above. The earlier “brightest ring pixel” `#8c8c8c` was the mark-wide peak at the ray pivot, not the ring.
+- P1 withdrawn: proportional hairline kept. P2 ellipse kept. Pivot was (−5, −5); superseded by (−4, −3) above. The earlier “brightest ring pixel” `#8c8c8c` is a ring AA hotspot at 375 (and the mark-wide peak); the four-stroke pivot is `#8a8a8a`. Do not treat that hex as the pivot, and do not treat the peak as typical ring contrast.
 
 SUPERSEDED (2026-09-28 — UX gate: stroke px + ellipse/ray refit):
 - Non-scaling CSS stroke clamp withdrawn. Hairline restored. P2 geometry remains.
