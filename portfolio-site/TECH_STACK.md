@@ -10,12 +10,12 @@ All versions are pinned from `portfolio-site/package-lock.json`.
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| next | 16.1.6 | Framework: App Router, API routes, server/client components |
+| next | 16.3.6 | Framework: App Router, API routes, server/client components |
 | react | 19.2.4 | UI library |
 | react-dom | 19.2.4 | React DOM renderer |
 | @supabase/supabase-js | 2.90.1 | Supabase client; queries candidate_profile, experiences, etc. |
 | @upstash/redis | 1.35.6 | REST Redis client for the durable Discogs last-good snapshot |
-| posthog-js | 1.336.4 | Client-side analytics (components, page events) |
+| posthog-js | 1.434.15 | Client-side analytics (components, page events) |
 | posthog-node | 5.21.2 | Server-side analytics (API routes via lib/posthog-server.ts) |
 | @jam.dev/sdk | 1.0.1 | Jam session recording metadata client |
 
@@ -26,12 +26,12 @@ All versions are pinned from `portfolio-site/package-lock.json`.
 | Package | Version | Purpose |
 |---------|---------|---------|
 | eslint | 9.x | Lint runner (`eslint .`). `next lint` is invalid on Next 16 (treats `lint` as a directory). |
-| eslint-config-next | 16.1.6 | Next.js ESLint rules, aligned with next 16.1.6 |
+| eslint-config-next | 16.1.6 | Next.js ESLint rules. `eslint .` passes on Next 16.3.6. |
 | @types/node | 20.19.30 | Node.js type definitions |
 | @types/react | 19.2.10 | React type definitions |
 | @types/react-dom | 19.2.3 | React DOM type definitions |
 | tailwindcss | 3.4.19 | Utility CSS, design tokens |
-| postcss | 8.5.6 | CSS processing pipeline |
+| postcss | 8.5.23 | CSS processing pipeline |
 | autoprefixer | 10.4.23 | Vendor prefixes for CSS |
 
 **Brand assets:** `npm run generate:brand` (`scripts/generate-brand-assets.mjs`) rebuilds `icon.svg`, `favicon.ico`, `apple-icon.png`, and house OG/twitter PNGs from `brand/lecturesfrom-mark.svg`. Needs system `rsvg-convert` and `python3-pil`. Not an npm dependency.
