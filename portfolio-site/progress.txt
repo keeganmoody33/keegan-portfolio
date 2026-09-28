@@ -1,3 +1,7 @@
+COMPLETED (2026-09-28 — wordmark-o height wins + 0.006em right nudge):
+- Keep `x-height × 512/462` box and baseline drop. Do not size the ring to x-height width; ~4px wider than Chakra's o at 1440 is intended. Stroke stays `0.0625`.
+- Nudge `0.006em` right of the o glyph center (`left: 0.006em; right: -0.006em`).
+
 COMPLETED (2026-09-28 — wordmark-o ring ink fills x-height / sits on baseline):
 - P1: box was x-height but ring outer ink is 462/512 of the viewBox, so the mark floated. CSS only: box `x-height × 512/462`, `bottom: descent − x-height × 25/462`, no `overflow: hidden`. SVG / stroke untouched.
 - Head bootstrap `WATCH_MOTION_SWITCH=false` so the pause MutationObserver does not watch the page while the switch is unrendered.

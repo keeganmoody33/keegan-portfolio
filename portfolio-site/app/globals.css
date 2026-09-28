@@ -324,8 +324,10 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
  * advance (and letter-spacing) so the lockup width matches plain text.
  * The mark box is larger than x-height so the ring's outer ink (462 of
  * the 512 viewBox; 25 units of pad each side) fills x-height and sits
- * on the alphabetic baseline. Face-on; not .lf-logo-globe. There is
- * no standalone coin above the wordmark.
+ * on the alphabetic baseline. Height wins: do not size the box to
+ * x-height width; the ring reading wider than Chakra's o is intended.
+ * Nudged 0.006em right of the glyph center. Face-on; not .lf-logo-globe.
+ * There is no standalone coin above the wordmark.
  * The painted run is aria-hidden; .sr-only "lecturesfrom" is the name.
  */
 .house-wordmark-visual {
@@ -342,8 +344,9 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
 
 .house-wordmark-o-mark.house-logo-mark {
   position: absolute;
-  left: 0;
-  right: 0;
+  /* 0.006em right of the o glyph center (both insets so auto margins still center). */
+  left: 0.006em;
+  right: -0.006em;
   /* Ink pad is 25/512 of the viewBox; box scales so 462-unit ring = x-height. */
   bottom: calc(var(--lf-wordmark-o-descent) - var(--lf-wordmark-o-x-height) * 25 / 462);
   margin-inline: auto;
