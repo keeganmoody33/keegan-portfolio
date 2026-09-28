@@ -1,5 +1,5 @@
 COMPLETED (2026-09-28 — inner-arc wedge sector):
-- Blue / lavender / green are a sector of the PNG inner circle, not pies to the outer ring. Outer boundary is a drawn circular arc through the blue/ellipse triple, the +x hit, and the ring at the green ray. Horizontal radius ends on the arc. Green radius ends at arc∩ring. Ellipse rx=1 / ry=0.425 / −59.5°, stem/flag unchanged. Locked fills, currentColor, 512/499.224 box, 0.006em nudge unchanged. Favicon / og still mismatch.
+- Blue / lavender / green are a sector of the PNG inner circle, not pies to the outer ring. Outer boundary is a drawn circular arc through the blue/ellipse triple, the +x hit, and the ring at the green ray. Horizontal radius ends on the arc. Green radius ends at arc∩ring. Ellipse rx=1 / ry=0.44 / −56.75°, blue −28.7°, green 31.5°. Stem/flag unchanged. Locked fills, currentColor, 512/499.224 box, 0.006em nudge unchanged. Favicon / og still mismatch.
 
 COMPLETED (2026-09-28 — locked LogoMark fills):
 - Owner-locked fills on `.house-logo-mark`: ellipse `#e8f3fb`, upper-in `#9cbaef`, upper-out `#e6e8f7`, lower-in `#bcd5c5`, lower-out `#e4f0e4`, yellow `#f6eda0`, square `var(--house-orange)` (`#e23d00` on house). Flat regions, no opacity/blend. Ring interior transparent. Outlines `currentColor`. Geometry, 512/499.224 box, 0.006em nudge unchanged. Favicon / og still mismatch.

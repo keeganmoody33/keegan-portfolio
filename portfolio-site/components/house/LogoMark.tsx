@@ -58,19 +58,19 @@ export const LF_MARK_FILLS = {
   square: 'var(--lf-mark-square)',
 } as const
 
-export const LF_MARK_ELLIPSE_RY = 0.425
-export const LF_MARK_ELLIPSE_ROTATE = -59.5
+export const LF_MARK_ELLIPSE_RY = 0.44
+export const LF_MARK_ELLIPSE_ROTATE = -56.75
 export const LF_MARK_STEM_DEG = -66.8
-export const LF_MARK_BLUE_TOP_DEG = -32.2
+export const LF_MARK_BLUE_TOP_DEG = -28.7
 export const LF_MARK_HORIZ_DEG = 0
 export const LF_MARK_GREEN_DEG = 31.5
 export const LF_MARK_YELLOW_R = 0.172
 export const LF_MARK_FLAG_INNER_R = 0.562
 
 /** Inner-arc circle (unit space). Through the blue/ellipse triple, the +x hit, and the ring at green. */
-export const LF_MARK_ARC_CX = 0.012355144
-export const LF_MARK_ARC_CY = 0.2667892433
-export const LF_MARK_ARC_R = 0.8783314707
+export const LF_MARK_ARC_CX = 0.0365480293
+export const LF_MARK_ARC_CY = 0.2666294124
+export const LF_MARK_ARC_R = 0.8552633489
 
 export type LogoMarkLayer = 'all' | 'ring' | 'core'
 
