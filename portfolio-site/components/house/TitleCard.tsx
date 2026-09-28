@@ -1,18 +1,13 @@
 import HouseRail from '@/components/house/HouseRail'
 import HouseWordmark from '@/components/house/HouseWordmark'
-import type { LogoMarkVariant } from '@/components/house/LogoMark'
 
-export default function TitleCard({
-  markVariant = 'line',
-}: {
-  markVariant?: LogoMarkVariant
-}) {
+export default function TitleCard() {
   return (
     <header className="pb-8">
       <HouseRail />
       <div className="mt-16 px-6 sm:mt-24 sm:px-10">
         <div className="house-wordmark-slot">
-          <HouseWordmark variant={markVariant} />
+          <HouseWordmark />
         </div>
         <p className="house-meta mt-3">llc</p>
       </div>

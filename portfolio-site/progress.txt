@@ -1,5 +1,8 @@
-COMPLETED (2026-09-28 — LogoMark variant fills, house tokens):
-- `LogoMark` `variant`: `'line' | 'p1' | 'p2' | 'p3' | 'pastel'`. Wordmark default `'line'` on this branch (owner picks later). Geometry still the 918px line PNG. House fills: ellipse transparent, upper-in `--house-muted`, lower-in `--house-dim`, both outer wedges `--house-line`, angle `--house-ink`, ring interior transparent. Square: p1 ink, p2 `--house-orange`, p3 ink at rest / orange on wordmark `:hover` (`@media (hover: hover) and (pointer: fine)`; CSS only; touch stays ink). p1–p3 stroke: on muted/dim/ink/orange → `--house-bg`; over page / transparent / `#242424` → ink. Pastel keeps locked morning hexes, labelled as drawn / off-palette. `/?mark=` is review capture only. Favicon / og untouched. Light mode out of scope.
+COMPLETED (2026-09-28 — hold house palette fills; line default):
+- House palette fill variants (p1/p2/p3) withdrawn — palette is being reworked. Wordmark is `variant="line"` (ink strokes, no fills). Named fill regions stay (`--lf-mark-*`, `data-lf-region`, `LF_MARK_REGION_*`) for a later CSS-variable swap. `pastel` kept as drawn / off-palette (reference). Geometry still the 918px line PNG. Favicon / og untouched.
+
+SUPERSEDED (2026-09-28 — LogoMark variant fills, house tokens):
+- p1/p2/p3 house-token fills and p3 hover. Withdrawn; palette changing. Line default and named fill regions remain.
 
 COMPLETED (2026-09-28 — line-PNG geometry + line-only paths):
 - Owner 918px line-only PNG is the geometry authority. Ellipse rx=1 / ry=0.424 / −57°, stem −66.9°, blue −30.75° (ellipse ∩ inner-arc), horiz 0°, green 30.14° (inner-arc ∩ ring), yellow r=0.178, flag inner 0.537, inner-arc circle (−0.13010, 0.30483) r=1.01427. Stroke 0.018107 (8.25px / 455.625px midline). Box 512/500.491, pad 5.755, 0.006em nudge kept. Same paths render line-only via `fills={false}` (all strokes currentColor). Filled variant still uses locked `--lf-mark-*` and the CD on-fill / on-empty split. Overlay maps PNG ring center → 256 and r_mid → 248; do not scale the 920×924 canvas to 512. Favicon / og still mismatch.

@@ -1,6 +1,4 @@
-import LogoMark, {
-  type LogoMarkVariant,
-} from '@/components/house/LogoMark'
+import LogoMark from '@/components/house/LogoMark'
 
 /**
  * Root title-card wordmark. The last o in "from" is the lecturesfrom
@@ -10,10 +8,10 @@ import LogoMark, {
  * spin. Favicon / og stay the older line-mark and now mismatch. There
  * is no standalone coin above the wordmark.
  *
- * `variant` defaults to `'line'` on this branch (owner picks later).
- * p1 / p2 / p3 / pastel are the same paths with their fill and stroke
- * rules. p3 square orange is CSS `:hover` on this wordmark
- * (`@media (hover: hover) and (pointer: fine)`; touch stays ink).
+ * Wordmark default is `'line'` (ink strokes, no fills). Fill regions
+ * stay named on LogoMark for a later palette swap. `pastel` remains
+ * in the component as drawn / off-palette (reference). House palette
+ * fill variants are on hold.
  *
  * groupIds={false} so `#lf-ring` / `#lf-core` stay unique if a globe
  * is remounted. A visually hidden full word keeps the accessible name
@@ -21,11 +19,7 @@ import LogoMark, {
  * aria-hidden + focusable="false". Wrapper is a span (phrasing
  * content only inside the h1).
  */
-export default function HouseWordmark({
-  variant = 'line',
-}: {
-  variant?: LogoMarkVariant
-}) {
+export default function HouseWordmark() {
   return (
     <h1 className="house-wordmark">
       <span className="sr-only">lecturesfrom</span>
@@ -36,7 +30,7 @@ export default function HouseWordmark({
           <LogoMark
             groupIds={false}
             focusable={false}
-            variant={variant}
+            variant="line"
             className="house-wordmark-o-mark"
           />
         </span>
