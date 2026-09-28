@@ -12,15 +12,15 @@
 
 | Route            | File                         | What It Shows                                                   |
 |------------------|------------------------------|-----------------------------------------------------------------|
-| `/`              | `app/(house)/page.tsx`               | House title card + crate (Server Component). The last `o` in the wordmark `from` is a static filled `LogoMark` (owner PNG trace; outlines `currentColor`; no `LogoGlobe`, no spin) at Chakra Petch x-height on the alphabetic baseline; there is no standalone coin above the wordmark. Wordmark (`HouseWordmark`, Chakra Petch) entrance is a 700ms opacity fade. HouseFooter does not render the Motion switch while the o is static; `MotionSwitch.tsx`, head bootstrap, and pause CSS stay in the repo. Nameplate and Hathaway SVGs are not mounted. No page turntable. No return-visit redirect. |
+| `/`              | `app/(house)/page.tsx`               | House title card + crate (Server Component). The last `o` in the wordmark `from` is a static filled `LogoMark` (owner PNG trace; outlines `currentColor`; locked `--lf-mark-*` fills, flag `var(--house-orange)`; no `LogoGlobe`, no spin) at Chakra Petch x-height on the alphabetic baseline; there is no standalone coin above the wordmark. Wordmark (`HouseWordmark`, Chakra Petch) entrance is a 700ms opacity fade. HouseFooter does not render the Motion switch while the o is static; `MotionSwitch.tsx`, head bootstrap, and pause CSS stay in the repo. Nameplate and Hathaway SVGs are not mounted. No page turntable. No return-visit redirect. |
 | `/catalog`       | `app/(house)/catalog/page.tsx`       | Crate permalink (same spines as `/`)                            |
 | `/catalog/[slug]`| `app/(house)/catalog/[slug]/page.tsx`| Sleeve (cover, liner, tracks). Unknown slugs 404.               |
 | `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate (ISR 300s; durable last-good in Redis when configured) |
 | `/legal`         | `app/(house)/legal/page.tsx`         | Entity + long about                                             |
-| `/icon.svg`      | `app/icon.svg`                       | Site icon; `prefers-color-scheme` stroke. Applies to house and person. |
-| `/favicon.ico`   | `app/favicon.ico`                    | 16/32/48 ico: `#ececec` rounded plate, mark `#20262b` (matches apple-icon). |
-| `/apple-icon.png`| `app/apple-icon.png`                 | 180px, light ground, mark `#20262b`                             |
-| `/opengraph-image` | `app/(house)/opengraph-image.tsx`  | House share image 1200×630. Person page keeps `/og.jpg`.        |
+| `/icon.svg`      | `app/icon.svg`                       | Site icon; `prefers-color-scheme` stroke. Older line-mark — mismatches the filled live mark (follow-up). Applies to house and person. |
+| `/favicon.ico`   | `app/favicon.ico`                    | 16/32/48 ico: `#ececec` rounded plate, mark `#20262b` (matches apple-icon). Older line-mark — mismatches the filled live mark (follow-up). |
+| `/apple-icon.png`| `app/apple-icon.png`                 | 180px, light ground, mark `#20262b`. Older line-mark — mismatches the filled live mark (follow-up). |
+| `/opengraph-image` | `app/(house)/opengraph-image.tsx`  | House share image 1200×630 (older line-mark — mismatches the filled live mark; follow-up). Person page keeps `/og.jpg`. |
 | `/keeganmoody33` | `app/keeganmoody33/page.tsx` | Principal / person page (Ask AI, JD Fit Analyzer, timeline)     |
 | `/keegan`        | next.config + vercel.json    | 301 → `/keeganmoody33`                                          |
 
@@ -32,7 +32,7 @@
 | Redirect (301) | `/keeganMoody33` | `/keeganmoody33` | Case normalization  |
 | Redirect (301) | `/keegan`        | `/keeganmoody33` | Short alias         |
 
-**Result:** Visitors land on `lecturesfrom.com` and see the house title card + crate. `/` never redirects to the person page. The person page is at `/keeganmoody33`. House ↔ person crossings use `SignalCut` (not a global layout animation). Ask AI and JD Fit Analyzer stay on the person page only. The hero wordmark's last `o` is the static filled `LogoMark` (owner PNG trace; no spin). `LogoGlobe` is kept on disk and is not mounted. `HouseFooter` is shared on `/`, `/catalog`, `/collection`, `/legal` (Motion switch not rendered). `/keeganmoody33` has its own footer.
+**Result:** Visitors land on `lecturesfrom.com` and see the house title card + crate. `/` never redirects to the person page. The person page is at `/keeganmoody33`. House ↔ person crossings use `SignalCut` (not a global layout animation). Ask AI and JD Fit Analyzer stay on the person page only. The hero wordmark's last `o` is the static filled `LogoMark` (owner PNG trace; locked fills; no spin). Favicon / og stay the older line-mark and now mismatch. `LogoGlobe` is kept on disk and is not mounted. `HouseFooter` is shared on `/`, `/catalog`, `/collection`, `/legal` (Motion switch not rendered). `/keeganmoody33` has its own footer.
 
 ### API Routes
 

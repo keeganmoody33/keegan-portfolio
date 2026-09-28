@@ -1,10 +1,9 @@
 /**
  * lecturesfrom filled mark (Server Component).
  * Geometry, strokes, and layer order are a trace of the owner PNG
- * (the design file does not contain this drawing). Fills are
- * `var(--lf-mark-*)` on `.house-logo-mark` — PLACEHOLDER pending a
- * final list from creative direction (`--lf-mark-square` will likely
- * map to `--house-orange`). White in the PNG is transparent — no disc
+ * (the design file does not contain this drawing). Fills are the
+ * locked `--lf-mark-*` tokens on `.house-logo-mark`; the flag uses
+ * `var(--house-orange)`. White in the PNG is transparent — no disc
  * behind the ring. Outlines are `currentColor` (house ink `#ececec`
  * on `/`). Favicon / og stay the older line-mark and now mismatch.
  *
@@ -39,9 +38,9 @@ export const LF_MARK_OUTER_DIAMETER =
 export const LF_MARK_PAD = (LF_MARK_VIEWBOX - LF_MARK_OUTER_DIAMETER) / 2
 
 /**
- * Fill tokens only. Hex placeholders live on `.house-logo-mark` in
- * globals.css (PLACEHOLDER pending a final list from creative
- * direction). Do not put hex here — swap the CSS custom properties.
+ * Fill tokens only. Locked values live on `.house-logo-mark` in
+ * globals.css. Do not put hex here — swap the CSS custom properties.
+ * The flag is `var(--house-orange)`, not a literal.
  */
 export const LF_MARK_FILLS = {
   ellipse: 'var(--lf-mark-ellipse)',

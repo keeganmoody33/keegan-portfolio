@@ -1,11 +1,14 @@
+COMPLETED (2026-09-28 — locked LogoMark fills):
+- Owner-locked fills on `.house-logo-mark`: ellipse `#e8f3fb`, upper-in `#9cbaef`, upper-out `#e6e8f7`, lower-in `#bcd5c5`, lower-out `#e4f0e4`, yellow `#f6eda0`, square `var(--house-orange)` (`#e23d00` on house). Flat regions, no opacity/blend. Ring interior transparent. Outlines `currentColor`. Geometry, 512/499.224 box, 0.006em nudge unchanged. Favicon / og still mismatch.
+
 COMPLETED (2026-09-28 — faithful owner-PNG geometry trace):
-- Geometry, strokes (0.013 of ring radius), and layer order match the owner PNG. The design file does not contain this drawing. Fills stay named `--lf-mark-*` PLACEHOLDER pending a final list from creative direction (`--lf-mark-square` will likely map to `--house-orange`). Wordmark sizing and HouseWordmark wiring unchanged.
+- Geometry, strokes (0.013 of ring radius), and layer order match the owner PNG. The design file does not contain this drawing. Wordmark sizing and HouseWordmark wiring unchanged.
 
-COMPLETED (2026-09-28 — mark fills as CSS custom properties):
-- One place: `.house-logo-mark` in `globals.css` holds `--lf-mark-ellipse`, `--lf-mark-wedge-up-in`, `--lf-mark-wedge-up-out`, `--lf-mark-wedge-low-in`, `--lf-mark-wedge-low-out`, `--lf-mark-angle`, `--lf-mark-square`. Hexes are PLACEHOLDER pending a final list from creative direction. `LogoMark` paints `var(--lf-mark-*)` only. Geometry, stroke, box, 0.006em nudge unchanged.
+SUPERSEDED (2026-09-28 — mark fills as CSS custom properties):
+- One place: `.house-logo-mark` in `globals.css` holds `--lf-mark-ellipse`, `--lf-mark-wedge-up-in`, `--lf-mark-wedge-up-out`, `--lf-mark-wedge-low-in`, `--lf-mark-wedge-low-out`, `--lf-mark-angle`, `--lf-mark-square`. `LogoMark` paints `var(--lf-mark-*)` only. Owner locked the hexes plus square → `var(--house-orange)` in the fill-lock pass above.
 
-COMPLETED (2026-09-28 — CD flats on the filled LogoMark):
-- Seven creative-direction fills only: ellipse `#e8f3fb`, blue inside `#9cbaef`, lavender outside `#e6e8f7`, green inside `#bcd5c5`, green outside `#e4f0e4`, yellow `#f6eda0`, square `#cb6245`. Overlaps are separate flats (no opacity/blend). Outlines `currentColor`. No white disc inside the ring. Stroke 0.013 / scale 248 / box 512/499.224 / 0.006em nudge unchanged. Favicon / og still the line-mark and now mismatch.
+SUPERSEDED (2026-09-28 — CD flats on the filled LogoMark):
+- Seven flats, no opacity/blend, no white disc. Square later remapped from a sampled hex to `var(--house-orange)`. Stroke 0.013 / scale 248 / box 512/499.224 / 0.006em nudge unchanged. Favicon / og still the line-mark and now mismatch.
 
 COMPLETED (2026-09-28 — filled LogoMark from owner reference):
 - Rebuilt `LogoMark` to the filled drawing: outer circle, tilted ellipse (touches the circle; no `scale(0.74)`), stem + flag, yellow pie, blue wedge, lavender annulus, green wedge (darker on the ellipse). Outlines `currentColor`. Stroke 0.013 in unit space; scale 248; outer ink 499.224 of 512. Wordmark box `x-height × 512/499.224`. Accessible name / aria-hidden / focusable=false unchanged.

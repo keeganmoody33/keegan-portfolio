@@ -285,10 +285,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   flex-shrink: 0;
   color: inherit;
   /*
-   * PLACEHOLDER pending a final fill list from creative direction.
-   * Geometry is the owner PNG trace; these hexes are not final.
-   * --lf-mark-square will likely map to --house-orange.
-   * Swap one line each when the list lands.
+   * Locked fills. Flag is the house orange token, not a literal.
    */
   --lf-mark-ellipse: #e8f3fb;
   --lf-mark-wedge-up-in: #9cbaef;
@@ -296,7 +293,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   --lf-mark-wedge-low-in: #bcd5c5;
   --lf-mark-wedge-low-out: #e4f0e4;
   --lf-mark-angle: #f6eda0;
-  --lf-mark-square: #cb6245;
+  --lf-mark-square: var(--house-orange);
 }
 
 .house-logo-mark svg {

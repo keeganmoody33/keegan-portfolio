@@ -5,8 +5,8 @@ import LogoMark from '@/components/house/LogoMark'
  * filled LogoMark (geometry traced from the owner PNG) sized so the
  * outer circle ink hits Chakra Petch 600's x-height and baseline over
  * an in-flow transparent o (exact advance). Face-on, no LogoGlobe, no
- * spin. Favicon / og stay the older line-mark. There is no standalone
- * coin above the wordmark.
+ * spin. Favicon / og stay the older line-mark and now mismatch. There
+ * is no standalone coin above the wordmark.
  *
  * groupIds={false} so `#lf-ring` / `#lf-core` stay unique if a globe
  * is remounted. A visually hidden full word keeps the accessible name
