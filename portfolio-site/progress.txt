@@ -1,3 +1,7 @@
+COMPLETED (2026-09-28 — wordmark-o ring ink fills x-height / sits on baseline):
+- P1: box was x-height but ring outer ink is 462/512 of the viewBox, so the mark floated. CSS only: box `x-height × 512/462`, `bottom: descent − x-height × 25/462`, no `overflow: hidden`. SVG / stroke untouched.
+- Head bootstrap `WATCH_MOTION_SWITCH=false` so the pause MutationObserver does not watch the page while the switch is unrendered.
+
 COMPLETED (2026-09-28 — npm group bump on main):
 - Next `16.1.7` → `16.3.6`, posthog-js `1.336.4` → `1.434.15` (root and portfolio-site), postcss `8.5.6` → `8.5.23`, dompurify `3.3.3` → `3.4.16`, sharp `0.34.5` → `0.35.5`.
 - posthog-js 1.434 no longer depends on protobufjs, so the 7.6.6 / utf8 1.1.2 pins left the tree with the package. `npm ci` reports 0 vulnerabilities.

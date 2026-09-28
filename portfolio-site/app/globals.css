@@ -322,8 +322,9 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
 /*
  * Last o in "from": in-flow transparent glyph keeps the o's actual
  * advance (and letter-spacing) so the lockup width matches plain text.
- * Mark is the static LogoMark square sized to x-height, centered on the
- * glyph, sitting on the baseline. Face-on; not .lf-logo-globe. There is
+ * The mark box is larger than x-height so the ring's outer ink (462 of
+ * the 512 viewBox; 25 units of pad each side) fills x-height and sits
+ * on the alphabetic baseline. Face-on; not .lf-logo-globe. There is
  * no standalone coin above the wordmark.
  * The painted run is aria-hidden; .sr-only "lecturesfrom" is the name.
  */
@@ -343,14 +344,14 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   position: absolute;
   left: 0;
   right: 0;
-  bottom: var(--lf-wordmark-o-descent);
+  /* Ink pad is 25/512 of the viewBox; box scales so 462-unit ring = x-height. */
+  bottom: calc(var(--lf-wordmark-o-descent) - var(--lf-wordmark-o-x-height) * 25 / 462);
   margin-inline: auto;
-  width: var(--lf-wordmark-o-x-height);
-  height: var(--lf-wordmark-o-x-height);
+  width: calc(var(--lf-wordmark-o-x-height) * 512 / 462);
+  height: calc(var(--lf-wordmark-o-x-height) * 512 / 462);
   pointer-events: none;
   user-select: none;
   transform: none;
-  overflow: hidden;
 }
 
 @supports (font-size: 1cqi) {
