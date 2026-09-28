@@ -1,3 +1,7 @@
+COMPLETED (2026-09-28 — UX gate: stroke px + ellipse/ray refit):
+- P1: `.house-logo-mark :is(circle, ellipse, path)` uses `vector-effect: non-scaling-stroke` and `stroke-width: clamp(1.25px, 0.013em, 2.5px)` so the ring is full ink at 375/390 DPR1 and in the 40px / 46.8px boxes (~2.4px at 1440). `LF_MARK_STROKE_WIDTH` 0.018107 stays for o-slot box math; ring r=1 / scale 248 unchanged. Fill regions `stroke="none"`. Mark geometry is not simplified at small sizes.
+- P2: Ellipse ry=0.4115 at −57.87°, centre (−0.016, 0). Ray pivot (−5, −5) in 512 viewBox space. Blue −31.631847° (ellipse ∩ inner-arc), horiz 0° from the pivot ends on the arc, green 30.548655° (arc ∩ ring). Inner-arc circle unchanged. Named `--lf-mark-*` regions still transparent. Favicon / og untouched.
+
 COMPLETED (2026-09-28 — line is the only variant):
 - Rejected fill palettes removed from LogoMark, CSS, and docs. The only variant is `'line'`. Named fill regions stay (`--lf-mark-*` default `transparent`, `data-lf-region`, `LF_MARK_REGION_*`) so a later token map is a CSS-variable swap. Geometry still the 918px line PNG. Favicon / og untouched.
 

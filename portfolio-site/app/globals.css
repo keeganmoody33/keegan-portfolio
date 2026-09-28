@@ -300,6 +300,18 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   height: 100%;
 }
 
+/*
+ * User-unit stroke 0.018107 paints ~0.23 CSS px at 375/390 DPR1 and
+ * greys out. Non-scaling CSS px keeps full ink at every width (floor
+ * 1.25px in the 40/46.8 boxes; ~2.4px at 11.5rem / 1440). Box math
+ * still uses 0.018107 so the ring centerline does not move. Fill
+ * regions set stroke="none" so this does not outline the flats.
+ */
+.house-logo-mark :is(circle, ellipse, path) {
+  vector-effect: non-scaling-stroke;
+  stroke-width: clamp(1.25px, 0.013em, 2.5px);
+}
+
 .house-wordmark-slot {
   container-type: inline-size;
   width: 100%;
