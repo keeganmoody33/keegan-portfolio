@@ -321,8 +321,9 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
 /*
  * Last o in "from": in-flow transparent glyph keeps the o's actual
  * advance (and letter-spacing) so the lockup width matches plain text.
- * Mark is the static LogoMark square sized to x-height, centered on the
- * glyph, sitting on the baseline. Face-on; not .lf-logo-globe.
+ * The o is the spinning LogoGlobe sized to x-height, centered on the
+ * glyph, sitting on the baseline. It is the only globe on the title
+ * card — the standalone coin above the wordmark was removed.
  * The painted run is aria-hidden; .sr-only "lecturesfrom" is the name.
  */
 .house-wordmark-visual {
@@ -337,7 +338,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   color: transparent;
 }
 
-.house-wordmark-o-mark.house-logo-mark {
+.house-wordmark-o-mark.lf-logo-globe {
   position: absolute;
   left: 0;
   right: 0;
@@ -347,8 +348,8 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   height: var(--lf-wordmark-o-x-height);
   pointer-events: none;
   user-select: none;
-  transform: none;
-  overflow: hidden;
+  /* 4× the mark, same ratio as the old 2rem coin's 8rem perspective. */
+  perspective: calc(var(--lf-wordmark-o-x-height) * 4);
 }
 
 @supports (font-size: 1cqi) {
@@ -432,12 +433,6 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   pointer-events: none;
 }
 
-/* Keep the title-card mark at 2rem when LogoGlobe also carries .house-logo-mark. */
-.lf-logo-globe.house-logo-mark {
-  width: 2rem;
-  height: 2rem;
-}
-
 .lf-motion-switch {
   display: inline-grid;
   grid-template-columns: max-content;
@@ -504,8 +499,9 @@ html[data-logo-paused='true'] .lf-motion-off {
  * outside `.lf-logo-globe-spin` so the spin can stay `transform-style:
  * flat` and Chrome rasterizes the SVG at device DPR. Same 12s linear
  * infinite clock as the spin (no delay) so opacity peaks at 90° / 270°.
- * Width 1.125px (~stroke 0.875px). Face-on opacity 0. Height 87.5% =
- * ring diameter (r=1, scale(224), viewBox 512).
+ * Width scales with the mark (~0.0352 of the box = stroke 0.875px at
+ * 2rem). Face-on opacity 0. Height 87.5% = ring diameter (r=1,
+ * scale(224), viewBox 512).
  */
 .lf-logo-globe-rim-wall {
   position: absolute;
@@ -513,10 +509,10 @@ html[data-logo-paused='true'] .lf-motion-off {
   right: 0;
   top: 0;
   bottom: 0;
-  width: 1.125px;
+  width: max(1.125px, 3.52%);
   height: 87.5%;
   margin: auto;
-  border-radius: 0.5625px;
+  border-radius: 999px;
   background: currentColor;
   pointer-events: none;
   transform: none;

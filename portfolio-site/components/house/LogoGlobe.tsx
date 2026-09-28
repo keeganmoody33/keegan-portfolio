@@ -58,9 +58,10 @@ function cloneLayer(svg: LogoGlobeSvg, extra: string): LogoGlobeSvg {
  * never the SignalCut debug hook. Either attribute pauses; dropping
  * one cannot resume while the other is set.
  *
- * Server Component. No JS animation loop. Title-card placement wraps
- * LogoMark `layer="ring"` + `layer="core"` at the mark's existing size.
- * Owner override of the house "No 3D" rule, scoped to this mark.
+ * Server Component. No JS animation loop. The title-card placement is the
+ * wordmark o (`HouseWordmark`): LogoMark `layer="ring"` + `layer="core"`
+ * inside the o slot. Owner override of the house "No 3D" rule, scoped to
+ * this mark.
  */
 export default function LogoGlobe({
   className,
