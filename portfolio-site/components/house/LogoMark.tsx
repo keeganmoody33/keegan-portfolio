@@ -1,9 +1,11 @@
 /**
  * lecturesfrom filled mark (Server Component). Source of truth is the
  * owner reference: outer circle, tilted ellipse, stem + flag, yellow
- * pie, blue wedge, lavender annulus, green wedge (darker on the
- * ellipse). Outlines are `currentColor` (house ink on `/`). Fills are
- * sampled hex. Favicon / og stay the older line-mark in this PR.
+ * pie, blue wedge, lavender annulus, green wedge (darker overlap as
+ * its own flat fill). Outlines are `currentColor` (house ink `#ececec`
+ * on `/`). Fills are the seven creative-direction flats. White in the
+ * source is transparent — no disc behind the ring. Favicon / og stay
+ * the older line-mark and now mismatch; follow-up needed.
  *
  * Prop API
  * - `size` (default 32): reserved square in px. Width/height + `.house-logo-mark`
@@ -35,15 +37,15 @@ export const LF_MARK_OUTER_DIAMETER =
   2 * LF_MARK_GEOMETRY_SCALE * (1 + LF_MARK_STROKE_WIDTH / 2)
 export const LF_MARK_PAD = (LF_MARK_VIEWBOX - LF_MARK_OUTER_DIAMETER) / 2
 
-/** Interior modes sampled from the owner reference PNG. */
+/** Seven creative-direction flats. Overlaps are their own fills, not blends. */
 export const LF_MARK_FILLS = {
-  ellipse: '#E5F3FC',
-  blue: '#93BAF3',
-  lavender: '#E6E8F8',
-  green: '#E0EFE2',
-  greenOverlap: '#B4D4C2',
-  yellow: '#FAED8F',
-  flag: '#D65E3B',
+  ellipse: '#e8f3fb',
+  blue: '#9cbaef',
+  lavender: '#e6e8f7',
+  greenInside: '#bcd5c5',
+  green: '#e4f0e4',
+  yellow: '#f6eda0',
+  flag: '#cb6245',
 } as const
 
 export const LF_MARK_ELLIPSE_RY = 0.43
@@ -125,7 +127,7 @@ function Core({ grouped, ids }: { grouped: boolean; ids: Record<string, string> 
       <g stroke="none">
         <ellipse {...ell} fill={fills.ellipse} />
         <g clipPath={`url(#${ids.green})`}>
-          <ellipse {...ell} fill={fills.greenOverlap} />
+          <ellipse {...ell} fill={fills.greenInside} />
         </g>
         <path d={GREEN_PIE} fill={fills.green} mask={`url(#${ids.out})`} />
         <g clipPath={`url(#${ids.ell})`}>
