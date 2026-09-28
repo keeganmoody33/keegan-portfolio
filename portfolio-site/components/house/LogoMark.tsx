@@ -79,16 +79,17 @@ export const LF_MARK_FILLS = {
 export const LF_MARK_ELLIPSE_RY = 0.424
 export const LF_MARK_ELLIPSE_ROTATE = -57
 export const LF_MARK_STEM_DEG = -66.9
-export const LF_MARK_BLUE_TOP_DEG = -30.6
+export const LF_MARK_BLUE_TOP_DEG = -30.75
 export const LF_MARK_HORIZ_DEG = 0
-export const LF_MARK_GREEN_DEG = 31.1
+export const LF_MARK_GREEN_DEG = 30.14
 export const LF_MARK_YELLOW_R = 0.178
 export const LF_MARK_FLAG_INNER_R = 0.537076
 
-/** Inner-arc circle (unit space). Through the blue/ellipse triple, the +x hit, and the ring at green. */
-export const LF_MARK_ARC_CX = -0.1285543876
-export const LF_MARK_ARC_CY = 0.3012037617
-export const LF_MARK_ARC_R = 1.0081208285
+/** Inner-arc circle (unit space). Fit to the owner PNG centerline in
+ *  ring-registered 512 space; green is arc ∩ unit ring. */
+export const LF_MARK_ARC_CX = -0.130098
+export const LF_MARK_ARC_CY = 0.304827
+export const LF_MARK_ARC_R = 1.014266
 
 export type LogoMarkLayer = 'all' | 'ring' | 'core'
 
