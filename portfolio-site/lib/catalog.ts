@@ -56,7 +56,7 @@ export const sleeves: Sleeve[] = [
     year: 2026,
     aside: 'vocals become a living transcript inside the DAW',
     notes:
-      'punch2pen listens while the track plays. the line under the playhead is the title. click a wrong word, the correction feeds the model. local or cloud. built for the booth, not the standup.',
+      'a mac plugin (au, vst3) that listens while the track plays. the line under the playhead is the title. click a wrong word, the correction feeds the model. local or cloud. built for the booth, not the standup.',
     why: 'studio work still dies as memory. a take should leave a receipt.',
     notThis: 'a meeting notetaker with a music skin',
     credits: [],
@@ -84,16 +84,17 @@ export const sleeves: Sleeve[] = [
     year: 2026,
     aside: 'evidence proposes. the person confirms.',
     notes:
-      'a product-stack profile with proof, referral rails, and who put you on. not a scrape of a whole digital life.',
+      'a private collection of the tools you use, with notes and evidence. you choose which cards go public, with who put you on. not a scrape of a whole digital life.',
     why: 'affiliate links and receipts are scattered. advocacy should have one sleeve.',
     notThis: 'spyware, link-in-bio, or a score you did not approve',
     credits: [],
+    cover: '/catalog/proper-respect/cover.png',
     tracks: [
       {
         no: '01',
         title: 'live profile site',
         kind: 'site',
-        href: 'https://proper-respect.vercel.app',
+        href: 'https://proper-respect.com',
       },
       {
         no: '02',
@@ -116,6 +117,7 @@ export const sleeves: Sleeve[] = [
     why: 'the crate should answer in the bin, not after you unlock a phone.',
     notThis: 'a phone app',
     credits: ['hardware'],
+    cover: '/catalog/yadiggg/cover.jpg',
     tracks: [
       {
         no: '01',
