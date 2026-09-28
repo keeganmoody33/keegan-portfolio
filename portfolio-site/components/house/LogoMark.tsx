@@ -3,7 +3,8 @@
  * owner reference: outer circle, tilted ellipse, stem + flag, yellow
  * pie, blue wedge, lavender annulus, green wedge (darker overlap as
  * its own flat fill). Outlines are `currentColor` (house ink `#ececec`
- * on `/`). Fills are the seven creative-direction flats. White in the
+ * on `/`). Fills are `var(--lf-mark-*)` on `.house-logo-mark`. Hexes
+ * there are PLACEHOLDER pending design-file values. White in the
  * source is transparent — no disc behind the ring. Favicon / og stay
  * the older line-mark and now mismatch; follow-up needed.
  *
@@ -37,15 +38,19 @@ export const LF_MARK_OUTER_DIAMETER =
   2 * LF_MARK_GEOMETRY_SCALE * (1 + LF_MARK_STROKE_WIDTH / 2)
 export const LF_MARK_PAD = (LF_MARK_VIEWBOX - LF_MARK_OUTER_DIAMETER) / 2
 
-/** Seven creative-direction flats. Overlaps are their own fills, not blends. */
+/**
+ * Fill tokens only. Hex placeholders live on `.house-logo-mark` in
+ * globals.css (PLACEHOLDER pending design-file values). Do not put
+ * hex here — swap the CSS custom properties.
+ */
 export const LF_MARK_FILLS = {
-  ellipse: '#e8f3fb',
-  blue: '#9cbaef',
-  lavender: '#e6e8f7',
-  greenInside: '#bcd5c5',
-  green: '#e4f0e4',
-  yellow: '#f6eda0',
-  flag: '#cb6245',
+  ellipse: 'var(--lf-mark-ellipse)',
+  wedgeUpIn: 'var(--lf-mark-wedge-up-in)',
+  wedgeUpOut: 'var(--lf-mark-wedge-up-out)',
+  wedgeLowIn: 'var(--lf-mark-wedge-low-in)',
+  wedgeLowOut: 'var(--lf-mark-wedge-low-out)',
+  angle: 'var(--lf-mark-angle)',
+  square: 'var(--lf-mark-square)',
 } as const
 
 export const LF_MARK_ELLIPSE_RY = 0.43
@@ -127,15 +132,15 @@ function Core({ grouped, ids }: { grouped: boolean; ids: Record<string, string> 
       <g stroke="none">
         <ellipse {...ell} fill={fills.ellipse} />
         <g clipPath={`url(#${ids.green})`}>
-          <ellipse {...ell} fill={fills.greenInside} />
+          <ellipse {...ell} fill={fills.wedgeLowIn} />
         </g>
-        <path d={GREEN_PIE} fill={fills.green} mask={`url(#${ids.out})`} />
+        <path d={GREEN_PIE} fill={fills.wedgeLowOut} mask={`url(#${ids.out})`} />
         <g clipPath={`url(#${ids.ell})`}>
-          <path d={BLUE_PIE} fill={fills.blue} />
+          <path d={BLUE_PIE} fill={fills.wedgeUpIn} />
         </g>
-        <path d={BLUE_PIE} fill={fills.lavender} mask={`url(#${ids.out})`} />
-        <path d={YELLOW_PIE} fill={fills.yellow} />
-        <path d={FLAG} fill={fills.flag} />
+        <path d={BLUE_PIE} fill={fills.wedgeUpOut} mask={`url(#${ids.out})`} />
+        <path d={YELLOW_PIE} fill={fills.angle} />
+        <path d={FLAG} fill={fills.square} />
       </g>
 
       <ellipse {...ell} fill="none" />

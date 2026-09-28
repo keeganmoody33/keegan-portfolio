@@ -284,6 +284,18 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   aspect-ratio: 1;
   flex-shrink: 0;
   color: inherit;
+  /*
+   * PLACEHOLDER pending design-file values.
+   * Not sampled from the PNG. Not the earlier CD hexes as final.
+   * Swap one line each when the owner's file lands.
+   */
+  --lf-mark-ellipse: #e8f3fb;
+  --lf-mark-wedge-up-in: #9cbaef;
+  --lf-mark-wedge-up-out: #e6e8f7;
+  --lf-mark-wedge-low-in: #bcd5c5;
+  --lf-mark-wedge-low-out: #e4f0e4;
+  --lf-mark-angle: #f6eda0;
+  --lf-mark-square: #cb6245;
 }
 
 .house-logo-mark svg {

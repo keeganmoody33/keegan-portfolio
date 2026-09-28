@@ -1,3 +1,6 @@
+COMPLETED (2026-09-28 — mark fills as CSS custom properties):
+- One place: `.house-logo-mark` in `globals.css` holds `--lf-mark-ellipse`, `--lf-mark-wedge-up-in`, `--lf-mark-wedge-up-out`, `--lf-mark-wedge-low-in`, `--lf-mark-wedge-low-out`, `--lf-mark-angle`, `--lf-mark-square`. Hexes are PLACEHOLDER pending design-file values. `LogoMark` paints `var(--lf-mark-*)` only. Geometry, stroke, box, 0.006em nudge unchanged.
+
 COMPLETED (2026-09-28 — CD flats on the filled LogoMark):
 - Seven creative-direction fills only: ellipse `#e8f3fb`, blue inside `#9cbaef`, lavender outside `#e6e8f7`, green inside `#bcd5c5`, green outside `#e4f0e4`, yellow `#f6eda0`, square `#cb6245`. Overlaps are separate flats (no opacity/blend). Outlines `currentColor`. No white disc inside the ring. Stroke 0.013 / scale 248 / box 512/499.224 / 0.006em nudge unchanged. Favicon / og still the line-mark and now mismatch.
 
