@@ -3,20 +3,14 @@
  * Geometry, strokes, and layer order are a trace of the owner
  * line-only PNG (the design file does not contain this drawing).
  *
- * `variant` (wordmark default `'line'`):
- * - `line` — same paths, no fills, every stroke `currentColor`.
- * - `pastel` — locked morning pastels, labelled as drawn / off-palette
- *   (reference only). House palette fills are on hold.
- *
- * Fill regions stay named (`LF_MARK_FILLS` / `data-lf-region`) so a
- * later palette is a CSS-variable swap. Do not invent house-token
- * fill variants until the palette is locked.
+ * The only variant is `'line'`: same paths, no visible fills, every
+ * stroke `currentColor`. Fill regions stay named (`LF_MARK_FILLS` /
+ * `data-lf-region` / `--lf-mark-*`, default `transparent`) so a later
+ * token map is a CSS-variable swap. Do not invent fill palettes until
+ * the house tokens are locked.
  *
  * Stroke width 0.0181 of ring radius (source ring ~8.25px on ~455.6px
- * midline). Pastel: any fill is `--house-bg`; empty / ring
- * `currentColor`. Paths that cross a fill edge are split (clipPaths
- * against the fill union). One pass per segment — no halo, doubled
- * outline, or glow.
+ * midline).
  *
  * Wedges are a sector of the PNG's inner circle: radii from the
  * pivot, outer boundary a circular arc that meets the outer ring at
@@ -39,8 +33,8 @@
  *   LogoGlobe is remounted.
  * - `focusable` (default omit): pass `false` for the wordmark o so the SVG is
  *   not a tab stop. Decorative instances also set `aria-hidden` on the svg.
- * - `variant` (default `'line'`): see above. Fills are CSS custom properties
- *   on `.house-logo-mark[data-lf-variant]`.
+ * - `variant` (default `'line'`): the only variant. Named fill regions still
+ *   paint `var(--lf-mark-*)` (transparent until a token map lands).
  *
  * Unit geometry lives in a translate(256 256) scale(S) space: circle r=1,
  * ellipse rx=1 (touches the circle). Outer ink diameter is
@@ -55,14 +49,12 @@ export const LF_MARK_OUTER_DIAMETER =
   2 * LF_MARK_GEOMETRY_SCALE * (1 + LF_MARK_STROKE_WIDTH / 2)
 export const LF_MARK_PAD = (LF_MARK_VIEWBOX - LF_MARK_OUTER_DIAMETER) / 2
 
-/** On pastel fills. Later palettes swap the CSS vars, not this token. */
-export const LF_MARK_STROKE_ON_FILL = 'var(--house-bg, #0a0a0a)'
-/** Over empty and the outer ring. */
+/** Every stroke in the line variant. */
 export const LF_MARK_STROKE_ON_EMPTY = 'currentColor'
 
 /**
- * Named fill regions. Values live on `.house-logo-mark[data-lf-variant]`
- * in globals.css. A later palette is a new `[data-lf-variant]` block.
+ * Named fill regions. Values live on `.house-logo-mark` in globals.css
+ * (default `transparent`). A later palette assigns these vars.
  */
 export const LF_MARK_FILLS = {
   ellipse: 'var(--lf-mark-ellipse)',
@@ -98,14 +90,14 @@ export const LF_MARK_ARC_CX = -0.130098
 export const LF_MARK_ARC_CY = 0.304827
 export const LF_MARK_ARC_R = 1.014266
 
-export const LF_MARK_VARIANTS = ['line', 'pastel'] as const
+export const LF_MARK_VARIANTS = ['line'] as const
 export type LogoMarkVariant = (typeof LF_MARK_VARIANTS)[number]
 export type LogoMarkLayer = 'all' | 'ring' | 'core'
 
 export function parseLogoMarkVariant(
   value: string | undefined,
 ): LogoMarkVariant {
-  if (value === 'line' || value === 'pastel') return value
+  if (value === 'line') return value
   return 'line'
 }
 
@@ -152,26 +144,6 @@ function sectorPath(fromDeg: number, toDeg: number): string {
   return `M 0 0 L ${polar(fromDeg, r0)} A ${LF_MARK_ARC_R.toFixed(6)} ${LF_MARK_ARC_R.toFixed(6)} 0 0 1 ${polar(toDeg, r1)} Z`
 }
 
-/** Pad the fill-union clip by a full stroke so round caps stay "on fill". */
-const STROKE_CLIP_PAD = 1 + LF_MARK_STROKE_WIDTH
-
-/** Rotated ellipse as a closed path (holes in evenodd clipPaths). */
-function ellipseHolePath(scale: number): string {
-  const rx = scale
-  const ry = LF_MARK_ELLIPSE_RY * scale
-  const rot = LF_MARK_ELLIPSE_ROTATE
-  const p0 = polar(rot, rx)
-  const p1 = polar(rot + 180, rx)
-  return `M ${p0} A ${rx} ${ry} ${rot} 1 1 ${p1} A ${rx} ${ry} ${rot} 1 1 ${p0}`
-}
-
-function sectorHole(fromDeg: number, toDeg: number, scale: number): string {
-  const r0 = rayArcR(fromDeg) * scale
-  const r1 = rayArcR(toDeg) * scale
-  const ar = LF_MARK_ARC_R * scale
-  return `M 0 0 L ${polar(fromDeg, r0)} A ${ar} ${ar} 0 0 1 ${polar(toDeg, r1)} Z`
-}
-
 const FLAG_CORNERS: ReadonlyArray<readonly [number, number]> = [
   [0.17247, -0.628917],
   [0.265228, -0.58563],
@@ -195,7 +167,7 @@ const R_BLUE = rayArcR(LF_MARK_BLUE_TOP_DEG)
 const R_HORIZ = rayArcR(LF_MARK_HORIZ_DEG)
 const R_GREEN = rayArcR(LF_MARK_GREEN_DEG)
 
-/** Named fill-region paths. Later palettes paint these; line does not. */
+/** Named fill-region paths. Later palettes paint these; line leaves them transparent. */
 export const LF_MARK_REGION_WEDGE_UP = sectorPath(
   LF_MARK_BLUE_TOP_DEG,
   LF_MARK_HORIZ_DEG,
@@ -217,9 +189,6 @@ const RAY_BLUE = `M 0 0 L ${polar(LF_MARK_BLUE_TOP_DEG, R_BLUE)}`
 const RAY_HORIZ = `M 0 0 L ${polar(LF_MARK_HORIZ_DEG, R_HORIZ)}`
 const RAY_GREEN = `M 0 0 L ${polar(LF_MARK_GREEN_DEG, R_GREEN)}`
 const WEDGE_ARC = `M ${polar(LF_MARK_BLUE_TOP_DEG, R_BLUE)} A ${LF_MARK_ARC_R.toFixed(6)} ${LF_MARK_ARC_R.toFixed(6)} 0 0 1 ${polar(LF_MARK_GREEN_DEG, R_GREEN)}`
-
-/** Pastel: world minus padded ellipse + both full sectors. */
-const PASTEL_ON_EMPTY = `M -2.5 -2.5 H 2.5 V 2.5 H -2.5 Z ${ellipseHolePath(STROKE_CLIP_PAD)} ${sectorHole(LF_MARK_BLUE_TOP_DEG, LF_MARK_HORIZ_DEG, STROKE_CLIP_PAD)} ${sectorHole(LF_MARK_HORIZ_DEG, LF_MARK_GREEN_DEG, STROKE_CLIP_PAD)}`
 
 function Ring({ grouped }: { grouped: boolean }) {
   return (
@@ -298,11 +267,9 @@ function FillRegions({
 function Core({
   grouped,
   ids,
-  variant,
 }: {
   grouped: boolean
   ids: Record<string, string>
-  variant: LogoMarkVariant
 }) {
   const ell = {
     rx: 1,
@@ -310,46 +277,14 @@ function Core({
     transform: `rotate(${LF_MARK_ELLIPSE_ROTATE})`,
   }
 
-  if (variant === 'line') {
-    return (
-      <g id={grouped ? 'lf-core' : undefined} stroke={LF_MARK_STROKE_ON_EMPTY}>
-        <CoreStrokes ell={ell} />
-      </g>
-    )
-  }
-
   return (
-    <g id={grouped ? 'lf-core' : undefined}>
+    <g id={grouped ? 'lf-core' : undefined} stroke={LF_MARK_STROKE_ON_EMPTY}>
       <defs>
         <clipPath id={ids.ell} clipPathUnits="userSpaceOnUse">
           <ellipse {...ell} />
         </clipPath>
         <clipPath id={ids.green} clipPathUnits="userSpaceOnUse">
           <path d={LF_MARK_REGION_WEDGE_LOW} />
-        </clipPath>
-        <clipPath id={ids.onFill} clipPathUnits="userSpaceOnUse">
-          <ellipse
-            rx={STROKE_CLIP_PAD}
-            ry={LF_MARK_ELLIPSE_RY * STROKE_CLIP_PAD}
-            transform={`rotate(${LF_MARK_ELLIPSE_ROTATE})`}
-          />
-          <path
-            d={sectorHole(
-              LF_MARK_BLUE_TOP_DEG,
-              LF_MARK_HORIZ_DEG,
-              STROKE_CLIP_PAD,
-            )}
-          />
-          <path
-            d={sectorHole(
-              LF_MARK_HORIZ_DEG,
-              LF_MARK_GREEN_DEG,
-              STROKE_CLIP_PAD,
-            )}
-          />
-        </clipPath>
-        <clipPath id={ids.onEmpty} clipPathUnits="userSpaceOnUse">
-          <path d={PASTEL_ON_EMPTY} fillRule="evenodd" clipRule="evenodd" />
         </clipPath>
         <mask
           id={ids.out}
@@ -360,15 +295,8 @@ function Core({
           <ellipse {...ell} fill="#000" />
         </mask>
       </defs>
-
       <FillRegions ids={ids} ell={ell} />
-
-      <g stroke={LF_MARK_STROKE_ON_FILL} clipPath={`url(#${ids.onFill})`}>
-        <CoreStrokes ell={ell} />
-      </g>
-      <g stroke={LF_MARK_STROKE_ON_EMPTY} clipPath={`url(#${ids.onEmpty})`}>
-        <CoreStrokes ell={ell} />
-      </g>
+      <CoreStrokes ell={ell} />
     </g>
   )
 }
@@ -390,8 +318,6 @@ export default function LogoMark({
     ell: `${prefix}-ell-clip`,
     green: `${prefix}-green-clip`,
     out: `${prefix}-out-mask`,
-    onFill: `${prefix}-on-fill`,
-    onEmpty: `${prefix}-on-empty`,
   }
 
   return (
@@ -418,9 +344,7 @@ export default function LogoMark({
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          {showCore ? (
-            <Core grouped={groupIds} ids={ids} variant={variant} />
-          ) : null}
+          {showCore ? <Core grouped={groupIds} ids={ids} /> : null}
           {showRing ? <Ring grouped={groupIds} /> : null}
         </g>
       </svg>

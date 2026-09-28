@@ -49,7 +49,7 @@ Everything that serves the core purpose: help visitors understand who Keegan is,
 | Turntable Loading Page | `TurntableCanvas.tsx` (left on disk, not mounted at `/`) | **Retired from `/`** — 2026-09-26 house cut |
 | House title card + crate | `app/(house)/page.tsx`, `lib/catalog.ts`, `components/house/*` | **Shipped** |
 | lecturesfrom logo mark + favicon + house share image | `LogoMark.tsx`, `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`, `app/(house)/opengraph-image.png` | **Shipped** |
-| Hero wordmark o = static lecturesfrom mark | `HouseWordmark.tsx` — last `o` in `from` is the static `LogoMark` (owner line-only PNG geometry / stroke width / layer order; `variant="line"` — ink strokes, no fills). Fill regions stay named for a later palette. `pastel` remains as-drawn / off-palette (reference). House palette fills on hold. Favicon / og stay the older line-mark (untouched this pass). No standalone coin above the wordmark. | **Shipped on the house title card** |
+| Hero wordmark o = static lecturesfrom mark | `HouseWordmark.tsx` — last `o` in `from` is the static `LogoMark` (owner line-only PNG geometry / stroke width / layer order; `variant="line"` — ink strokes, no fills). Named fill regions stay (`--lf-mark-*`, default `transparent`) for a later token map. Favicon / og stay the older line-mark (untouched this pass). No standalone coin above the wordmark. | **Shipped on the house title card** |
 | Sleeves | `/catalog`, `/catalog/[slug]` | **Shipped (this PR)** |
 | Full Discogs crate | `/collection`, `/api/discogs/collection` | **Shipped** — durable Redis last-good when Upstash env is set |
 | SignalCut | `components/SignalCut.tsx` | **Shipped (this PR)** — house ↔ person only |

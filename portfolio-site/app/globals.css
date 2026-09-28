@@ -284,21 +284,14 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   aspect-ratio: 1;
   flex-shrink: 0;
   color: inherit;
-}
-
-/*
- * Named fill regions on [data-lf-variant]. Line paints no fills.
- * pastel is as drawn / off-palette (reference). House palette fills
- * are on hold — a later palette is a new variant block on these vars.
- */
-.house-logo-mark[data-lf-variant="pastel"] {
-  --lf-mark-ellipse: #e8f3fb;
-  --lf-mark-wedge-up-in: #9cbaef;
-  --lf-mark-wedge-up-out: #e6e8f7;
-  --lf-mark-wedge-low-in: #bcd5c5;
-  --lf-mark-wedge-low-out: #e4f0e4;
-  --lf-mark-angle: #f6eda0;
-  --lf-mark-square: var(--house-orange);
+  /* Named fill regions. Transparent until a token map lands. */
+  --lf-mark-ellipse: transparent;
+  --lf-mark-wedge-up-in: transparent;
+  --lf-mark-wedge-up-out: transparent;
+  --lf-mark-wedge-low-in: transparent;
+  --lf-mark-wedge-low-out: transparent;
+  --lf-mark-angle: transparent;
+  --lf-mark-square: transparent;
 }
 
 .house-logo-mark svg {

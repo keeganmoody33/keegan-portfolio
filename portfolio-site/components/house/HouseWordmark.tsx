@@ -8,10 +8,9 @@ import LogoMark from '@/components/house/LogoMark'
  * spin. Favicon / og stay the older line-mark and now mismatch. There
  * is no standalone coin above the wordmark.
  *
- * Wordmark default is `'line'` (ink strokes, no fills). Fill regions
- * stay named on LogoMark for a later palette swap. `pastel` remains
- * in the component as drawn / off-palette (reference). House palette
- * fill variants are on hold.
+ * Wordmark is `'line'` (ink strokes, no fills). Named fill regions
+ * stay on LogoMark (`--lf-mark-*`, default transparent) so a later
+ * token map is a CSS-variable swap.
  *
  * groupIds={false} so `#lf-ring` / `#lf-core` stay unique if a globe
  * is remounted. A visually hidden full word keeps the accessible name

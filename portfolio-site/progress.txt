@@ -1,5 +1,8 @@
-COMPLETED (2026-09-28 — hold house palette fills; line default):
-- House palette fill variants (p1/p2/p3) withdrawn — palette is being reworked. Wordmark is `variant="line"` (ink strokes, no fills). Named fill regions stay (`--lf-mark-*`, `data-lf-region`, `LF_MARK_REGION_*`) for a later CSS-variable swap. `pastel` kept as drawn / off-palette (reference). Geometry still the 918px line PNG. Favicon / og untouched.
+COMPLETED (2026-09-28 — line is the only variant):
+- Rejected fill palettes removed from LogoMark, CSS, and docs. The only variant is `'line'`. Named fill regions stay (`--lf-mark-*` default `transparent`, `data-lf-region`, `LF_MARK_REGION_*`) so a later token map is a CSS-variable swap. Geometry still the 918px line PNG. Favicon / og untouched.
+
+SUPERSEDED (2026-09-28 — hold house palette fills; line default):
+- House palette fill variants (p1/p2/p3) withdrawn. Wordmark is `variant="line"`. Named fill regions stay. Extra fill variants withdrawn in the pass above.
 
 SUPERSEDED (2026-09-28 — LogoMark variant fills, house tokens):
 - p1/p2/p3 house-token fills and p3 hover. Withdrawn; palette changing. Line default and named fill regions remain.
