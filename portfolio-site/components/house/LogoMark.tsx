@@ -2,27 +2,28 @@
  * lecturesfrom mark (Server Component).
  * Geometry, strokes, and layer order are a trace of the owner
  * line-only PNG (the design file does not contain this drawing).
- * Fills are the locked `--lf-mark-*` tokens on `.house-logo-mark`;
- * the flag uses `var(--house-orange)`. White in the source is
- * transparent — no disc behind the ring.
  *
- * Outline rule (creative direction, filled variant): a stroke
- * segment on a filled region is `var(--house-bg)` (black as drawn).
- * A stroke segment over the page or the transparent ring interior
- * is `currentColor` (ink). The outer ring is ink. Paths that cross
- * the fill edge are split (clipPaths against the fill union) so
- * each piece follows the rule. One pass per segment — no halo,
- * doubled outline, or glow.
+ * `variant` (wordmark default `'line'` on this branch; owner picks later):
+ * - `line` — same paths, no fills, every stroke `currentColor`.
+ * - `p1` / `p2` / `p3` — house-token fills. Ellipse and ring interior
+ *   transparent. Upper-in `--house-muted`, lower-in `--house-dim`,
+ *   both outer wedges `--house-line`, angle `--house-ink`. Square is
+ *   ink (p1), `--house-orange` (p2), or ink at rest / orange on
+ *   wordmark `:hover` with `@media (hover: hover)` (p3; touch stays ink).
+ * - `pastel` — locked morning pastels, labelled as drawn / off-palette.
  *
- * Line-only variant (`fills={false}`): same paths, no fills, every
- * stroke `currentColor`. Stroke width 0.0181 of ring radius is the
- * source ring (~8.25px on ~455.6px midline).
+ * Stroke width 0.0181 of ring radius (source ring ~8.25px on ~455.6px
+ * midline). p1/p2/p3: a stroke on muted, dim, ink, or orange is
+ * `var(--house-bg)`. A stroke over the page, a transparent area, or
+ * `--house-line` `#242424` is `currentColor`. Pastel: any fill is
+ * `--house-bg`; empty / ring `currentColor`. Paths that cross a fill
+ * edge are split (clipPaths against the fill union). One pass per
+ * segment — no halo, doubled outline, or glow.
  *
  * Wedges are a sector of the PNG's inner circle: radii from the
- * pivot, outer boundary a circular arc (its own stroke) that meets
- * the outer ring at the green ray. The blue apex is the triple of
- * the upper radius, the ellipse, and that arc. The horizontal radius
- * ends on the arc.
+ * pivot, outer boundary a circular arc that meets the outer ring at
+ * the green ray. The blue apex is the triple of the upper radius,
+ * the ellipse, and that arc. The horizontal radius ends on the arc.
  *
  * Prop API
  * - `size` (default 32): reserved square in px. Width/height + `.house-logo-mark`
@@ -40,8 +41,8 @@
  *   LogoGlobe is remounted.
  * - `focusable` (default omit): pass `false` for the wordmark o so the SVG is
  *   not a tab stop. Decorative instances also set `aria-hidden` on the svg.
- * - `fills` (default true): locked flats + CD outline split. `false` paints
- *   the same paths line-only in `currentColor`.
+ * - `variant` (default `'line'`): see above. Fills are CSS custom properties
+ *   on `.house-logo-mark[data-lf-variant]`.
  *
  * Unit geometry lives in a translate(256 256) scale(S) space: circle r=1,
  * ellipse rx=1 (touches the circle). Outer ink diameter is
@@ -56,15 +57,14 @@ export const LF_MARK_OUTER_DIAMETER =
   2 * LF_MARK_GEOMETRY_SCALE * (1 + LF_MARK_STROKE_WIDTH / 2)
 export const LF_MARK_PAD = (LF_MARK_VIEWBOX - LF_MARK_OUTER_DIAMETER) / 2
 
-/** On-fill outlines. Page token so light house keeps the same rule. */
+/** On muted / dim / ink / orange (p1–p3) and on pastel fills. */
 export const LF_MARK_STROKE_ON_FILL = 'var(--house-bg, #0a0a0a)'
-/** Over empty / the outer ring. House ink via currentColor. */
+/** Over empty, transparent, `--house-line`, and the outer ring. */
 export const LF_MARK_STROKE_ON_EMPTY = 'currentColor'
 
 /**
- * Fill tokens only. Locked values live on `.house-logo-mark` in
- * globals.css. Do not put hex here — swap the CSS custom properties.
- * The flag is `var(--house-orange)`, not a literal.
+ * Fill tokens only. Values live on `.house-logo-mark[data-lf-variant]`
+ * in globals.css. Do not put hex here.
  */
 export const LF_MARK_FILLS = {
   ellipse: 'var(--lf-mark-ellipse)',
@@ -85,13 +85,29 @@ export const LF_MARK_GREEN_DEG = 30.14
 export const LF_MARK_YELLOW_R = 0.178
 export const LF_MARK_FLAG_INNER_R = 0.537076
 
-/** Inner-arc circle (unit space). Fit to the owner PNG centerline in
- *  ring-registered 512 space; green is arc ∩ unit ring. */
+/** Inner-arc circle (unit space). Green is arc ∩ unit ring. */
 export const LF_MARK_ARC_CX = -0.130098
 export const LF_MARK_ARC_CY = 0.304827
 export const LF_MARK_ARC_R = 1.014266
 
+export const LF_MARK_VARIANTS = ['line', 'p1', 'p2', 'p3', 'pastel'] as const
+export type LogoMarkVariant = (typeof LF_MARK_VARIANTS)[number]
 export type LogoMarkLayer = 'all' | 'ring' | 'core'
+
+export function parseLogoMarkVariant(
+  value: string | undefined,
+): LogoMarkVariant {
+  if (
+    value === 'line' ||
+    value === 'p1' ||
+    value === 'p2' ||
+    value === 'p3' ||
+    value === 'pastel'
+  ) {
+    return value
+  }
+  return 'line'
+}
 
 export type LogoMarkProps = {
   size?: number
@@ -100,8 +116,7 @@ export type LogoMarkProps = {
   layer?: LogoMarkLayer
   groupIds?: boolean
   focusable?: false
-  /** Locked flats + CD split. `false` = line-only, same paths. */
-  fills?: boolean
+  variant?: LogoMarkVariant
 }
 
 function polar(deg: number, r = 1): string {
@@ -125,6 +140,18 @@ function rayArcR(deg: number): number {
   return Math.min(...ts)
 }
 
+function rayEllipseR(deg: number): number {
+  const a = (deg * Math.PI) / 180
+  const ux = Math.cos(a)
+  const uy = Math.sin(a)
+  const rot = (LF_MARK_ELLIPSE_ROTATE * Math.PI) / 180
+  const c = Math.cos(rot)
+  const s = Math.sin(rot)
+  const px = c * ux + s * uy
+  const py = -s * ux + c * uy
+  return 1 / Math.sqrt(px * px + (py / LF_MARK_ELLIPSE_RY) ** 2)
+}
+
 function piePath(fromDeg: number, toDeg: number, r: number): string {
   const large = Math.abs(toDeg - fromDeg) > 180 ? 1 : 0
   const sweep = toDeg > fromDeg ? 1 : 0
@@ -135,6 +162,15 @@ function sectorPath(fromDeg: number, toDeg: number): string {
   const r0 = rayArcR(fromDeg)
   const r1 = rayArcR(toDeg)
   return `M 0 0 L ${polar(fromDeg, r0)} A ${LF_MARK_ARC_R.toFixed(6)} ${LF_MARK_ARC_R.toFixed(6)} 0 0 1 ${polar(toDeg, r1)} Z`
+}
+
+/** Sector of the origin-centered ellipse (outer edge is the ellipse). */
+function ellipseSectorPath(fromDeg: number, toDeg: number, scale: number): string {
+  const r0 = rayEllipseR(fromDeg) * scale
+  const r1 = rayEllipseR(toDeg) * scale
+  const rx = scale
+  const ry = LF_MARK_ELLIPSE_RY * scale
+  return `M 0 0 L ${polar(fromDeg, r0)} A ${rx} ${ry} ${LF_MARK_ELLIPSE_ROTATE} 0 1 ${polar(toDeg, r1)} Z`
 }
 
 /** Pad the fill-union clip by a full stroke so round caps stay "on fill". */
@@ -157,6 +193,25 @@ function sectorHole(fromDeg: number, toDeg: number, scale: number): string {
   return `M 0 0 L ${polar(fromDeg, r0)} A ${ar} ${ar} 0 0 1 ${polar(toDeg, r1)} Z`
 }
 
+const FLAG_CORNERS: ReadonlyArray<readonly [number, number]> = [
+  [0.17247, -0.628917],
+  [0.265228, -0.58563],
+  [0.220371, -0.489508],
+  [0.127613, -0.532795],
+]
+
+function flagPath(scale = 1): string {
+  const cx =
+    FLAG_CORNERS.reduce((s, p) => s + p[0], 0) / FLAG_CORNERS.length
+  const cy =
+    FLAG_CORNERS.reduce((s, p) => s + p[1], 0) / FLAG_CORNERS.length
+  const pts = FLAG_CORNERS.map(
+    ([x, y]) =>
+      `${(cx + (x - cx) * scale).toFixed(6)} ${(cy + (y - cy) * scale).toFixed(6)}`,
+  )
+  return `M ${pts[0]} L ${pts[1]} L ${pts[2]} L ${pts[3]} Z`
+}
+
 const R_BLUE = rayArcR(LF_MARK_BLUE_TOP_DEG)
 const R_HORIZ = rayArcR(LF_MARK_HORIZ_DEG)
 const R_GREEN = rayArcR(LF_MARK_GREEN_DEG)
@@ -165,15 +220,35 @@ const BLUE_PIE = sectorPath(LF_MARK_BLUE_TOP_DEG, LF_MARK_HORIZ_DEG)
 const GREEN_PIE = sectorPath(LF_MARK_HORIZ_DEG, LF_MARK_GREEN_DEG)
 const YELLOW_PIE = piePath(LF_MARK_STEM_DEG, LF_MARK_BLUE_TOP_DEG, LF_MARK_YELLOW_R)
 const YELLOW_ARC = `M ${polar(LF_MARK_STEM_DEG, LF_MARK_YELLOW_R)} A ${LF_MARK_YELLOW_R} ${LF_MARK_YELLOW_R} 0 0 1 ${polar(LF_MARK_BLUE_TOP_DEG, LF_MARK_YELLOW_R)}`
-const FLAG =
-  'M 0.172470 -0.628917 L 0.265228 -0.585630 L 0.220371 -0.489508 L 0.127613 -0.532795 Z'
+const FLAG = flagPath(1)
 const STEM = `M 0 0 L ${polar(LF_MARK_STEM_DEG, LF_MARK_FLAG_INNER_R)}`
 const RAY_BLUE = `M 0 0 L ${polar(LF_MARK_BLUE_TOP_DEG, R_BLUE)}`
 const RAY_HORIZ = `M 0 0 L ${polar(LF_MARK_HORIZ_DEG, R_HORIZ)}`
 const RAY_GREEN = `M 0 0 L ${polar(LF_MARK_GREEN_DEG, R_GREEN)}`
 const WEDGE_ARC = `M ${polar(LF_MARK_BLUE_TOP_DEG, R_BLUE)} A ${LF_MARK_ARC_R.toFixed(6)} ${LF_MARK_ARC_R.toFixed(6)} 0 0 1 ${polar(LF_MARK_GREEN_DEG, R_GREEN)}`
-/** Evenodd: world minus the padded fill union. Complements `onFill`. */
-const ON_EMPTY_CLIP = `M -2.5 -2.5 H 2.5 V 2.5 H -2.5 Z ${ellipseHolePath(STROKE_CLIP_PAD)} ${sectorHole(LF_MARK_BLUE_TOP_DEG, LF_MARK_HORIZ_DEG, STROKE_CLIP_PAD)} ${sectorHole(LF_MARK_HORIZ_DEG, LF_MARK_GREEN_DEG, STROKE_CLIP_PAD)}`
+
+const PADDED_UP_IN = ellipseSectorPath(
+  LF_MARK_BLUE_TOP_DEG,
+  LF_MARK_HORIZ_DEG,
+  STROKE_CLIP_PAD,
+)
+const PADDED_LOW_IN = ellipseSectorPath(
+  LF_MARK_HORIZ_DEG,
+  LF_MARK_GREEN_DEG,
+  STROKE_CLIP_PAD,
+)
+const PADDED_ANGLE = piePath(
+  LF_MARK_STEM_DEG,
+  LF_MARK_BLUE_TOP_DEG,
+  LF_MARK_YELLOW_R * STROKE_CLIP_PAD,
+)
+const PADDED_FLAG = flagPath(STROKE_CLIP_PAD)
+
+/** Pastel: world minus padded ellipse + both full sectors. */
+const PASTEL_ON_EMPTY = `M -2.5 -2.5 H 2.5 V 2.5 H -2.5 Z ${ellipseHolePath(STROKE_CLIP_PAD)} ${sectorHole(LF_MARK_BLUE_TOP_DEG, LF_MARK_HORIZ_DEG, STROKE_CLIP_PAD)} ${sectorHole(LF_MARK_HORIZ_DEG, LF_MARK_GREEN_DEG, STROKE_CLIP_PAD)}`
+
+/** p1–p3: world minus padded muted/dim/ink/orange (not --house-line). */
+const HOUSE_ON_EMPTY = `M -2.5 -2.5 H 2.5 V 2.5 H -2.5 Z ${PADDED_UP_IN} ${PADDED_LOW_IN} ${PADDED_ANGLE} ${PADDED_FLAG}`
 
 function Ring({ grouped }: { grouped: boolean }) {
   return (
@@ -205,11 +280,11 @@ function CoreStrokes({
 function Core({
   grouped,
   ids,
-  fills,
+  variant,
 }: {
   grouped: boolean
   ids: Record<string, string>
-  fills: boolean
+  variant: LogoMarkVariant
 }) {
   const fillTokens = LF_MARK_FILLS
   const ell = {
@@ -218,13 +293,16 @@ function Core({
     transform: `rotate(${LF_MARK_ELLIPSE_ROTATE})`,
   }
 
-  if (!fills) {
+  if (variant === 'line') {
     return (
       <g id={grouped ? 'lf-core' : undefined} stroke={LF_MARK_STROKE_ON_EMPTY}>
         <CoreStrokes ell={ell} />
       </g>
     )
   }
+
+  const houseStroke = variant === 'p1' || variant === 'p2' || variant === 'p3'
+  const pastelStroke = variant === 'pastel'
 
   return (
     <g id={grouped ? 'lf-core' : undefined}>
@@ -235,37 +313,47 @@ function Core({
         <clipPath id={ids.green} clipPathUnits="userSpaceOnUse">
           <path d={GREEN_PIE} />
         </clipPath>
-        {/*
-          Padded fill union and its complement. Core strokes are drawn
-          twice: --house-bg clipped to onFill, ink clipped to onEmpty.
-          The pad is one stroke so a fill-boundary path keeps full width
-          (a centerline split would halo). Clips do not overlap. Ring is
-          always ink, not in this pair.
-        */}
-        <clipPath id={ids.onFill} clipPathUnits="userSpaceOnUse">
-          <ellipse
-            rx={STROKE_CLIP_PAD}
-            ry={LF_MARK_ELLIPSE_RY * STROKE_CLIP_PAD}
-            transform={`rotate(${LF_MARK_ELLIPSE_ROTATE})`}
-          />
-          <path
-            d={sectorHole(
-              LF_MARK_BLUE_TOP_DEG,
-              LF_MARK_HORIZ_DEG,
-              STROKE_CLIP_PAD,
-            )}
-          />
-          <path
-            d={sectorHole(
-              LF_MARK_HORIZ_DEG,
-              LF_MARK_GREEN_DEG,
-              STROKE_CLIP_PAD,
-            )}
-          />
-        </clipPath>
-        <clipPath id={ids.onEmpty} clipPathUnits="userSpaceOnUse">
-          <path d={ON_EMPTY_CLIP} fillRule="evenodd" clipRule="evenodd" />
-        </clipPath>
+        {pastelStroke ? (
+          <>
+            <clipPath id={ids.onFill} clipPathUnits="userSpaceOnUse">
+              <ellipse
+                rx={STROKE_CLIP_PAD}
+                ry={LF_MARK_ELLIPSE_RY * STROKE_CLIP_PAD}
+                transform={`rotate(${LF_MARK_ELLIPSE_ROTATE})`}
+              />
+              <path
+                d={sectorHole(
+                  LF_MARK_BLUE_TOP_DEG,
+                  LF_MARK_HORIZ_DEG,
+                  STROKE_CLIP_PAD,
+                )}
+              />
+              <path
+                d={sectorHole(
+                  LF_MARK_HORIZ_DEG,
+                  LF_MARK_GREEN_DEG,
+                  STROKE_CLIP_PAD,
+                )}
+              />
+            </clipPath>
+            <clipPath id={ids.onEmpty} clipPathUnits="userSpaceOnUse">
+              <path d={PASTEL_ON_EMPTY} fillRule="evenodd" clipRule="evenodd" />
+            </clipPath>
+          </>
+        ) : null}
+        {houseStroke ? (
+          <>
+            <clipPath id={ids.onDark} clipPathUnits="userSpaceOnUse">
+              <path d={PADDED_UP_IN} />
+              <path d={PADDED_LOW_IN} />
+              <path d={PADDED_ANGLE} />
+              <path d={PADDED_FLAG} />
+            </clipPath>
+            <clipPath id={ids.onInk} clipPathUnits="userSpaceOnUse">
+              <path d={HOUSE_ON_EMPTY} fillRule="evenodd" clipRule="evenodd" />
+            </clipPath>
+          </>
+        ) : null}
         <mask
           id={ids.out}
           maskUnits="userSpaceOnUse"
@@ -277,7 +365,7 @@ function Core({
       </defs>
 
       <g stroke="none">
-        <ellipse {...ell} fill={fillTokens.ellipse} />
+        {pastelStroke ? <ellipse {...ell} fill={fillTokens.ellipse} /> : null}
         <g clipPath={`url(#${ids.green})`}>
           <ellipse {...ell} fill={fillTokens.wedgeLowIn} />
         </g>
@@ -290,12 +378,26 @@ function Core({
         <path d={FLAG} fill={fillTokens.square} />
       </g>
 
-      <g stroke={LF_MARK_STROKE_ON_FILL} clipPath={`url(#${ids.onFill})`}>
-        <CoreStrokes ell={ell} />
-      </g>
-      <g stroke={LF_MARK_STROKE_ON_EMPTY} clipPath={`url(#${ids.onEmpty})`}>
-        <CoreStrokes ell={ell} />
-      </g>
+      {pastelStroke ? (
+        <>
+          <g stroke={LF_MARK_STROKE_ON_FILL} clipPath={`url(#${ids.onFill})`}>
+            <CoreStrokes ell={ell} />
+          </g>
+          <g stroke={LF_MARK_STROKE_ON_EMPTY} clipPath={`url(#${ids.onEmpty})`}>
+            <CoreStrokes ell={ell} />
+          </g>
+        </>
+      ) : null}
+      {houseStroke ? (
+        <>
+          <g stroke={LF_MARK_STROKE_ON_FILL} clipPath={`url(#${ids.onDark})`}>
+            <CoreStrokes ell={ell} />
+          </g>
+          <g stroke={LF_MARK_STROKE_ON_EMPTY} clipPath={`url(#${ids.onInk})`}>
+            <CoreStrokes ell={ell} />
+          </g>
+        </>
+      ) : null}
     </g>
   )
 }
@@ -307,22 +409,27 @@ export default function LogoMark({
   layer = 'all',
   groupIds = true,
   focusable,
-  fills = true,
+  variant = 'line',
 }: LogoMarkProps) {
   const named = !decorative
   const showRing = layer !== 'core'
   const showCore = layer === 'all' || layer === 'core'
-  const prefix = groupIds ? 'lf' : 'lf-wm'
+  const prefix = `${groupIds ? 'lf' : 'lf-wm'}-${variant}`
   const ids = {
     ell: `${prefix}-ell-clip`,
     green: `${prefix}-green-clip`,
     out: `${prefix}-out-mask`,
     onFill: `${prefix}-on-fill`,
     onEmpty: `${prefix}-on-empty`,
+    onDark: `${prefix}-on-dark`,
+    onInk: `${prefix}-on-ink`,
   }
 
   return (
-    <span className={['house-logo-mark', className].filter(Boolean).join(' ')}>
+    <span
+      className={['house-logo-mark', className].filter(Boolean).join(' ')}
+      data-lf-variant={variant}
+    >
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox={`0 0 ${LF_MARK_VIEWBOX} ${LF_MARK_VIEWBOX}`}
@@ -343,7 +450,7 @@ export default function LogoMark({
           strokeLinejoin="round"
         >
           {showCore ? (
-            <Core grouped={groupIds} ids={ids} fills={fills} />
+            <Core grouped={groupIds} ids={ids} variant={variant} />
           ) : null}
           {showRing ? <Ring grouped={groupIds} /> : null}
         </g>

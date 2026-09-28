@@ -19,7 +19,7 @@
 
 **Two visual dialects. Do not homogenize.**
 
-- **House** (`/`, `/catalog`, `/collection`, `/legal`): near-black `#0a0a0a`, grotesque / tight-tracked meta, one accent = print orange `#e23d00`. Display face is Chakra Petch 600 (wordmark, page-title h1/h2, `.house-spine-title`). Body on `.house` stays Space Grotesk. Meta stays Roboto Mono. Hairlines. No terminal chrome. No lime spray type. Display name always lowercase `lecturesfrom` (`lecturesfrom LLC` allowed in footer/legal). The last `o` in the root wordmark is the static filled `LogoMark` — geometry and stroke width traced from the owner line-only PNG (outer circle, tilted ellipse, stem + flag, yellow pie, blue / lavender / green as a sector of the inner arc that meets the ring at the green ray; on-fill outlines `var(--house-bg)` as drawn, empty / ring `currentColor`; fills `var(--lf-mark-*)`, flag `var(--house-orange)`; no white disc). Same paths render line-only when `fills={false}`. Sized so the circle's outer ink hits Chakra Petch 600 x-height (`0.498em`); there is no standalone coin above the wordmark. Favicon / og remain the older line-mark and now mismatch the live mark.
+- **House** (`/`, `/catalog`, `/collection`, `/legal`): near-black `#0a0a0a`, grotesque / tight-tracked meta, one accent = print orange `#e23d00`. Display face is Chakra Petch 600 (wordmark, page-title h1/h2, `.house-spine-title`). Body on `.house` stays Space Grotesk. Meta stays Roboto Mono. Hairlines. No terminal chrome. No lime spray type. Display name always lowercase `lecturesfrom` (`lecturesfrom LLC` allowed in footer/legal). The last `o` in the root wordmark is the static `LogoMark` — geometry and stroke width traced from the owner line-only PNG (outer circle, tilted ellipse, stem + flag, angle pie, wedges as a sector of the inner arc that meets the ring at the green ray). `variant` is `'line' | 'p1' | 'p2' | 'p3' | 'pastel'`; wordmark default on this branch is `'line'` (owner picks later). No white disc. Sized so the circle's outer ink hits Chakra Petch 600 x-height (`0.498em`); there is no standalone coin above the wordmark. Favicon / og remain the older line-mark (untouched this pass).
 - **Person** (`/keeganmoody33`): existing lime/orange terminal and Space Grotesk. Untouched except the wordmark becoming a SignalCut link to `/`. Do not apply house display type or house light tokens here.
 
 **Information density:** Sparse surface, dense on engagement. First screen is clean, intriguing, spacious. Interaction reveals depth.
@@ -101,24 +101,43 @@ Add-ons are the same in both modes. Defined, not applied to chrome. Cobalt has n
 | `--house-cable-midi` | `#ca77b3` | System diagrams |
 | `--house-cobalt` | `#2842ba` | No job yet |
 
-Mark fills live on `.house-logo-mark` only. Locked. The flag is `var(--house-orange)` (`#e23d00` on house). Geometry / stroke width are the owner line-only PNG trace. Flat regions, no opacity or blend. `fills={false}` paints the same paths with all fills off.
+Mark fills live on `.house-logo-mark[data-lf-variant]`. Geometry / stroke width are the owner line-only PNG trace. Flat regions, no opacity, blend, halo, or glow. Use house token vars, not literals, wherever a token exists. Wordmark default on this branch is `line`. Do not describe a variant as chosen.
+
+**`line`** — no fills. Every stroke `currentColor` (ink).
+
+**`p1` / `p2` / `p3`** — house tokens only:
 
 | Token | Value | Region |
-|-------|-------------|--------|
-| `--lf-mark-ellipse` | `#e8f3fb` | Tilted ellipse |
-| `--lf-mark-wedge-up-in` | `#9cbaef` | Upper sector inside the ellipse (blue) |
-| `--lf-mark-wedge-up-out` | `#e6e8f7` | Upper sector between ellipse and inner arc (lavender) |
-| `--lf-mark-wedge-low-in` | `#bcd5c5` | Lower sector inside the ellipse (green) |
-| `--lf-mark-wedge-low-out` | `#e4f0e4` | Lower sector between ellipse and inner arc |
-| `--lf-mark-angle` | `#f6eda0` | Yellow angle |
-| `--lf-mark-square` | `var(--house-orange)` | Flag square |
+|-------|-------|--------|
+| `--lf-mark-ellipse` | `transparent` | Tilted ellipse |
+| `--lf-mark-wedge-up-in` | `var(--house-muted)` (`#8a8a8a`) | Upper wedge inside the ellipse |
+| `--lf-mark-wedge-up-out` | `var(--house-line)` (`#242424`) | Upper wedge outside the ellipse |
+| `--lf-mark-wedge-low-in` | `var(--house-dim)` (`#7a7a7a`) | Lower wedge inside the ellipse |
+| `--lf-mark-wedge-low-out` | `var(--house-line)` (`#242424`) | Lower wedge outside the ellipse |
+| `--lf-mark-angle` | `var(--house-ink)` (`#ececec`) | Angle pie |
+| `--lf-mark-square` | see square row | Flag square |
+| Ring interior | transparent | — |
 
-**Mark outlines.** Stroke width 0.018107 (source ring: 8.25px on 455.625px midline). No halo, doubled outline, or glow. A segment on a filled region is `var(--house-bg)` (`#0a0a0a` on house, as drawn). A segment over the page or the transparent ring interior is `currentColor` (ink). The outer ring is ink. Paths that cross the fill edge are split with clipPaths against the fill union (or split path data) so each piece follows the rule. Line-only (`fills={false}`) skips fills and paints every stroke `currentColor` from the same paths.
+Square: **p1** `var(--house-ink)` at rest. **p2** `var(--house-orange)` at rest. **p3** `var(--house-ink)` at rest; `var(--house-orange)` on `.house-wordmark:hover` under `@media (hover: hover) and (pointer: fine)` (CSS only, no JS; touch stays ink). The mark in the o slot is `pointer-events: none`, so hover is the wordmark.
+
+**p1/p2/p3 outlines.** Stroke width 0.018107 (source ring: 8.25px on 455.625px midline). A stroke over the page, a transparent area, or `--house-line` `#242424` is ink (`currentColor`). A stroke on muted, dim, ink, or orange is `var(--house-bg)` (`#0a0a0a`). Split at fill edges with clipPaths. The outer ring is ink.
 
 | Stroke | Token | Where |
 |--------|-------|-------|
-| On fills (ellipse, stem, rays, inner arc, yellow, flag) | `var(--house-bg)` | Black as drawn on the pastels |
-| Over empty / outer ring | `currentColor` | House ink |
+| On muted / dim / ink / orange | `var(--house-bg)` | Inner wedges, angle, square |
+| Over empty / transparent / `--house-line` / outer ring | `currentColor` | Page, ellipse, outer wedges, ring |
+
+**`pastel`** — as drawn, off-palette (reference only). Morning locked hexes. Outline rule: any fill is `var(--house-bg)`; empty / ring `currentColor`.
+
+| Token | Value | Region |
+|-------|-------|--------|
+| `--lf-mark-ellipse` | `#e8f3fb` | Tilted ellipse |
+| `--lf-mark-wedge-up-in` | `#9cbaef` | Upper sector inside the ellipse |
+| `--lf-mark-wedge-up-out` | `#e6e8f7` | Upper sector between ellipse and inner arc |
+| `--lf-mark-wedge-low-in` | `#bcd5c5` | Lower sector inside the ellipse |
+| `--lf-mark-wedge-low-out` | `#e4f0e4` | Lower sector between ellipse and inner arc |
+| `--lf-mark-angle` | `#f6eda0` | Angle pie |
+| `--lf-mark-square` | `var(--house-orange)` | Flag square |
 
 | Token | Value |
 |-------|-------|
@@ -310,9 +329,9 @@ Animated 60px x 60px grid pattern on body:
 | `.house-meta` | House metadata | Roboto Mono, 0.625rem, 0.22em tracking, uppercase |
 | `.house-lcd` | LCD chip | `--house-lcd` on `--house-lcd-ink`, Doto 800, `10px 16px` padding. Defined, unused. |
 | `.house-rail` | House top rail | Three columns; atl / issue / year always visible; gutters `px-6 sm:px-10` |
-| `.house-wordmark` | Root lockup | Chakra Petch 600, tracking `-0.01em`, `line-height: 0.85`. `min(11.5rem, 16.5cqi)` so `lecturesfrom` keeps the Space Grotesk width (0.961 of `min(12rem, 17.2cqi)`). Entrance is a 700ms opacity fade (`houseLockup`). Last `o` in `from` is a static filled `LogoMark` (owner line-only PNG trace) over an in-flow transparent o (advance from the glyph; circle outer ink fills x-height `0.498em`). Full word is `.sr-only`; painted run is `aria-hidden`. Instant under `prefers-reduced-motion`. Slot `overflow-x: clip`. Nameplate and Hathaway SVGs are not mounted. |
-| `.house-wordmark-o` | Wordmark o slot | `position: relative` inline. In-flow transparent `o` keeps glyph advance + tracking. Circle outer ink (500.491 of 512 viewBox; scale 248, stroke 0.018107 from the PNG ring) fills x-height `0.498em` and sits on the baseline (`bottom: descent − x-height × 5.755/500.491`; box `x-height × 512/500.491`). Height wins. Nudged `0.006em` right of the glyph center. No `overflow: hidden`. Filled `LogoMark` (on-fill outlines `var(--house-bg)`, empty / ring `currentColor`). No `LogoGlobe`. Wrapper is a `span`. |
-| `.house-logo-mark` | Root mark box | `display: block` `span`, `2rem` square, `aspect-ratio: 1`, reserves size before paint. Owns locked `--lf-mark-*` fills; `--lf-mark-square` is `var(--house-orange)`. Wordmark o overrides to `calc(0.498em * 512 / 500.491)` via `.house-wordmark-o-mark`. |
+| `.house-wordmark` | Root lockup | Chakra Petch 600, tracking `-0.01em`, `line-height: 0.85`. `min(11.5rem, 16.5cqi)` so `lecturesfrom` keeps the Space Grotesk width (0.961 of `min(12rem, 17.2cqi)`). Entrance is a 700ms opacity fade (`houseLockup`). Last `o` in `from` is a static `LogoMark` (owner line-only PNG trace; `variant` default `'line'` on this branch) over an in-flow transparent o (advance from the glyph; circle outer ink fills x-height `0.498em`). Full word is `.sr-only`; painted run is `aria-hidden`. Instant under `prefers-reduced-motion`. Slot `overflow-x: clip`. Nameplate and Hathaway SVGs are not mounted. |
+| `.house-wordmark-o` | Wordmark o slot | `position: relative` inline. In-flow transparent `o` keeps glyph advance + tracking. Circle outer ink (500.491 of 512 viewBox; scale 248, stroke 0.018107 from the PNG ring) fills x-height `0.498em` and sits on the baseline (`bottom: descent − x-height × 5.755/500.491`; box `x-height × 512/500.491`). Height wins. Nudged `0.006em` right of the glyph center. No `overflow: hidden`. `LogoMark` `variant` from the wordmark (default `'line'`). No `LogoGlobe`. Wrapper is a `span`. Mark is `pointer-events: none` so p3 hover is `.house-wordmark:hover`. |
+| `.house-logo-mark` | Root mark box | `display: block` `span`, `2rem` square, `aspect-ratio: 1`, reserves size before paint. `data-lf-variant` owns `--lf-mark-*`. Wordmark o overrides to `calc(0.498em * 512 / 500.491)` via `.house-wordmark-o-mark`. |
 | `.lf-logo-globe` | Logo mark box | Kept for restore. Square `aspect-ratio: 1`; `perspective: 8rem`. Currently unmounted (`LogoGlobe.tsx` stays; TitleCard and HouseWordmark do not render it). |
 | `.lf-logo-globe-spin` | Coin spin | Kept for restore. `rotateY(0→360deg)` 12s linear infinite. Pauses on `html[data-lf-signal-cut="active"]` or `html[data-logo-paused="true"]`. Not applied while the wordmark o is static. |
 | `.lf-motion-switch` | Footer Motion | Kept in `MotionSwitch.tsx`. HouseFooter does not render it while the o is static. Preference CSS, head bootstrap, and sessionStorage remain. |

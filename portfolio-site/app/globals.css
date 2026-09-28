@@ -284,9 +284,45 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   aspect-ratio: 1;
   flex-shrink: 0;
   color: inherit;
-  /*
-   * Locked fills. Flag is the house orange token, not a literal.
-   */
+}
+
+/*
+ * Mark fills by data-lf-variant. Hex lives on house tokens except
+ * pastel (as drawn, off-palette — reference only). Line paints no fills.
+ * p1–p3: ellipse and ring interior transparent; inner wedges muted/dim;
+ * outer wedges --house-line; angle --house-ink. Square: p1 ink, p2 orange,
+ * p3 ink at rest / orange on wordmark :hover (hover+fine pointer only).
+ */
+.house-logo-mark[data-lf-variant="p1"],
+.house-logo-mark[data-lf-variant="p2"],
+.house-logo-mark[data-lf-variant="p3"] {
+  --lf-mark-ellipse: transparent;
+  --lf-mark-wedge-up-in: var(--house-muted);
+  --lf-mark-wedge-up-out: var(--house-line);
+  --lf-mark-wedge-low-in: var(--house-dim);
+  --lf-mark-wedge-low-out: var(--house-line);
+  --lf-mark-angle: var(--house-ink);
+}
+
+.house-logo-mark[data-lf-variant="p1"] {
+  --lf-mark-square: var(--house-ink);
+}
+
+.house-logo-mark[data-lf-variant="p2"] {
+  --lf-mark-square: var(--house-orange);
+}
+
+.house-logo-mark[data-lf-variant="p3"] {
+  --lf-mark-square: var(--house-ink);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .house-wordmark:hover .house-logo-mark[data-lf-variant="p3"] {
+    --lf-mark-square: var(--house-orange);
+  }
+}
+
+.house-logo-mark[data-lf-variant="pastel"] {
   --lf-mark-ellipse: #e8f3fb;
   --lf-mark-wedge-up-in: #9cbaef;
   --lf-mark-wedge-up-out: #e6e8f7;
