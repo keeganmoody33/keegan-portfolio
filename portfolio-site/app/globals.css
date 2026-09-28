@@ -356,11 +356,11 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   /* 0.006em right of the o glyph center (both insets so auto margins still center). */
   left: 0.006em;
   right: -0.006em;
-  /* Outer ink is 499.224 of 512 (scale 248, stroke 0.013); pad 6.388. */
-  bottom: calc(var(--lf-wordmark-o-descent) - var(--lf-wordmark-o-x-height) * 6.388 / 499.224);
+  /* Outer ink is 500.491 of 512 (scale 248, stroke 0.018107); pad 5.755. */
+  bottom: calc(var(--lf-wordmark-o-descent) - var(--lf-wordmark-o-x-height) * 5.755 / 500.491);
   margin-inline: auto;
-  width: calc(var(--lf-wordmark-o-x-height) * 512 / 499.224);
-  height: calc(var(--lf-wordmark-o-x-height) * 512 / 499.224);
+  width: calc(var(--lf-wordmark-o-x-height) * 512 / 500.491);
+  height: calc(var(--lf-wordmark-o-x-height) * 512 / 500.491);
   pointer-events: none;
   user-select: none;
   transform: none;

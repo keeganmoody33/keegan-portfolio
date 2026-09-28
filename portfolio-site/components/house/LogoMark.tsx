@@ -1,18 +1,22 @@
 /**
- * lecturesfrom filled mark (Server Component).
- * Geometry, strokes, and layer order are a trace of the owner PNG
- * (the design file does not contain this drawing). Fills are the
- * locked `--lf-mark-*` tokens on `.house-logo-mark`; the flag uses
- * `var(--house-orange)`. White in the PNG is transparent — no disc
- * behind the ring.
+ * lecturesfrom mark (Server Component).
+ * Geometry, strokes, and layer order are a trace of the owner
+ * line-only PNG (the design file does not contain this drawing).
+ * Fills are the locked `--lf-mark-*` tokens on `.house-logo-mark`;
+ * the flag uses `var(--house-orange)`. White in the source is
+ * transparent — no disc behind the ring.
  *
- * Outline rule (creative direction): a stroke segment on a filled
- * region is `var(--house-bg)` (black as drawn). A stroke segment over
- * the page or the transparent ring interior is `currentColor` (ink).
- * The outer ring is ink. Paths that cross the fill edge are split
- * (clipPaths against the fill union, or split path data) so each
- * piece follows the rule. One pass per segment — no halo, doubled
- * outline, or glow. Stroke width stays 0.013.
+ * Outline rule (creative direction, filled variant): a stroke
+ * segment on a filled region is `var(--house-bg)` (black as drawn).
+ * A stroke segment over the page or the transparent ring interior
+ * is `currentColor` (ink). The outer ring is ink. Paths that cross
+ * the fill edge are split (clipPaths against the fill union) so
+ * each piece follows the rule. One pass per segment — no halo,
+ * doubled outline, or glow.
+ *
+ * Line-only variant (`fills={false}`): same paths, no fills, every
+ * stroke `currentColor`. Stroke width 0.0181 of ring radius is the
+ * source ring (~8.25px on ~455.6px midline).
  *
  * Wedges are a sector of the PNG's inner circle: radii from the
  * pivot, outer boundary a circular arc (its own stroke) that meets
@@ -36,16 +40,18 @@
  *   LogoGlobe is remounted.
  * - `focusable` (default omit): pass `false` for the wordmark o so the SVG is
  *   not a tab stop. Decorative instances also set `aria-hidden` on the svg.
+ * - `fills` (default true): locked flats + CD outline split. `false` paints
+ *   the same paths line-only in `currentColor`.
  *
  * Unit geometry lives in a translate(256 256) scale(S) space: circle r=1,
- * ellipse rx=1 (touches the circle). Stroke 0.013 is the PNG ring
- * (~4px on ~310px midline radius). Outer ink diameter is
+ * ellipse rx=1 (touches the circle). Outer ink diameter is
  * `LF_MARK_OUTER_DIAMETER` of the 512 viewBox.
  */
 
 export const LF_MARK_VIEWBOX = 512
 export const LF_MARK_GEOMETRY_SCALE = 248
-export const LF_MARK_STROKE_WIDTH = 0.013
+/** Source ring: 8.25px on 455.625px midline. */
+export const LF_MARK_STROKE_WIDTH = 0.018107
 export const LF_MARK_OUTER_DIAMETER =
   2 * LF_MARK_GEOMETRY_SCALE * (1 + LF_MARK_STROKE_WIDTH / 2)
 export const LF_MARK_PAD = (LF_MARK_VIEWBOX - LF_MARK_OUTER_DIAMETER) / 2
@@ -70,19 +76,19 @@ export const LF_MARK_FILLS = {
   square: 'var(--lf-mark-square)',
 } as const
 
-export const LF_MARK_ELLIPSE_RY = 0.44
-export const LF_MARK_ELLIPSE_ROTATE = -56.75
-export const LF_MARK_STEM_DEG = -66.8
-export const LF_MARK_BLUE_TOP_DEG = -28.7
+export const LF_MARK_ELLIPSE_RY = 0.424
+export const LF_MARK_ELLIPSE_ROTATE = -57
+export const LF_MARK_STEM_DEG = -66.9
+export const LF_MARK_BLUE_TOP_DEG = -30.6
 export const LF_MARK_HORIZ_DEG = 0
-export const LF_MARK_GREEN_DEG = 31.5
-export const LF_MARK_YELLOW_R = 0.172
-export const LF_MARK_FLAG_INNER_R = 0.562
+export const LF_MARK_GREEN_DEG = 31.1
+export const LF_MARK_YELLOW_R = 0.178
+export const LF_MARK_FLAG_INNER_R = 0.537076
 
 /** Inner-arc circle (unit space). Through the blue/ellipse triple, the +x hit, and the ring at green. */
-export const LF_MARK_ARC_CX = 0.0365480293
-export const LF_MARK_ARC_CY = 0.2666294124
-export const LF_MARK_ARC_R = 0.8552633489
+export const LF_MARK_ARC_CX = -0.1285543876
+export const LF_MARK_ARC_CY = 0.3012037617
+export const LF_MARK_ARC_R = 1.0081208285
 
 export type LogoMarkLayer = 'all' | 'ring' | 'core'
 
@@ -93,6 +99,8 @@ export type LogoMarkProps = {
   layer?: LogoMarkLayer
   groupIds?: boolean
   focusable?: false
+  /** Locked flats + CD split. `false` = line-only, same paths. */
+  fills?: boolean
 }
 
 function polar(deg: number, r = 1): string {
@@ -157,7 +165,7 @@ const GREEN_PIE = sectorPath(LF_MARK_HORIZ_DEG, LF_MARK_GREEN_DEG)
 const YELLOW_PIE = piePath(LF_MARK_STEM_DEG, LF_MARK_BLUE_TOP_DEG, LF_MARK_YELLOW_R)
 const YELLOW_ARC = `M ${polar(LF_MARK_STEM_DEG, LF_MARK_YELLOW_R)} A ${LF_MARK_YELLOW_R} ${LF_MARK_YELLOW_R} 0 0 1 ${polar(LF_MARK_BLUE_TOP_DEG, LF_MARK_YELLOW_R)}`
 const FLAG =
-  'M 0.161861 -0.542136 L 0.187180 -0.601242 L 0.250948 -0.573925 L 0.225628 -0.514819 Z'
+  'M 0.172470 -0.628917 L 0.265228 -0.585630 L 0.220371 -0.489508 L 0.127613 -0.532795 Z'
 const STEM = `M 0 0 L ${polar(LF_MARK_STEM_DEG, LF_MARK_FLAG_INNER_R)}`
 const RAY_BLUE = `M 0 0 L ${polar(LF_MARK_BLUE_TOP_DEG, R_BLUE)}`
 const RAY_HORIZ = `M 0 0 L ${polar(LF_MARK_HORIZ_DEG, R_HORIZ)}`
@@ -193,12 +201,28 @@ function CoreStrokes({
   )
 }
 
-function Core({ grouped, ids }: { grouped: boolean; ids: Record<string, string> }) {
-  const fills = LF_MARK_FILLS
+function Core({
+  grouped,
+  ids,
+  fills,
+}: {
+  grouped: boolean
+  ids: Record<string, string>
+  fills: boolean
+}) {
+  const fillTokens = LF_MARK_FILLS
   const ell = {
     rx: 1,
     ry: LF_MARK_ELLIPSE_RY,
     transform: `rotate(${LF_MARK_ELLIPSE_ROTATE})`,
+  }
+
+  if (!fills) {
+    return (
+      <g id={grouped ? 'lf-core' : undefined} stroke={LF_MARK_STROKE_ON_EMPTY}>
+        <CoreStrokes ell={ell} />
+      </g>
+    )
   }
 
   return (
@@ -252,17 +276,17 @@ function Core({ grouped, ids }: { grouped: boolean; ids: Record<string, string> 
       </defs>
 
       <g stroke="none">
-        <ellipse {...ell} fill={fills.ellipse} />
+        <ellipse {...ell} fill={fillTokens.ellipse} />
         <g clipPath={`url(#${ids.green})`}>
-          <ellipse {...ell} fill={fills.wedgeLowIn} />
+          <ellipse {...ell} fill={fillTokens.wedgeLowIn} />
         </g>
-        <path d={GREEN_PIE} fill={fills.wedgeLowOut} mask={`url(#${ids.out})`} />
+        <path d={GREEN_PIE} fill={fillTokens.wedgeLowOut} mask={`url(#${ids.out})`} />
         <g clipPath={`url(#${ids.ell})`}>
-          <path d={BLUE_PIE} fill={fills.wedgeUpIn} />
+          <path d={BLUE_PIE} fill={fillTokens.wedgeUpIn} />
         </g>
-        <path d={BLUE_PIE} fill={fills.wedgeUpOut} mask={`url(#${ids.out})`} />
-        <path d={YELLOW_PIE} fill={fills.angle} />
-        <path d={FLAG} fill={fills.square} />
+        <path d={BLUE_PIE} fill={fillTokens.wedgeUpOut} mask={`url(#${ids.out})`} />
+        <path d={YELLOW_PIE} fill={fillTokens.angle} />
+        <path d={FLAG} fill={fillTokens.square} />
       </g>
 
       <g stroke={LF_MARK_STROKE_ON_FILL} clipPath={`url(#${ids.onFill})`}>
@@ -282,6 +306,7 @@ export default function LogoMark({
   layer = 'all',
   groupIds = true,
   focusable,
+  fills = true,
 }: LogoMarkProps) {
   const named = !decorative
   const showRing = layer !== 'core'
@@ -316,7 +341,9 @@ export default function LogoMark({
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          {showCore ? <Core grouped={groupIds} ids={ids} /> : null}
+          {showCore ? (
+            <Core grouped={groupIds} ids={ids} fills={fills} />
+          ) : null}
           {showRing ? <Ring grouped={groupIds} /> : null}
         </g>
       </svg>

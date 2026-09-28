@@ -257,7 +257,7 @@ Phases 1 and 4 can run in parallel after Phase 0. Phase 3 is cancelled.
 
 - **Output:** `components/house/LogoMark.tsx` in the root wordmark o; `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`; house `opengraph-image` / `twitter-image` from `brand/house-share.png`.
 - **Globe:** `LogoGlobe.tsx` stays on disk and is not mounted. TitleCard has no standalone coin. Coin-spin CSS, pause attributes, and `MotionSwitch` remain for restore. HouseFooter does not render the switch while the o is static.
-- **Wordmark o:** `HouseWordmark` replaces the last `o` in `from` with the static filled `LogoMark` (owner PNG trace for geometry / strokes / layer order; on-fill outlines `var(--house-bg)`, empty / ring `currentColor`; `groupIds={false}`, `focusable={false}`, `aria-hidden`). In-flow transparent `o` keeps glyph advance. Full word is `.sr-only`. Wrapper is a `span`. Favicon / og stay the older line-mark. No spin, rim, or `data-logo-paused`. Fills are locked `--lf-mark-*`; the flag is `var(--house-orange)`.
+- **Wordmark o:** `HouseWordmark` replaces the last `o` in `from` with the static filled `LogoMark` (owner line-only PNG trace for geometry / stroke width / layer order; on-fill outlines `var(--house-bg)`, empty / ring `currentColor`; `groupIds={false}`, `focusable={false}`, `aria-hidden`). In-flow transparent `o` keeps glyph advance. Full word is `.sr-only`. Wrapper is a `span`. Favicon / og stay the older line-mark. No spin, rim, or `data-logo-paused`. Fills are locked `--lf-mark-*`; the flag is `var(--house-orange)`. Same paths render line-only via `fills={false}`.
 - **Validation:** lint / typecheck / build; `/keeganmoody33` `og:image` stays `/og.jpg`.
 
 ---

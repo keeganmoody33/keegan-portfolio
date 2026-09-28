@@ -1,3 +1,6 @@
+COMPLETED (2026-09-28 — line-PNG geometry + line-only paths):
+- Owner 918px line-only PNG is the geometry authority. Ellipse rx=1 / ry=0.424 / −57°, stem −66.9°, blue −30.6°, horiz 0°, green 31.1°, yellow r=0.178, flag inner 0.537, inner-arc circle (−0.12855, 0.30120) r=1.00812. Stroke 0.018107 (8.25px / 455.625px midline). Box 512/500.491, pad 5.755, 0.006em nudge kept. Same paths render line-only via `fills={false}` (all strokes currentColor). Filled variant still uses locked `--lf-mark-*` and the CD on-fill / on-empty split. Favicon / og still mismatch.
+
 COMPLETED (2026-09-28 — CD outline split):
 - On-fill strokes `var(--house-bg)` (as drawn). Empty / outer ring `currentColor`. ClipPaths against the padded fill union so a path that crosses the fill edge splits without a halo or doubled outline. Stroke 0.013. Inner-arc geometry, locked fills, 512/499.224 box, 0.006em nudge unchanged. Favicon / og still mismatch.
 
