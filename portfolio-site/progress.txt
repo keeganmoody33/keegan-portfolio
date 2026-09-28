@@ -1,6 +1,9 @@
-COMPLETED (2026-09-28 — keep hairline; P2 ellipse/ray refit):
-- P1 withdrawn: Keegan keeps the proportional hairline (`LF_MARK_STROKE_WIDTH` 0.018107) and accepts the o fading on phones. No `vector-effect` / CSS px clamp.
-- P2 kept: Ellipse ry=0.4115 at −57.87°, centre (−0.016, 0). Ray pivot (−5, −5) in 512 viewBox space. Blue −31.631847° (ellipse ∩ inner-arc), horiz 0° from the pivot ends on the arc, green 30.548655° (arc ∩ ring). Inner-arc circle unchanged. Named `--lf-mark-*` regions still transparent. Favicon / og untouched.
+COMPLETED (2026-09-28 — pivot (−4, −3); ring contrast sampled on the ring):
+- Pivot is (−4, −3) viewBox units from the ring centre (`−4/248`, `−3/248`). Drawing ~−3.95, −3.07. Blue −32.339552° (ellipse ∩ inner-arc from the new pivot), horiz 0° ends on the arc, green 30.27366° (arc ∩ ring). Ellipse, hairline, line-only, transparent `--lf-mark-*`, favicon / og unchanged.
+- Ring contrast is sampled on the outer-ring annulus only. The mark-wide peak (ray-pivot overlap) is not a ring pixel.
+
+SUPERSEDED (2026-09-28 — keep hairline; P2 ellipse/ray refit):
+- P1 withdrawn: proportional hairline kept. P2 ellipse kept. Pivot was (−5, −5); superseded by (−4, −3) above. The earlier “brightest ring pixel” `#8c8c8c` was the mark-wide peak at the ray pivot, not the ring.
 
 SUPERSEDED (2026-09-28 — UX gate: stroke px + ellipse/ray refit):
 - Non-scaling CSS stroke clamp withdrawn. Hairline restored. P2 geometry remains.
