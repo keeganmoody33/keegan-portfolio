@@ -4,8 +4,8 @@
  * Prop API
  * - `size` (default 32): reserved square in px. Width/height + `.house-logo-mark`
  *   (`aspect-ratio: 1`) so the box exists before the SVG paints (CLS 0).
- * - `className`: extra classes on the sizing wrapper (Motion can stack two
- *   instances with `absolute inset-0`).
+ * - `className`: extra classes on the sizing wrapper (a `span`, so the
+ *   wordmark instance stays phrasing content inside the `h1`).
  * - `decorative` (default true): `aria-hidden` when the visible wordmark already
  *   names the brand. Pass `false` for a standalone mark (`<title>` lecturesfrom
  *   via `aria-labelledby`). Never both next to the `h1`.
@@ -13,12 +13,11 @@
  *   SVG. `'ring'` / `'core'` render that group only, so a wrapper can stack two
  *   same-size layers without duplicate ids.
  * - `groupIds` (default true): set false when a second mark shares the page
- *   so `#lf-ring` / `#lf-core` stay unique. The title card renders exactly
- *   one mark tree (the wordmark-o globe), so the default is fine there.
- * - `focusable` (default omit): pass `false` when the SVG must not be a tab
- *   stop. The wordmark-o globe omits this; it stays aria-hidden instead.
+ *   (wordmark o) so `#lf-ring` / `#lf-core` stay unique if LogoGlobe is remounted.
+ * - `focusable` (default omit): pass `false` for the wordmark o so the SVG is
+ *   not a tab stop. Decorative instances also set `aria-hidden` on the svg.
  *   The core group is scale(0.74) so the orbit sits inside the ring instead of
- *   sharing its radius. LogoGlobe's coin spin wraps these layers.
+ *   sharing its radius. Do not change geometry, viewBox, stroke, or paths.
  *
  * Strokes are `currentColor` so the mark inherits house ink on `/` (and any
  * future parent color). Favicons cannot use currentColor — see `app/icon.svg`.
@@ -70,7 +69,7 @@ export default function LogoMark({
   const showCore = layer === 'all' || layer === 'core'
 
   return (
-    <div className={['house-logo-mark', className].filter(Boolean).join(' ')}>
+    <span className={['house-logo-mark', className].filter(Boolean).join(' ')}>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 512 512"
@@ -94,6 +93,6 @@ export default function LogoMark({
           {showCore ? <Core grouped={groupIds} /> : null}
         </g>
       </svg>
-    </div>
+    </span>
   )
 }

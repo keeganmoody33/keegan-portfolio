@@ -1,6 +1,6 @@
 # Frontend Guidelines — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-09-27
+**Last Updated:** 2026-09-28
 **Supersedes:** `docs/DESIGN_PLAYBOOK.md` (archived -- all content folded into this doc)
 **CSS Framework:** Tailwind CSS 3.4.19 + CSS Custom Properties
 **Fonts:** Google Fonts (Chakra Petch, Doto, Space Grotesk, Roboto Mono, Roboto Slab)
@@ -19,7 +19,7 @@
 
 **Two visual dialects. Do not homogenize.**
 
-- **House** (`/`, `/catalog`, `/collection`, `/legal`): near-black `#0a0a0a`, grotesque / tight-tracked meta, one accent = print orange `#e23d00`. Display face is Chakra Petch 600 (wordmark, page-title h1/h2, `.house-spine-title`). Body on `.house` stays Space Grotesk. Meta stays Roboto Mono. Hairlines. No terminal chrome. No lime spray type. Display name always lowercase `lecturesfrom` (`lecturesfrom LLC` allowed in footer/legal). The last `o` in the root wordmark is the spinning `LogoGlobe` (ring + core, coin spin + rim wall), sized to Chakra Petch 600 x-height (`0.498em`); there is no standalone coin above the wordmark. `#lf-core` is `scale(0.74)` so the orbit sits inside the ring instead of sharing its radius.
+- **House** (`/`, `/catalog`, `/collection`, `/legal`): near-black `#0a0a0a`, grotesque / tight-tracked meta, one accent = print orange `#e23d00`. Display face is Chakra Petch 600 (wordmark, page-title h1/h2, `.house-spine-title`). Body on `.house` stays Space Grotesk. Meta stays Roboto Mono. Hairlines. No terminal chrome. No lime spray type. Display name always lowercase `lecturesfrom` (`lecturesfrom LLC` allowed in footer/legal). The last `o` in the root wordmark is the static `LogoMark` (ring + core, stroke `0.0625`, face-on, no spin), sized to Chakra Petch 600 x-height (`0.498em`); there is no standalone coin above the wordmark. `#lf-core` is `scale(0.74)` so the orbit sits inside the ring instead of sharing its radius.
 - **Person** (`/keeganmoody33`): existing lime/orange terminal and Space Grotesk. Untouched except the wordmark becoming a SignalCut link to `/`. Do not apply house display type or house light tokens here.
 
 **Information density:** Sparse surface, dense on engagement. First screen is clean, intriguing, spacious. Interaction reveals depth.
@@ -264,7 +264,7 @@ Animated 60px x 60px grid pattern on body:
 
 ### Rules for All Components
 
-1. Person-page components in `components/` are `'use client'`. House components in `components/house/` are Server Components by default (`LogoMark` included). Do not add `'use client'` to the title card just to host the mark. `MotionSwitch` is the house exception: a client child of `HouseFooter`.
+1. Person-page components in `components/` are `'use client'`. House components in `components/house/` are Server Components by default (`LogoMark` included). Do not add `'use client'` to the title card just to host the mark. `MotionSwitch` is the house client exception; `HouseFooter` does not currently render it.
 2. All components live in `portfolio-site/components/`
 3. Functional components with hooks (no class components)
 4. No inline styles -- always Tailwind classes or CSS custom properties
@@ -291,12 +291,12 @@ Animated 60px x 60px grid pattern on body:
 | `.house-meta` | House metadata | Roboto Mono, 0.625rem, 0.22em tracking, uppercase |
 | `.house-lcd` | LCD chip | `--house-lcd` on `--house-lcd-ink`, Doto 800, `10px 16px` padding. Defined, unused. |
 | `.house-rail` | House top rail | Three columns; atl / issue / year always visible; gutters `px-6 sm:px-10` |
-| `.house-wordmark` | Root lockup | Chakra Petch 600, tracking `-0.01em`, `line-height: 0.85`. `min(11.5rem, 16.5cqi)` so `lecturesfrom` keeps the Space Grotesk width (0.961 of `min(12rem, 17.2cqi)`). Entrance is a 700ms opacity fade (`houseLockup`). Last `o` in `from` is the spinning `LogoGlobe` over an in-flow transparent o (advance from the glyph; globe square `0.498em` x-height). Full word is `.sr-only`; painted run is `aria-hidden`. Instant under `prefers-reduced-motion`. Slot `overflow-x: clip`. Nameplate and Hathaway SVGs are not mounted. |
-| `.house-wordmark-o` | Wordmark o slot | `position: relative` inline. In-flow transparent `o` keeps glyph advance + tracking. Globe square = x-height `0.498em`, baseline offset `0.308em`. The spinning `LogoGlobe` (same ring + core geometry as the favicon / og, core `scale(0.74)`) sits in that square — the only globe instance on the title card. Perspective on this instance is `4×` the mark (`calc(0.498em * 4)`). |
-| `.house-logo-mark` | Root mark box | `2rem` square, `aspect-ratio: 1`, reserves size before paint. Inside `LogoGlobe` layers it fills the layer (`width/height: 100%`). |
-| `.lf-logo-globe` | Logo mark box | Square `aspect-ratio: 1`; reserves size before paint (CLS 0). Default `perspective: 8rem`; the wordmark-o instance overrides it to `calc(var(--lf-wordmark-o-x-height) * 4)` (same 4× ratio). Wordmark wraps `LogoMark` `layer="ring"` + `layer="core"`. |
-| `.lf-logo-globe-spin` | Coin spin | Shared wrapper around both layers. `rotateY(0→360deg)` 12s linear infinite (west→east). `backface-visibility: visible`. Pauses on `html[data-lf-signal-cut="active"]` or `html[data-logo-paused="true"]` (either attribute; never `running`). `animation: none` under `prefers-reduced-motion`. Owner override of house "No 3D", scoped to this mark. |
-| `.lf-motion-switch` | Footer Motion | HouseFooter `role="switch"` (`motion: on` / `motion: off`). Min 24×24, house muted/ink, `:focus-visible` 2px `--house-ink` outline. Hidden (`display: none`) under `prefers-reduced-motion: reduce`. Writes `data-logo-paused` on `<html>` after hydration; root layout head script sets the same attribute before first paint when `sessionStorage['lf-logo-paused']` is `'1'`. |
+| `.house-wordmark` | Root lockup | Chakra Petch 600, tracking `-0.01em`, `line-height: 0.85`. `min(11.5rem, 16.5cqi)` so `lecturesfrom` keeps the Space Grotesk width (0.961 of `min(12rem, 17.2cqi)`). Entrance is a 700ms opacity fade (`houseLockup`). Last `o` in `from` is a static `LogoMark` over an in-flow transparent o (advance from the glyph; mark square `0.498em` x-height). Full word is `.sr-only`; painted run is `aria-hidden`. Instant under `prefers-reduced-motion`. Slot `overflow-x: clip`. Nameplate and Hathaway SVGs are not mounted. |
+| `.house-wordmark-o` | Wordmark o slot | `position: relative` inline. In-flow transparent `o` keeps glyph advance + tracking. Mark square = x-height `0.498em`, baseline offset `0.308em`. The lecturesfrom `LogoMark` (same ring + core as the favicon / og, core `scale(0.74)`, stroke `0.0625`) sits in that square. Does not use `LogoGlobe`, spin, rim wall, or `data-logo-paused`. Wrapper is a `span` (phrasing content only inside the `h1`). |
+| `.house-logo-mark` | Root mark box | `display: block` `span`, `2rem` square, `aspect-ratio: 1`, reserves size before paint. Wordmark o overrides to `0.498em` via `.house-wordmark-o-mark`. |
+| `.lf-logo-globe` | Logo mark box | Kept for restore. Square `aspect-ratio: 1`; `perspective: 8rem`. Currently unmounted (`LogoGlobe.tsx` stays; TitleCard and HouseWordmark do not render it). |
+| `.lf-logo-globe-spin` | Coin spin | Kept for restore. `rotateY(0→360deg)` 12s linear infinite. Pauses on `html[data-lf-signal-cut="active"]` or `html[data-logo-paused="true"]`. Not applied while the wordmark o is static. |
+| `.lf-motion-switch` | Footer Motion | Kept in `MotionSwitch.tsx`. HouseFooter does not render it while the o is static. Preference CSS, head bootstrap, and sessionStorage remain. |
 | `.lf-logo-globe-core` | Core layer | Face-on rest pose. `animation: none; transform: none`. No independent spin. |
 | `.house-spine` | Crate row | 3 columns below `sm` (format/catno on a second title line); 5 columns from `md` |
 
@@ -422,8 +422,8 @@ Person-page components render the same layout across breakpoints.
 ### What Exists
 
 - Images have `alt` attributes
-- The wordmark-o `LogoGlobe` is `decorative` (aria-hidden) so the `h1` wordmark is the only accessible name. The wordmark keeps a `.sr-only` full word `lecturesfrom`; the painted run is `aria-hidden`. Standalone `LogoMark` uses pass `decorative={false}` (`<title>` lecturesfrom).
-- HouseFooter Motion switch (WCAG 2.2.2) pauses the wordmark-o coin spin. Shared on `/`, `/catalog`, `/collection`, `/legal`. Hidden under `prefers-reduced-motion`. Root layout head script applies a saved pause before first paint. `/keeganmoody33` does not share this footer (marquee / `gridShift` remain).
+- The wordmark-o `LogoMark` is `decorative` (`aria-hidden` + `focusable="false"`) so the `h1` wordmark is the only accessible name. The wordmark keeps a `.sr-only` full word `lecturesfrom`; the painted run is `aria-hidden`. Group ids omitted. Standalone `LogoMark` uses pass `decorative={false}` (`<title>` lecturesfrom).
+- HouseFooter does not render the Motion switch while the wordmark o is static. `MotionSwitch.tsx`, pause CSS, and the root layout head script stay in the repo for restore. `/keeganmoody33` does not share this footer (marquee / `gridShift` remain).
 - External links have `target="_blank"` and `rel="noopener noreferrer"`
 - Form submission via Enter key (Chat)
 - Disabled states on buttons during loading

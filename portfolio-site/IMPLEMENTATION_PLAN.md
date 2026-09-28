@@ -1,7 +1,7 @@
 # Implementation Plan — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-09-27
-**Status:** House cut implemented (title card, sleeves, full crate, signal cut, agent files, logo mark). Person page frozen except wordmark. Live lockup is Chakra Petch; the last `o` is the spinning LogoGlobe. Hathaway (`public/brand/wordmark-hathaway.svg`) and nameplate (`brand/lecturesfrom-wordmark.svg`) vectors are assets only and are not mounted.
+**Last Updated:** 2026-09-28
+**Status:** House cut implemented (title card, sleeves, full crate, signal cut, agent files, logo mark). Person page frozen except wordmark. Live lockup is Chakra Petch; the last `o` is the static LogoMark. Hathaway (`public/brand/wordmark-hathaway.svg`) and nameplate (`brand/lecturesfrom-wordmark.svg`) vectors are assets only and are not mounted.
 **Previous plan:** `IMPLEMENTATION_PLAN_DISCOGS_ARCHIVED.md` (completed Discogs widget build)
 
 ---
@@ -255,9 +255,9 @@ Phases 1 and 4 can run in parallel after Phase 0. Phase 3 is cancelled.
 
 ### House brand mark (DONE — this PR)
 
-- **Output:** `components/house/LogoMark.tsx` on the root title card; `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`; house `opengraph-image` / `twitter-image` from `brand/house-share.png`.
-- **Globe:** `LogoGlobe` lives in the wordmark o (the standalone coin above the wordmark was removed 2026-09-27). Shared `.lf-logo-globe-spin` wrapper coin-spins the whole mark (`rotateY` 12s). Core stays `animation: none` (face-on). Owner override of house "No 3D", scoped to this mark. HouseFooter Motion switch for WCAG 2.2.2; composed with SignalCut via pause-only CSS attributes on `<html>`. Root layout blocking script applies a saved pause before first paint (`suppressHydrationWarning` on `<html>`).
-- **Wordmark o:** `HouseWordmark` replaces the last `o` in `from` with the spinning `LogoGlobe` wrapping `LogoMark` `layer="ring"` + `layer="core"`. Same ring + core geometry as the favicon / og. In-flow transparent `o` keeps glyph advance. Full word is `.sr-only`. The globe reads `data-logo-paused` / SignalCut pause attributes, spins, and draws the rim wall.
+- **Output:** `components/house/LogoMark.tsx` in the root wordmark o; `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`; house `opengraph-image` / `twitter-image` from `brand/house-share.png`.
+- **Globe:** `LogoGlobe.tsx` stays on disk and is not mounted. TitleCard has no standalone coin. Coin-spin CSS, pause attributes, and `MotionSwitch` remain for restore. HouseFooter does not render the switch while the o is static.
+- **Wordmark o:** `HouseWordmark` replaces the last `o` in `from` with the static `LogoMark` (canonical ring + core, stroke `0.0625`, `groupIds={false}`, `focusable={false}`, `aria-hidden`). In-flow transparent `o` keeps glyph advance. Full word is `.sr-only`. Wrapper is a `span`. No spin, rim, or `data-logo-paused`.
 - **Validation:** lint / typecheck / build; `/keeganmoody33` `og:image` stays `/og.jpg`.
 
 ---

@@ -278,6 +278,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
 }
 
 .house-logo-mark {
+  display: block;
   width: 2rem;
   height: 2rem;
   aspect-ratio: 1;
@@ -321,9 +322,9 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
 /*
  * Last o in "from": in-flow transparent glyph keeps the o's actual
  * advance (and letter-spacing) so the lockup width matches plain text.
- * The o is the spinning LogoGlobe sized to x-height, centered on the
- * glyph, sitting on the baseline. It is the only globe on the title
- * card — the standalone coin above the wordmark was removed.
+ * Mark is the static LogoMark square sized to x-height, centered on the
+ * glyph, sitting on the baseline. Face-on; not .lf-logo-globe. There is
+ * no standalone coin above the wordmark.
  * The painted run is aria-hidden; .sr-only "lecturesfrom" is the name.
  */
 .house-wordmark-visual {
@@ -338,7 +339,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   color: transparent;
 }
 
-.house-wordmark-o-mark.lf-logo-globe {
+.house-wordmark-o-mark.house-logo-mark {
   position: absolute;
   left: 0;
   right: 0;
@@ -348,8 +349,8 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   height: var(--lf-wordmark-o-x-height);
   pointer-events: none;
   user-select: none;
-  /* 4× the mark, same ratio as the old 2rem coin's 8rem perspective. */
-  perspective: calc(var(--lf-wordmark-o-x-height) * 4);
+  transform: none;
+  overflow: hidden;
 }
 
 @supports (font-size: 1cqi) {
