@@ -12,7 +12,7 @@
 
 | Route            | File                         | What It Shows                                                   |
 |------------------|------------------------------|-----------------------------------------------------------------|
-| `/`              | `app/(house)/page.tsx`               | House title card + crate (Server Component). The last `o` in the wordmark `from` is a static filled `LogoMark` (PNG trace, provisional, to be replaced by the design-file spec; outlines `currentColor`; no `LogoGlobe`, no spin) at Chakra Petch x-height on the alphabetic baseline; there is no standalone coin above the wordmark. Wordmark (`HouseWordmark`, Chakra Petch) entrance is a 700ms opacity fade. HouseFooter does not render the Motion switch while the o is static; `MotionSwitch.tsx`, head bootstrap, and pause CSS stay in the repo. Nameplate and Hathaway SVGs are not mounted. No page turntable. No return-visit redirect. |
+| `/`              | `app/(house)/page.tsx`               | House title card + crate (Server Component). The last `o` in the wordmark `from` is a static filled `LogoMark` (owner PNG trace; outlines `currentColor`; no `LogoGlobe`, no spin) at Chakra Petch x-height on the alphabetic baseline; there is no standalone coin above the wordmark. Wordmark (`HouseWordmark`, Chakra Petch) entrance is a 700ms opacity fade. HouseFooter does not render the Motion switch while the o is static; `MotionSwitch.tsx`, head bootstrap, and pause CSS stay in the repo. Nameplate and Hathaway SVGs are not mounted. No page turntable. No return-visit redirect. |
 | `/catalog`       | `app/(house)/catalog/page.tsx`       | Crate permalink (same spines as `/`)                            |
 | `/catalog/[slug]`| `app/(house)/catalog/[slug]/page.tsx`| Sleeve (cover, liner, tracks). Unknown slugs 404.               |
 | `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate (ISR 300s; durable last-good in Redis when configured) |
@@ -32,7 +32,7 @@
 | Redirect (301) | `/keeganMoody33` | `/keeganmoody33` | Case normalization  |
 | Redirect (301) | `/keegan`        | `/keeganmoody33` | Short alias         |
 
-**Result:** Visitors land on `lecturesfrom.com` and see the house title card + crate. `/` never redirects to the person page. The person page is at `/keeganmoody33`. House ↔ person crossings use `SignalCut` (not a global layout animation). Ask AI and JD Fit Analyzer stay on the person page only. The hero wordmark's last `o` is the static filled `LogoMark` (PNG trace, provisional, to be replaced by the design-file spec; no spin). `LogoGlobe` is kept on disk and is not mounted. `HouseFooter` is shared on `/`, `/catalog`, `/collection`, `/legal` (Motion switch not rendered). `/keeganmoody33` has its own footer.
+**Result:** Visitors land on `lecturesfrom.com` and see the house title card + crate. `/` never redirects to the person page. The person page is at `/keeganmoody33`. House ↔ person crossings use `SignalCut` (not a global layout animation). Ask AI and JD Fit Analyzer stay on the person page only. The hero wordmark's last `o` is the static filled `LogoMark` (owner PNG trace; no spin). `LogoGlobe` is kept on disk and is not mounted. `HouseFooter` is shared on `/`, `/catalog`, `/collection`, `/legal` (Motion switch not rendered). `/keeganmoody33` has its own footer.
 
 ### API Routes
 

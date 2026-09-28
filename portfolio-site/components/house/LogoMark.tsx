@@ -1,18 +1,12 @@
 /**
  * lecturesfrom filled mark (Server Component).
- * PNG trace, provisional, to be replaced by the design-file spec.
- * The owner's design file is the source of truth for geometry, strokes,
- * fills, and layer order — not this PNG trace. Do not polish these
- * paths. Wordmark sizing, HouseWordmark wiring, and named
- * `--lf-mark-*` fill variables carry over.
- *
- * Current paths: outer circle, tilted ellipse, stem + flag, yellow
- * pie, blue wedge, lavender annulus, green wedge (darker overlap as
- * its own flat fill). Outlines are `currentColor` (house ink `#ececec`
- * on `/`). Fills are `var(--lf-mark-*)` on `.house-logo-mark`. Hexes
- * there are PLACEHOLDER pending design-file values. White in the
- * PNG is treated as transparent — no disc behind the ring. Favicon /
- * og stay the older line-mark and now mismatch; follow-up needed.
+ * Geometry, strokes, and layer order are a trace of the owner PNG
+ * (the design file does not contain this drawing). Fills are
+ * `var(--lf-mark-*)` on `.house-logo-mark` — PLACEHOLDER pending a
+ * final list from creative direction (`--lf-mark-square` will likely
+ * map to `--house-orange`). White in the PNG is transparent — no disc
+ * behind the ring. Outlines are `currentColor` (house ink `#ececec`
+ * on `/`). Favicon / og stay the older line-mark and now mismatch.
  *
  * Prop API
  * - `size` (default 32): reserved square in px. Width/height + `.house-logo-mark`
@@ -32,14 +26,12 @@
  *   not a tab stop. Decorative instances also set `aria-hidden` on the svg.
  *
  * Unit geometry lives in a translate(256 256) scale(S) space: circle r=1,
- * ellipse rx=1 (touches the circle) ry=0.43 rotate(-60). Stroke 0.013 is
- * the PNG trace's ~4px stroke on a ~310px radius. Outer ink diameter
- * is `LF_MARK_OUTER_DIAMETER` of the 512 viewBox. All of this is
- * PNG trace, provisional, to be replaced by the design-file spec.
+ * ellipse rx=1 (touches the circle). Stroke 0.013 is the PNG ring
+ * (~4px on ~310px midline radius). Outer ink diameter is
+ * `LF_MARK_OUTER_DIAMETER` of the 512 viewBox.
  */
 
 export const LF_MARK_VIEWBOX = 512
-// PNG trace, provisional, to be replaced by the design-file spec.
 export const LF_MARK_GEOMETRY_SCALE = 248
 export const LF_MARK_STROKE_WIDTH = 0.013
 export const LF_MARK_OUTER_DIAMETER =
@@ -48,9 +40,8 @@ export const LF_MARK_PAD = (LF_MARK_VIEWBOX - LF_MARK_OUTER_DIAMETER) / 2
 
 /**
  * Fill tokens only. Hex placeholders live on `.house-logo-mark` in
- * globals.css (PLACEHOLDER pending design-file values). Do not put
- * hex here — swap the CSS custom properties. These names carry over
- * when the design-file spec replaces the PNG trace.
+ * globals.css (PLACEHOLDER pending a final list from creative
+ * direction). Do not put hex here — swap the CSS custom properties.
  */
 export const LF_MARK_FILLS = {
   ellipse: 'var(--lf-mark-ellipse)',
@@ -62,14 +53,14 @@ export const LF_MARK_FILLS = {
   square: 'var(--lf-mark-square)',
 } as const
 
-// PNG trace, provisional, to be replaced by the design-file spec.
-export const LF_MARK_ELLIPSE_RY = 0.43
-export const LF_MARK_ELLIPSE_ROTATE = -60
-export const LF_MARK_STEM_DEG = -65
-export const LF_MARK_BLUE_TOP_DEG = -30
+export const LF_MARK_ELLIPSE_RY = 0.425
+export const LF_MARK_ELLIPSE_ROTATE = -59.5
+export const LF_MARK_STEM_DEG = -66.8
+export const LF_MARK_BLUE_TOP_DEG = -29.2
 export const LF_MARK_HORIZ_DEG = 0
-export const LF_MARK_GREEN_DEG = 31
-export const LF_MARK_YELLOW_R = 0.16
+export const LF_MARK_GREEN_DEG = 31.6
+export const LF_MARK_YELLOW_R = 0.172
+export const LF_MARK_FLAG_INNER_R = 0.562
 
 export type LogoMarkLayer = 'all' | 'ring' | 'core'
 
@@ -98,8 +89,8 @@ const GREEN_PIE = piePath(LF_MARK_HORIZ_DEG, LF_MARK_GREEN_DEG)
 const YELLOW_PIE = piePath(LF_MARK_STEM_DEG, LF_MARK_BLUE_TOP_DEG, LF_MARK_YELLOW_R)
 const YELLOW_ARC = `M ${polar(LF_MARK_STEM_DEG, LF_MARK_YELLOW_R)} A ${LF_MARK_YELLOW_R} ${LF_MARK_YELLOW_R} 0 0 1 ${polar(LF_MARK_BLUE_TOP_DEG, LF_MARK_YELLOW_R)}`
 const FLAG =
-  'M 0.197285 -0.587803 L 0.275803 -0.552715 L 0.240715 -0.474197 L 0.162197 -0.509285 Z'
-const STEM = `M 0 0 L 0.237000 -0.482000`
+  'M 0.161861 -0.542136 L 0.187180 -0.601242 L 0.250948 -0.573925 L 0.225628 -0.514819 Z'
+const STEM = `M 0 0 L ${polar(LF_MARK_STEM_DEG, LF_MARK_FLAG_INNER_R)}`
 const RAY_BLUE = `M 0 0 L ${polar(LF_MARK_BLUE_TOP_DEG)}`
 const RAY_HORIZ = `M 0 0 L ${polar(LF_MARK_HORIZ_DEG)}`
 const RAY_GREEN = `M 0 0 L ${polar(LF_MARK_GREEN_DEG)}`

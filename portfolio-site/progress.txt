@@ -1,8 +1,8 @@
-STOPPED (2026-09-28 — PNG trace, provisional, to be replaced by the design-file spec):
-- The owner's design file is the source of truth for geometry, strokes, fills, and layer order — not the PNG. Current `LogoMark` paths are a PNG trace left in place so the branch builds. Do not polish them. Wordmark sizing, HouseWordmark wiring, and named `--lf-mark-*` fill variables carry over.
+COMPLETED (2026-09-28 — faithful owner-PNG geometry trace):
+- Geometry, strokes (0.013 of ring radius), and layer order match the owner PNG. The design file does not contain this drawing. Fills stay named `--lf-mark-*` PLACEHOLDER pending a final list from creative direction (`--lf-mark-square` will likely map to `--house-orange`). Wordmark sizing and HouseWordmark wiring unchanged.
 
 COMPLETED (2026-09-28 — mark fills as CSS custom properties):
-- One place: `.house-logo-mark` in `globals.css` holds `--lf-mark-ellipse`, `--lf-mark-wedge-up-in`, `--lf-mark-wedge-up-out`, `--lf-mark-wedge-low-in`, `--lf-mark-wedge-low-out`, `--lf-mark-angle`, `--lf-mark-square`. Hexes are PLACEHOLDER pending design-file values. `LogoMark` paints `var(--lf-mark-*)` only. Geometry, stroke, box, 0.006em nudge unchanged.
+- One place: `.house-logo-mark` in `globals.css` holds `--lf-mark-ellipse`, `--lf-mark-wedge-up-in`, `--lf-mark-wedge-up-out`, `--lf-mark-wedge-low-in`, `--lf-mark-wedge-low-out`, `--lf-mark-angle`, `--lf-mark-square`. Hexes are PLACEHOLDER pending a final list from creative direction. `LogoMark` paints `var(--lf-mark-*)` only. Geometry, stroke, box, 0.006em nudge unchanged.
 
 COMPLETED (2026-09-28 — CD flats on the filled LogoMark):
 - Seven creative-direction fills only: ellipse `#e8f3fb`, blue inside `#9cbaef`, lavender outside `#e6e8f7`, green inside `#bcd5c5`, green outside `#e4f0e4`, yellow `#f6eda0`, square `#cb6245`. Overlaps are separate flats (no opacity/blend). Outlines `currentColor`. No white disc inside the ring. Stroke 0.013 / scale 248 / box 512/499.224 / 0.006em nudge unchanged. Favicon / og still the line-mark and now mismatch.
