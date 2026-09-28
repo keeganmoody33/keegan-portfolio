@@ -1,3 +1,6 @@
+COMPLETED (2026-09-28 — filled LogoMark from owner reference):
+- Rebuilt `LogoMark` to the filled drawing: outer circle, tilted ellipse (touches the circle; no `scale(0.74)`), stem + flag, yellow pie, blue wedge, lavender annulus, green wedge (darker on the ellipse). Outlines `currentColor`. Sampled fills: ellipse `#E5F3FC`, blue `#93BAF3`, lavender `#E6E8F8`, green `#E0EFE2`, green∩ellipse `#B4D4C2`, yellow `#FAED8F`, flag `#D65E3B`. Stroke 0.013 in unit space; scale 248; outer ink 499.224 of 512. Wordmark box `x-height × 512/499.224`. Favicon / og unchanged. Accessible name / aria-hidden / focusable=false unchanged.
+
 COMPLETED (2026-09-28 — wordmark-o height wins + 0.006em right nudge):
 - Keep `x-height × 512/462` box and baseline drop. Do not size the ring to x-height width; ~4px wider than Chakra's o at 1440 is intended. Stroke stays `0.0625`.
 - Nudge `0.006em` right of the o glyph center (`left: 0.006em; right: -0.006em`).
