@@ -9,10 +9,9 @@
  * token map is a CSS-variable swap. Do not invent fill palettes until
  * the house tokens are locked.
  *
- * Box math keeps stroke 0.0181 of ring radius (source ring ~8.25px on
- * ~455.6px midline) so the o-slot and ring centerline do not move.
- * Painted stroke is CSS `vector-effect: non-scaling-stroke` with
- * `stroke-width: clamp(1.25px, 0.013em, 2.5px)` on `.house-logo-mark`.
+ * Stroke width 0.0181 of ring radius (source ring ~8.25px on ~455.6px
+ * midline). Proportional hairline: the o fades on phones; do not
+ * thicken with `vector-effect` / CSS px clamp.
  *
  * Ellipse centre is offset from the ring; rays meet 5 viewBox units
  * up-left of the ring centre. Wedges are a sector of the PNG's inner
@@ -47,7 +46,7 @@
 
 export const LF_MARK_VIEWBOX = 512
 export const LF_MARK_GEOMETRY_SCALE = 248
-/** Source ring: 8.25px on 455.625px midline. Box math only. */
+/** Source ring: 8.25px on 455.625px midline. */
 export const LF_MARK_STROKE_WIDTH = 0.018107
 export const LF_MARK_OUTER_DIAMETER =
   2 * LF_MARK_GEOMETRY_SCALE * (1 + LF_MARK_STROKE_WIDTH / 2)
