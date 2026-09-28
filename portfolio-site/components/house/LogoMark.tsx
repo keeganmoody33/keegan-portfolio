@@ -13,8 +13,8 @@
  * midline). Proportional hairline: the o fades on phones; do not
  * thicken with `vector-effect` / CSS px clamp.
  *
- * Ellipse centre is offset from the ring; rays meet 5 viewBox units
- * up-left of the ring centre. Wedges are a sector of the PNG's inner
+ * Ellipse centre is offset from the ring; rays meet 4 viewBox units
+ * left and 3 up of the ring centre. Wedges are a sector of the PNG's inner
  * circle: radii from that pivot, outer boundary a circular arc that
  * meets the outer ring at the green ray. The blue apex is the triple
  * of the upper radius, the ellipse, and that arc. The horizontal
@@ -85,16 +85,16 @@ export const LF_MARK_ELLIPSE_CY = 0
 export const LF_MARK_ELLIPSE_RY = 0.4115
 export const LF_MARK_ELLIPSE_ROTATE = -57.87
 
-/** Rays meet 5 viewBox units up-left of the ring centre. */
-export const LF_MARK_PIVOT_X = -5 / LF_MARK_GEOMETRY_SCALE
-export const LF_MARK_PIVOT_Y = -5 / LF_MARK_GEOMETRY_SCALE
+/** Rays meet 4 viewBox units left and 3 up of the ring centre. */
+export const LF_MARK_PIVOT_X = -4 / LF_MARK_GEOMETRY_SCALE
+export const LF_MARK_PIVOT_Y = -3 / LF_MARK_GEOMETRY_SCALE
 
 /** Flag inner point is origin-polar; stem is pivot → that point. */
 export const LF_MARK_FLAG_ORIGIN_DEG = -66.9
 export const LF_MARK_FLAG_INNER_R = 0.537076
-export const LF_MARK_BLUE_TOP_DEG = -31.631847
+export const LF_MARK_BLUE_TOP_DEG = -32.339552
 export const LF_MARK_HORIZ_DEG = 0
-export const LF_MARK_GREEN_DEG = 30.548655
+export const LF_MARK_GREEN_DEG = 30.27366
 export const LF_MARK_YELLOW_R = 0.178
 
 /** Inner-arc circle (unit space). Green is arc ∩ unit ring. */

@@ -103,7 +103,7 @@ Add-ons are the same in both modes. Defined, not applied to chrome. Cobalt has n
 
 Named fill regions live on `.house-logo-mark` as `--lf-mark-*` (and `data-lf-region` on the SVG). Defaults are `transparent`. Geometry / stroke width are the owner line-only PNG trace. The only variant is `line`. A later token map assigns these vars — not new geometry.
 
-**`line`** — no visible fills. Every stroke `currentColor` (ink). Stroke width 0.018107 of ring radius (source ring: 8.25px on 455.625px midline) — proportional hairline; the o fades on phones. Do not apply `vector-effect: non-scaling-stroke` or a CSS px clamp. Ellipse ry=0.4115 at −57.87°, centre (−0.016, 0) in unit space; rays meet 5 viewBox units up-left of the ring centre. Outer ring is ink.
+**`line`** — no visible fills. Every stroke `currentColor` (ink). Stroke width 0.018107 of ring radius (source ring: 8.25px on 455.625px midline) — proportional hairline; the o fades on phones. Do not apply `vector-effect: non-scaling-stroke` or a CSS px clamp. Ellipse ry=0.4115 at −57.87°, centre (−0.016, 0) in unit space; rays meet (−4, −3) viewBox units from the ring centre. Outer ring is ink.
 
 | Region (`data-lf-region`) | CSS var | Default | Role |
 |--------------------------|---------|---------|------|
