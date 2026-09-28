@@ -19,7 +19,7 @@
 
 **Two visual dialects. Do not homogenize.**
 
-- **House** (`/`, `/catalog`, `/collection`, `/legal`): near-black `#0a0a0a`, grotesque / tight-tracked meta, one accent = print orange `#e23d00`. Display face is Chakra Petch 600 (wordmark, page-title h1/h2, `.house-spine-title`). Body on `.house` stays Space Grotesk. Meta stays Roboto Mono. Hairlines. No terminal chrome. No lime spray type. Display name always lowercase `lecturesfrom` (`lecturesfrom LLC` allowed in footer/legal). The last `o` in the root wordmark is the static filled `LogoMark` — geometry, strokes, and layer order traced from the owner PNG (outer circle, tilted ellipse, stem + flag, yellow pie, blue / lavender / green as a sector of the inner arc that meets the ring at the green ray; outlines `currentColor` / house ink; fills `var(--lf-mark-*)`, flag `var(--house-orange)`; no white disc), sized so the circle's outer ink hits Chakra Petch 600 x-height (`0.498em`); there is no standalone coin above the wordmark. Favicon / og remain the older line-mark and now mismatch the live mark.
+- **House** (`/`, `/catalog`, `/collection`, `/legal`): near-black `#0a0a0a`, grotesque / tight-tracked meta, one accent = print orange `#e23d00`. Display face is Chakra Petch 600 (wordmark, page-title h1/h2, `.house-spine-title`). Body on `.house` stays Space Grotesk. Meta stays Roboto Mono. Hairlines. No terminal chrome. No lime spray type. Display name always lowercase `lecturesfrom` (`lecturesfrom LLC` allowed in footer/legal). The last `o` in the root wordmark is the static filled `LogoMark` — geometry, strokes, and layer order traced from the owner PNG (outer circle, tilted ellipse, stem + flag, yellow pie, blue / lavender / green as a sector of the inner arc that meets the ring at the green ray; on-fill outlines `var(--house-bg)` as drawn, empty / ring `currentColor`; fills `var(--lf-mark-*)`, flag `var(--house-orange)`; no white disc), sized so the circle's outer ink hits Chakra Petch 600 x-height (`0.498em`); there is no standalone coin above the wordmark. Favicon / og remain the older line-mark and now mismatch the live mark.
 - **Person** (`/keeganmoody33`): existing lime/orange terminal and Space Grotesk. Untouched except the wordmark becoming a SignalCut link to `/`. Do not apply house display type or house light tokens here.
 
 **Information density:** Sparse surface, dense on engagement. First screen is clean, intriguing, spacious. Interaction reveals depth.
@@ -112,6 +112,13 @@ Mark fills live on `.house-logo-mark` only. Locked. The flag is `var(--house-ora
 | `--lf-mark-wedge-low-out` | `#e4f0e4` | Lower sector between ellipse and inner arc |
 | `--lf-mark-angle` | `#f6eda0` | Yellow angle |
 | `--lf-mark-square` | `var(--house-orange)` | Flag square |
+
+**Mark outlines.** Stroke width 0.013 (source). No halo, doubled outline, or glow. A segment on a filled region is `var(--house-bg)` (`#0a0a0a` on house, as drawn). A segment over the page or the transparent ring interior is `currentColor` (ink). The outer ring is ink. Paths that cross the fill edge are split with clipPaths against the fill union (or split path data) so each piece follows the rule.
+
+| Stroke | Token | Where |
+|--------|-------|-------|
+| On fills (ellipse, stem, rays, inner arc, yellow, flag) | `var(--house-bg)` | Black as drawn on the pastels |
+| Over empty / outer ring | `currentColor` | House ink |
 
 | Token | Value |
 |-------|-------|
@@ -304,7 +311,7 @@ Animated 60px x 60px grid pattern on body:
 | `.house-lcd` | LCD chip | `--house-lcd` on `--house-lcd-ink`, Doto 800, `10px 16px` padding. Defined, unused. |
 | `.house-rail` | House top rail | Three columns; atl / issue / year always visible; gutters `px-6 sm:px-10` |
 | `.house-wordmark` | Root lockup | Chakra Petch 600, tracking `-0.01em`, `line-height: 0.85`. `min(11.5rem, 16.5cqi)` so `lecturesfrom` keeps the Space Grotesk width (0.961 of `min(12rem, 17.2cqi)`). Entrance is a 700ms opacity fade (`houseLockup`). Last `o` in `from` is a static filled `LogoMark` (owner PNG trace) over an in-flow transparent o (advance from the glyph; circle outer ink fills x-height `0.498em`). Full word is `.sr-only`; painted run is `aria-hidden`. Instant under `prefers-reduced-motion`. Slot `overflow-x: clip`. Nameplate and Hathaway SVGs are not mounted. |
-| `.house-wordmark-o` | Wordmark o slot | `position: relative` inline. In-flow transparent `o` keeps glyph advance + tracking. Circle outer ink (499.224 of 512 viewBox; scale 248, stroke 0.013 from the PNG ring) fills x-height `0.498em` and sits on the baseline (`bottom: descent − x-height × 6.388/499.224`; box `x-height × 512/499.224`). Height wins. Nudged `0.006em` right of the glyph center. No `overflow: hidden`. Filled `LogoMark` (outlines `currentColor`). No `LogoGlobe`. Wrapper is a `span`. |
+| `.house-wordmark-o` | Wordmark o slot | `position: relative` inline. In-flow transparent `o` keeps glyph advance + tracking. Circle outer ink (499.224 of 512 viewBox; scale 248, stroke 0.013 from the PNG ring) fills x-height `0.498em` and sits on the baseline (`bottom: descent − x-height × 6.388/499.224`; box `x-height × 512/499.224`). Height wins. Nudged `0.006em` right of the glyph center. No `overflow: hidden`. Filled `LogoMark` (on-fill outlines `var(--house-bg)`, empty / ring `currentColor`). No `LogoGlobe`. Wrapper is a `span`. |
 | `.house-logo-mark` | Root mark box | `display: block` `span`, `2rem` square, `aspect-ratio: 1`, reserves size before paint. Owns locked `--lf-mark-*` fills; `--lf-mark-square` is `var(--house-orange)`. Wordmark o overrides to `calc(0.498em * 512 / 499.224)` via `.house-wordmark-o-mark`. |
 | `.lf-logo-globe` | Logo mark box | Kept for restore. Square `aspect-ratio: 1`; `perspective: 8rem`. Currently unmounted (`LogoGlobe.tsx` stays; TitleCard and HouseWordmark do not render it). |
 | `.lf-logo-globe-spin` | Coin spin | Kept for restore. `rotateY(0→360deg)` 12s linear infinite. Pauses on `html[data-lf-signal-cut="active"]` or `html[data-logo-paused="true"]`. Not applied while the wordmark o is static. |

@@ -1,3 +1,6 @@
+COMPLETED (2026-09-28 — CD outline split):
+- On-fill strokes `var(--house-bg)` (as drawn). Empty / outer ring `currentColor`. ClipPaths against the padded fill union so a path that crosses the fill edge splits without a halo or doubled outline. Stroke 0.013. Inner-arc geometry, locked fills, 512/499.224 box, 0.006em nudge unchanged. Favicon / og still mismatch.
+
 COMPLETED (2026-09-28 — inner-arc wedge sector):
 - Blue / lavender / green are a sector of the PNG inner circle, not pies to the outer ring. Outer boundary is a drawn circular arc through the blue/ellipse triple, the +x hit, and the ring at the green ray. Horizontal radius ends on the arc. Green radius ends at arc∩ring. Ellipse rx=1 / ry=0.44 / −56.75°, blue −28.7°, green 31.5°. Stem/flag unchanged. Locked fills, currentColor, 512/499.224 box, 0.006em nudge unchanged. Favicon / og still mismatch.
 
