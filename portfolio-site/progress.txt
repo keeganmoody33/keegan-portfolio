@@ -1,3 +1,8 @@
+COMPLETED (2026-09-28 — npm group bump on main):
+- Next `16.1.7` → `16.3.6`, posthog-js `1.336.4` → `1.434.15` (root and portfolio-site), postcss `8.5.6` → `8.5.23`, dompurify `3.3.3` → `3.4.16`, sharp `0.34.5` → `0.35.5`.
+- posthog-js 1.434 no longer depends on protobufjs, so the 7.6.6 / utf8 1.1.2 pins left the tree with the package. `npm ci` reports 0 vulnerabilities.
+- Production build (26 routes), typecheck, and `eslint .` passed with placeholder Supabase env. eslint-config-next stays 16.1.6.
+
 COMPLETED (2026-09-27 — wordmark o is the spinning globe; standalone coin removed):
 - Owner call: the static o read as a lackluster logo attempt. The spinning `LogoGlobe` moved from above the wordmark into the o slot of `from`; `TitleCard` no longer renders a separate coin.
 - `HouseWordmark` wraps `LogoGlobe` (`decorative`, `className="house-wordmark-o-mark"`) around `LogoMark` `layer="ring"` + `layer="core"`. Same slot math: square = OS/2 sxHeight (`0.498em`), `bottom: 0.308em` (hhea descent), in-flow transparent o keeps glyph advance, full word `.sr-only`, painted run `aria-hidden`.
