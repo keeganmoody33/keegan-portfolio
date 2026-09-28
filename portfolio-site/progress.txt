@@ -1,3 +1,6 @@
+STOPPED (2026-09-28 — PNG trace, provisional, to be replaced by the design-file spec):
+- The owner's design file is the source of truth for geometry, strokes, fills, and layer order — not the PNG. Current `LogoMark` paths are a PNG trace left in place so the branch builds. Do not polish them. Wordmark sizing, HouseWordmark wiring, and named `--lf-mark-*` fill variables carry over.
+
 COMPLETED (2026-09-28 — mark fills as CSS custom properties):
 - One place: `.house-logo-mark` in `globals.css` holds `--lf-mark-ellipse`, `--lf-mark-wedge-up-in`, `--lf-mark-wedge-up-out`, `--lf-mark-wedge-low-in`, `--lf-mark-wedge-low-out`, `--lf-mark-angle`, `--lf-mark-square`. Hexes are PLACEHOLDER pending design-file values. `LogoMark` paints `var(--lf-mark-*)` only. Geometry, stroke, box, 0.006em nudge unchanged.
 

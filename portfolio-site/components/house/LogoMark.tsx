@@ -1,12 +1,18 @@
 /**
- * lecturesfrom filled mark (Server Component). Source of truth is the
- * owner reference: outer circle, tilted ellipse, stem + flag, yellow
+ * lecturesfrom filled mark (Server Component).
+ * PNG trace, provisional, to be replaced by the design-file spec.
+ * The owner's design file is the source of truth for geometry, strokes,
+ * fills, and layer order — not this PNG trace. Do not polish these
+ * paths. Wordmark sizing, HouseWordmark wiring, and named
+ * `--lf-mark-*` fill variables carry over.
+ *
+ * Current paths: outer circle, tilted ellipse, stem + flag, yellow
  * pie, blue wedge, lavender annulus, green wedge (darker overlap as
  * its own flat fill). Outlines are `currentColor` (house ink `#ececec`
  * on `/`). Fills are `var(--lf-mark-*)` on `.house-logo-mark`. Hexes
  * there are PLACEHOLDER pending design-file values. White in the
- * source is transparent — no disc behind the ring. Favicon / og stay
- * the older line-mark and now mismatch; follow-up needed.
+ * PNG is treated as transparent — no disc behind the ring. Favicon /
+ * og stay the older line-mark and now mismatch; follow-up needed.
  *
  * Prop API
  * - `size` (default 32): reserved square in px. Width/height + `.house-logo-mark`
@@ -27,11 +33,13 @@
  *
  * Unit geometry lives in a translate(256 256) scale(S) space: circle r=1,
  * ellipse rx=1 (touches the circle) ry=0.43 rotate(-60). Stroke 0.013 is
- * the reference image's ~4px stroke on a ~310px radius. Outer ink diameter
- * is `LF_MARK_OUTER_DIAMETER` of the 512 viewBox.
+ * the PNG trace's ~4px stroke on a ~310px radius. Outer ink diameter
+ * is `LF_MARK_OUTER_DIAMETER` of the 512 viewBox. All of this is
+ * PNG trace, provisional, to be replaced by the design-file spec.
  */
 
 export const LF_MARK_VIEWBOX = 512
+// PNG trace, provisional, to be replaced by the design-file spec.
 export const LF_MARK_GEOMETRY_SCALE = 248
 export const LF_MARK_STROKE_WIDTH = 0.013
 export const LF_MARK_OUTER_DIAMETER =
@@ -41,7 +49,8 @@ export const LF_MARK_PAD = (LF_MARK_VIEWBOX - LF_MARK_OUTER_DIAMETER) / 2
 /**
  * Fill tokens only. Hex placeholders live on `.house-logo-mark` in
  * globals.css (PLACEHOLDER pending design-file values). Do not put
- * hex here — swap the CSS custom properties.
+ * hex here — swap the CSS custom properties. These names carry over
+ * when the design-file spec replaces the PNG trace.
  */
 export const LF_MARK_FILLS = {
   ellipse: 'var(--lf-mark-ellipse)',
@@ -53,6 +62,7 @@ export const LF_MARK_FILLS = {
   square: 'var(--lf-mark-square)',
 } as const
 
+// PNG trace, provisional, to be replaced by the design-file spec.
 export const LF_MARK_ELLIPSE_RY = 0.43
 export const LF_MARK_ELLIPSE_ROTATE = -60
 export const LF_MARK_STEM_DEG = -65

@@ -253,11 +253,11 @@ Phase 0 (DONE)
 
 Phases 1 and 4 can run in parallel after Phase 0. Phase 3 is cancelled.
 
-### House brand mark (DONE — this PR)
+### House brand mark (PNG trace, provisional, to be replaced by the design-file spec)
 
 - **Output:** `components/house/LogoMark.tsx` in the root wordmark o; `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`; house `opengraph-image` / `twitter-image` from `brand/house-share.png`.
 - **Globe:** `LogoGlobe.tsx` stays on disk and is not mounted. TitleCard has no standalone coin. Coin-spin CSS, pause attributes, and `MotionSwitch` remain for restore. HouseFooter does not render the switch while the o is static.
-- **Wordmark o:** `HouseWordmark` replaces the last `o` in `from` with the static filled `LogoMark` (owner reference, outlines `currentColor`, `groupIds={false}`, `focusable={false}`, `aria-hidden`). In-flow transparent `o` keeps glyph advance. Full word is `.sr-only`. Wrapper is a `span`. Favicon / og stay the older line-mark. No spin, rim, or `data-logo-paused`.
+- **Wordmark o:** `HouseWordmark` replaces the last `o` in `from` with the static filled `LogoMark` (PNG trace, provisional, to be replaced by the design-file spec; outlines `currentColor`; `groupIds={false}`, `focusable={false}`, `aria-hidden`). In-flow transparent `o` keeps glyph advance. Full word is `.sr-only`. Wrapper is a `span`. Favicon / og stay the older line-mark. No spin, rim, or `data-logo-paused`. Sizing, wiring, and named `--lf-mark-*` fill variables carry over. Do not polish the PNG-traced geometry.
 - **Validation:** lint / typecheck / build; `/keeganmoody33` `og:image` stays `/og.jpg`.
 
 ---

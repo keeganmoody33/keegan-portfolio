@@ -285,8 +285,9 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   flex-shrink: 0;
   color: inherit;
   /*
+   * PNG trace, provisional, to be replaced by the design-file spec.
    * PLACEHOLDER pending design-file values.
-   * Not sampled from the PNG. Not the earlier CD hexes as final.
+   * Named tokens carry over; hexes are not final.
    * Swap one line each when the owner's file lands.
    */
   --lf-mark-ellipse: #e8f3fb;
