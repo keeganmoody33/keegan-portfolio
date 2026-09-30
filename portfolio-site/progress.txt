@@ -1,9 +1,65 @@
+COMPLETED (2026-09-28 — pivot (−4, −3); ring contrast sampled on the ring):
+- Pivot is (−4, −3) viewBox units from the ring centre (`−4/248`, `−3/248`). Drawing ~−3.95, −3.07. Blue −32.339552° (ellipse ∩ inner-arc from the new pivot), horiz 0° ends on the arc, green 30.27366° (arc ∩ ring). Ellipse, hairline, line-only, transparent `--lf-mark-*`, favicon / og unchanged.
+- Ring contrast is polar samples on the outer-ring annulus (pivot excluded). Recapture vs `#0a0a0a`: 375 DPR1 ring brightest `#8c8c8c` 5.89:1 (top-of-ring AA hotspot; also the mark-wide peak), typical/median `#373737` 1.66:1; pivot overlap `#8a8a8a` 5.73:1. 40px box ring brightest `#9a9a9a` 7.04:1 (green∩ring; also the mark-wide peak), typical `#494949` 2.20:1; pivot overlap `#898989` 5.66:1. 512 overlay Hausdorff 4.24px, median 1.00, p95 2.83.
+
+SUPERSEDED (2026-09-28 — keep hairline; P2 ellipse/ray refit):
+- P1 withdrawn: proportional hairline kept. P2 ellipse kept. Pivot was (−5, −5); superseded by (−4, −3) above. The earlier “brightest ring pixel” `#8c8c8c` is a ring AA hotspot at 375 (and the mark-wide peak); the four-stroke pivot is `#8a8a8a`. Do not treat that hex as the pivot, and do not treat the peak as typical ring contrast.
+
+SUPERSEDED (2026-09-28 — UX gate: stroke px + ellipse/ray refit):
+- Non-scaling CSS stroke clamp withdrawn. Hairline restored. P2 geometry remains.
+
+COMPLETED (2026-09-28 — line is the only variant):
+- Rejected fill palettes removed from LogoMark, CSS, and docs. The only variant is `'line'`. Named fill regions stay (`--lf-mark-*` default `transparent`, `data-lf-region`, `LF_MARK_REGION_*`) so a later token map is a CSS-variable swap. Geometry still the 918px line PNG. Favicon / og untouched.
+
+SUPERSEDED (2026-09-28 — hold house palette fills; line default):
+- House palette fill variants (p1/p2/p3) withdrawn. Wordmark is `variant="line"`. Named fill regions stay. Extra fill variants withdrawn in the pass above.
+
+SUPERSEDED (2026-09-28 — LogoMark variant fills, house tokens):
+- p1/p2/p3 house-token fills and p3 hover. Withdrawn; palette changing. Line default and named fill regions remain.
+
+COMPLETED (2026-09-28 — line-PNG geometry + line-only paths):
+- Owner 918px line-only PNG is the geometry authority. Ellipse rx=1 / ry=0.424 / −57°, stem −66.9°, blue −30.75° (ellipse ∩ inner-arc), horiz 0°, green 30.14° (inner-arc ∩ ring), yellow r=0.178, flag inner 0.537, inner-arc circle (−0.13010, 0.30483) r=1.01427. Stroke 0.018107 (8.25px / 455.625px midline). Box 512/500.491, pad 5.755, 0.006em nudge kept. Same paths render line-only via `fills={false}` (all strokes currentColor). Filled variant still uses locked `--lf-mark-*` and the CD on-fill / on-empty split. Overlay maps PNG ring center → 256 and r_mid → 248; do not scale the 920×924 canvas to 512. Favicon / og still mismatch.
+
+COMPLETED (2026-09-28 — CD outline split):
+- On-fill strokes `var(--house-bg)` (as drawn). Empty / outer ring `currentColor`. ClipPaths against the padded fill union so a path that crosses the fill edge splits without a halo or doubled outline. Stroke 0.013. Inner-arc geometry, locked fills, 512/499.224 box, 0.006em nudge unchanged. Favicon / og still mismatch.
+
+COMPLETED (2026-09-28 — inner-arc wedge sector):
+- Blue / lavender / green are a sector of the PNG inner circle, not pies to the outer ring. Outer boundary is a drawn circular arc through the blue/ellipse triple, the +x hit, and the ring at the green ray. Horizontal radius ends on the arc. Green radius ends at arc∩ring. Ellipse rx=1 / ry=0.44 / −56.75°, blue −28.7°, green 31.5°. Stem/flag unchanged. Locked fills, currentColor, 512/499.224 box, 0.006em nudge unchanged. Favicon / og still mismatch.
+
+COMPLETED (2026-09-28 — locked LogoMark fills):
+- Owner-locked fills on `.house-logo-mark`: ellipse `#e8f3fb`, upper-in `#9cbaef`, upper-out `#e6e8f7`, lower-in `#bcd5c5`, lower-out `#e4f0e4`, yellow `#f6eda0`, square `var(--house-orange)` (`#e23d00` on house). Flat regions, no opacity/blend. Ring interior transparent. Outlines `currentColor`. Geometry, 512/499.224 box, 0.006em nudge unchanged. Favicon / og still mismatch.
+
+COMPLETED (2026-09-28 — faithful owner-PNG geometry trace):
+- Geometry, strokes (0.013 of ring radius), and layer order match the owner PNG. The design file does not contain this drawing. Wordmark sizing and HouseWordmark wiring unchanged.
+
+SUPERSEDED (2026-09-28 — mark fills as CSS custom properties):
+- One place: `.house-logo-mark` in `globals.css` holds `--lf-mark-ellipse`, `--lf-mark-wedge-up-in`, `--lf-mark-wedge-up-out`, `--lf-mark-wedge-low-in`, `--lf-mark-wedge-low-out`, `--lf-mark-angle`, `--lf-mark-square`. `LogoMark` paints `var(--lf-mark-*)` only. Owner locked the hexes plus square → `var(--house-orange)` in the fill-lock pass above.
+
+SUPERSEDED (2026-09-28 — CD flats on the filled LogoMark):
+- Seven flats, no opacity/blend, no white disc. Square later remapped from a sampled hex to `var(--house-orange)`. Stroke 0.013 / scale 248 / box 512/499.224 / 0.006em nudge unchanged. Favicon / og still the line-mark and now mismatch.
+
+COMPLETED (2026-09-28 — filled LogoMark from owner reference):
+- Rebuilt `LogoMark` to the filled drawing: outer circle, tilted ellipse (touches the circle; no `scale(0.74)`), stem + flag, yellow pie, blue wedge, lavender annulus, green wedge (darker on the ellipse). Outlines `currentColor`. Stroke 0.013 in unit space; scale 248; outer ink 499.224 of 512. Wordmark box `x-height × 512/499.224`. Accessible name / aria-hidden / focusable=false unchanged.
+
+COMPLETED (2026-09-28 — wordmark-o height wins + 0.006em right nudge):
+- Keep `x-height × 512/462` box and baseline drop. Do not size the ring to x-height width; ~4px wider than Chakra's o at 1440 is intended. Stroke stays `0.0625`.
+- Nudge `0.006em` right of the o glyph center (`left: 0.006em; right: -0.006em`).
+
+COMPLETED (2026-09-28 — wordmark-o ring ink fills x-height / sits on baseline):
+- P1: box was x-height but ring outer ink is 462/512 of the viewBox, so the mark floated. CSS only: box `x-height × 512/462`, `bottom: descent − x-height × 25/462`, no `overflow: hidden`. SVG / stroke untouched.
+- Head bootstrap `WATCH_MOTION_SWITCH=false` so the pause MutationObserver does not watch the page while the switch is unrendered.
+
 COMPLETED (2026-09-28 — npm group bump on main):
 - Next `16.1.7` → `16.3.6`, posthog-js `1.336.4` → `1.434.15` (root and portfolio-site), postcss `8.5.6` → `8.5.23`, dompurify `3.3.3` → `3.4.16`, sharp `0.34.5` → `0.35.5`.
 - posthog-js 1.434 no longer depends on protobufjs, so the 7.6.6 / utf8 1.1.2 pins left the tree with the package. `npm ci` reports 0 vulnerabilities.
 - Production build (26 routes), typecheck, and `eslint .` passed with placeholder Supabase env. eslint-config-next stays 16.1.6.
 
-COMPLETED (2026-09-27 — wordmark o is the spinning globe; standalone coin removed):
+COMPLETED (2026-09-28 — wordmark o is the thin static mark):
+- Owner call: the thin original, static. `HouseWordmark` renders `LogoMark` in the last o (`groupIds={false}`, `focusable={false}`, `aria-hidden`), not `LogoGlobe`. Geometry / viewBox / stroke `0.0625` / paths unchanged. In-flow transparent o keeps advance; mark square `0.498em` on baseline `0.308em`; `.sr-only` name `lecturesfrom`.
+- Wrapper is a `span` (no `div` inside the h1). No standalone coin on TitleCard. Footer Motion switch not rendered; `MotionSwitch.tsx`, pause CSS, and head bootstrap stay. `LogoGlobe.tsx` stays; globe/rim CSS left in place.
+- Remaining motion that does not use the switch: `houseLockup` fade, SignalCut, person-page marquee / `gridShift` / banner rotate / spray type.
+
+SUPERSEDED (2026-09-27 — wordmark o is the spinning globe; standalone coin removed):
 - Owner call: the static o read as a lackluster logo attempt. The spinning `LogoGlobe` moved from above the wordmark into the o slot of `from`; `TitleCard` no longer renders a separate coin.
 - `HouseWordmark` wraps `LogoGlobe` (`decorative`, `className="house-wordmark-o-mark"`) around `LogoMark` `layer="ring"` + `layer="core"`. Same slot math: square = OS/2 sxHeight (`0.498em`), `bottom: 0.308em` (hhea descent), in-flow transparent o keeps glyph advance, full word `.sr-only`, painted run `aria-hidden`.
 - Globe chrome scales with the mark: wordmark-o perspective `calc(var(--lf-wordmark-o-x-height) * 4)` (4× ratio preserved from the 2rem/8rem coin); rim wall `width: max(1.125px, 3.52%)`, `border-radius: 999px`.

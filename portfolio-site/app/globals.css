@@ -278,11 +278,20 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
 }
 
 .house-logo-mark {
+  display: block;
   width: 2rem;
   height: 2rem;
   aspect-ratio: 1;
   flex-shrink: 0;
   color: inherit;
+  /* Named fill regions. Transparent until a token map lands. */
+  --lf-mark-ellipse: transparent;
+  --lf-mark-wedge-up-in: transparent;
+  --lf-mark-wedge-up-out: transparent;
+  --lf-mark-wedge-low-in: transparent;
+  --lf-mark-wedge-low-out: transparent;
+  --lf-mark-angle: transparent;
+  --lf-mark-square: transparent;
 }
 
 .house-logo-mark svg {
@@ -321,9 +330,11 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
 /*
  * Last o in "from": in-flow transparent glyph keeps the o's actual
  * advance (and letter-spacing) so the lockup width matches plain text.
- * The o is the spinning LogoGlobe sized to x-height, centered on the
- * glyph, sitting on the baseline. It is the only globe on the title
- * card — the standalone coin above the wordmark was removed.
+ * The mark box is larger than x-height so the circle's outer ink
+ * (LF_MARK_OUTER_DIAMETER of the 512 viewBox) fills x-height and sits
+ * on the alphabetic baseline. Height wins: do not size the box to
+ * x-height width. Nudged 0.006em right of the glyph center. Face-on;
+ * not .lf-logo-globe. There is no standalone coin above the wordmark.
  * The painted run is aria-hidden; .sr-only "lecturesfrom" is the name.
  */
 .house-wordmark-visual {
@@ -338,18 +349,19 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   color: transparent;
 }
 
-.house-wordmark-o-mark.lf-logo-globe {
+.house-wordmark-o-mark.house-logo-mark {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: var(--lf-wordmark-o-descent);
+  /* 0.006em right of the o glyph center (both insets so auto margins still center). */
+  left: 0.006em;
+  right: -0.006em;
+  /* Outer ink is 500.491 of 512 (scale 248, stroke 0.018107); pad 5.755. */
+  bottom: calc(var(--lf-wordmark-o-descent) - var(--lf-wordmark-o-x-height) * 5.755 / 500.491);
   margin-inline: auto;
-  width: var(--lf-wordmark-o-x-height);
-  height: var(--lf-wordmark-o-x-height);
+  width: calc(var(--lf-wordmark-o-x-height) * 512 / 500.491);
+  height: calc(var(--lf-wordmark-o-x-height) * 512 / 500.491);
   pointer-events: none;
   user-select: none;
-  /* 4× the mark, same ratio as the old 2rem coin's 8rem perspective. */
-  perspective: calc(var(--lf-wordmark-o-x-height) * 4);
+  transform: none;
 }
 
 @supports (font-size: 1cqi) {
