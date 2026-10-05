@@ -12,11 +12,17 @@ export function getPostHogClient() {
     return noop as PostHog;
   }
   if (!posthogClient) {
-    posthogClient = new PostHog(key, {
-      host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+    const client = new PostHog(key, {
+      // Server calls go straight to PostHog; the managed proxy is for browsers.
+      host: 'https://us.i.posthog.com',
       flushAt: 1,
       flushInterval: 0
     });
+    // Label server-side events with the same site property the browser registers.
+    const capture = client.capture.bind(client);
+    client.capture = (message) =>
+      capture({ ...message, properties: { ...message.properties, site: 'lecturesfrom' } });
+    posthogClient = client;
   }
   return posthogClient;
 }

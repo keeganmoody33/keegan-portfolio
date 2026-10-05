@@ -17,11 +17,17 @@ export function ensurePostHogInitialized() {
   const client = posthog as typeof posthog & { __loaded?: boolean }
   if (!client.__loaded) {
     posthog.init(posthogKey, {
+      // NEXT_PUBLIC_POSTHOG_HOST: https://flow.lecturesfrom.com once the managed proxy is live.
       api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com',
-      defaults: '2025-11-30',
+      ui_host: 'https://us.posthog.com',
+      defaults: '2026-05-30',
       capture_exceptions: true,
+      // Tag bots as $browser_type=bot instead of dropping them (Humans vs Machines tally).
+      opt_out_useragent_filter: true,
       debug: process.env.NODE_ENV === 'development',
     })
+    // One shared PostHog project serves every lecturesfrom site; this labels the source.
+    posthog.register({ site: 'lecturesfrom' })
   }
 
   initAttempted = true

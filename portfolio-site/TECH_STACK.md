@@ -15,7 +15,7 @@ All versions are pinned from `portfolio-site/package-lock.json`.
 | react-dom | 19.2.4 | React DOM renderer |
 | @supabase/supabase-js | 2.90.1 | Supabase client; queries candidate_profile, experiences, etc. |
 | @upstash/redis | 1.35.6 | REST Redis client for the durable Discogs last-good snapshot |
-| posthog-js | 1.434.15 | Client-side analytics (components, page events) |
+| posthog-js | 1.436.0 | Client-side analytics (components, page events) |
 | posthog-node | 5.21.2 | Server-side analytics (API routes via lib/posthog-server.ts) |
 | @jam.dev/sdk | 1.0.1 | Jam session recording metadata client |
 
