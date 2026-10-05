@@ -21,7 +21,7 @@ export function getPostHogClient() {
     // Label server-side events with the same site property the browser registers.
     const capture = client.capture.bind(client);
     client.capture = (message) =>
-      capture({ ...message, properties: { site: 'lecturesfrom', ...message.properties } });
+      capture({ ...message, properties: { ...message.properties, site: 'lecturesfrom' } });
     posthogClient = client;
   }
   return posthogClient;
