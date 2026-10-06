@@ -650,6 +650,7 @@ export async function enrichPressing(
       assertWithinWorkerDeadline(deps)
       stage = 'match'
       const { releaseMatch, mbReleaseDoc } = await matchRelease(facts, playable.length, mb)
+      assertWithinWorkerDeadline(deps)
       tracks = applyReleaseMatch(tracks, releaseMatch, mbReleaseDoc)
       if (
         releaseMatch.matchStatus === 'unmatched' &&
@@ -791,6 +792,7 @@ export async function enrichPressing(
       acceptedMbids.length > 0 || researchFacts.length > 0
         ? touchVerified(researchCycle, nowIso)
         : priorCycles.research
+    assertWithinWorkerDeadline(deps)
     const nextPressing: StoredPressing = hydratePressing({
       schemaVersion: CRATE_SCHEMA_VERSION,
       releaseId,

@@ -705,7 +705,7 @@ describe('enrich lock token (P1.4)', () => {
       {
         store,
         now: () => now,
-        budgetMs: 100,
+        budgetMs: 99,
         takeFloorMs: 100,
         lockTtlSeconds: 60,
         fetchDiscogs: async () => {
@@ -718,6 +718,28 @@ describe('enrich lock token (P1.4)', () => {
     assert.deepEqual(result.processed, [])
     assert.equal(result.skipped, false)
     assert.deepEqual(await store.getQueue(), [1, 2, 3])
+  })
+
+  it('still takes when remaining equals the take floor', async () => {
+    const now = 0
+    const store = createMemoryCrateStore({ queue: [1, 2, 3], now: () => now })
+    const result = await processEnrichmentQueue(
+      {
+        store,
+        now: () => now,
+        budgetMs: 100,
+        takeFloorMs: 100,
+        lockTtlSeconds: 60,
+        fetchDiscogs: async () => {
+          throw new Error('nope')
+        },
+        mb: createMusicBrainzClientForTests(),
+      },
+      10
+    )
+    assert.deepEqual(result.processed, [1])
+    assert.deepEqual(result.failed, [1])
+    assert.equal(remainingBelowTakeFloor(100, 100), false)
   })
 })
 
@@ -1507,18 +1529,24 @@ describe('independent lifecycles (direction change)', () => {
     const store = createMemoryCrateStore({ queue: [9107339] })
     let clock = Date.parse('2026-10-06T05:00:00.000Z')
     let discogsCalls = 0
+    const burn = () => {
+      clock += ENRICH_TAKE_FLOOR_MS + 5_000
+    }
     const mb = createMusicBrainzClientForTests()
-    mb.lookupDiscogsReleaseUrl = async () => []
+    mb.lookupDiscogsReleaseUrl = async () => {
+      burn()
+      return []
+    }
     for (let i = 0; i < DEADLINE_STOP_LIMIT; i += 1) {
       const result = await processEnrichmentQueue(
         {
           store,
           now: () => clock,
-          deadlineMs: i === 0 ? clock + ENRICH_TAKE_FLOOR_MS + 1 : clock + 100,
+          deadlineMs: clock + ENRICH_TAKE_FLOOR_MS + 1,
           takeFloorMs: 0,
           fetchDiscogs: async () => {
             discogsCalls += 1
-            clock += ENRICH_TAKE_FLOOR_MS + 5_000
+            burn()
             return lonelyDetail()
           },
           mb,
@@ -1556,17 +1584,23 @@ describe('independent lifecycles (direction change)', () => {
   it('resets deadlineStops on a non-deadline failure so the next stop is not too_slow', async () => {
     const store = createMemoryCrateStore({ queue: [9107339] })
     let clock = Date.parse('2026-10-06T05:00:00.000Z')
+    const burn = () => {
+      clock += ENRICH_TAKE_FLOOR_MS + 5_000
+    }
     const mb = createMusicBrainzClientForTests()
-    mb.lookupDiscogsReleaseUrl = async () => []
+    mb.lookupDiscogsReleaseUrl = async () => {
+      burn()
+      return []
+    }
     for (let i = 0; i < 2; i += 1) {
       const result = await processEnrichmentQueue(
         {
           store,
           now: () => clock,
-          deadlineMs: i === 0 ? clock + ENRICH_TAKE_FLOOR_MS + 1 : clock + 100,
+          deadlineMs: clock + ENRICH_TAKE_FLOOR_MS + 1,
           takeFloorMs: 0,
           fetchDiscogs: async () => {
-            clock += ENRICH_TAKE_FLOOR_MS + 5_000
+            burn()
             return lonelyDetail()
           },
           mb,
@@ -1590,9 +1624,12 @@ describe('independent lifecycles (direction change)', () => {
       {
         store,
         now: () => clock,
-        deadlineMs: clock + 100,
+        deadlineMs: clock + ENRICH_TAKE_FLOOR_MS + 1,
         takeFloorMs: 0,
-        fetchDiscogs: async () => lonelyDetail(),
+        fetchDiscogs: async () => {
+          burn()
+          return lonelyDetail()
+        },
         mb,
       },
       1
@@ -1629,7 +1666,9 @@ describe('independent lifecycles (direction change)', () => {
     assert.equal(discogsCalls, 0)
     assert.deepEqual(result.processed, [])
     const queued = store.queue.find((row) => row.id === 9107339)
-    assert.equal(queued?.score, clock)
+    assert.ok(queued)
+    assert.equal(queued.score, 0)
+    assert.deepEqual(await store.getQueue(), [9107339])
     assert.equal(remainingBelowTakeFloor(100, ENRICH_TAKE_FLOOR_MS), true)
     assert.equal(remainingBelowTakeFloor(ENRICH_TAKE_FLOOR_MS, ENRICH_TAKE_FLOOR_MS), false)
     assert.equal(remainingBelowTakeFloor(0, 0), true)

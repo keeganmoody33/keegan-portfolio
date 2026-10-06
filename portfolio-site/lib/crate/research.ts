@@ -5,7 +5,6 @@ import type {
   SampleLink,
   SourceName,
   StoredPressing,
-  StoredRecording,
   TrackOccurrence,
 } from './types.ts'
 
