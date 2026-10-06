@@ -530,6 +530,7 @@ function SourceLine({ source, href }: { source: string; href: string }) {
         rel="noopener noreferrer"
         target="_blank"
       >
+        <span className="sr-only">source </span>
         {source}
       </a>
     </p>
@@ -620,7 +621,7 @@ function FactSampleList({ items }: { items: ResearchFact[] }) {
         <li key={`${item.sourceId}-${item.sourceUrl}`} className="border-t border-[var(--house-line)] py-3 last:border-b">
           <a
             href={item.sourceUrl}
-            className={`text-sm hover:text-[var(--house-orange)] ${focusRing}`}
+            className={`inline-flex min-h-6 items-center text-sm hover:text-[var(--house-orange)] ${focusRing}`}
             rel="noopener noreferrer"
             target="_blank"
           >
