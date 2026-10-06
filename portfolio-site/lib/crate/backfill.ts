@@ -1,5 +1,7 @@
 import { collectionReleaseIds } from './sync.ts'
+import { fetchDiscogsReleaseDetail } from './discogs-release.ts'
 import { processEnrichmentQueue, type EnrichDeps } from './enrich.ts'
+import { createMusicBrainzClient } from './musicbrainz.ts'
 import { crateRedisKeys, type CrateStore } from './store.ts'
 import { isoFromMs, storedPressingHasVisitorFacts } from './preserve.ts'
 import type { BackfillState, DeadLetter, StoredPressing } from './types.ts'
@@ -125,21 +127,19 @@ export async function runBackfill(
     await store.enqueue(remainingIds, { front: false, nowMs: started })
   }
 
+  const mb = deps.mb ?? createMusicBrainzClient({ now: deps.now })
+  const baseFetch = deps.fetchDiscogs ?? ((releaseId: number) => fetchDiscogsReleaseDetail(releaseId))
   let discogsRequests = previous.discogsRequests
-  const fetchDiscogs = deps.fetchDiscogs
-  const wrappedFetch = fetchDiscogs
-    ? async (releaseId: number) => {
-        discogsRequests += 1
-        return fetchDiscogs(releaseId)
-      }
-    : undefined
-
-  const mbStart = deps.mb?.requestCount ?? 0
+  const wrappedFetch = async (releaseId: number) => {
+    discogsRequests += 1
+    return baseFetch(releaseId)
+  }
+  const mbStart = mb.requestCount
   const result = await processEnrichmentQueue(
-    { ...deps, fetchDiscogs: wrappedFetch ?? deps.fetchDiscogs },
+    { ...deps, mb, fetchDiscogs: wrappedFetch },
     options.limit
   )
-  const mbRequests = previous.mbRequests + Math.max(0, (deps.mb?.requestCount ?? mbStart) - mbStart)
+  const mbRequests = previous.mbRequests + Math.max(0, mb.requestCount - mbStart)
 
   const dead = await store.getDead()
   const unresolved = await store.getUnresolved()

@@ -44,7 +44,7 @@ export function parseProofAction(raw: string | null): ProofAction | null {
 }
 
 export function parseProofIds(raw: string | null): number[] {
-  if (!raw) return [...PROOF_ENRICH_IDS]
+  if (!raw) return []
   const allowed = new Set<number>([...PROOF_ENRICH_IDS, PROOF_KILL_ID, PROOF_EXHAUSTED_ID])
   return raw
     .split(',')
@@ -66,7 +66,7 @@ export async function runCrateProof(
     case 'kill':
       return { prefix, ...(await proveKill(store)) }
     case 'recover':
-      return { prefix, ...(await proveRecover(store, options.ids)) }
+      return { prefix, ...(await proveRecover(store, options.ids ?? [])) }
     case 'exhausted':
       return { prefix, ...(await proveExhausted(store)) }
     case 'resync':
@@ -76,7 +76,13 @@ export async function runCrateProof(
     case 'auth':
       return { prefix, ...(await proveAuth(store)) }
     case 'enrich':
-      return { prefix, ...(await proveEnrich(store, options.ids ?? [...PROOF_ENRICH_IDS])) }
+      return {
+        prefix,
+        ...(await proveEnrich(
+          store,
+          options.ids && options.ids.length > 0 ? options.ids : [...PROOF_ENRICH_IDS]
+        )),
+      }
     default: {
       const exhaustive: never = action
       return { prefix, error: `unhandled ${exhaustive}` }
@@ -112,62 +118,71 @@ async function proveOverlap(store: CrateStore): Promise<Record<string, unknown>>
 async function proveKill(store: CrateStore): Promise<Record<string, unknown>> {
   await store.drop(PROOF_KILL_ID)
   await store.enqueue([PROOF_KILL_ID], { score: -1 })
-  const taken = await store.takeDue(1, Date.now() + 1, 60)
-  const overlapping = await store.takeDue(1, Date.now() + 1, 60)
+  const nowMs = Date.now() + 1
+  const taken = await store.takeDue(1, nowMs, 60)
+  const overlapping = await store.takeDue(1, nowMs, 60)
+  const stolen = overlapping.filter((id) => id !== PROOF_KILL_ID)
+  for (const id of stolen) {
+    await store.clearInflight(id)
+  }
   return {
     action: 'kill',
     id: PROOF_KILL_ID,
     taken,
     overlappingWhileInflight: overlapping,
+    sameIdNotRetaken: !overlapping.includes(PROOF_KILL_ID),
+    stolenReleased: stolen,
     note: 'Call action=recover next. Inflight is cleared; the same id is taken again.',
   }
 }
 
 async function proveRecover(store: CrateStore, ids: number[] = []): Promise<Record<string, unknown>> {
-  const id = ids[0] ?? PROOF_KILL_ID
+  const id =
+    ids.find((value) => value === PROOF_KILL_ID) ??
+    (ids.length === 1 ? ids[0] : undefined) ??
+    PROOF_KILL_ID
   await store.clearInflight(id)
   const recovered = await store.takeDue(1, Date.now() + 1, 60)
-  if (recovered[0] === id) {
+  const recoveredSameId = recovered[0] === id
+  if (recoveredSameId) {
     await store.drop(id)
+  } else if (recovered[0] != null) {
+    await store.clearInflight(recovered[0])
   }
   return {
     action: 'recover',
     id,
     recovered,
-    stillQueued: await store.getQueue(),
+    recoveredSameId,
+    stillQueued: recoveredSameId ? undefined : await store.getQueue(),
   }
 }
 
 async function proveExhausted(store: CrateStore): Promise<Record<string, unknown>> {
-  await store.enqueue([PROOF_EXHAUSTED_ID], { front: true, nowMs: Date.now() })
+  await store.drop(PROOF_EXHAUSTED_ID)
   let t = Date.now()
-  const processed: number[][] = []
+  const attempts: Array<number | null> = []
   for (let attempt = 0; attempt < 6; attempt += 1) {
-    const result = await processEnrichmentQueue(
-      {
-        store,
-        now: () => t,
-        takeFloorMs: 0,
-        budgetMs: 45_000,
-        fetchDiscogs: async () => {
-          throw new Error('preview proof forced failure')
-        },
+    const stored = await enrichPressing(PROOF_EXHAUSTED_ID, {
+      store,
+      now: () => t,
+      fetchDiscogs: async () => {
+        throw new Error('preview proof forced failure')
       },
-      1
-    )
-    processed.push(result.processed)
-    const stored = await store.getPressing(PROOF_EXHAUSTED_ID)
-    const retryAt = Date.parse(stored?.provenance.refreshAfter ?? '')
+    })
+    attempts.push(stored.provenance.lastError?.attempts ?? null)
+    const retryAt = Date.parse(stored.provenance.refreshAfter ?? '')
     t = Number.isFinite(retryAt) ? retryAt : t + 86_400_000
     if ((await store.getDead()).includes(PROOF_EXHAUSTED_ID)) break
   }
+  await store.drop(PROOF_EXHAUSTED_ID)
   return {
     action: 'exhausted',
     id: PROOF_EXHAUSTED_ID,
-    processed,
+    attempts,
     dead: await store.getDead(),
     inspect: (await store.getInspect()).filter((row) => row.releaseId === PROOF_EXHAUSTED_ID),
-    queued: await store.getQueue(),
+    lastError: (await store.getPressing(PROOF_EXHAUSTED_ID))?.provenance.lastError ?? null,
   }
 }
 
@@ -227,27 +242,20 @@ async function proveFail(store: CrateStore): Promise<Record<string, unknown>> {
 
 async function proveAuth(store: CrateStore): Promise<Record<string, unknown>> {
   const identity = await proveDiscogsAuthWithBadToken()
-  await store.enqueue([PROOF_KILL_ID], { front: true, nowMs: Date.now() })
-  const worker = await processEnrichmentQueue(
-    {
-      store,
-      takeFloorMs: 0,
-      budgetMs: 45_000,
-      fetchDiscogs: async () => {
-        throw new DiscogsAuthError(identity.status === 403 ? 403 : 401)
-      },
+  await store.drop(PROOF_KILL_ID)
+  const stored = await enrichPressing(PROOF_KILL_ID, {
+    store,
+    fetchDiscogs: async () => {
+      throw new DiscogsAuthError(identity.status === 403 ? 403 : 401)
     },
-    1
-  )
-  const stored = await store.getPressing(PROOF_KILL_ID)
+  })
   await store.drop(PROOF_KILL_ID)
   return {
     action: 'auth',
     identity,
-    workerStoppedOnAuth: worker.stoppedOnAuth,
-    workerProcessed: worker.processed,
-    attempts: stored?.provenance.lastError?.attempts ?? null,
-    lastErrorKind: stored?.provenance.lastError?.kind ?? null,
+    workerStoppedOnAuth: stored.provenance.lastError?.kind === 'auth',
+    attempts: stored.provenance.lastError?.attempts ?? null,
+    lastErrorKind: stored.provenance.lastError?.kind ?? null,
     how: identity.how,
   }
 }

@@ -1249,6 +1249,7 @@ describe('resumable backfill checkpoints', () => {
     )
     assert.equal(result.completed, 1)
     assert.equal(result.backfill.cursor, 1)
+    assert.equal(result.discogsRequests, 1)
     assert.ok(result.releasesPerMin >= 0)
   })
 })
@@ -1318,9 +1319,51 @@ describe('live-proof helpers', () => {
     const store = createMemoryCrateStore()
     const kill = await runCrateProof(store, 'kill')
     assert.deepEqual(kill.taken, [PROOF_KILL_ID])
-    assert.deepEqual(kill.overlappingWhileInflight, [])
-    const recover = await runCrateProof(store, 'recover', { ids: [PROOF_KILL_ID] })
+    assert.equal(kill.sameIdNotRetaken, true)
+    const recover = await runCrateProof(store, 'recover')
     assert.deepEqual(recover.recovered, [PROOF_KILL_ID])
+    assert.equal(recover.recoveredSameId, true)
+  })
+
+  it('does not retake the killed id from a crowded queue', async () => {
+    const store = createMemoryCrateStore({ queue: [10045228, 1026558] })
+    const kill = await runCrateProof(store, 'kill')
+    assert.deepEqual(kill.taken, [PROOF_KILL_ID])
+    assert.equal(kill.sameIdNotRetaken, true)
+    const recover = await runCrateProof(store, 'recover')
+    assert.equal(recover.recoveredSameId, true)
+    assert.deepEqual(recover.recovered, [PROOF_KILL_ID])
+    assert.deepEqual(await store.getQueue(), [10045228, 1026558])
+  })
+
+  it('exhausts retries on id 9 without draining the live queue', async () => {
+    const store = createMemoryCrateStore({ queue: [10045228, 1026558] })
+    const result = await runCrateProof(store, 'exhausted')
+    assert.equal(result.id, 9)
+    assert.deepEqual(result.dead, [9])
+    assert.equal((result.lastError as { kind?: string } | null)?.kind, 'exhausted')
+    assert.deepEqual(await store.getQueue(), [10045228, 1026558])
+  })
+
+  it('classifies a bad Discogs token as auth without touching the live queue', async () => {
+    const store = createMemoryCrateStore({ queue: [10045228, 1026558] })
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      if (String(input).includes('/oauth/identity')) {
+        return new Response('{"message":"invalid token"}', { status: 401 })
+      }
+      return originalFetch(input)
+    }) as typeof fetch
+    try {
+      const result = await runCrateProof(store, 'auth')
+      assert.equal(result.workerStoppedOnAuth, true)
+      assert.equal(result.lastErrorKind, 'auth')
+      assert.equal(result.attempts, 0)
+      assert.equal((result.identity as { classified?: string }).classified, 'auth')
+      assert.deepEqual(await store.getQueue(), [10045228, 1026558])
+    } finally {
+      globalThis.fetch = originalFetch
+    }
   })
 
   it('parses proof actions and rejects unknown ones', () => {
