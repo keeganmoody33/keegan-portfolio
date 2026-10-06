@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "releaseId": 567894,
+  "entryInstanceIds": [],
+  "facts": {
+    "releaseId": 567894,
+    "title": "Juicy Fruit",
+    "artist": "Mtume",
+    "label": "Epic",
+    "catno": "49-03834",
+    "format": "Vinyl, 12\", 45 RPM, Stereo",
+    "country": "US",
+    "released": "1983",
+    "year": 1983,
+    "cover": "https://i.discogs.com/62SUcLWpX5iiSZOIrtDwW6uuT2Py9M2xvNe_zx9TmW8/rs:fit/g:sm/q:90/h:593/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTU2Nzg5/NC0xMjY5MTA2MjY3/LmpwZWc.jpeg",
+    "thumbnail": "https://i.discogs.com/qi96IOMqMTG2Cj_P4N3Uo_6UsFF1dsGBxVgatCKv5RM/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTU2Nzg5/NC0xMjY5MTA2MjY3/LmpwZWc.jpeg",
+    "discogsUrl": "https://www.discogs.com/release/567894",
+    "barcode": null
+  },
+  "description": {
+    "text": "Special version from the Epic LP Juicy Fruit (FE 38588), produced for Mtume-Lucas Productions. Remixed at E.A.R.S. Recording Studio, East Orange, NJ.",
+    "source": "discogs",
+    "sourceUrl": "https://www.discogs.com/release/567894"
+  },
+  "tracks": [
+    {
+      "position": "A",
+      "title": "Juicy Fruit (Vocal)",
+      "duration": "5:55",
+      "durationMs": 355000,
+      "index": 0,
+      "recording": {
+        "matchStatus": "ambiguous",
+        "confidence": 0,
+        "reason": "no musicbrainz release for this pressing; vocal/instrumental recordings share this title",
+        "mbid": null,
+        "recordingUrl": null
+      }
+    },
+    {
+      "position": "B",
+      "title": "Juicy Fruit (\"Fruity\" Instrumental Mix)",
+      "duration": "7:04",
+      "durationMs": 424000,
+      "index": 1,
+      "recording": {
+        "matchStatus": "ambiguous",
+        "confidence": 0,
+        "reason": "no musicbrainz release for this pressing; vocal/instrumental recordings share this title",
+        "mbid": null,
+        "recordingUrl": null
+      }
+    }
+  ],
+  "mbRelease": {
+    "mbid": null,
+    "url": null,
+    "matchStatus": "unmatched",
+    "confidence": 0,
+    "reason": "no musicbrainz release for this pressing after discogs url, barcode, catalog number, and artist + title search"
+  },
+  "recordings": {},
+  "provenance": {
+    "sourceUrls": [
+      "https://www.discogs.com/release/567894"
+    ],
+    "matchStatus": "unmatched",
+    "confidence": 0,
+    "reason": "no musicbrainz release for this pressing after discogs url, barcode, catalog number, and artist + title search",
+    "checkedAt": "2026-10-06T01:22:26.660Z",
+    "refreshAfter": "2026-11-05T01:22:26.660Z",
+    "lastError": null
+  }
+}

@@ -1,6 +1,6 @@
 # Implementation Plan — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-09-28
+**Last Updated:** 2026-10-06
 **Status:** House cut implemented (title card, sleeves, full crate, signal cut, agent files, logo mark). Person page frozen except wordmark. Live lockup is Chakra Petch; the last `o` is the static LogoMark. Hathaway (`public/brand/wordmark-hathaway.svg`) and nameplate (`brand/lecturesfrom-wordmark.svg`) vectors are assets only and are not mounted.
 **Previous plan:** `IMPLEMENTATION_PLAN_DISCOGS_ARCHIVED.md` (completed Discogs widget build)
 
@@ -194,8 +194,8 @@
 ### Step 4.4 — Stack of Wax (Discogs Collection)
 
 - **Goal:** Full vinyl collection browsing via Discogs API
-- **Output:** `components/StackOfWax.tsx` on house `/collection` via `/api/discogs/collection`. Career-only `/api/discogs` (recent-5) has been removed — do not revive it.
-- **Validation:** Grid shows collection, clicking tile opens Discogs page
+- **Output:** house `/collection` grid (`CollectionGrid`) via `/api/discogs/collection`; record detail at `/collection/[releaseId]` (`RecordDetail`). Career-only `/api/discogs` (recent-5) has been removed — do not revive it.
+- **Validation:** Grid shows collection. Cover click opens the record-detail overlay/page (not Discogs). Shuffle reorders the grid in the browser (Fisher-Yates; reload restores ISR order). Pull one opens a listed id through the overlay. Overview / Tracks, empty copy per LF Direction brief (including `{reason} · checked YYYY-MM-DD`). Preview HTML `data-crate-source` shows redis vs fixture. Coverage line reports matched / credits / samples separately. Discogs attribution on the record (`Data provided by Discogs.`) and the API non-affiliation sentence on `/legal` Data sources (not HouseFooter). Successful MusicBrainz research is reused (no 6h rematch). **Prototype gap:** Discogs 6h freshness clause is not implemented (24h listing TTL). Bootsy 573292, Goodie Mob 240128, Mtume 567894 fixtures remain last-resort fallback. Preview-only; keep the PR in draft.
 
 ---
 

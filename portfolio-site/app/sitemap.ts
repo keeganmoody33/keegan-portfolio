@@ -13,6 +13,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/catalog`, lastModified: new Date() },
     ...sleeveRoutes,
     { url: `${SITE_URL}/collection`, lastModified: new Date() },
+    { url: `${SITE_URL}/collection/573292`, lastModified: new Date() },
+    { url: `${SITE_URL}/collection/240128`, lastModified: new Date() },
+    { url: `${SITE_URL}/collection/567894`, lastModified: new Date() },
     { url: `${SITE_URL}/legal`, lastModified: new Date() },
     { url: `${SITE_URL}/keeganmoody33`, lastModified: new Date() },
   ]
