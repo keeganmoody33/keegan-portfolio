@@ -141,7 +141,7 @@ These are explicitly **not** what this site is:
 
 ## Prototype gaps (collection record detail)
 
-- **Discogs 6h freshness clause** is not implemented. Collection listing TTL is 24h; successful research is reused indefinitely. Attribution is implemented. See Discogs [API Terms of Use](https://support.discogs.com/hc/en-us/articles/360009334593-API-Terms-of-Use). **Research is manual-only** (gated `/api/cron/crate-backfill` + `npm run crate:backfill`). No Vercel cron. `CRON_SECRET` is not in production and must not be added without Keegan's yes. Wikidata identity is Discogs master `P1954`, then MusicBrainz release group `P436`, then Discogs release `P2206` / catalog `P5813`.
+- **Discogs 6h freshness clause** is not implemented. Listing last-good is Redis; gated `/api/cron/collection-keep` refreshes when older than `DISCOGS_SNAPSHOT_TTL_MS` (24h); ISR `revalidate = 300`. Successful research is reused indefinitely (`CRATE_RESEARCH_REFRESH_MS`). Attribution is implemented. See Discogs [API Terms of Use](https://support.discogs.com/hc/en-us/articles/360009334593-API-Terms-of-Use). **Research is manual-only** (gated `/api/cron/crate-backfill` + `npm run crate:backfill`). No Vercel cron. `CRON_SECRET` is not in production and must not be added without Keegan's yes. Wikidata identity is Discogs master `P1954`, then MusicBrainz release group `P436`, then Discogs release `P2206` / catalog `P5813`.
 
 ---
 
