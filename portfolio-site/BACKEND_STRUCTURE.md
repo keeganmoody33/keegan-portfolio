@@ -307,9 +307,15 @@ Read-only inspect of queue, dead set, unresolved set, inspect hash, backfill cur
 
 ---
 
+### Cover sync (manual)
+
+`npm run covers:sync -- [--ids=573292,240128 --limit=N --force --dry-run --prod]` (`scripts/covers-sync.ts`). Discovers CAA front (MB release mbid, then release group) then the largest Discogs primary image. Writes Redis manifests at `lf:preview:crate:cover:{id}:v1` (prod `lf:` only with `--prod`). Puts CAA bytes on Vercel Blob at `covers/{sha256}.{ext}` when `BLOB_READ_WRITE_TOKEN` is set; missing token no-ops. Discogs images are never uploaded. CAA/MB paced at 1.1s with User-Agent `lecturesfrom/1.0 (33@lecturesfrom.com)`. Discogs uses the existing client User-Agent and 1.1s when `DISCOGS_TOKEN` is set, otherwise 2.5s (unauthenticated 25/min cap).
+
+---
+
 ### Crate stored pressing (Upstash)
 
-Visitor `/collection/[releaseId]` reads stored results only (`lib/crate/read.ts`): Redis last-good (title or tracks) → committed fixtures (`573292`, `240128`, `567894`) → collection pending shell. An empty Redis error stub is not last-good; visitors see the fixture. Never live Discogs release, MusicBrainz, or Wikidata on that path, and **never a Redis write**. Enrichment treats a committed fixture as previous when Redis has no visitor facts. The article sets `data-crate-source="redis|fixture|collection"`. Unlisted ids 404 or show collection-pending with no enqueue. Detail routes are `force-dynamic`; pressing Redis GETs use `next: { revalidate: 60 }`.
+Visitor `/collection/[releaseId]` reads stored results only (`lib/crate/read.ts`): Redis last-good (title or tracks) → committed fixtures (`573292`, `240128`, `567894`) → collection pending shell. An empty Redis error stub is not last-good; visitors see the fixture. Never live Discogs release, MusicBrainz, or Wikidata on that path, and **never a Redis write**. Cover manifests (`lf:crate:cover:{id}:v1`, preview `lf:preview:…`) are a separate Redis read (`revalidate: 300`, skip during `next build`). Missing manifest → current Discogs listing thumbnail or cover URL. Enrichment treats a committed fixture as previous when Redis has no visitor facts. The article sets `data-crate-source="redis|fixture|collection"`. Unlisted ids 404 or show collection-pending with no enqueue. Detail routes are `force-dynamic`; pressing Redis GETs use `next: { revalidate: 60 }`.
 
 Pressing facts, sourced descriptions, and match decisions are stored separately. Every fact carries a source URL and provider id. `provenance.verifiedAt` is the last successful MusicBrainz match; `lifecycles.pressing.verifiedAt` is the last successful Discogs check; `lastAttemptAt` / `lastError` / `attempts` are failure bookkeeping. Lifecycles (`pressing` / `match` / `research`) have independent state. Coverage counts playable tracks, matched recordings, and **track-attributed** credit/sample coverage separately; release-level facts set `withReleaseCredits` / `withReleaseSamples` and do not mark every track.
 
@@ -329,6 +335,7 @@ MusicBrainz match order: unique Discogs URL relationship (then skip barcode/catn
 | `lf:crate:unresolved:v1` | SET of not-found / ambiguous / auth ids |
 | `lf:crate:inspect:v1` | HASH of inspectable `DeadLetter` records |
 | `lf:crate:backfill:v1` | Resumable backfill cursor + throughput |
+| `lf:crate:cover:{id}:v1` | Cover manifest: `url`, `width`, `height`, `source` (`caa` \| `discogs`), `originalUrl`, `stored`. CAA Blob URL when uploaded; Discogs stays a hotlink. |
 
 Preview/dev prefixes every key with `lf:preview:` (`VERCEL_ENV !== 'production'`). Never write production `lf:` keys from a preview.
 
@@ -485,6 +492,7 @@ Both deployed via `supabase functions deploy <name>`. Source in `supabase/functi
 | `CRON_SECRET` | Server-only | No | Bearer for `/api/cron/crate-enrich`, `/api/cron/crate-backfill`, `/api/cron/crate-inspect`, `/api/cron/collection-keep`, `/api/cron/crate-proof`. Missing → 404. **Not in production. Do not add it without Keegan's yes.** |
 | `CRATE_ENRICH_FAIL_IDS` | Server-only | No | Preview-only test hook. Comma-separated Discogs ids (no `*`). Ignored when `VERCEL_ENV=production` or in tests. |
 | `CRATE_RESEARCH_REFRESH` | Server-only | No | Set `1` to opt into the optional MusicBrainz research refresh window (default six months via `CRATE_RESEARCH_REFRESH_MS`). Unset = reuse successful research indefinitely. |
+| `BLOB_READ_WRITE_TOKEN` | Server-only | No | Vercel Blob for CAA covers. Unset = `putCoverBlob` returns null; renderer falls back to Discogs hotlink. Never commit the token. |
 
 ### Supabase Secrets (set via `supabase secrets set`)
 

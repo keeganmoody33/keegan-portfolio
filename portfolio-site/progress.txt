@@ -1,3 +1,20 @@
+COMPLETED (2026-10-06 — rebase covers onto main 65de54e / #53):
+- Rebased `cursor/collection-covers-blob-5ece` onto `65de54e`. Merge-base is `65de54e`, not `41416d1`. Kept CAA Blob + Discogs hotlink and #53 research (`extraartists`, `research.ts`/`wikidata`, SourceLine sr-only `source `, SampleList `inline-flex min-h-6 items-center`).
+- Docs keep unmatched Discogs/Wikidata facts language. Grid hotlink is `thumbnail||cover` unless Blob stored. No visit `after()` enqueue. `vercel.json` has no crons. PR #55 stays draft. Do not merge.
+
+COMPLETED (2026-10-06 — collection covers, preview Blob sync):
+- Blob store `lecturesfrom-covers` (`store_xWsLYWPqUSIpxUrB`) was already linked to `keegan-portfolio-content`. `BLOB_READ_WRITE_TOKEN` is on Preview, Development, **and Production** from auto-link. Did not add or change Production.
+- Full preview sync (no `--prod`): 276 unique ids, 784s. **17 CAA stored** on Blob, **258 Discogs hotlinks**, **1 error** (26098312 no cover). Preview Redis `lf:preview:crate:cover:{id}:v1` = 275 manifests. Production cover keys = 0. Blob count 17 / 11.6 MB.
+- Before/after px: Bootsy 573292 600×597 → **1424×1400 CAA Blob**. Goodie 240128 600×600 Discogs. Mtume 567894 600×593 Discogs. Crops refreshed from stored URLs.
+- Unauthenticated Discogs pacer is 2.5s (25/min) unless `DISCOGS_TOKEN` is set. Keep PR #55 draft. Do not merge.
+
+COMPLETED (2026-10-06 — collection covers, preview):
+- Keegan approved self-hosting covers. Discogs API Terms (27 May 2025) forbid caching/storing Content longer than necessary and transferring Restricted Data to third parties — **hotlink Discogs images**. Cover Art Archive / MusicBrainz: public archive, use at own risk, images remain copyrighted — **self-host CAA only** when Blob is linked. No extra on-page CAA notice; keep existing Discogs credits.
+- Source order: CAA front by MB release mbid (fixture/research store), then release group, then largest Discogs primary (`images[0].uri`). Prefer ≥1200px. Manifest records url, width, height, source, originalUrl, stored.
+- Storage: `@vercel/blob` `covers/{sha256}.{ext}` via `BLOB_READ_WRITE_TOKEN`. Unset token no-ops. `npm run covers:sync -- [--ids=… --limit=N --force --prod]`. Preview Redis `lf:preview:crate:cover:{id}:v1`. Refuses prod keys without `--prod`. CAA/MB 1.1s, UA `lecturesfrom/1.0 (33@lecturesfrom.com)`.
+- Render: `CrateCover` + `next/image` with stored w/h and `sizes`. Detail: listing thumb blurred under full-res. Fallback: current Discogs URL. Alt and layout unchanged.
+- Store `lecturesfrom-covers` is linked. Preview Redis has 275 cover manifests. Do not merge. Do not write prod Redis.
+
 COMPLETED (2026-10-06 — UX: attributed credits + unmatched facts spec):
 - Persist `creditLine(credit)` (attributes + role) on research facts. Hollywood Squares shows `assistant engineer`, not `engineer`; Goodie guest/assistant roles no longer collapse. Page still renders `fact.role`.
 - Spec: unmatched (no MB release) may still show Discogs and Wikidata credit/sample facts with source labels under `{reason} · checked YYYY-MM-DD`. Do not gate facts until matched. APP_FLOW, lessons, FG:420 agree.
@@ -31,7 +48,7 @@ COMPLETED (2026-10-06 — collection record detail, preview prototype):
 - Coverage line reports matched-track / credit / sample-relationship counts separately. Mtume vocal/instrumental stays unmatched and may still show Discogs/Wikidata facts under `{reason} · checked YYYY-MM-DD` (no extra `nothing on file yet` when those facts are empty). Hollywood Squares → Too $hort “I’m a Player” comes from MusicBrainz relationships (fixture + live lookup), not a hardcode.
 - Fixtures committed for Bootsy 573292, Goodie Mob 240128, Mtume 567894.
 - LF Direction brief: house tokens only, OVERVIEW/TRACKS tabs, hairline rows, sourced lines, empty copy (`nothing on file yet` / `pick a track for credits and samples` / `{reason} · checked YYYY-MM-DD`). `.house-fade` reuses `houseLockup`. Cover 1px `#242424` frame.
-- Preview Redis (`lf:preview:`) holds last-good for 573292 / 240128 / 567894. Mtume stays unmatched with vocal vs Fruity Instrumental Mix both `ambiguous`. Bootsy description is the stored Winchester/gatefold paraphrase. Attribution is lowercase `discogs` plus exact-case `Data provided by Discogs.` to the pressing URL (grid credit links the collection page). Keep PR #50 in draft. Do not merge, promote the preview, or change paid plans. **Open LF Direction question:** detail cover still stretches the 150px thumb (blurry).
+- Preview Redis (`lf:preview:`) holds last-good for 573292 / 240128 / 567894. Mtume stays unmatched with vocal vs Fruity Instrumental Mix both `ambiguous`. Bootsy description is the stored Winchester/gatefold paraphrase. Attribution is lowercase `discogs` plus exact-case `Data provided by Discogs.` to the pressing URL (grid credit links the collection page). Keep PR #50 in draft. Do not merge, promote the preview, or change paid plans. Detail cover uses stored full-res (CAA Blob when provisioned, else Discogs hotlink) with the listing thumb as a blur placeholder.
 
 
 - Pivot is (−4, −3) viewBox units from the ring centre (`−4/248`, `−3/248`). Drawing ~−3.95, −3.07. Blue −32.339552° (ellipse ∩ inner-arc from the new pivot), horiz 0° ends on the arc, green 30.27366° (arc ∩ ring). Ellipse, hairline, line-only, transparent `--lf-mark-*`, favicon / og unchanged.

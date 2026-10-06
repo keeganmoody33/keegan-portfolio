@@ -16,7 +16,13 @@ import {
   trackSampledByFacts,
 } from '@/lib/crate/view.ts'
 import DiscogsCredit from '@/components/house/DiscogsCredit'
+import CrateCover from '@/components/house/CrateCover'
 import { coverageLine, isPlayableOccurrence } from '@/lib/crate/lifecycle.ts'
+import {
+  displayCoverUrl,
+  parseDiscogsImageDimensions,
+  type CoverManifest,
+} from '@/lib/crate/cover-display.ts'
 
 const SCROLL_KEY = 'lf:collection:scroll'
 const FOCUS_KEY = 'lf:collection:focus'
@@ -58,11 +64,13 @@ export default function RecordDetail({
   mode,
   unavailable = false,
   crateSource,
+  cover = null,
 }: {
   pressing: StoredPressing
   mode: 'page' | 'overlay'
   unavailable?: boolean
   crateSource?: 'redis' | 'fixture' | 'collection'
+  cover?: CoverManifest | null
 }) {
   const router = useRouter()
   const titleId = useId()
@@ -224,6 +232,8 @@ export default function RecordDetail({
           artist=""
           title={heading}
           catno={placeholderCatno}
+          thumbSrc=""
+          cover={null}
         />
         <div>
           <h1
@@ -237,10 +247,12 @@ export default function RecordDetail({
       ) : (
       <div className="grid gap-10 min-[1280px]:grid-cols-2 min-[1280px]:items-start">
         <RecordCover
-          src={facts.thumbnail || facts.cover}
+          src={displayCoverUrl(cover, facts.cover || facts.thumbnail)}
           artist={facts.artist}
           title={facts.title}
           catno={placeholderCatno}
+          thumbSrc={facts.thumbnail || facts.cover}
+          cover={cover}
         />
         <div>
           <h1
@@ -491,33 +503,31 @@ function RecordCover({
   artist,
   title,
   catno,
+  thumbSrc,
+  cover,
 }: {
   src: string
   artist: string
   title: string
   catno: string | null
+  thumbSrc: string
+  cover: CoverManifest | null
 }) {
-  if (src) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={src}
-        alt={`${artist} — ${title}`}
-        loading="eager"
-        fetchPriority="high"
-        decoding="async"
-        className="aspect-square w-full max-w-[480px] border border-[var(--house-line)] object-cover min-[1280px]:max-w-none"
-      />
-    )
-  }
+  const dims = cover
+    ? { width: cover.width, height: cover.height }
+    : parseDiscogsImageDimensions(src)
   return (
-    <div className="flex aspect-square w-full max-w-[480px] items-center justify-center border border-[var(--house-line)] bg-[var(--house-line)] min-[1280px]:max-w-none">
-      {catno ? (
-        <p className="px-4 text-center font-mono text-sm text-[var(--house-ink)] [overflow-wrap:anywhere]">
-          {catno}
-        </p>
-      ) : null}
-    </div>
+    <CrateCover
+      kind="detail"
+      src={src}
+      thumbSrc={thumbSrc}
+      width={dims?.width}
+      height={dims?.height}
+      alt={`${artist} — ${title}`}
+      catno={catno}
+      eager
+      priority
+    />
   )
 }
 
