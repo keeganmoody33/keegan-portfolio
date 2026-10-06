@@ -22,6 +22,7 @@ const BACKOFF_MS = [
   7 * 24 * 60 * 60 * 1000,
 ] as const
 export const TERMINAL_REFRESH_MS = 30 * 24 * 60 * 60 * 1000
+export const AUTH_RETRY_MS = 15 * 60 * 1000
 export { CRATE_MAX_ATTEMPTS }
 
 export function isoFromMs(ms: number): string {
@@ -36,6 +37,11 @@ export function nextBackoffMs(attemptCount: number): number {
 export function storedPressingHasVisitorFacts(pressing: StoredPressing | null | undefined): boolean {
   if (!pressing) return false
   return pressing.facts.title.trim().length > 0 || pressing.tracks.length > 0
+}
+
+export function hasPriorVerifiedRecord(pressing: StoredPressing | null | undefined): boolean {
+  if (!pressing?.provenance.verifiedAt) return false
+  return storedPressingHasVisitorFacts(pressing)
 }
 
 export function hasSuccessfulPressing(pressing: StoredPressing | null | undefined): boolean {
@@ -75,7 +81,12 @@ export function errorPressingStub(
   } = {}
 ): StoredPressing {
   const attempts = options.countAttempt === false || kind === 'auth' ? 0 : 1
-  const backoff = options.terminal ? TERMINAL_REFRESH_MS : nextBackoffMs(attempts)
+  const backoff =
+    options.terminal
+      ? TERMINAL_REFRESH_MS
+      : kind === 'auth'
+        ? AUTH_RETRY_MS
+        : nextBackoffMs(attempts)
   const facts = options.facts ?? emptyPressingFacts(releaseId)
   const matchStatus = options.terminal ? 'unmatched' : 'pending'
   return {
@@ -158,7 +169,11 @@ export function preservePressingOnFailure(
   const exhausted = attempts >= CRATE_MAX_ATTEMPTS && kind !== 'auth' && kind !== 'not_found'
   const errorKind = exhausted ? 'exhausted' : kind
   const backoff =
-    options.terminal || exhausted || kind === 'auth' ? TERMINAL_REFRESH_MS : nextBackoffMs(Math.max(attempts, 1))
+    options.terminal || exhausted
+      ? TERMINAL_REFRESH_MS
+      : kind === 'auth'
+        ? AUTH_RETRY_MS
+        : nextBackoffMs(Math.max(attempts, 1))
   const nowIso = isoFromMs(nowMs)
   const lastError = {
     at: nowIso,

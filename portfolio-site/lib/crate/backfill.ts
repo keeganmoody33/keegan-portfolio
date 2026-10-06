@@ -132,9 +132,9 @@ export async function runBackfill(
 
   const mb = deps.mb ?? createMusicBrainzClient({ now: deps.now })
   const baseFetch = deps.fetchDiscogs ?? ((releaseId: number) => fetchDiscogsReleaseDetail(releaseId))
-  let discogsRequests = previous.discogsRequests
+  let discogsThis = 0
   const wrappedFetch = async (releaseId: number) => {
-    discogsRequests += 1
+    discogsThis += 1
     return baseFetch(releaseId)
   }
   const mbStart = mb.requestCount
@@ -142,14 +142,14 @@ export async function runBackfill(
     { ...deps, mb, fetchDiscogs: wrappedFetch, deadlineMs: deps.deadlineMs },
     options.limit
   )
-  const mbRequests = previous.mbRequests + Math.max(0, mb.requestCount - mbStart)
+  const mbThis = Math.max(0, mb.requestCount - mbStart)
 
   const dead = await store.getDead()
   const unresolvedSet = await store.getUnresolved()
-  const handled = result.processed.length
   const completedThis = result.completed.length
   const failedThis = result.failed.length
   const unresolvedThis = result.unresolved.length
+  const handled = completedThis + failedThis + unresolvedThis
   const nextCursor = Math.min(ids.length, cursor + handled)
   const elapsedMs = Math.max(1, now() - started)
   const minutes = elapsedMs / 60_000
@@ -166,8 +166,8 @@ export async function runBackfill(
     completed,
     unresolved: unresolvedSet.length,
     failed: dead.length,
-    discogsRequests,
-    mbRequests,
+    discogsRequests: previous.discogsRequests + discogsThis,
+    mbRequests: previous.mbRequests + mbThis,
     status: result.stoppedOnAuth
       ? 'auth_stop'
       : result.stoppedOnRateLimit
@@ -187,10 +187,10 @@ export async function runBackfill(
     remaining,
     elapsedMs,
     releasesPerMin,
-    discogsRequestsPerMin: discogsRequests / minutes,
-    mbRequestsPerMin: mbRequests / minutes,
-    discogsRequests,
-    mbRequests,
+    discogsRequestsPerMin: discogsThis / minutes,
+    mbRequestsPerMin: mbThis / minutes,
+    discogsRequests: discogsThis,
+    mbRequests: mbThis,
     estimatedRemainingMs,
     stoppedOnAuth: result.stoppedOnAuth,
     stoppedOnRateLimit: result.stoppedOnRateLimit,

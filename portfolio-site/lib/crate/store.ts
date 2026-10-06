@@ -133,7 +133,6 @@ export type CrateStore = {
   setPressing(pressing: StoredPressing): Promise<void>
   setDraftPressing(pressing: StoredPressing): Promise<void>
   getDraftPressing(releaseId: number): Promise<StoredPressing | null>
-  commitDraftPressing(releaseId: number): Promise<void>
   discardDraftPressing(releaseId: number): Promise<void>
   getRecording(mbid: string): Promise<StoredRecording | null>
   setRecording(recording: StoredRecording): Promise<void>
@@ -279,15 +278,6 @@ class RedisCrateStore implements CrateStore {
     if (process.env.NEXT_PHASE === 'phase-production-build') return null
     const value = await this.writeRedis.get<unknown>(this.keys.pressingDraft(releaseId))
     return isStoredPressing(value) ? value : null
-  }
-
-  async commitDraftPressing(releaseId: number): Promise<void> {
-    const draft = await this.writeRedis.get<unknown>(this.keys.pressingDraft(releaseId))
-    if (!isStoredPressing(draft)) return
-    const pipeline = this.writeRedis.pipeline()
-    pipeline.set(this.keys.pressing(releaseId), draft)
-    pipeline.del(this.keys.pressingDraft(releaseId))
-    await pipeline.exec()
   }
 
   async discardDraftPressing(releaseId: number): Promise<void> {
@@ -522,12 +512,6 @@ export function createMemoryCrateStore(
     },
     async getDraftPressing(releaseId: number) {
       return store.drafts[releaseId] ?? null
-    },
-    async commitDraftPressing(releaseId: number) {
-      const draft = store.drafts[releaseId]
-      if (!draft) return
-      store.pressings[releaseId] = draft
-      delete store.drafts[releaseId]
     },
     async discardDraftPressing(releaseId: number) {
       delete store.drafts[releaseId]

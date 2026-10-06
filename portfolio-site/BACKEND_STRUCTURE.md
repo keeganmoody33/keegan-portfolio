@@ -275,7 +275,7 @@ Daily budgeted drain of the crate enrichment queue. Vercel Hobby cron `37 4 * * 
 
 **Auth:** `Authorization: Bearer $CRON_SECRET` compared with `timingSafeEqual`. Missing `CRON_SECRET` → HTTP 404 (route is not public). Wrong bearer → 401.
 
-**Behavior:** If the collection listing is stale (24h), crawl and store last-good. Collection 401/403 maps to `DiscogsAuthError`, records `auth` on meta, and returns `{ skipped: true, stoppedOnAuth: true }` without `processEnrichmentQueue`. Otherwise read last-good collection, enqueue new/missing ids (dead ids stay dead unless `{ retry: true }`), `processEnrichmentQueue` until the shared deadline. MusicBrainz ~1.1s, one client per run (`requestCount` on the client). Discogs release detail uses `lecturesfrom/1.0 +https://lecturesfrom.com`. Failed refresh preserves the latest committed pressing (staging draft if Discogs already succeeded), keeps original `verifiedAt`, and writes `lastAttemptAt` / `lastError` / `refreshAfter`. Worker 401/403 are `auth`: stop the run, do not increment attempts. 4xx not-found is terminal. Exhausted retries (`CRATE_MAX_ATTEMPTS` 5) move to `lf:crate:dead:v1`. Lock and inflight TTL 90s with an owner token.
+**Behavior:** If the collection listing is stale (24h), crawl and store last-good. Collection 401/403 maps to `DiscogsAuthError`, records `auth` on meta, and returns `{ skipped: true, stoppedOnAuth: true }` without `processEnrichmentQueue`. Otherwise read last-good collection, enqueue new/missing ids (dead ids stay dead unless `{ retry: true }`), `processEnrichmentQueue` until the shared deadline. MusicBrainz ~1.1s, one client per run (`requestCount` on the client). Discogs release detail uses `lecturesfrom/1.0 +https://lecturesfrom.com`. Failed refresh preserves the prior verified pressing (`verifiedAt` and matched facts) when one exists; a true first run overlays `lastError` on Discogs facts from the staging draft. `verifiedAt` does not move on rematch failure. Worker 401/403 are `auth`: stop the run, do not increment attempts, nack `AUTH_RETRY_MS` (15 minutes). 4xx not-found is terminal. Exhausted retries (`CRATE_MAX_ATTEMPTS` 5), including MusicBrainz-stage failures, move to `lf:crate:dead:v1`. Lock and inflight TTL 90s with an owner token. `enrichPressing` checks remaining budget before match and each recording lookup.
 
 **Response:** `{ processed: number[], skipped: boolean, stoppedOnRateLimit: boolean, stoppedOnAuth: boolean, mbRequests: number }` or `{ processed: [], skipped: true, reason: 'no store' }` when Redis env is absent.
 
@@ -289,13 +289,13 @@ Force-dynamic keep target for the ISR `/collection` grid. Same Bearer `CRON_SECR
 
 ### GET /api/cron/crate-proof
 
-Preview-only proof actions (`action=inspect|overlap|kill|recover|exhausted|resync|fail|auth|enrich`). Same auth. Uses `lf:preview:` keys. Auth proof calls Discogs `/oauth/identity` with an invalid token (does not use the live `DISCOGS_TOKEN`).
+Preview-only proof actions (`action=inspect|overlap|kill|recover|exhausted|resync|fail|auth|enrich|cleanup`). Same auth. Uses `lf:preview:` keys. Overlap concurrent drains prove lock exclusion only; concurrent `takeDue` proves inflight SET NX. Exhausted is Discogs-ok / MusicBrainz-throw through the queue. Auth proof classifies identity 401 via `probeDiscogsIdentity` in `discogs-release.ts` (does not use the live `DISCOGS_TOKEN`).
 
 ---
 
 ### GET /api/cron/crate-backfill
 
-Resumable initial backfill independent of visitor traffic. Same Bearer `CRON_SECRET` gate (missing → 404). Walks the collection, checkpoints cursor in `lf:crate:backfill:v1` (preview: `lf:preview:crate:backfill:v1`), respects Discogs ~60/min and MusicBrainz 1/s. Partial runs resume. Reports completed / unresolved / failed, requests/min per provider, estimated remaining time.
+Resumable initial backfill independent of visitor traffic. Same Bearer `CRON_SECRET` gate (missing → 404). Walks the collection, checkpoints cursor in `lf:crate:backfill:v1` (preview: `lf:preview:crate:backfill:v1`), respects Discogs ~60/min and MusicBrainz 1/s. Partial runs resume. Cursor and remaining advance by this tick's outcomes. `discogsRequests` / `mbRequests` / per-min rates on the response are this tick, not running totals (`BackfillState` still accumulates).
 
 Also: `npm run crate:backfill` (`scripts/crate-backfill.ts`).
 

@@ -36,12 +36,13 @@ import {
   type MusicBrainzClient,
 } from './musicbrainz.ts'
 import {
+  AUTH_RETRY_MS,
+  hasPriorVerifiedRecord,
   isoFromMs,
   keepPriorMatch,
   preservePressingOnFailure,
   storedPressingHasVisitorFacts,
   SUCCESS_REFRESH_MS,
-  TERMINAL_REFRESH_MS,
 } from './preserve.ts'
 import { fixturePressing } from './read.ts'
 import { resolveDescription } from './description.ts'
@@ -78,6 +79,14 @@ export function workerDeadlineMs(nowMs = Date.now()): number {
 
 export function remainingBudgetMs(deadlineMs: number, nowMs: number): number {
   return Math.max(0, deadlineMs - nowMs)
+}
+
+function assertWithinWorkerDeadline(deps: EnrichDeps): void {
+  if (deps.deadlineMs == null) return
+  const nowMs = (deps.now ?? Date.now)()
+  if (remainingBudgetMs(deps.deadlineMs, nowMs) <= 0) {
+    throw new Error('worker deadline')
+  }
 }
 
 export type EnrichDeps = {
@@ -426,6 +435,7 @@ export async function enrichPressing(
     if (shouldFail(releaseId)) {
       throw new Error('Failed to enrich pressing')
     }
+    assertWithinWorkerDeadline(deps)
     const detail = await fetchDetail(releaseId)
     const facts = factsFromDiscogsDetail(detail)
     let tracks = occurrencesFromDetail(detail)
@@ -491,6 +501,7 @@ export async function enrichPressing(
     let researchCursor = pressingDraft.checkpoint?.researchCursor ?? 0
 
     if (!skipMatch) {
+      assertWithinWorkerDeadline(deps)
       stage = 'match'
       const { releaseMatch, mbReleaseDoc } = await matchRelease(facts, playable.length, mb)
       tracks = applyReleaseMatch(tracks, releaseMatch, mbReleaseDoc)
@@ -552,6 +563,7 @@ export async function enrichPressing(
         continue
       }
       try {
+        assertWithinWorkerDeadline(deps)
         const doc = await mb.getRecording(mbid)
         if (!doc) {
           if (previousRecording) recordings[mbid] = previousRecording
@@ -661,7 +673,13 @@ export async function enrichPressing(
   } catch (error) {
     const kind = errorKind(error)
     const draft = await deps.store.getDraftPressing(releaseId)
-    const latest = storedPressingHasVisitorFacts(draft) ? draft : previous
+    const latest = hasPriorVerifiedRecord(previous)
+      ? previous
+      : hasPriorVerifiedRecord(storedPrevious)
+        ? storedPrevious
+        : storedPressingHasVisitorFacts(draft)
+          ? draft
+          : previous
     const preserved = preservePressingOnFailure(
       latest,
       nowMs,
@@ -783,7 +801,7 @@ export async function processEnrichmentQueue(
       const releaseId = ids[0]
       if (releaseId == null) break
       try {
-        const pressing = await enrichPressing(releaseId, { ...deps, mb })
+        const pressing = await enrichPressing(releaseId, { ...deps, mb, deadlineMs })
         const kind = pressing.provenance.lastError?.kind
         const outcome = classifyQueueOutcome(pressing)
         if (kind === 'auth') {
@@ -795,7 +813,7 @@ export async function processEnrichmentQueue(
               attempts: pressing.provenance.lastError?.attempts ?? 0,
             })
           )
-          await deps.store.nack(releaseId, now() + TERMINAL_REFRESH_MS)
+          await deps.store.nack(releaseId, now() + AUTH_RETRY_MS)
           record(releaseId, outcome)
           stoppedOnAuth = true
           break
@@ -822,7 +840,8 @@ export async function processEnrichmentQueue(
           record(releaseId, outcome)
         }
       } catch (error) {
-        const retryAt = now() + 60 * 60 * 1000
+        const isAuth = isMusicBrainzAuthError(error) || isDiscogsAuthError(error)
+        const retryAt = now() + (isAuth ? AUTH_RETRY_MS : 60 * 60 * 1000)
         await deps.store.nack(releaseId, retryAt)
         record(
           releaseId,

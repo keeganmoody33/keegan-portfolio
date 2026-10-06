@@ -6,6 +6,7 @@ import {
   discogsHeaders,
   discogsReleaseUrl,
   getDiscogsToken,
+  isDiscogsAuthError,
   type DiscogsFetch,
 } from '../discogs.ts'
 
@@ -132,6 +133,45 @@ function readRetryAfter(response: Response): number {
   return Number.isFinite(value) && value > 0 ? value : 60
 }
 
+export const DISCOGS_IDENTITY_URL = 'https://api.discogs.com/oauth/identity'
+
+export function errorForDiscogsStatus(response: Response): Error | null {
+  if (response.ok) return null
+  if (response.status === 429) {
+    return new DiscogsRateLimitError(readRetryAfter(response))
+  }
+  if (response.status === 401 || response.status === 403) {
+    return new DiscogsAuthError(response.status)
+  }
+  if (response.status === 404 || (response.status >= 400 && response.status < 500)) {
+    return new DiscogsNotFoundError()
+  }
+  return new DiscogsUnavailableError()
+}
+
+export function throwForDiscogsStatus(response: Response): void {
+  const error = errorForDiscogsStatus(response)
+  if (error) throw error
+}
+
+export async function probeDiscogsIdentity(
+  options: { fetchImpl?: DiscogsFetch; token?: string } = {}
+): Promise<{ url: string; status: number; classified: 'auth' | 'other' }> {
+  const fetchImpl = options.fetchImpl ?? fetch
+  const token = options.token !== undefined ? options.token : getDiscogsToken()
+  const url = DISCOGS_IDENTITY_URL
+  const response = await fetchImpl(url, {
+    headers: discogsHeaders(token),
+    cache: 'no-store',
+  })
+  const error = errorForDiscogsStatus(response)
+  return {
+    url,
+    status: response.status,
+    classified: error && isDiscogsAuthError(error) ? 'auth' : 'other',
+  }
+}
+
 export async function fetchDiscogsReleaseDetail(
   releaseId: number,
   options: { fetchImpl?: DiscogsFetch; token?: string } = {}
@@ -142,18 +182,7 @@ export async function fetchDiscogsReleaseDetail(
     headers: discogsHeaders(token),
     cache: 'no-store',
   })
-  if (response.status === 429) {
-    throw new DiscogsRateLimitError(readRetryAfter(response))
-  }
-  if (response.status === 401 || response.status === 403) {
-    throw new DiscogsAuthError(response.status)
-  }
-  if (response.status === 404 || (response.status >= 400 && response.status < 500)) {
-    throw new DiscogsNotFoundError()
-  }
-  if (!response.ok) {
-    throw new DiscogsUnavailableError()
-  }
+  throwForDiscogsStatus(response)
   let raw: unknown
   try {
     raw = await response.json()
