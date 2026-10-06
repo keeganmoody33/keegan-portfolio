@@ -20,7 +20,10 @@ export default function CollectionGrid({
   }, [])
 
   return (
-    <ul className="mt-10 grid list-none grid-cols-2 gap-4 p-0 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+    <ul
+      id="crate-grid"
+      className="mt-10 grid list-none grid-cols-2 gap-4 p-0 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+    >
       {releases.map((release, index) => {
         const releaseId = release.releaseId
         const src = release.thumbnail || release.cover
@@ -54,7 +57,13 @@ export default function CollectionGrid({
         )
 
         return (
-          <li key={release.discogsUrl || String(releaseId) || `${release.artist}-${release.title}`}>
+          <li
+            key={
+              release.instanceId > 0
+                ? `instance-${release.instanceId}`
+                : `row-${index}-${releaseId}`
+            }
+          >
             {internal ? (
               <Link
                 id={`crate-cover-${releaseId}`}
@@ -63,7 +72,7 @@ export default function CollectionGrid({
                 prefetch={false}
                 className={`group block ${focusRing}`}
                 onClick={() => {
-                  saveCollectionScroll(releaseId)
+                  saveCollectionScroll(`crate-cover-${releaseId}`)
                   posthog.capture('collection_record_open', { release_id: releaseId })
                 }}
               >

@@ -273,6 +273,37 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
     font-size: 0.625rem;
     color: var(--house-dim);
   }
+
+  .house-text-button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.5rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    font-family: var(--house-font-mono), 'Roboto Mono', monospace;
+    font-size: 0.625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--house-muted);
+    appearance: none;
+  }
+
+  .house-text-button:hover:not(:focus-visible) {
+    color: var(--house-orange);
+  }
+
+  .house-text-button:focus-visible {
+    color: var(--house-ink);
+    outline: 2px solid var(--house-ink);
+    outline-offset: 2px;
+  }
+
+  .house-text-button[hidden] {
+    display: none;
+  }
 }
 
 .house-skip {

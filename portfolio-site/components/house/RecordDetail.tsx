@@ -34,10 +34,10 @@ const TABS: Array<{ id: TabId; label: string }> = [
 const focusRing =
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--house-ink)]'
 
-export function saveCollectionScroll(releaseId: number) {
+export function saveCollectionScroll(focusId: string) {
   if (typeof window === 'undefined') return
   sessionStorage.setItem(SCROLL_KEY, String(window.scrollY))
-  sessionStorage.setItem(FOCUS_KEY, String(releaseId))
+  sessionStorage.setItem(FOCUS_KEY, focusId)
 }
 
 export function restoreCollectionScroll() {
@@ -49,7 +49,8 @@ export function restoreCollectionScroll() {
   }
   const id = sessionStorage.getItem(FOCUS_KEY)
   if (id) {
-    const node = document.getElementById(`crate-cover-${id}`)
+    const node =
+      document.getElementById(id) ?? document.getElementById(`crate-cover-${id}`)
     node?.focus({ preventScroll: true })
     sessionStorage.removeItem(FOCUS_KEY)
   }

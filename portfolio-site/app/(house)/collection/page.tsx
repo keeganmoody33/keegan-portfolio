@@ -1,7 +1,8 @@
-import CollectionGrid from '@/components/house/CollectionGrid'
+import CollectionCrate from '@/components/house/CollectionCrate'
 import DiscogsCredit from '@/components/house/DiscogsCredit'
 import { getSleeveBySlug } from '@/lib/catalog'
 import { DISCOGS_COLLECTION_PAGE, fetchFullCollection } from '@/lib/discogs'
+import { pickListedId } from '@/lib/shuffle'
 import type { Metadata } from 'next'
 import { houseMetadata } from '@/lib/metadata'
 
@@ -39,6 +40,8 @@ export default async function CollectionPage() {
     unavailable = true
   }
 
+  const pullOneId = pickListedId(releases)
+
   return (
     <div className="px-6 py-12 sm:px-10">
       <p className="house-meta">crate · lf-00 · issued</p>
@@ -59,7 +62,10 @@ export default async function CollectionPage() {
         <p className="mt-8 font-mono text-sm text-[var(--house-dim)]">{CRATE_UNAVAILABLE}</p>
       )}
 
-      <CollectionGrid releases={releases} />
+      <CollectionCrate
+        releases={releases}
+        pullOneHref={pullOneId == null ? null : `/collection/${pullOneId}`}
+      />
       <div className="mt-8">
         <DiscogsCredit href={DISCOGS_COLLECTION_PAGE} />
       </div>

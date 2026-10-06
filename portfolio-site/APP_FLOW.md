@@ -15,7 +15,7 @@
 | `/`              | `app/(house)/page.tsx`               | House title card + crate (Server Component). The last `o` in the wordmark `from` is a static `LogoMark` (owner line-only PNG geometry; `variant="line"` — ink strokes, no fills; house palette fills on hold; no `LogoGlobe`, no spin) at Chakra Petch x-height on the alphabetic baseline; there is no standalone coin above the wordmark. Wordmark (`HouseWordmark`, Chakra Petch) entrance is a 700ms opacity fade. HouseFooter does not render the Motion switch while the o is static; `MotionSwitch.tsx`, head bootstrap, and pause CSS stay in the repo. Nameplate and Hathaway SVGs are not mounted. No page turntable. No return-visit redirect. |
 | `/catalog`       | `app/(house)/catalog/page.tsx`       | Crate permalink (same spines as `/`)                            |
 | `/catalog/[slug]`| `app/(house)/catalog/[slug]/page.tsx`| Sleeve (cover, liner, tracks). Unknown slugs 404.               |
-| `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate (ISR 300s; durable last-good in Redis when configured). Cover click opens `/collection/[releaseId]`. |
+| `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate (ISR 300s; durable last-good in Redis when configured). Cover click opens `/collection/[releaseId]`. Under the `{n} releases` line: **shuffle** (client Fisher-Yates of the whole grid; reload restores ISR order; no server cost) and **pull one** (random listed id → existing overlay/route). |
 | `/collection/[releaseId]` | `app/(house)/collection/[releaseId]/page.tsx` | Record detail (overview / tracks). Intercepting overlay at `@detail/(.)[releaseId]` when opened from the grid; full page on direct visit / refresh. |
 | `/legal`         | `app/(house)/legal/page.tsx`         | Entity + long about + Data sources (Discogs API non-affiliation). Markdown twin `/legal.md`. Organization JSON-LD is not a /legal twin. |
 | `/icon.svg`      | `app/icon.svg`                       | Site icon; `prefers-color-scheme` stroke. Older line-mark — left untouched this pass (follow-up). Applies to house and person. |
@@ -301,11 +301,11 @@ Land on /keeganmoody33
 
 **Steps:**
 
-1. Grid link saves scroll/focus in sessionStorage (`lf:collection:scroll`, `lf:collection:focus`) and routes to `/collection/{releaseId}` with `scroll={false}`.
+1. Grid link saves scroll/focus in sessionStorage (`lf:collection:scroll`, `lf:collection:focus` as a DOM id — `#crate-cover-{id}` or `#crate-pull-one`) and routes to `/collection/{releaseId}` with `scroll={false}`.
 2. From the grid, the intercepting overlay (`@detail/(.)[releaseId]`) covers the crate. Direct visit or refresh renders the full page.
 3. Overview is the default tab: sourced description (omit if none), fact rows (label, catno, format, country, released — drop a missing field), a few stored sample/credit connections.
 4. Tracks tab lists the owned pressing in Discogs order (headings are labels, not buttons; mix titles stay distinct). Both tab panels stay mounted; the inactive one is `hidden` with `tabIndex={0}` on each panel and the house 2px ink focus outline (not Chrome’s default rounded ring). A house-meta coverage line reports matched-track / credit / sample-relationship counts separately. Selecting a playable track paints that title ink (others muted) and expands stored credits, samples from, and sampled in (`aria-expanded` / `aria-controls` on the row). The extras block is headed by the track title as an `h2`, then `h3` section labels.
-5. Overlay keyboard: first Escape clears a selected track; the second Escape (or close / collection) calls `router.back()`. Overlay unmount restores focus to `#crate-cover-{id}` after dropping `inert` on the grid (id saved in `saveCollectionScroll`). While the overlay is open, the skip link, header, footer, and `[data-collection-root]` are `inert` so Tab cannot leave the dialog through `.house-skip`. Overlay autofocuses `collection`. Page mode (direct visit / refresh): do not autofocus `collection`; Escape (after clearing a selected track) and close always `router.push('/collection')` — never `history.back()` — then focus `main#house-content` (`tabIndex={-1}`; `#house-content:focus-visible { outline: none }`). Grid covers use `alt=""`; the detail cover keeps the meaningful alt. HouseShell has a visually hidden skip-to-content link (`#house-content`). Track rows use `aria-expanded` / `aria-controls` only (no `aria-pressed`).
+5. Overlay keyboard: first Escape clears a selected track; the second Escape (or close / collection) calls `router.back()`. Overlay unmount restores focus to the saved element (`#crate-cover-{id}` from a cover, `#crate-pull-one` from pull one) after dropping `inert` on the grid. While the overlay is open, the skip link, header, footer, and `[data-collection-root]` are `inert` so Tab cannot leave the dialog through `.house-skip`. Overlay autofocuses `collection`. Page mode (direct visit / refresh): do not autofocus `collection`; Escape (after clearing a selected track) and close always `router.push('/collection')` — never `history.back()` — then focus `main#house-content` (`tabIndex={-1}`; `#house-content:focus-visible { outline: none }`). Grid covers use `alt=""`; the detail cover keeps the meaningful alt. HouseShell has a visually hidden skip-to-content link (`#house-content`). Track rows use `aria-expanded` / `aria-controls` only (no `aria-pressed`).
 
 **Success state:** Stored pressing facts, tracklist, and MusicBrainz credits/samples. Cover is the same thumbnail as the grid (150px thumb stretched is an open LF Direction question — leave as-is).
 
@@ -314,6 +314,23 @@ Land on /keeganmoody33
 **Empty states:** Missing field drops its row (never `N/A` / `Unknown` / `—`). Empty section: `nothing on file yet`. No track picked: `pick a track for credits and samples`. Checked, no match (third empty state): **only** one dim mono lowercase line `{reason} · checked YYYY-MM-DD` (example: `no musicbrainz release for this pressing · checked 2026-10-05`) — no extra `nothing on file yet` under credits/samples or Overview connections. No guessing in the reason. Missing cover: `#242424` square with catno centered in house ink `#ececec` (13.1:1 on that square, not dim `#7a7a7a`). Title, artist, fact values, and placeholder catno use `overflow-wrap: anywhere`. Layout holds with hairlines; content fades in (`.house-fade`; instant under reduced motion). After the fact rows: lowercase `.house-source` `discogs` plus exact-case `.house-credit` `Data provided by Discogs.`, both linking the pressing URL (not discogs.com, no `nofollow`). `/collection` repeats the credit on the `{n} releases` line and again at the bottom of the grid, both to the lecturesfrom Discogs collection page. Source lines are lowercase 0.16em; the TOU credit is not lowercased; section labels stay uppercase `.house-meta`. The Discogs API non-affiliation / Zink Media trademark sentence lives on `/legal` Data sources (`/legal.md` twin), not in HouseFooter. Tab panels use the house 2px ink focus outline.
 
 **PostHog events:** `collection_record_open`, `collection_record_tab`, `collection_record_track`, `collection_record_close`
+
+---
+
+### 8b. Collection crate shuffle / pull one
+
+**Trigger:** On `/collection`, under the `{n} releases` count line (house mono uppercase text buttons: muted `#8a8a8a`, ink `#ececec` on focus, orange `#e23d00` on hover only). `min-h-6` (24px, WCAG 2.5.8). lowercase `lecturesfrom` only.
+
+**Steps:**
+
+1. **shuffle** (client button, hidden without JS): Fisher-Yates of the whole grid from the ISR listing. Each press reshuffles. Reload returns the ISR order. No server work; page stays `revalidate = 300`. Polite `aria-live` announces `shuffled`. Focus stays on the button. No animated reflow (`prefers-reduced-motion` or not).
+2. **pull one**: picks a random id from the listed `releaseId`s and routes to `/collection/{id}` with the existing overlay (from the grid) or full page (direct). Saves `#crate-pull-one` in `lf:collection:focus` so overlay Escape/`collection` restores that button. Keyboard uses the native link/button. Without JS, the control is a link to one id picked at ISR render (or omitted if the crate is empty).
+
+**Success state:** Grid tiles permute in place; pull one opens a listed record.
+
+**Error / empty:** No listed ids → controls omitted.
+
+**PostHog events:** `collection_shuffle`, `collection_pull_one` (and `collection_record_open` from pull one)
 
 ---
 

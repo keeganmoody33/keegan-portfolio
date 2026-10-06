@@ -145,6 +145,8 @@ ${sleeve?.notes ?? ''}
 
 ${countLine}
 
+shuffle and pull one live on the html crate only (client shuffle; pull one uses the overlay).
+
 do not dump the full album list into markdown. use:
 
 - html: ${SITE_URL}/collection
