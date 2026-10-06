@@ -149,6 +149,7 @@ export type CrateStore = {
   releaseEnrichLock(token: string): Promise<boolean>
   acquireVisitThrottle(ttlSeconds: number): Promise<boolean>
   markDead(letter: DeadLetter): Promise<void>
+  unmarkDead(releaseId: number): Promise<void>
   markUnresolved(letter: DeadLetter): Promise<void>
   getDead(): Promise<number[]>
   getUnresolved(): Promise<number[]>
@@ -209,7 +210,9 @@ function isDeadLetter(value: unknown): value is DeadLetter {
 function isBackfillState(value: unknown): value is BackfillState {
   if (!value || typeof value !== 'object') return false
   const record = value as BackfillState
-  return typeof record.cursor === 'number' && typeof record.status === 'string'
+  if (typeof record.cursor !== 'number' || typeof record.status !== 'string') return false
+  if (record.settled !== undefined && !Array.isArray(record.settled)) return false
+  return true
 }
 
 function positiveIds(releaseIds: number[]): number[] {
@@ -394,6 +397,10 @@ class RedisCrateStore implements CrateStore {
     pipeline.srem(this.keys.unresolved, String(letter.releaseId))
     pipeline.hset(this.keys.inspect, { [String(letter.releaseId)]: letter })
     await pipeline.exec()
+  }
+
+  async unmarkDead(releaseId: number): Promise<void> {
+    await this.writeRedis.srem(this.keys.dead, String(releaseId))
   }
 
   async markUnresolved(letter: DeadLetter): Promise<void> {
@@ -607,6 +614,9 @@ export function createMemoryCrateStore(
       store.dead.add(letter.releaseId)
       store.unresolved.delete(letter.releaseId)
       store.inspect.set(letter.releaseId, letter)
+    },
+    async unmarkDead(releaseId: number) {
+      store.dead.delete(releaseId)
     },
     async markUnresolved(letter: DeadLetter) {
       store.unresolved.add(letter.releaseId)

@@ -72,6 +72,8 @@ export const ENRICH_BUDGET_MS = 45_000
 export const ENRICH_TAKE_FLOOR_MS = 8_000
 export const WORKER_MAX_DURATION_MS = 60_000
 export const WORKER_DEADLINE_MARGIN_MS = 8_000
+export const DEADLINE_STOP_LIMIT = 3
+export const DEADLINE_BACKOFF_MS = ENRICH_TAKE_FLOOR_MS
 
 export function workerDeadlineMs(nowMs = Date.now()): number {
   return nowMs + WORKER_MAX_DURATION_MS - WORKER_DEADLINE_MARGIN_MS
@@ -79,6 +81,48 @@ export function workerDeadlineMs(nowMs = Date.now()): number {
 
 export function remainingBudgetMs(deadlineMs: number, nowMs: number): number {
   return Math.max(0, deadlineMs - nowMs)
+}
+
+export function deadlineBackoffMs(stopCount: number): number {
+  const n = Math.max(1, stopCount)
+  return Math.min(DEADLINE_BACKOFF_MS * 2 ** (n - 1), 60_000)
+}
+
+export async function applyDeadlineStop(
+  store: CrateStore,
+  releaseId: number,
+  nowMs: number
+): Promise<{ tooSlow: boolean; stops: number; retryAtMs: number }> {
+  const draft = await store.getDraftPressing(releaseId)
+  const live = draft ?? (await store.getPressing(releaseId))
+  const stops = (live?.checkpoint?.deadlineStops ?? 0) + 1
+  const retryAtMs = nowMs + deadlineBackoffMs(stops)
+  if (live) {
+    await store.setDraftPressing(
+      hydratePressing({
+        ...live,
+        checkpoint: {
+          stage: live.checkpoint?.stage ?? 'pressing',
+          researchCursor: live.checkpoint?.researchCursor ?? 0,
+          deadlineStops: stops,
+        },
+      })
+    )
+  }
+  if (stops >= DEADLINE_STOP_LIMIT) {
+    await store.markUnresolved({
+      releaseId,
+      kind: 'too_slow',
+      message: 'too slow',
+      attempts: 0,
+      at: isoFromMs(nowMs),
+      stage: 'queue',
+    })
+    await store.drop(releaseId)
+    return { tooSlow: true, stops, retryAtMs }
+  }
+  await store.nack(releaseId, retryAtMs)
+  return { tooSlow: false, stops, retryAtMs }
 }
 
 export class WorkerDeadlineError extends Error {
@@ -463,59 +507,88 @@ export async function enrichPressing(
     if (shouldFail(releaseId)) {
       throw new Error('Failed to enrich pressing')
     }
-    assertWithinWorkerDeadline(deps)
-    const detail = await fetchDetail(releaseId)
-    const facts = factsFromDiscogsDetail(detail)
-    let tracks = occurrencesFromDetail(detail)
-    const playable = tracks.filter(isPlayableOccurrence)
-    const identityShifted = identityChanged(previous, tracks)
-    const skipMatch = shouldSkipMatch(previous, identityShifted, Boolean(deps.forceRefresh))
+    const existingDraft = await deps.store.getDraftPressing(releaseId)
+    const hydratedDraft = existingDraft ? hydratePressing(existingDraft) : null
+    const remaining =
+      deps.deadlineMs == null ? Number.POSITIVE_INFINITY : remainingBudgetMs(deps.deadlineMs, nowMs)
+    const reuseDraft =
+      Boolean(hydratedDraft && storedPressingHasVisitorFacts(hydratedDraft) && !deps.forceRefresh)
 
-    const pressingDraft: StoredPressing = hydratePressing({
-      schemaVersion: CRATE_SCHEMA_VERSION,
-      releaseId,
-      entryInstanceIds,
-      facts,
-      factsSource: {
-        source: 'discogs',
-        sourceUrl: facts.discogsUrl,
-        providerId: String(releaseId),
-      },
-      description: sourcedDescription(detail.notes, facts.discogsUrl, {
-        previous: previous?.description ?? null,
+    if (remaining < ENRICH_TAKE_FLOOR_MS) {
+      throw new WorkerDeadlineError()
+    }
+
+    let facts: PressingFacts
+    let tracks: TrackOccurrence[]
+    let skipMatch: boolean
+    let pressingDraft: StoredPressing
+    let playable: TrackOccurrence[]
+
+    if (reuseDraft && hydratedDraft) {
+      pressingDraft = hydratedDraft
+      facts = pressingDraft.facts
+      tracks = pressingDraft.tracks
+      playable = tracks.filter(isPlayableOccurrence)
+      skipMatch = shouldSkipMatch(previous, false, Boolean(deps.forceRefresh))
+    } else {
+      assertWithinWorkerDeadline(deps)
+      const detail = await fetchDetail(releaseId)
+      facts = factsFromDiscogsDetail(detail)
+      tracks = occurrencesFromDetail(detail)
+      playable = tracks.filter(isPlayableOccurrence)
+      const identityShifted = identityChanged(previous, tracks)
+      skipMatch = shouldSkipMatch(previous, identityShifted, Boolean(deps.forceRefresh))
+
+      pressingDraft = hydratePressing({
+        schemaVersion: CRATE_SCHEMA_VERSION,
         releaseId,
-      }),
-      tracks: skipMatch ? adoptPriorRecordings(tracks, previous?.tracks) : tracks,
-      mbRelease: skipMatch && previous
-        ? previous.mbRelease
-        : {
-            mbid: null,
-            url: null,
-            matchStatus: 'pending',
-            confidence: 0,
-            reason: 'queued for matching',
-          },
-      recordings: skipMatch && previous ? { ...previous.recordings } : {},
-      provenance: {
-        sourceUrls: [facts.discogsUrl],
-        matchStatus: skipMatch && previous ? previous.provenance.matchStatus : 'pending',
-        confidence: skipMatch && previous ? previous.provenance.confidence : 0,
-        reason: skipMatch && previous ? previous.provenance.reason : 'queued for matching',
-        checkedAt: nowIso,
-        refreshAfter: isoFromMs(nowMs + SUCCESS_REFRESH_MS),
-        lastError: null,
-        verifiedAt: nowIso,
-        lastAttemptAt: nowIso,
-      },
-      lifecycles: {
-        pressing: touchVerified(priorCycles.pressing, nowIso),
-        match: priorCycles.match,
-        research: priorCycles.research,
-      },
-      coverage: { tracks: playable.length, matched: 0, withCredits: 0, withSamples: 0 },
-      checkpoint: { stage: skipMatch ? 'research' : 'match', researchCursor: previous?.checkpoint?.researchCursor ?? 0 },
-    })
-    await deps.store.setDraftPressing(pressingDraft)
+        entryInstanceIds,
+        facts,
+        factsSource: {
+          source: 'discogs',
+          sourceUrl: facts.discogsUrl,
+          providerId: String(releaseId),
+        },
+        description: sourcedDescription(detail.notes, facts.discogsUrl, {
+          previous: previous?.description ?? null,
+          releaseId,
+        }),
+        tracks: skipMatch ? adoptPriorRecordings(tracks, previous?.tracks) : tracks,
+        mbRelease: skipMatch && previous
+          ? previous.mbRelease
+          : {
+              mbid: null,
+              url: null,
+              matchStatus: 'pending',
+              confidence: 0,
+              reason: 'queued for matching',
+            },
+        recordings: skipMatch && previous ? { ...previous.recordings } : {},
+        provenance: {
+          sourceUrls: [facts.discogsUrl],
+          matchStatus: skipMatch && previous ? previous.provenance.matchStatus : 'pending',
+          confidence: skipMatch && previous ? previous.provenance.confidence : 0,
+          reason: skipMatch && previous ? previous.provenance.reason : 'queued for matching',
+          checkedAt: nowIso,
+          refreshAfter: isoFromMs(nowMs + SUCCESS_REFRESH_MS),
+          lastError: null,
+          verifiedAt: previous?.provenance.verifiedAt ?? null,
+          lastAttemptAt: nowIso,
+        },
+        lifecycles: {
+          pressing: touchVerified(priorCycles.pressing, nowIso),
+          match: priorCycles.match,
+          research: priorCycles.research,
+        },
+        coverage: { tracks: playable.length, matched: 0, withCredits: 0, withSamples: 0 },
+        checkpoint: {
+          stage: skipMatch ? 'research' : 'match',
+          researchCursor: previous?.checkpoint?.researchCursor ?? 0,
+          deadlineStops: previous?.checkpoint?.deadlineStops,
+        },
+      })
+      await deps.store.setDraftPressing(pressingDraft)
+    }
 
     tracks = pressingDraft.tracks
     let mbRelease = pressingDraft.mbRelease
@@ -655,10 +728,7 @@ export async function enrichPressing(
         sourceUrl: facts.discogsUrl,
         providerId: String(releaseId),
       },
-      description: sourcedDescription(detail.notes, facts.discogsUrl, {
-        previous: previous?.description ?? null,
-        releaseId,
-      }),
+      description: pressingDraft.description,
       tracks,
       mbRelease,
       recordings,
@@ -670,11 +740,13 @@ export async function enrichPressing(
         checkedAt: nowIso,
         refreshAfter: isoFromMs(nowMs + SUCCESS_REFRESH_MS),
         lastError: null,
-        verifiedAt: nowIso,
+        verifiedAt: skipMatch ? previous?.provenance.verifiedAt ?? null : nowIso,
         lastAttemptAt: nowIso,
       },
       lifecycles: {
-        pressing: touchVerified(priorCycles.pressing, nowIso),
+        pressing: reuseDraft
+          ? pressingDraft.lifecycles?.pressing ?? touchVerified(priorCycles.pressing, nowIso)
+          : touchVerified(priorCycles.pressing, nowIso),
         match: skipMatch ? priorCycles.match : matchCycle,
         research: acceptedMbids.length === 0 ? priorCycles.research : touchVerified(researchCycle, nowIso),
       },
@@ -702,9 +774,11 @@ export async function enrichPressing(
       ? previous
       : hasPriorVerifiedRecord(storedPrevious)
         ? storedPrevious
-        : storedPressingHasVisitorFacts(draft)
-          ? draft
-          : previous
+        : storedPressingHasVisitorFacts(storedPrevious) && storedPrevious.provenance.lastError
+          ? storedPrevious
+          : storedPressingHasVisitorFacts(draft)
+            ? draft
+            : previous
     const preserved = preservePressingOnFailure(
       latest,
       nowMs,
@@ -754,7 +828,7 @@ export type EnrichQueueResult = {
 export function classifyQueueOutcome(pressing: StoredPressing): 'completed' | 'failed' | 'unresolved' {
   const kind = pressing.provenance.lastError?.kind
   if (kind === 'exhausted') return 'failed'
-  if (kind === 'auth' || kind === 'not_found') return 'unresolved'
+  if (kind === 'auth' || kind === 'not_found' || kind === 'too_slow') return 'unresolved'
   if (
     pressing.provenance.matchStatus === 'unmatched' ||
     pressing.provenance.matchStatus === 'ambiguous'
@@ -769,7 +843,7 @@ export function classifyQueueOutcome(pressing: StoredPressing): 'completed' | 'f
 export function isBackfillSettled(pressing: StoredPressing): boolean {
   const kind = pressing.provenance.lastError?.kind
   if (kind === 'auth' || kind === 'rate_limit' || kind === 'unavailable') return false
-  if (kind === 'exhausted' || kind === 'not_found') return true
+  if (kind === 'exhausted' || kind === 'not_found' || kind === 'too_slow') return true
   const outcome = classifyQueueOutcome(pressing)
   return outcome === 'completed' || outcome === 'unresolved' || outcome === 'failed'
 }
@@ -874,7 +948,7 @@ export async function processEnrichmentQueue(
         }
       } catch (error) {
         if (isWorkerDeadlineError(error)) {
-          await deps.store.nack(releaseId, now())
+          await applyDeadlineStop(deps.store, releaseId, now())
           break
         }
         const isAuth = isMusicBrainzAuthError(error) || isDiscogsAuthError(error)

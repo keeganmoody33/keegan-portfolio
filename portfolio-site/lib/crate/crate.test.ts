@@ -18,7 +18,7 @@ import {
 import { AUTH_RETRY_MS, isoFromMs, keepPriorMatch, nextBackoffMs, preservePressingOnFailure, shouldRefreshPressing } from './preserve.ts'
 import { createMemoryCrateStore, crateRedisKeys, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA, type CrateStore } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
-import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, WorkerDeadlineError, isBackfillSettled } from './enrich.ts'
+import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, WorkerDeadlineError, isBackfillSettled, deadlineBackoffMs, DEADLINE_STOP_LIMIT, ENRICH_TAKE_FLOOR_MS } from './enrich.ts'
 import { isUnusableDiscogsNotes, resolveDescription, withReadableDescription } from './description.ts'
 import { COLLECTION_KEEP_PATH, scheduleKeepPing } from './keep-ping.ts'
 import { runCrateEnrichCron } from './keep.ts'
@@ -32,7 +32,7 @@ import { factRows, pressingCheckedNoMatchLine } from './view.ts'
 import { cronSecretEqual } from './cron-auth.ts'
 import { coverageOf, isPlayableOccurrence, shouldQueuePressing } from './lifecycle.ts'
 import { errorForDiscogsStatus, probeDiscogsIdentity } from './discogs-release.ts'
-import { inspectCrate, runBackfill } from './backfill.ts'
+import { inspectCrate, remainingBackfillIds, runBackfill } from './backfill.ts'
 
 function pressingStub(overrides: Partial<StoredPressing> = {}): StoredPressing {
   return {
@@ -1080,6 +1080,54 @@ function countingMb(overrides: Partial<MusicBrainzClient> = {}): MusicBrainzClie
   return client
 }
 
+function collectionOf(
+  rows: Array<{ id: number; title: string; year: number; artist: string; label: string; catno: string }>
+) {
+  const collection = parseDurableCollection({
+    releases: rows.map((row, index) =>
+      mapRelease({
+        instance_id: index + 1,
+        basic_information: {
+          id: row.id,
+          title: row.title,
+          year: row.year,
+          artists: [{ name: row.artist }],
+          labels: [{ name: row.label, catno: row.catno }],
+          formats: [{ name: 'Vinyl' }],
+        },
+      })
+    ),
+    pagination: { page: 1, pages: 1, items: rows.length, perPage: 100 },
+  })
+  assert.ok(collection)
+  return collection
+}
+
+const BOOTSY_ROW = {
+  id: 573292,
+  title: 'Bootsy? Player Of The Year',
+  year: 1978,
+  artist: "Bootsy's Rubber Band",
+  label: 'Warner Bros. Records',
+  catno: 'BSK 3093',
+}
+const GOODIE_ROW = {
+  id: 240128,
+  title: 'Soul Food',
+  year: 1995,
+  artist: 'Goodie Mob',
+  label: 'LaFace Records',
+  catno: '73008-26017-1',
+}
+const LONELY_ROW = {
+  id: 9107339,
+  title: 'One Is A Lonesome Number',
+  year: 1972,
+  artist: 'Lonely',
+  label: 'Unknown',
+  catno: 'X',
+}
+
 describe('independent lifecycles (direction change)', () => {
   it('keeps headings as distinct non-playable occurrences', () => {
     const tracks = occurrencesFromDetail(bootsyDetail())
@@ -1317,7 +1365,7 @@ describe('independent lifecycles (direction change)', () => {
     assert.ok((live?.tracks.length ?? 0) > 0)
   })
 
-  it('keeps Discogs facts and verifiedAt when MusicBrainz throws with no prior', async () => {
+  it('keeps Discogs facts without moving provenance.verifiedAt when MusicBrainz throws with no prior', async () => {
     const store = createMemoryCrateStore()
     const nowMs = Date.parse('2026-10-06T05:00:00.000Z')
     const result = await enrichPressing(9107339, {
@@ -1328,11 +1376,14 @@ describe('independent lifecycles (direction change)', () => {
     })
     assert.equal(result.facts.title, 'One Is A Lonesome Number')
     assert.ok(result.tracks.length > 0)
-    assert.equal(result.provenance.verifiedAt, '2026-10-06T05:00:00.000Z')
+    assert.equal(result.provenance.verifiedAt, null)
+    assert.equal(result.lifecycles?.pressing.verifiedAt, '2026-10-06T05:00:00.000Z')
     assert.equal(result.provenance.lastError?.kind, 'unavailable')
+    assert.equal(result.provenance.lastAttemptAt, '2026-10-06T05:00:00.000Z')
     const stored = await store.getPressing(9107339)
     assert.equal(stored?.facts.title, 'One Is A Lonesome Number')
-    assert.equal(stored?.provenance.verifiedAt, '2026-10-06T05:00:00.000Z')
+    assert.equal(stored?.provenance.verifiedAt, null)
+    assert.equal(stored?.lifecycles?.pressing.verifiedAt, '2026-10-06T05:00:00.000Z')
     assert.ok((stored?.tracks.length ?? 0) > 0)
     assert.equal(store.drafts[9107339], undefined)
   })
@@ -1387,9 +1438,9 @@ describe('independent lifecycles (direction change)', () => {
         enrichPressing(9107339, {
           store,
           now: () => nowMs,
-          deadlineMs: nowMs + 1,
+          deadlineMs: nowMs + ENRICH_TAKE_FLOOR_MS + 1,
           fetchDiscogs: async () => {
-            nowMs += 5_000
+            nowMs += ENRICH_TAKE_FLOOR_MS + 5_000
             return lonelyDetail()
           },
           mb,
@@ -1401,24 +1452,22 @@ describe('independent lifecycles (direction change)', () => {
     assert.equal(store.drafts[9107339]?.facts.title, 'One Is A Lonesome Number')
   })
 
-  it('nacks six deadline stops without counting attempts or dying', async () => {
+  it('backs off deadline nacks and marks too_slow after N stops without counting attempts', async () => {
     const store = createMemoryCrateStore({ queue: [9107339] })
-    let nowMs = Date.parse('2026-10-06T05:00:00.000Z')
-    let mbCalled = 0
+    let clock = Date.parse('2026-10-06T05:00:00.000Z')
+    let discogsCalls = 0
     const mb = createMusicBrainzClientForTests()
-    mb.lookupDiscogsReleaseUrl = async () => {
-      mbCalled += 1
-      return []
-    }
-    for (let i = 0; i < 6; i += 1) {
+    mb.lookupDiscogsReleaseUrl = async () => []
+    for (let i = 0; i < DEADLINE_STOP_LIMIT; i += 1) {
       const result = await processEnrichmentQueue(
         {
           store,
-          now: () => nowMs,
-          deadlineMs: nowMs + 1,
+          now: () => clock,
+          deadlineMs: i === 0 ? clock + ENRICH_TAKE_FLOOR_MS + 1 : clock + 100,
           takeFloorMs: 0,
           fetchDiscogs: async () => {
-            nowMs += 5_000
+            discogsCalls += 1
+            clock += ENRICH_TAKE_FLOOR_MS + 5_000
             return lonelyDetail()
           },
           mb,
@@ -1427,12 +1476,97 @@ describe('independent lifecycles (direction change)', () => {
       )
       assert.deepEqual(result.processed, [])
       assert.deepEqual(result.failed, [])
-      nowMs += 1
+      const live = await store.getPressing(9107339)
+      assert.equal(live, null)
+      if (i < DEADLINE_STOP_LIMIT - 1) {
+        const queued = store.queue.find((row) => row.id === 9107339)
+        assert.ok(queued)
+        assert.ok(queued.score > clock)
+        clock = queued.score
+      }
     }
-    assert.equal(mbCalled, 0)
+    assert.equal(discogsCalls, 1)
     assert.deepEqual(await store.getDead(), [])
-    assert.equal(await store.getPressing(9107339), null)
-    assert.ok((await store.getQueue()).includes(9107339))
+    assert.ok((await store.getUnresolved()).includes(9107339))
+    assert.equal(
+      (await store.getInspect()).some(
+        (row) =>
+          row.releaseId === 9107339 &&
+          row.kind === 'too_slow' &&
+          row.message === 'too slow' &&
+          row.attempts === 0
+      ),
+      true
+    )
+    assert.equal((await store.getQueue()).includes(9107339), false)
+  })
+
+  it('does not fetch Discogs when remaining budget is inside the take floor', async () => {
+    const store = createMemoryCrateStore({ queue: [9107339] })
+    const clock = Date.parse('2026-10-06T05:00:00.000Z')
+    let discogsCalls = 0
+    const result = await processEnrichmentQueue(
+      {
+        store,
+        now: () => clock,
+        deadlineMs: clock + 100,
+        takeFloorMs: 0,
+        fetchDiscogs: async () => {
+          discogsCalls += 1
+          return lonelyDetail()
+        },
+        mb: createMusicBrainzClientForTests(),
+      },
+      1
+    )
+    assert.equal(discogsCalls, 0)
+    assert.deepEqual(result.processed, [])
+    const queued = store.queue.find((row) => row.id === 9107339)
+    assert.equal(queued?.score, clock + deadlineBackoffMs(1))
+  })
+
+  it('reuses the Discogs draft on a later tick instead of fetching again', async () => {
+    const store = createMemoryCrateStore({ queue: [9107339] })
+    let clock = Date.parse('2026-10-06T05:00:00.000Z')
+    let discogsCalls = 0
+    await processEnrichmentQueue(
+      {
+        store,
+        now: () => clock,
+        deadlineMs: clock + ENRICH_TAKE_FLOOR_MS + 1,
+        takeFloorMs: 0,
+        fetchDiscogs: async () => {
+          discogsCalls += 1
+          clock += ENRICH_TAKE_FLOOR_MS + 5_000
+          return lonelyDetail()
+        },
+        mb: createMusicBrainzClientForTests(),
+      },
+      1
+    )
+    assert.equal(discogsCalls, 1)
+    assert.equal(store.drafts[9107339]?.facts.title, 'One Is A Lonesome Number')
+    const retryAt = store.queue.find((row) => row.id === 9107339)?.score
+    assert.ok(retryAt)
+    clock = retryAt
+    await processEnrichmentQueue(
+      {
+        store,
+        now: () => clock,
+        takeFloorMs: 0,
+        budgetMs: 45_000,
+        fetchDiscogs: async () => {
+          discogsCalls += 1
+          return lonelyDetail()
+        },
+        mb: createMusicBrainzClientForTests(),
+      },
+      1
+    )
+    assert.equal(discogsCalls, 1)
+    const stored = await store.getPressing(9107339)
+    assert.equal(stored?.facts.title, 'One Is A Lonesome Number')
+    assert.equal(stored?.provenance.lastError, null)
   })
 
   it('recovers a taken item after inflight expires without duplicating work', async () => {
@@ -1487,7 +1621,8 @@ describe('independent lifecycles (direction change)', () => {
     const dead = await store.getPressing(9107339)
     assert.equal(dead?.provenance.lastError?.kind, 'exhausted')
     const verifiedAt = dead?.provenance.verifiedAt
-    assert.ok(verifiedAt)
+    assert.equal(verifiedAt, null)
+    assert.equal(dead?.lifecycles?.pressing.verifiedAt, isoFromMs(Date.parse('2026-10-06T05:00:00.000Z')))
     assert.deepEqual(await store.enqueue([9107339], { nowMs: t, retry: true }), [9107339])
 
     let mbCalled = 0
@@ -1565,6 +1700,7 @@ describe('independent lifecycles (direction change)', () => {
     assert.equal(result.mbRelease.matchStatus, 'unmatched')
     assert.ok(result.tracks.every((track) => track.recording.matchStatus === 'ambiguous'))
     assert.equal(result.provenance.lastError, null)
+    assert.equal(result.provenance.verifiedAt, previous.provenance.verifiedAt ?? previous.provenance.checkedAt)
   })
 
   it('moves exhausted retries into the inspectable dead set', async () => {
@@ -1623,7 +1759,7 @@ describe('independent lifecycles (direction change)', () => {
       }
     }
     assert.deepEqual(attempts, [1, 2, 3, 4, 5, 5, 5])
-    assert.equal(firstVerified, '2026-10-06T05:00:00.000Z')
+    assert.equal(firstVerified, null)
     assert.deepEqual(await store.getDead(), [9107339])
     const stored = await store.getPressing(9107339)
     assert.equal(stored?.provenance.lastError?.kind, 'exhausted')
@@ -1851,36 +1987,10 @@ describe('resumable backfill checkpoints', () => {
     assert.deepEqual(await store.getQueue(), [240128])
   })
 
-  it('does not advance the cursor when a tick is unavailable', async () => {
+  it('nacks an unavailable id and continues to the next collection id', async () => {
     const store = createMemoryCrateStore()
-    const collection = parseDurableCollection({
-      releases: [
-        mapRelease({
-          instance_id: 1,
-          basic_information: {
-            id: 573292,
-            title: 'Bootsy? Player Of The Year',
-            year: 1978,
-            artists: [{ name: "Bootsy's Rubber Band" }],
-            labels: [{ name: 'Warner Bros. Records', catno: 'BSK 3093' }],
-            formats: [{ name: 'Vinyl' }],
-          },
-        }),
-        mapRelease({
-          instance_id: 2,
-          basic_information: {
-            id: 240128,
-            title: 'Soul Food',
-            year: 1995,
-            artists: [{ name: 'Goodie Mob' }],
-            labels: [{ name: 'LaFace Records', catno: '73008-26017-1' }],
-            formats: [{ name: 'Vinyl' }],
-          },
-        }),
-      ],
-      pagination: { page: 1, pages: 1, items: 2, perPage: 100 },
-    })
-    assert.ok(collection)
+    const collection = collectionOf([BOOTSY_ROW, GOODIE_ROW])
+    let fetches: number[] = []
     const result = await runBackfill(
       {
         store,
@@ -1888,21 +1998,153 @@ describe('resumable backfill checkpoints', () => {
         now: () => 60_000,
         takeFloorMs: 0,
         budgetMs: 45_000,
-        fetchDiscogs: async () => {
-          throw new Error('discogs down')
+        fetchDiscogs: async (releaseId) => {
+          fetches.push(releaseId)
+          if (releaseId === 573292) throw new Error('discogs down')
+          return {
+            ...lonelyDetail(),
+            id: releaseId,
+            discogsUrl: `https://www.discogs.com/release/${releaseId}`,
+          }
+        },
+        mb: createMusicBrainzClientForTests(),
+      },
+      { limit: 2 }
+    )
+    const stored = await store.getPressing(573292)
+    assert.equal(stored?.provenance.lastError?.kind, 'unavailable')
+    assert.equal(isBackfillSettled(stored!), false)
+    assert.deepEqual(fetches, [573292, 240128])
+    assert.ok(result.backfill.settled?.includes(240128))
+    assert.equal(result.backfill.settled?.includes(573292), false)
+    assert.equal(result.remaining, 1)
+    assert.equal(result.remainingIsEstimate, false)
+    assert.equal(result.completedThis, 1)
+    const retryAt = Date.parse(stored?.provenance.refreshAfter ?? '')
+    assert.ok(Number.isFinite(retryAt) && retryAt > 60_000)
+    const queued = store.queue.find((row) => row.id === 573292)
+    assert.equal(queued?.score, retryAt)
+
+    const second = await runBackfill(
+      {
+        store,
+        collection,
+        now: () => 60_001,
+        takeFloorMs: 0,
+        budgetMs: 45_000,
+        fetchDiscogs: async (releaseId) => {
+          fetches.push(releaseId)
+          throw new Error('should not refetch backed-off id')
+        },
+        mb: createMusicBrainzClientForTests(),
+      },
+      { limit: 2 }
+    )
+    assert.equal(fetches.includes(573292) && fetches.filter((id) => id === 573292).length, 1)
+    assert.equal(second.processed.includes(573292), false)
+    assert.equal(second.remaining, 1)
+  })
+
+  it('uses a settled-id set so added and removed ids are neither skipped nor double-run', async () => {
+    const store = createMemoryCrateStore()
+    const first = await runBackfill(
+      {
+        store,
+        collection: collectionOf([BOOTSY_ROW, GOODIE_ROW]),
+        now: () => 60_000,
+        takeFloorMs: 0,
+        budgetMs: 45_000,
+        fetchDiscogs: async () => bootsyDetail(),
+        mb: createMusicBrainzClientForTests(),
+      },
+      { limit: 1 }
+    )
+    assert.deepEqual(first.backfill.settled, [573292])
+    assert.equal(first.remaining, 1)
+    assert.equal(first.remainingIsEstimate, false)
+    const ran: number[] = []
+    const second = await runBackfill(
+      {
+        store,
+        collection: collectionOf([LONELY_ROW, BOOTSY_ROW]),
+        now: () => 120_000,
+        takeFloorMs: 0,
+        budgetMs: 45_000,
+        fetchDiscogs: async (releaseId) => {
+          ran.push(releaseId)
+          return {
+            ...lonelyDetail(),
+            id: releaseId,
+            discogsUrl: `https://www.discogs.com/release/${releaseId}`,
+          }
         },
         mb: createMusicBrainzClientForTests(),
       },
       { limit: 1 }
     )
-    const stored = await store.getPressing(573292)
-    assert.equal(stored?.provenance.lastError?.kind, 'unavailable')
-    assert.equal(isBackfillSettled(stored!), false)
-    assert.equal(result.backfill.cursor, 0)
-    assert.equal(result.remaining, 2)
-    assert.equal(result.remainingIsEstimate, false)
-    assert.equal(result.completedThis, 0)
-    assert.equal(result.failedThis, 0)
+    assert.deepEqual(ran, [9107339])
+    assert.equal(second.backfill.settled?.includes(573292), true)
+    assert.equal(second.backfill.settled?.includes(9107339), true)
+    assert.equal(second.remaining, 0)
+    assert.equal(second.remainingIsEstimate, false)
+    assert.deepEqual(
+      remainingBackfillIds([9107339, 573292], second.backfill.settled ?? [], []),
+      []
+    )
+  })
+
+  it('skips dead ids unless retry is explicit, then unmarks and acks on success', async () => {
+    const store = createMemoryCrateStore()
+    await store.enqueue([573292], { nowMs: 1_000 })
+    await store.markDead({
+      releaseId: 573292,
+      kind: 'exhausted',
+      message: 'dead',
+      attempts: 5,
+      at: isoFromMs(1_000),
+      stage: 'match',
+    })
+    const skipped = await runBackfill(
+      {
+        store,
+        collection: collectionOf([BOOTSY_ROW, GOODIE_ROW]),
+        now: () => 60_000,
+        takeFloorMs: 0,
+        budgetMs: 45_000,
+        fetchDiscogs: async (releaseId) => {
+          if (releaseId === 573292) throw new Error('dead id should not enrich')
+          return {
+            ...lonelyDetail(),
+            id: releaseId,
+            discogsUrl: `https://www.discogs.com/release/${releaseId}`,
+          }
+        },
+        mb: createMusicBrainzClientForTests(),
+      },
+      { limit: 2 }
+    )
+    assert.equal(skipped.processed.includes(573292), false)
+    assert.ok(skipped.processed.includes(240128))
+    assert.deepEqual(await store.getDead(), [573292])
+    assert.ok((await store.getQueue()).includes(573292))
+    assert.equal(skipped.remaining, 0)
+    assert.equal(skipped.remainingIsEstimate, false)
+
+    const retried = await runBackfill(
+      {
+        store,
+        collection: collectionOf([BOOTSY_ROW, GOODIE_ROW]),
+        now: () => 120_000,
+        takeFloorMs: 0,
+        budgetMs: 45_000,
+        fetchDiscogs: async () => bootsyDetail(),
+        mb: createMusicBrainzClientForTests(),
+      },
+      { limit: 1, retry: true }
+    )
+    assert.deepEqual(retried.processed, [573292])
+    assert.deepEqual(await store.getDead(), [])
+    assert.equal((await store.getQueue()).includes(573292), false)
   })
 })
 

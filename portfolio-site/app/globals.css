@@ -309,8 +309,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
 }
 
 #house-content:focus-visible {
-  outline: 2px solid var(--house-ink);
-  outline-offset: 2px;
+  outline: none;
 }
 
 [role='tabpanel']:focus {

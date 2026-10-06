@@ -221,7 +221,10 @@ export function hydratePressing(pressing: StoredPressing): StoredPressing {
   const coverage = pressing.coverage ?? coverageOf({ tracks, recordings: pressing.recordings })
   const provenance: Provenance = {
     ...pressing.provenance,
-    verifiedAt: pressing.provenance.verifiedAt ?? successfulVerifiedAt(pressing.provenance),
+    verifiedAt:
+      pressing.provenance.verifiedAt !== undefined
+        ? pressing.provenance.verifiedAt
+        : successfulVerifiedAt(pressing.provenance),
     lastAttemptAt: pressing.provenance.lastAttemptAt ?? pressing.provenance.checkedAt,
   }
   return {

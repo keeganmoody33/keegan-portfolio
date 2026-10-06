@@ -20,6 +20,7 @@ export type DurableErrorKind =
   | 'auth'
   | 'ambiguous'
   | 'exhausted'
+  | 'too_slow'
 
 export type LifecycleName = 'pressing' | 'match' | 'research'
 
@@ -53,6 +54,7 @@ export type Coverage = {
 export type CrateCheckpoint = {
   stage: LifecycleName
   researchCursor: number
+  deadlineStops?: number
 }
 
 export type SourcedRef = {
@@ -84,6 +86,7 @@ export type DeadLetter = {
 
 export type BackfillState = {
   cursor: number
+  settled?: number[]
   startedAt: string
   updatedAt: string
   completed: number

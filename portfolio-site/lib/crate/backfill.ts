@@ -4,6 +4,7 @@ import {
   ENRICH_BUDGET_MS,
   ENRICH_LOCK_SECONDS,
   ENRICH_TAKE_FLOOR_MS,
+  applyDeadlineStop,
   classifyQueueOutcome,
   enrichPressing,
   isBackfillSettled,
@@ -12,7 +13,7 @@ import {
 } from './enrich.ts'
 import { createMusicBrainzClient } from './musicbrainz.ts'
 import { crateRedisKeys, randomLockToken, type CrateStore } from './store.ts'
-import { isoFromMs, storedPressingHasVisitorFacts } from './preserve.ts'
+import { AUTH_RETRY_MS, isoFromMs, storedPressingHasVisitorFacts } from './preserve.ts'
 import type { BackfillState, DeadLetter, StoredPressing } from './types.ts'
 import type { DiscogsCollection } from '../discogs.ts'
 
@@ -118,6 +119,7 @@ export type BackfillResult = {
 function emptyBackfillPrevious(started: number): BackfillState {
   return {
     cursor: 0,
+    settled: [],
     startedAt: isoFromMs(started),
     updatedAt: isoFromMs(started),
     completed: 0,
@@ -129,34 +131,72 @@ function emptyBackfillPrevious(started: number): BackfillState {
   }
 }
 
+export function migrateSettledIds(previous: BackfillState, ids: number[]): number[] {
+  if (Array.isArray(previous.settled)) {
+    const seen = new Set<number>()
+    const settled: number[] = []
+    for (const id of previous.settled) {
+      if (Number.isInteger(id) && id > 0 && !seen.has(id)) {
+        settled.push(id)
+        seen.add(id)
+      }
+    }
+    return settled
+  }
+  return ids.slice(0, Math.max(0, previous.cursor))
+}
+
+export function remainingBackfillIds(
+  ids: number[],
+  settled: Iterable<number>,
+  dead: Iterable<number>,
+  retry = false
+): number[] {
+  const settledSet = new Set(settled)
+  const deadSet = retry ? new Set<number>() : new Set(dead)
+  return ids.filter((id) => !settledSet.has(id) && !deadSet.has(id))
+}
+
+function refreshAfterMs(pressing: StoredPressing | null): number {
+  if (!pressing?.provenance.refreshAfter) return NaN
+  return Date.parse(pressing.provenance.refreshAfter)
+}
+
 export async function runBackfill(
   deps: EnrichDeps & { collection: DiscogsCollection },
-  options: { limit?: number } = {}
+  options: { limit?: number; retry?: boolean } = {}
 ): Promise<BackfillResult> {
   const store = deps.store
   const now = deps.now ?? Date.now
   const started = now()
   const ids = collectionReleaseIds(deps.collection)
   const previous = (await store.getBackfill()) ?? emptyBackfillPrevious(started)
-  const cursor = previous.cursor
+  const settled = new Set(migrateSettledIds(previous, ids))
   const prefix = crateRedisKeys().prefix
 
-  const snapshotCounts = async (nextCursor: number, extra: Partial<BackfillResult> & Pick<
-    BackfillResult,
-    'processed' | 'completedThis' | 'failedThis' | 'unresolvedThis' | 'skipped' | 'stoppedOnAuth' | 'stoppedOnRateLimit'
-  >, discogsThis: number, mbThis: number): Promise<BackfillResult> => {
+  const snapshotCounts = async (
+    extra: Partial<BackfillResult> & Pick<
+      BackfillResult,
+      'processed' | 'completedThis' | 'failedThis' | 'unresolvedThis' | 'skipped' | 'stoppedOnAuth' | 'stoppedOnRateLimit'
+    >,
+    discogsThis: number,
+    mbThis: number
+  ): Promise<BackfillResult> => {
     const dead = await store.getDead()
     const unresolvedSet = await store.getUnresolved()
     const elapsedMs = Math.max(1, now() - started)
     const minutes = elapsedMs / 60_000
-    const remaining = Math.max(0, ids.length - nextCursor)
+    const remainingList = remainingBackfillIds(ids, settled, dead, options.retry)
+    const remaining = remainingList.length
     const completedThis = extra.completedThis
     const completed = previous.completed + completedThis
     const releasesPerMin = completedThis > 0 ? completedThis / minutes : 0
     const estimatedRemainingMs =
       releasesPerMin > 0 ? Math.round((remaining / releasesPerMin) * 60_000) : null
+    const settledList = [...settled]
     const backfill: BackfillState = {
-      cursor: nextCursor,
+      cursor: settledList.length,
+      settled: settledList,
       startedAt: previous.startedAt,
       updatedAt: isoFromMs(now()),
       completed,
@@ -198,28 +238,27 @@ export async function runBackfill(
     }
   }
 
-  if (cursor >= ids.length) {
-    return snapshotCounts(
-      cursor,
-      {
-        processed: [],
-        completedThis: 0,
-        failedThis: 0,
-        unresolvedThis: 0,
-        skipped: false,
-        stoppedOnAuth: false,
-        stoppedOnRateLimit: false,
-      },
-      0,
-      0
-    )
+  const emptyExtra = {
+    processed: [] as number[],
+    completedThis: 0,
+    failedThis: 0,
+    unresolvedThis: 0,
+    skipped: false,
+    stoppedOnAuth: false,
+    stoppedOnRateLimit: false,
+  }
+
+  const remainingNow = remainingBackfillIds(ids, settled, await store.getDead(), options.retry)
+  if (remainingNow.length === 0) {
+    return snapshotCounts(emptyExtra, 0, 0)
   }
 
   const token = deps.lockToken ?? randomLockToken()
   const lockTtl = deps.lockTtlSeconds ?? ENRICH_LOCK_SECONDS
   const locked = await store.acquireEnrichLock(lockTtl, token)
   if (!locked) {
-    const remaining = Math.max(0, ids.length - cursor)
+    const dead = await store.getDead()
+    const remaining = remainingBackfillIds(ids, settled, dead, options.retry).length
     const elapsedMs = Math.max(1, now() - started)
     return {
       prefix,
@@ -239,7 +278,7 @@ export async function runBackfill(
       stoppedOnAuth: false,
       stoppedOnRateLimit: false,
       skipped: true,
-      backfill: previous,
+      backfill: { ...previous, settled: [...settled], cursor: settled.size },
       completedThis: 0,
       failedThis: 0,
       unresolvedThis: 0,
@@ -261,15 +300,27 @@ export async function runBackfill(
   let completedThis = 0
   let failedThis = 0
   let unresolvedThis = 0
-  let nextCursor = cursor
   let stoppedOnAuth = false
   let stoppedOnRateLimit = false
+  const deadAtStart = new Set(await store.getDead())
 
   try {
-    while (processed.length < cap && nextCursor < ids.length) {
+    for (const releaseId of ids) {
+      if (processed.length >= cap) break
       if (now() + takeFloorMs >= deadlineMs) break
-      const releaseId = ids[nextCursor]
-      if (releaseId == null) break
+      if (settled.has(releaseId)) continue
+      if (!options.retry && deadAtStart.has(releaseId)) continue
+
+      const stored = await store.getPressing(releaseId)
+      const retryAt = refreshAfterMs(stored)
+      if (
+        stored?.provenance.lastError &&
+        Number.isFinite(retryAt) &&
+        retryAt > now()
+      ) {
+        continue
+      }
+
       try {
         const pressing = await enrichPressing(releaseId, {
           ...deps,
@@ -281,22 +332,40 @@ export async function runBackfill(
         const kind = pressing.provenance.lastError?.kind
         if (kind === 'auth') {
           stoppedOnAuth = true
+          await store.nack(releaseId, now() + AUTH_RETRY_MS)
           break
         }
         if (kind === 'rate_limit') {
           stoppedOnRateLimit = true
+          const rateRetry = Date.parse(pressing.provenance.refreshAfter)
+          await store.nack(releaseId, Number.isFinite(rateRetry) ? rateRetry : now() + 60 * 60 * 1000)
           break
         }
         if (!isBackfillSettled(pressing)) {
-          break
+          const nackAt = Date.parse(pressing.provenance.refreshAfter)
+          await store.nack(releaseId, Number.isFinite(nackAt) ? nackAt : now() + 60 * 60 * 1000)
+          continue
         }
         const outcome = classifyQueueOutcome(pressing)
-        if (outcome === 'completed') completedThis += 1
-        else if (kind === 'exhausted' || outcome === 'failed') failedThis += 1
-        else unresolvedThis += 1
-        nextCursor += 1
+        if (outcome === 'completed') {
+          completedThis += 1
+          await store.unmarkDead(releaseId)
+          await store.ack(releaseId)
+          deadAtStart.delete(releaseId)
+        } else if (kind === 'exhausted' || outcome === 'failed') {
+          failedThis += 1
+        } else {
+          unresolvedThis += 1
+        }
+        settled.add(releaseId)
       } catch (error) {
         if (isWorkerDeadlineError(error)) {
+          const stop = await applyDeadlineStop(store, releaseId, now())
+          if (stop.tooSlow) {
+            processed.push(releaseId)
+            unresolvedThis += 1
+            settled.add(releaseId)
+          }
           break
         }
         processed.push(releaseId)
@@ -313,7 +382,6 @@ export async function runBackfill(
 
   const mbThis = Math.max(0, mb.requestCount - mbStart)
   return snapshotCounts(
-    nextCursor,
     {
       processed,
       completedThis,

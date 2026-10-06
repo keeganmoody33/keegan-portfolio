@@ -170,7 +170,7 @@ export default function RecordDetail({
 
   const shell = (
     <article
-      className="house-fade px-6 py-12 sm:px-10"
+      className={`${mode === 'overlay' ? '' : 'house-fade '}px-6 py-12 sm:px-10`}
       aria-labelledby={titleId}
       data-crate-source={crateSource}
       onAnimationEnd={(event) => {
@@ -178,7 +178,7 @@ export default function RecordDetail({
         event.currentTarget.style.opacity = '1'
       }}
     >
-      <p className="house-meta mb-8">
+      <p className={`house-meta mb-8${mode === 'overlay' ? ' opacity-100' : ''}`}>
         {mode === 'overlay' ? (
           <button
             type="button"

@@ -185,7 +185,12 @@ export function preservePressingOnFailure(
     ...previous.provenance,
     checkedAt: nowIso,
     lastAttemptAt: nowIso,
-    verifiedAt: previous.provenance.verifiedAt ?? (previous.provenance.lastError ? null : previous.provenance.checkedAt),
+    verifiedAt:
+      previous.provenance.verifiedAt !== undefined
+        ? previous.provenance.verifiedAt
+        : previous.provenance.lastError
+          ? null
+          : previous.provenance.checkedAt,
     lastError,
     refreshAfter: isoFromMs(nowMs + backoff),
     matchStatus: options.terminal || exhausted ? 'unmatched' : previous.provenance.matchStatus,
