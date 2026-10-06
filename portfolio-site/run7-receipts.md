@@ -1,9 +1,15 @@
 # Run #7 receipts — PR #50
 
-Produced for code SHA `b838a33f757c925d4ca3d90cf3f37b6b776b17ca` (LIVE preview below). This receipts file is committed on the same branch after those proofs.
-Preview `dpl_6HtLeLv8AEhBzAyYCTfxHVp3u5yi` READY, `githubCommitSha` matches.
+Items 1–7 LIVE proofs and first `npm test` 201/0 ran on code SHA `b838a33f757c925d4ca3d90cf3f37b6b776b17ca`.
+Preview `dpl_6HtLeLv8AEhBzAyYCTfxHVp3u5yi` READY.
 Host: `https://keegan-portfolio-content-9ci8a7nbl-groundskeep.vercel.app`
 Share: `https://keegan-portfolio-content-9ci8a7nbl-groundskeep.vercel.app/?_vercel_share=l8skJYmus8xewEZUsSSu8xXrcZL95A9j` (expires 2026-10-07 08:31:47 UTC)
+
+Keegan footer ask LIVE on SHA `dedfe2e226ef3ed4fcf227afd425b47bed196526`.
+Preview `dpl_FnLrGJSBHiDaqkqHuSfnUphbQFEo` READY, `githubCommitSha` matches.
+Host: `https://keegan-portfolio-content-96btypdsq-groundskeep.vercel.app`
+Share: `https://keegan-portfolio-content-96btypdsq-groundskeep.vercel.app/?_vercel_share=yTZLUs9vcxzZd7Zz2Ts1YwiML6D3XduJ` (expires 2026-10-07 09:57:13 UTC)
+
 Redis prefix on inspect / backfill / cleanup: `lf:preview:`
 `npm test`: 204 pass / 0 fail
 
@@ -104,14 +110,16 @@ Moved the Discogs API non-affiliation / Zink Media trademark sentence off `House
 
 | Proof | Kind | Result | Does not prove |
 | --- | --- | --- | --- |
-| Notice gone from HouseFooter; present on /legal + /legal.md | UNIT | `lib/discogs-notice.test.ts` | Does not prove production HTML until this SHA is live. |
-| Footer 375 / 1280, notice gone | LIVE | after this SHA deploys — `run7-footer-375.png`, `run7-footer-1280.png` | Does not prove Discogs terms counsel. |
-| /legal Data sources 375 / 1280 | LIVE | after this SHA deploys — `run7-legal-375.png`, `run7-legal-1280.png` | Does not prove `/legal.md` Accept negotiation in the browser. |
+| Notice gone from HouseFooter; present on /legal + /legal.md | UNIT + LIVE | `lib/discogs-notice.test.ts`. Live HTML `/legal` has Data sources + verbatim sentence in `--house-muted`. Live `/legal.md` has `## Data sources` + the same sentence. Collection and legal `<footer>` HTML has LLC / tagline / nav only (0 `Zink Media`). Collection still has `Data provided by Discogs.` (`.house-credit` ×2). Organization JSON-LD unchanged. | Does not prove Discogs terms counsel. |
+| Footer 375 / 1280, notice gone | LIVE | `run7-footer-375.png` (375×812) and `run7-footer-1280.png` (1280×800) on `/collection`. Credit remains above the hairline. Footer is LLC / tagline / ROOT CATALOG COLLECTION LEGAL. | Does not prove every other house route visually (HTML share is the same `HouseFooter`). |
+| /legal Data sources 375 / 1280 | LIVE | `run7-legal-375.png` (375×812) and `run7-legal-1280.png` (1280×800). Heading **Data sources**, muted verbatim notice, footer below without repeating it. | Does not prove `/legal.md` Accept negotiation in the browser (fetched as `text/markdown` separately). |
+
+Walkthrough: `run7_footer_legal_notice.mp4` — collection bottom (credit + footer, no notice) then LEGAL → Data sources.
 
 ---
 
 ## Artifact files
 
 - `run7-backfill-tick.json`, `run7-inspect-before.json`, `run7-inspect-after.json`, `run7-inspect-after-cleanup.json`, `run7-cleanup.json`
-- Screenshots: `collection-1280.png`, `collection-375.png`, `bootsy-tracks-hollywood-1280.png`, `bootsy-tracks-hollywood-375.png`, `mtume-tracks-1280.png`, `mtume-tracks-375.png` (plus `run7-*-top/hero/crop` viewport crops)
-- Video: `run7_preview_collection_detail.mp4` — 13s static hold of Mtume TRACKS on the preview; not a click-through (longer RecordScreen saves timed out)
+- Screenshots: `collection-1280.png`, `collection-375.png`, `bootsy-tracks-hollywood-1280.png`, `bootsy-tracks-hollywood-375.png`, `mtume-tracks-1280.png`, `mtume-tracks-375.png` (plus `run7-*-top/hero/crop` viewport crops); Keegan ask: `run7-footer-375.png`, `run7-footer-1280.png`, `run7-legal-375.png`, `run7-legal-1280.png` (true 375×812 / 1280×800)
+- Video: `run7_preview_collection_detail.mp4` — 13s static hold of Mtume TRACKS on the earlier preview; `run7_footer_legal_notice.mp4` — collection footer then /legal Data sources on `dedfe2e`
