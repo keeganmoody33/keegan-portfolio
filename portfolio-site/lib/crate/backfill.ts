@@ -1,8 +1,17 @@
 import { collectionReleaseIds } from './sync.ts'
 import { fetchDiscogsReleaseDetail } from './discogs-release.ts'
-import { processEnrichmentQueue, type EnrichDeps } from './enrich.ts'
+import {
+  ENRICH_BUDGET_MS,
+  ENRICH_LOCK_SECONDS,
+  ENRICH_TAKE_FLOOR_MS,
+  classifyQueueOutcome,
+  enrichPressing,
+  isBackfillSettled,
+  isWorkerDeadlineError,
+  type EnrichDeps,
+} from './enrich.ts'
 import { createMusicBrainzClient } from './musicbrainz.ts'
-import { crateRedisKeys, type CrateStore } from './store.ts'
+import { crateRedisKeys, randomLockToken, type CrateStore } from './store.ts'
 import { isoFromMs, storedPressingHasVisitorFacts } from './preserve.ts'
 import type { BackfillState, DeadLetter, StoredPressing } from './types.ts'
 import type { DiscogsCollection } from '../discogs.ts'
@@ -89,6 +98,7 @@ export type BackfillResult = {
   unresolved: number
   failed: number
   remaining: number
+  remainingIsEstimate: false
   elapsedMs: number
   releasesPerMin: number
   discogsRequestsPerMin: number
@@ -105,15 +115,8 @@ export type BackfillResult = {
   unresolvedThis: number
 }
 
-export async function runBackfill(
-  deps: EnrichDeps & { collection: DiscogsCollection },
-  options: { limit?: number } = {}
-): Promise<BackfillResult> {
-  const store = deps.store
-  const now = deps.now ?? Date.now
-  const started = now()
-  const ids = collectionReleaseIds(deps.collection)
-  const previous = (await store.getBackfill()) ?? {
+function emptyBackfillPrevious(started: number): BackfillState {
+  return {
     cursor: 0,
     startedAt: isoFromMs(started),
     updatedAt: isoFromMs(started),
@@ -122,12 +125,125 @@ export async function runBackfill(
     failed: 0,
     discogsRequests: 0,
     mbRequests: 0,
-    status: 'running' as const,
+    status: 'running',
   }
+}
+
+export async function runBackfill(
+  deps: EnrichDeps & { collection: DiscogsCollection },
+  options: { limit?: number } = {}
+): Promise<BackfillResult> {
+  const store = deps.store
+  const now = deps.now ?? Date.now
+  const started = now()
+  const ids = collectionReleaseIds(deps.collection)
+  const previous = (await store.getBackfill()) ?? emptyBackfillPrevious(started)
   const cursor = previous.cursor
-  const remainingIds = ids.slice(cursor)
-  if (remainingIds.length > 0) {
-    await store.enqueue(remainingIds, { front: false, nowMs: started })
+  const prefix = crateRedisKeys().prefix
+
+  const snapshotCounts = async (nextCursor: number, extra: Partial<BackfillResult> & Pick<
+    BackfillResult,
+    'processed' | 'completedThis' | 'failedThis' | 'unresolvedThis' | 'skipped' | 'stoppedOnAuth' | 'stoppedOnRateLimit'
+  >, discogsThis: number, mbThis: number): Promise<BackfillResult> => {
+    const dead = await store.getDead()
+    const unresolvedSet = await store.getUnresolved()
+    const elapsedMs = Math.max(1, now() - started)
+    const minutes = elapsedMs / 60_000
+    const remaining = Math.max(0, ids.length - nextCursor)
+    const completedThis = extra.completedThis
+    const completed = previous.completed + completedThis
+    const releasesPerMin = completedThis > 0 ? completedThis / minutes : 0
+    const estimatedRemainingMs =
+      releasesPerMin > 0 ? Math.round((remaining / releasesPerMin) * 60_000) : null
+    const backfill: BackfillState = {
+      cursor: nextCursor,
+      startedAt: previous.startedAt,
+      updatedAt: isoFromMs(now()),
+      completed,
+      unresolved: unresolvedSet.length,
+      failed: dead.length,
+      discogsRequests: previous.discogsRequests + discogsThis,
+      mbRequests: previous.mbRequests + mbThis,
+      status: extra.stoppedOnAuth
+        ? 'auth_stop'
+        : extra.stoppedOnRateLimit
+          ? 'rate_limit'
+          : remaining === 0
+            ? 'idle'
+            : 'running',
+    }
+    await store.setBackfill(backfill)
+    return {
+      prefix,
+      processed: extra.processed,
+      completed,
+      unresolved: unresolvedSet.length,
+      failed: dead.length,
+      remaining,
+      remainingIsEstimate: false,
+      elapsedMs,
+      releasesPerMin,
+      discogsRequestsPerMin: discogsThis / minutes,
+      mbRequestsPerMin: mbThis / minutes,
+      discogsRequests: discogsThis,
+      mbRequests: mbThis,
+      estimatedRemainingMs,
+      stoppedOnAuth: extra.stoppedOnAuth,
+      stoppedOnRateLimit: extra.stoppedOnRateLimit,
+      skipped: extra.skipped,
+      backfill,
+      completedThis,
+      failedThis: extra.failedThis,
+      unresolvedThis: extra.unresolvedThis,
+    }
+  }
+
+  if (cursor >= ids.length) {
+    return snapshotCounts(
+      cursor,
+      {
+        processed: [],
+        completedThis: 0,
+        failedThis: 0,
+        unresolvedThis: 0,
+        skipped: false,
+        stoppedOnAuth: false,
+        stoppedOnRateLimit: false,
+      },
+      0,
+      0
+    )
+  }
+
+  const token = deps.lockToken ?? randomLockToken()
+  const lockTtl = deps.lockTtlSeconds ?? ENRICH_LOCK_SECONDS
+  const locked = await store.acquireEnrichLock(lockTtl, token)
+  if (!locked) {
+    const remaining = Math.max(0, ids.length - cursor)
+    const elapsedMs = Math.max(1, now() - started)
+    return {
+      prefix,
+      processed: [],
+      completed: previous.completed,
+      unresolved: previous.unresolved,
+      failed: previous.failed,
+      remaining,
+      remainingIsEstimate: false,
+      elapsedMs,
+      releasesPerMin: 0,
+      discogsRequestsPerMin: 0,
+      mbRequestsPerMin: 0,
+      discogsRequests: 0,
+      mbRequests: 0,
+      estimatedRemainingMs: null,
+      stoppedOnAuth: false,
+      stoppedOnRateLimit: false,
+      skipped: true,
+      backfill: previous,
+      completedThis: 0,
+      failedThis: 0,
+      unresolvedThis: 0,
+    }
   }
 
   const mb = deps.mb ?? createMusicBrainzClient({ now: deps.now })
@@ -138,66 +254,76 @@ export async function runBackfill(
     return baseFetch(releaseId)
   }
   const mbStart = mb.requestCount
-  const result = await processEnrichmentQueue(
-    { ...deps, mb, fetchDiscogs: wrappedFetch, deadlineMs: deps.deadlineMs },
-    options.limit
-  )
+  const takeFloorMs = deps.takeFloorMs ?? ENRICH_TAKE_FLOOR_MS
+  const deadlineMs = deps.deadlineMs ?? started + (deps.budgetMs ?? ENRICH_BUDGET_MS)
+  const cap = options.limit ?? Number.POSITIVE_INFINITY
+  const processed: number[] = []
+  let completedThis = 0
+  let failedThis = 0
+  let unresolvedThis = 0
+  let nextCursor = cursor
+  let stoppedOnAuth = false
+  let stoppedOnRateLimit = false
+
+  try {
+    while (processed.length < cap && nextCursor < ids.length) {
+      if (now() + takeFloorMs >= deadlineMs) break
+      const releaseId = ids[nextCursor]
+      if (releaseId == null) break
+      try {
+        const pressing = await enrichPressing(releaseId, {
+          ...deps,
+          mb,
+          fetchDiscogs: wrappedFetch,
+          deadlineMs,
+        })
+        processed.push(releaseId)
+        const kind = pressing.provenance.lastError?.kind
+        if (kind === 'auth') {
+          stoppedOnAuth = true
+          break
+        }
+        if (kind === 'rate_limit') {
+          stoppedOnRateLimit = true
+          break
+        }
+        if (!isBackfillSettled(pressing)) {
+          break
+        }
+        const outcome = classifyQueueOutcome(pressing)
+        if (outcome === 'completed') completedThis += 1
+        else if (kind === 'exhausted' || outcome === 'failed') failedThis += 1
+        else unresolvedThis += 1
+        nextCursor += 1
+      } catch (error) {
+        if (isWorkerDeadlineError(error)) {
+          break
+        }
+        processed.push(releaseId)
+        break
+      }
+    }
+  } finally {
+    try {
+      await store.releaseEnrichLock(token)
+    } catch {
+      // lock ttl still expires
+    }
+  }
+
   const mbThis = Math.max(0, mb.requestCount - mbStart)
-
-  const dead = await store.getDead()
-  const unresolvedSet = await store.getUnresolved()
-  const completedThis = result.completed.length
-  const failedThis = result.failed.length
-  const unresolvedThis = result.unresolved.length
-  const handled = completedThis + failedThis + unresolvedThis
-  const nextCursor = Math.min(ids.length, cursor + handled)
-  const elapsedMs = Math.max(1, now() - started)
-  const minutes = elapsedMs / 60_000
-  const completed = previous.completed + completedThis
-  const remaining = Math.max(0, ids.length - nextCursor)
-  const releasesPerMin = completedThis > 0 ? completedThis / minutes : 0
-  const estimatedRemainingMs =
-    releasesPerMin > 0 ? Math.round((remaining / releasesPerMin) * 60_000) : null
-
-  const backfill: BackfillState = {
-    cursor: nextCursor,
-    startedAt: previous.startedAt,
-    updatedAt: isoFromMs(now()),
-    completed,
-    unresolved: unresolvedSet.length,
-    failed: dead.length,
-    discogsRequests: previous.discogsRequests + discogsThis,
-    mbRequests: previous.mbRequests + mbThis,
-    status: result.stoppedOnAuth
-      ? 'auth_stop'
-      : result.stoppedOnRateLimit
-        ? 'rate_limit'
-        : remaining === 0
-          ? 'idle'
-          : 'running',
-  }
-  await store.setBackfill(backfill)
-
-  return {
-    prefix: crateRedisKeys().prefix,
-    processed: result.processed,
-    completed,
-    unresolved: unresolvedSet.length,
-    failed: dead.length,
-    remaining,
-    elapsedMs,
-    releasesPerMin,
-    discogsRequestsPerMin: discogsThis / minutes,
-    mbRequestsPerMin: mbThis / minutes,
-    discogsRequests: discogsThis,
-    mbRequests: mbThis,
-    estimatedRemainingMs,
-    stoppedOnAuth: result.stoppedOnAuth,
-    stoppedOnRateLimit: result.stoppedOnRateLimit,
-    skipped: result.skipped,
-    backfill,
-    completedThis,
-    failedThis,
-    unresolvedThis,
-  }
+  return snapshotCounts(
+    nextCursor,
+    {
+      processed,
+      completedThis,
+      failedThis,
+      unresolvedThis,
+      skipped: false,
+      stoppedOnAuth,
+      stoppedOnRateLimit,
+    },
+    discogsThis,
+    mbThis
+  )
 }

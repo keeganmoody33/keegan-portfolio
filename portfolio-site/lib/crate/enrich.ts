@@ -81,12 +81,40 @@ export function remainingBudgetMs(deadlineMs: number, nowMs: number): number {
   return Math.max(0, deadlineMs - nowMs)
 }
 
+export class WorkerDeadlineError extends Error {
+  readonly kind = 'deadline' as const
+
+  constructor() {
+    super('worker deadline')
+    this.name = 'WorkerDeadlineError'
+  }
+}
+
+export function isWorkerDeadlineError(error: unknown): error is WorkerDeadlineError {
+  return error instanceof WorkerDeadlineError
+}
+
 function assertWithinWorkerDeadline(deps: EnrichDeps): void {
   if (deps.deadlineMs == null) return
   const nowMs = (deps.now ?? Date.now)()
   if (remainingBudgetMs(deps.deadlineMs, nowMs) <= 0) {
-    throw new Error('worker deadline')
+    throw new WorkerDeadlineError()
   }
+}
+
+export function lastErrorNeedsRematch(previous: StoredPressing | null): boolean {
+  const kind = previous?.provenance.lastError?.kind
+  return kind === 'exhausted' || kind === 'not_found'
+}
+
+export function shouldSkipMatch(
+  previous: StoredPressing | null,
+  identityShifted: boolean,
+  forceRefresh = false
+): boolean {
+  if (!previous || identityShifted || forceRefresh) return false
+  if (lastErrorNeedsRematch(previous)) return false
+  return previous.mbRelease.matchStatus !== 'pending'
 }
 
 export type EnrichDeps = {
@@ -441,11 +469,7 @@ export async function enrichPressing(
     let tracks = occurrencesFromDetail(detail)
     const playable = tracks.filter(isPlayableOccurrence)
     const identityShifted = identityChanged(previous, tracks)
-    const skipMatch =
-      Boolean(previous) &&
-      !identityShifted &&
-      previous?.mbRelease.matchStatus !== 'pending' &&
-      !deps.forceRefresh
+    const skipMatch = shouldSkipMatch(previous, identityShifted, Boolean(deps.forceRefresh))
 
     const pressingDraft: StoredPressing = hydratePressing({
       schemaVersion: CRATE_SCHEMA_VERSION,
@@ -671,6 +695,7 @@ export async function enrichPressing(
     await deps.store.setPressing(pressing)
     return pressing
   } catch (error) {
+    if (isWorkerDeadlineError(error)) throw error
     const kind = errorKind(error)
     const draft = await deps.store.getDraftPressing(releaseId)
     const latest = hasPriorVerifiedRecord(previous)
@@ -739,6 +764,14 @@ export function classifyQueueOutcome(pressing: StoredPressing): 'completed' | 'f
   if (kind === 'partial') return 'completed'
   if (kind) return 'failed'
   return 'completed'
+}
+
+export function isBackfillSettled(pressing: StoredPressing): boolean {
+  const kind = pressing.provenance.lastError?.kind
+  if (kind === 'auth' || kind === 'rate_limit' || kind === 'unavailable') return false
+  if (kind === 'exhausted' || kind === 'not_found') return true
+  const outcome = classifyQueueOutcome(pressing)
+  return outcome === 'completed' || outcome === 'unresolved' || outcome === 'failed'
 }
 
 function emptyQueueResult(skipped: boolean): EnrichQueueResult {
@@ -840,6 +873,10 @@ export async function processEnrichmentQueue(
           record(releaseId, outcome)
         }
       } catch (error) {
+        if (isWorkerDeadlineError(error)) {
+          await deps.store.nack(releaseId, now())
+          break
+        }
         const isAuth = isMusicBrainzAuthError(error) || isDiscogsAuthError(error)
         const retryAt = now() + (isAuth ? AUTH_RETRY_MS : 60 * 60 * 1000)
         await deps.store.nack(releaseId, retryAt)
