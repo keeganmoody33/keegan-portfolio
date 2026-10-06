@@ -131,6 +131,7 @@ function throwingMusicBrainzClient(): MusicBrainzClient {
     searchReleaseByBarcode: fail,
     searchReleaseByCatno: fail,
     searchReleaseByArtistTitle: fail,
+    searchRecordingsByArtistTitle: fail,
     getRelease: fail,
     getRecording: fail,
   }

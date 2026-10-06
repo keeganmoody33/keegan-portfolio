@@ -637,6 +637,17 @@ async function applyTrackLevelSamples(
       title: track.title,
       durationMs: track.durationMs,
     }).slice(0, TRACK_LEVEL_FETCH_CAP)
+    if (picked.length === 0) {
+      if (
+        hits.length > 0 &&
+        (track.recording.matchStatus === 'unmatched' || track.recording.matchStatus === 'pending')
+      ) {
+        track.recording.matchStatus = 'ambiguous'
+        track.recording.reason = 'recording-level artist+title was ambiguous'
+      }
+      cursor = index + 1
+      continue
+    }
     const docs: StoredRecording[] = []
     for (const hit of picked) {
       const remainingHit =
@@ -883,8 +894,9 @@ export async function enrichPressing(
     } else if (mbRelease.mbid && mbRelease.releaseGroupMbid === undefined) {
       assertWithinWorkerDeadline(deps)
       const releaseDoc = await mb.getRelease(mbRelease.mbid)
-      if (releaseDoc?.releaseGroupId) {
-        mbRelease = { ...mbRelease, releaseGroupMbid: releaseDoc.releaseGroupId }
+      mbRelease = {
+        ...mbRelease,
+        releaseGroupMbid: releaseDoc?.releaseGroupId ?? null,
       }
     }
 

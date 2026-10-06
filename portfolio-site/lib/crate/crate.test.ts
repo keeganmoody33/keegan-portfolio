@@ -19,7 +19,7 @@ import {
   pickTrackLevelRecordings,
   songTitle,
 } from './match.ts'
-import { AUTH_RETRY_MS, isoFromMs, keepPriorMatch, nextBackoffMs, preservePressingOnFailure, shouldRefreshPressing } from './preserve.ts'
+import { AUTH_RETRY_MS, isoFromMs, keepPriorMatch, nextBackoffMs, preservePressingOnFailure, shouldRefreshPressing, withClearedDeadlineStops } from './preserve.ts'
 import { createMemoryCrateStore, crateRedisKeys, DRAFT_TTL_SECONDS, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA, type CrateStore } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
 import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, WorkerDeadlineError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, TRACK_LEVEL_REASON } from './enrich.ts'
@@ -145,6 +145,26 @@ describe('duration and title helpers', () => {
       picked.map((hit) => hit.mbid),
       ['close', 'far']
     )
+  })
+
+  it('does not pick a recording when the song title does not match', () => {
+    const picked = pickTrackLevelRecordings(
+      [
+        {
+          mbid: 'juicy-not-fruit',
+          title: 'Juicy',
+          artist: 'Mtume',
+          lengthMs: 355000,
+          score: 100,
+        },
+      ],
+      {
+        artist: 'Mtume',
+        title: 'Juicy Fruit (Vocal)',
+        durationMs: 355000,
+      }
+    )
+    assert.deepEqual(picked, [])
   })
 })
 
@@ -334,6 +354,24 @@ describe('failure preservation', () => {
     assert.equal(preserved.facts.title, previous.facts.title)
     assert.equal(preserved.provenance.lastError?.kind, 'unavailable')
     assert.ok(preserved.provenance.refreshAfter > preserved.provenance.checkedAt)
+  })
+
+  it('keeps trackSampleCursor when a refresh fails or deadline stops clear', () => {
+    const previous = pressingStub({
+      checkpoint: { stage: 'research', researchCursor: 2, trackSampleCursor: 4, deadlineStops: 2 },
+    })
+    const preserved = preservePressingOnFailure(
+      previous,
+      Date.parse('2026-10-06T00:00:00.000Z'),
+      'unavailable',
+      'musicbrainz down'
+    )
+    assert.equal(preserved.checkpoint?.trackSampleCursor, 4)
+    assert.equal(preserved.checkpoint?.researchCursor, 2)
+    const cleared = withClearedDeadlineStops(previous)
+    assert.equal(cleared.checkpoint?.trackSampleCursor, 4)
+    assert.equal(cleared.checkpoint?.researchCursor, 2)
+    assert.equal(cleared.checkpoint?.deadlineStops, 0)
   })
 
   it('does not overwrite a stored pressing with empty data on enrich failure', async () => {
@@ -788,6 +826,7 @@ describe('weaker refresh keeps a stronger match (P2.11)', () => {
         matchStatus: 'unmatched',
         confidence: 0,
         reason: 'no musicbrainz release for this pressing after discogs url, barcode, catalog number, and artist + title search',
+        releaseGroupMbid: null,
       },
       provenance: {
         ...pressingStub().provenance,
@@ -813,6 +852,7 @@ describe('weaker refresh keeps a stronger match (P2.11)', () => {
     assert.equal(kept.tracks[0]?.recording.mbid, previous.tracks[0]?.recording.mbid)
     assert.equal(kept.provenance.lastError?.kind, 'partial')
     assert.equal(classifyQueueOutcome(kept), 'completed')
+    assert.equal(kept.mbRelease.releaseGroupMbid, null)
   })
 
   it('keeps a Wikidata research lastError when the prior MusicBrainz match wins', () => {
@@ -3309,7 +3349,7 @@ describe('research facts: fallbacks, schema, and coverage', () => {
     const start = src.indexOf('export async function lookupWikidataReleaseFacts')
     const nextExport = src.indexOf('\nexport ', start + 1)
     const body = src.slice(start, nextExport === -1 ? undefined : nextExport)
-    assert.match(body, /sharedWikidataClient/)
+    assert.match(body, /getSharedWikidataClient/)
     assert.doesNotMatch(body, /wikidataClientFor/)
     assert.doesNotMatch(body, /createWikidataClient/)
   })
@@ -3399,7 +3439,7 @@ describe('research facts: fallbacks, schema, and coverage', () => {
       mb: {
         ...createMusicBrainzClientForTests(),
         async lookupDiscogsReleaseUrl() {
-          return [{ mbid: '72089134-a550-446e-b26d-8d3b523b05d6', score: 100, title: 'Bootsy? Player Of The Year', trackCount: 9 }]
+          return ['72089134-a550-446e-b26d-8d3b523b05d6']
         },
         async getRelease() {
           return {
@@ -3789,14 +3829,7 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
       stage: 'match',
     })
     const mb = createMusicBrainzClientForTests()
-    mb.lookupDiscogsReleaseUrl = async () => [
-      {
-        mbid: '72089134-a550-446e-b26d-8d3b523b05d6',
-        score: 100,
-        title: 'Bootsy? Player Of The Year',
-        trackCount: 2,
-      },
-    ]
+    mb.lookupDiscogsReleaseUrl = async () => ['72089134-a550-446e-b26d-8d3b523b05d6']
     mb.getRelease = async () => ({
       id: '72089134-a550-446e-b26d-8d3b523b05d6',
       title: 'Bootsy? Player Of The Year',
@@ -3890,6 +3923,67 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     assert.ok(result.tracks.some((track) => track.recording.mbid === juicyMbid))
     assert.ok(result.tracks.some((track) => track.recording.reason === TRACK_LEVEL_REASON))
     assert.equal(result.recordings[juicyMbid]?.sampledIn[0]?.artist, 'The Notorious B.I.G.')
+    assert.equal(juicy?.sourceUrl, `https://musicbrainz.org/recording/${biggieMbid}`)
+    assert.equal(result.recordings[juicyMbid]?.provenance.reason, TRACK_LEVEL_REASON)
+  })
+
+  it('records an ambiguous recording-level miss and merges no samples', async () => {
+    const mb = createMusicBrainzClientForTests()
+    let fetched = 0
+    mb.searchRecordingsByArtistTitle = async () => [
+      {
+        mbid: 'wrong-artist',
+        title: 'Juicy Fruit',
+        artist: 'Someone Else',
+        lengthMs: 355000,
+        score: 99,
+      },
+      {
+        mbid: 'other-song',
+        title: 'Juicy',
+        artist: 'Mtume',
+        lengthMs: 355000,
+        score: 90,
+      },
+    ]
+    mb.getRecording = async () => {
+      fetched += 1
+      return {
+        mbid: 'wrong-artist',
+        title: 'Juicy Fruit',
+        artist: 'Someone Else',
+        credits: [],
+        samplesFrom: [],
+        sampledIn: [
+          {
+            title: 'Juicy',
+            artist: 'The Notorious B.I.G.',
+            mbid: 'biggie',
+            sourceUrl: 'https://musicbrainz.org/recording/biggie',
+            source: 'musicbrainz',
+            providerId: 'biggie',
+          },
+        ],
+      }
+    }
+    const store = createMemoryCrateStore()
+    const result = await enrichPressing(567894, {
+      store,
+      now: () => Date.parse('2026-10-06T08:00:00.000Z'),
+      fetchDiscogs: async () => mtumeDetail(),
+      mb,
+    })
+    assert.equal(fetched, 0)
+    assert.equal(
+      (result.researchFacts ?? []).some(
+        (fact) =>
+          fact.kind === 'sampled_by' &&
+          /notorious/i.test(fact.relatedArtist) &&
+          fact.source === 'musicbrainz'
+      ),
+      false
+    )
+    assert.equal(result.tracks.some((track) => track.recording.mbid), false)
   })
 })
 

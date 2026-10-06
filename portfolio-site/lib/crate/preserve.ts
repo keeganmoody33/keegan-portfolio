@@ -1,4 +1,5 @@
 import type {
+  CrateCheckpoint,
   DurableErrorKind,
   Lifecycles,
   PressingFacts,
@@ -27,6 +28,18 @@ export { CRATE_MAX_ATTEMPTS }
 
 export function isoFromMs(ms: number): string {
   return new Date(ms).toISOString()
+}
+
+function copyCheckpoint(
+  checkpoint: CrateCheckpoint | null | undefined,
+  patch: Partial<CrateCheckpoint> = {}
+): CrateCheckpoint {
+  return {
+    stage: patch.stage ?? checkpoint?.stage ?? 'pressing',
+    researchCursor: patch.researchCursor ?? checkpoint?.researchCursor ?? 0,
+    trackSampleCursor: patch.trackSampleCursor ?? checkpoint?.trackSampleCursor,
+    deadlineStops: patch.deadlineStops ?? checkpoint?.deadlineStops,
+  }
 }
 
 export function nextBackoffMs(attemptCount: number): number {
@@ -221,11 +234,7 @@ export function preservePressingOnFailure(
           reason: message,
         }
       : previous.mbRelease,
-    checkpoint: {
-      stage: previous.checkpoint?.stage ?? 'pressing',
-      researchCursor: previous.checkpoint?.researchCursor ?? 0,
-      deadlineStops: 0,
-    },
+    checkpoint: copyCheckpoint(previous.checkpoint, { deadlineStops: 0 }),
   }
 }
 
@@ -233,11 +242,7 @@ export function withClearedDeadlineStops(pressing: StoredPressing): StoredPressi
   if ((pressing.checkpoint?.deadlineStops ?? 0) === 0) return pressing
   return {
     ...pressing,
-    checkpoint: {
-      stage: pressing.checkpoint?.stage ?? 'pressing',
-      researchCursor: pressing.checkpoint?.researchCursor ?? 0,
-      deadlineStops: 0,
-    },
+    checkpoint: copyCheckpoint(pressing.checkpoint, { deadlineStops: 0 }),
   }
 }
 
@@ -282,7 +287,15 @@ export function keepPriorMatch(
   return {
     ...next,
     tracks: mergeTracksKeepRecordings(next.tracks, previous.tracks),
-    mbRelease: previous.mbRelease,
+    mbRelease: {
+      ...previous.mbRelease,
+      releaseGroupMbid:
+        previous.mbRelease.releaseGroupMbid !== undefined
+          ? previous.mbRelease.releaseGroupMbid
+          : next.mbRelease.releaseGroupMbid !== undefined
+            ? next.mbRelease.releaseGroupMbid
+            : null,
+    },
     recordings: previous.recordings,
     lifecycles: {
       pressing: nextCycles.pressing,
