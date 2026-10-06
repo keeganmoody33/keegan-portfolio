@@ -2,8 +2,13 @@
 
 import Link from 'next/link'
 import { useEffect } from 'react'
-import NoArtTile from '@/components/house/NoArtTile'
+import CrateCover from '@/components/house/CrateCover'
 import { restoreCollectionScroll, saveCollectionScroll } from '@/components/house/RecordDetail'
+import {
+  displayCoverUrl,
+  parseDiscogsImageDimensions,
+  type CoverManifest,
+} from '@/lib/crate/cover-display'
 import type { DiscogsRelease } from '@/lib/discogs'
 import { posthog } from '@/lib/posthog-client'
 
@@ -12,8 +17,10 @@ const focusRing =
 
 export default function CollectionGrid({
   releases,
+  covers = {},
 }: {
   releases: DiscogsRelease[]
+  covers?: Record<string, CoverManifest>
 }) {
   useEffect(() => {
     restoreCollectionScroll()
@@ -26,24 +33,29 @@ export default function CollectionGrid({
     >
       {releases.map((release, index) => {
         const releaseId = release.releaseId
-        const src = release.thumbnail || release.cover
+        const stored = covers[String(releaseId)]
+        const fallback = release.cover || release.thumbnail
+        const src = displayCoverUrl(stored, fallback)
+        const dims = stored
+          ? { width: stored.width, height: stored.height }
+          : parseDiscogsImageDimensions(src)
         const eager = index < 10
         const href = releaseId > 0 ? `/collection/${releaseId}` : release.discogsUrl
         const internal = releaseId > 0
         const year = release.year > 0 ? String(release.year) : null
 
-        const cover = src ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+        const cover = (
+          <CrateCover
+            kind="grid"
             src={src}
+            width={dims?.width}
+            height={dims?.height}
             alt=""
-            loading={eager ? 'eager' : 'lazy'}
-            fetchPriority={index === 0 ? 'high' : undefined}
-            decoding="async"
-            className="aspect-square w-full border border-[var(--house-line)] object-cover"
+            artist={release.artist}
+            title={release.title}
+            eager={eager}
+            priority={index === 0}
           />
-        ) : (
-          <NoArtTile artist={release.artist} title={release.title} />
         )
 
         const caption = (

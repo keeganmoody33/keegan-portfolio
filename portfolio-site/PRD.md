@@ -53,6 +53,7 @@ Everything that serves the core purpose: help visitors understand who Keegan is,
 | Sleeves | `/catalog`, `/catalog/[slug]` | **Shipped (this PR)** |
 | Full Discogs crate | `/collection`, `/api/discogs/collection` | **Shipped** — durable Redis last-good when Upstash env is set; shuffle / pull one on the crate |
 | Collection record detail | `/collection/[releaseId]`, intercepting overlay `@detail/(.)[releaseId]` | **In progress (this PR)** — stored Discogs pressing + MusicBrainz/Discogs/Wikidata research facts; visitors never hit live research or write Redis |
+| Collection covers | `CrateCover`, `npm run covers:sync`, Vercel Blob | **In progress (this PR)** — CAA fronts self-hosted when Blob is linked; Discogs images stay hotlinked per API Terms. Keegan approved self-hosting 2026-10-06. |
 
 | SignalCut | `components/SignalCut.tsx` | **Shipped (this PR)** — house ↔ person only |
 | lecturesfrom nameplate wordmark (assets) | `brand/lecturesfrom-wordmark.svg`, `scripts/generate-wordmark.py` | **Assets only.** Not wired into header or pages. Hathaway vectors in `public/brand/` are a separate unused direction. |

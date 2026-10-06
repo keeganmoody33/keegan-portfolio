@@ -90,9 +90,10 @@ export type CrateRedisKeys = {
   pressingDraft: (releaseId: number) => string
   dead: string
   unresolved: string
-  inspect: string
-  backfill: string
-}
+    inspect: string
+    backfill: string
+    cover: (releaseId: number) => string
+  }
 
 export function crateRedisKeys(env: Record<string, string | undefined> = process.env): CrateRedisKeys {
   const prefix = discogsKeyPrefix(env)
@@ -117,6 +118,8 @@ export function crateRedisKeys(env: Record<string, string | undefined> = process
     unresolved: assertPrefixedRedisKey(`${prefix}crate:unresolved:v1`, env),
     inspect: assertPrefixedRedisKey(`${prefix}crate:inspect:v1`, env),
     backfill: assertPrefixedRedisKey(`${prefix}crate:backfill:v1`, env),
+    cover: (releaseId: number) =>
+      assertPrefixedRedisKey(`${prefix}crate:cover:${releaseId}:v1`, env),
   }
 }
 
