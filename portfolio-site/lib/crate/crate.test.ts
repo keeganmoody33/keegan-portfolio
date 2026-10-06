@@ -453,6 +453,25 @@ describe('record detail helpers', () => {
       pressing.tracks.every((track) => track.recording.reason.toLowerCase().includes('vocal'))
     )
   })
+
+  it('falls through empty redis error stubs to the committed fixture', async () => {
+    const stub = preservePressingOnFailure(
+      null,
+      Date.parse('2026-10-06T03:17:28.473Z'),
+      'rate_limit',
+      'Too many requests',
+      { releaseId: 567894 }
+    )
+    const store = createMemoryCrateStore({ pressings: { 567894: stub } })
+    const result = await readStoredPressing(567894, { store, collection: null })
+    assert.equal(result.status, 'ok')
+    if (result.status === 'ok') {
+      assert.equal(result.from, 'fixture')
+      assert.equal(result.pressing.facts.title, 'Juicy Fruit')
+      assert.equal(result.pressing.tracks.length, 2)
+      assert.ok(result.pressing.tracks.every((track) => track.recording.matchStatus === 'ambiguous'))
+    }
+  })
 })
 
 function createMusicBrainzClientForTests(): MusicBrainzClient {
@@ -1064,6 +1083,31 @@ describe('independent lifecycles (direction change)', () => {
     assert.equal(result.provenance.verifiedAt, '2026-09-01T00:00:00.000Z')
     assert.equal(result.provenance.lastAttemptAt, '2026-10-06T00:00:00.000Z')
     assert.equal(result.tracks[0]?.recording.mbid, previous.tracks[0]?.recording.mbid)
+  })
+
+  it('reuses fixture facts when redis only has an empty error stub', async () => {
+    const stub = preservePressingOnFailure(
+      null,
+      Date.parse('2026-10-06T03:17:28.473Z'),
+      'rate_limit',
+      'Too many requests',
+      { releaseId: 567894 }
+    )
+    const store = createMemoryCrateStore({ pressings: { 567894: stub } })
+    const result = await enrichPressing(567894, {
+      store,
+      now: () => Date.parse('2026-10-06T04:00:00.000Z'),
+      failRefresh: () => true,
+      mb: createMusicBrainzClientForTests(),
+    })
+    assert.equal(result.facts.title, 'Juicy Fruit')
+    assert.equal(result.tracks.length, 2)
+    assert.equal(result.provenance.verifiedAt, '2026-10-06T01:22:26.660Z')
+    assert.equal(result.provenance.lastAttemptAt, '2026-10-06T04:00:00.000Z')
+    assert.equal(result.provenance.lastError?.kind, 'unavailable')
+    const stored = await store.getPressing(567894)
+    assert.equal(stored?.facts.title, 'Juicy Fruit')
+    assert.equal(stored?.tracks.length, 2)
   })
 
   it('recovers a taken item after inflight expires without duplicating work', async () => {

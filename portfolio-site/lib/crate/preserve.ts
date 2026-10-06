@@ -33,10 +33,15 @@ export function nextBackoffMs(attemptCount: number): number {
   return BACKOFF_MS[Math.min(index, BACKOFF_MS.length - 1)] ?? TERMINAL_REFRESH_MS
 }
 
+export function storedPressingHasVisitorFacts(pressing: StoredPressing | null | undefined): boolean {
+  if (!pressing) return false
+  return pressing.facts.title.trim().length > 0 || pressing.tracks.length > 0
+}
+
 export function hasSuccessfulPressing(pressing: StoredPressing | null | undefined): boolean {
   if (!pressing) return false
   if (pressing.provenance.matchStatus === 'pending') return false
-  return pressing.tracks.length > 0 || pressing.facts.title.length > 0
+  return storedPressingHasVisitorFacts(pressing)
 }
 
 export function emptyPressingFacts(releaseId: number): PressingFacts {

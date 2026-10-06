@@ -8,7 +8,7 @@ import {
 import { collectionReleaseId } from './sync.ts'
 import { getDefaultCrateStore, type CrateStore } from './store.ts'
 import { CRATE_SCHEMA_VERSION, type StoredPressing, type TrackOccurrence } from './types.ts'
-import { isoFromMs } from './preserve.ts'
+import { isoFromMs, storedPressingHasVisitorFacts } from './preserve.ts'
 import { hydratePressing } from './lifecycle.ts'
 import bootsy from './fixtures/573292.json' with { type: 'json' }
 import goodieMob from './fixtures/240128.json' with { type: 'json' }
@@ -160,14 +160,24 @@ export async function readStoredPressing(
   if (store) {
     try {
       const stored = await store.getPressing(releaseId)
-      if (stored) {
+      if (stored && storedPressingHasVisitorFacts(stored)) {
         return {
           status: 'ok',
           pressing: withCollectionArt(hydratePressing(stored), listed),
           from: 'store',
         }
       }
-      if (options.store === undefined) {
+      if (stored && !storedPressingHasVisitorFacts(stored)) {
+        const fixture = fixturePressing(releaseId)
+        if (fixture) {
+          return {
+            status: 'ok',
+            pressing: withCollectionArt(fixture, listed),
+            from: 'fixture',
+          }
+        }
+      }
+      if (!stored && options.store === undefined) {
         scheduleMissedPressing(store, releaseId)
       }
     } catch {

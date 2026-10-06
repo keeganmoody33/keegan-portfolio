@@ -39,9 +39,11 @@ import {
   isoFromMs,
   keepPriorMatch,
   preservePressingOnFailure,
+  storedPressingHasVisitorFacts,
   SUCCESS_REFRESH_MS,
   TERMINAL_REFRESH_MS,
 } from './preserve.ts'
+import { fixturePressing } from './read.ts'
 import {
   INFLIGHT_TTL_SECONDS,
   randomLockToken,
@@ -401,7 +403,11 @@ export async function enrichPressing(
   const nowMs = (deps.now ?? Date.now)()
   const nowIso = isoFromMs(nowMs)
   const previousRaw = await deps.store.getPressing(releaseId)
-  const previous = previousRaw ? hydratePressing(previousRaw) : null
+  const storedPrevious = previousRaw ? hydratePressing(previousRaw) : null
+  const previous =
+    storedPrevious && storedPressingHasVisitorFacts(storedPrevious)
+      ? storedPrevious
+      : fixturePressing(releaseId) ?? storedPrevious
   const mb = deps.mb ?? createMusicBrainzClient()
   const fetchDetail = deps.fetchDiscogs ?? ((id: number) => fetchDiscogsReleaseDetail(id))
   const shouldFail = deps.failRefresh ?? ((id: number) => failRefreshFromEnv(id))
@@ -783,6 +789,7 @@ export async function processEnrichmentQueue(
       skipped: false,
       stoppedOnRateLimit,
       stoppedOnAuth,
+      mbRequests: mb.requestCount,
     })
   )
   return { processed, skipped: false, stoppedOnRateLimit, stoppedOnAuth }
