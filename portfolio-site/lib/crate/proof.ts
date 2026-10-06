@@ -1,6 +1,7 @@
 import {
   DiscogsAuthError,
   readCachedCollection,
+  type DiscogsFetch,
 } from '../discogs.ts'
 import { inspectCrate, type InspectSnapshot } from './backfill.ts'
 import { enrichPressing, processEnrichmentQueue } from './enrich.ts'
@@ -68,7 +69,11 @@ export function parseProofIds(raw: string | null): number[] {
 export async function runCrateProof(
   store: CrateStore,
   action: ProofAction,
-  options: { ids?: number[]; env?: Record<string, string | undefined> } = {}
+  options: {
+    ids?: number[]
+    env?: Record<string, string | undefined>
+    fetchImpl?: DiscogsFetch
+  } = {}
 ): Promise<Record<string, unknown>> {
   if (!crateProofAllowed(options.env ?? process.env)) {
     return { error: 'proof refused in production', refused: true }
@@ -90,7 +95,7 @@ export async function runCrateProof(
     case 'fail':
       return { prefix, ...(await proveFail(store)) }
     case 'auth':
-      return { prefix, ...(await proveAuth(store)) }
+      return { prefix, ...(await proveAuth(store, options.fetchImpl)) }
     case 'enrich':
       return {
         prefix,
@@ -376,8 +381,11 @@ async function proveFail(store: CrateStore): Promise<Record<string, unknown>> {
   }
 }
 
-async function proveAuth(store: CrateStore): Promise<Record<string, unknown>> {
-  const identity = await proveDiscogsAuthWithBadToken()
+async function proveAuth(
+  store: CrateStore,
+  fetchImpl?: DiscogsFetch
+): Promise<Record<string, unknown>> {
+  const identity = await proveDiscogsAuthWithBadToken(fetchImpl)
   await store.purgePressing(PROOF_KILL_ID)
   await store.enqueue([PROOF_KILL_ID], { score: -1 })
   const result = await processEnrichmentQueue(
@@ -477,7 +485,7 @@ async function proveCleanup(store: CrateStore): Promise<Record<string, unknown>>
 }
 
 export async function proveDiscogsAuthWithBadToken(
-  fetchImpl: typeof fetch = fetch
+  fetchImpl?: DiscogsFetch
 ): Promise<{
   url: string
   status: number

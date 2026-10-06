@@ -42,6 +42,7 @@ import {
   keepPriorMatch,
   preservePressingOnFailure,
   storedPressingHasVisitorFacts,
+  withClearedDeadlineStops,
   SUCCESS_REFRESH_MS,
 } from './preserve.ts'
 import { fixturePressing } from './read.ts'
@@ -118,6 +119,9 @@ export async function applyDeadlineStop(
       at: isoFromMs(nowMs),
       stage: 'queue',
     })
+    // Drop, not markDead. A listed visit enqueue (no retry flag) can re-queue
+    // this id on purpose. With cron off in production that visit is the only
+    // recovery, bounded by VISIT_THROTTLE_SECONDS and DEADLINE_STOP_LIMIT.
     await store.drop(releaseId)
     return { tooSlow: true, stops, retryAtMs }
   }
@@ -584,7 +588,7 @@ export async function enrichPressing(
         checkpoint: {
           stage: skipMatch ? 'research' : 'match',
           researchCursor: previous?.checkpoint?.researchCursor ?? 0,
-          deadlineStops: previous?.checkpoint?.deadlineStops,
+          deadlineStops: 0,
         },
       })
       await deps.store.setDraftPressing(pressingDraft)
@@ -764,8 +768,9 @@ export async function enrichPressing(
         stage: 'match',
       })
     }
-    await deps.store.setPressing(pressing)
-    return pressing
+    const committed = withClearedDeadlineStops(pressing)
+    await deps.store.setPressing(committed)
+    return committed
   } catch (error) {
     if (isWorkerDeadlineError(error)) throw error
     const kind = errorKind(error)

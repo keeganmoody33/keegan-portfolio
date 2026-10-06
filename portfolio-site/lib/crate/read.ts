@@ -58,6 +58,9 @@ export async function visitEnqueueIfListed(
   if (!acquired) {
     return { enqueued: false, throttled: true }
   }
+  // too_slow is unresolved+dropped, not dead. enqueue() without { retry: true }
+  // therefore re-queues it. With cron off in production that listed visit is the
+  // only recovery, bounded by VISIT_THROTTLE_SECONDS and DEADLINE_STOP_LIMIT.
   await store.enqueue([releaseId], { front: false })
   return { enqueued: true, throttled: false }
 }

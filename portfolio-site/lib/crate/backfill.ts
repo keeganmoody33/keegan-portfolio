@@ -347,11 +347,13 @@ export async function runBackfill(
           continue
         }
         const outcome = classifyQueueOutcome(pressing)
+        if (kind !== 'exhausted') {
+          await store.unmarkDead(releaseId)
+          deadAtStart.delete(releaseId)
+        }
+        await store.ack(releaseId)
         if (outcome === 'completed') {
           completedThis += 1
-          await store.unmarkDead(releaseId)
-          await store.ack(releaseId)
-          deadAtStart.delete(releaseId)
         } else if (kind === 'exhausted' || outcome === 'failed') {
           failedThis += 1
         } else {

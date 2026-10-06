@@ -213,6 +213,23 @@ export function preservePressingOnFailure(
           reason: message,
         }
       : previous.mbRelease,
+    checkpoint: {
+      stage: previous.checkpoint?.stage ?? 'pressing',
+      researchCursor: previous.checkpoint?.researchCursor ?? 0,
+      deadlineStops: 0,
+    },
+  }
+}
+
+export function withClearedDeadlineStops(pressing: StoredPressing): StoredPressing {
+  if ((pressing.checkpoint?.deadlineStops ?? 0) === 0) return pressing
+  return {
+    ...pressing,
+    checkpoint: {
+      stage: pressing.checkpoint?.stage ?? 'pressing',
+      researchCursor: pressing.checkpoint?.researchCursor ?? 0,
+      deadlineStops: 0,
+    },
   }
 }
 
