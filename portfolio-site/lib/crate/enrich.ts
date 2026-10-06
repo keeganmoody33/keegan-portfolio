@@ -98,6 +98,48 @@ export const WORKER_DEADLINE_MARGIN_MS = 8_000
 export const DEADLINE_STOP_LIMIT = 3
 export const DEADLINE_BACKOFF_MS = ENRICH_TAKE_FLOOR_MS
 export const TRACK_LEVEL_FETCH_CAP = 6
+
+export function overlayTrackLevelProgress(
+  base: StoredPressing,
+  overlay:
+    | (Pick<StoredPressing, 'tracks' | 'recordings'> & {
+        checkpoint?: StoredPressing['checkpoint']
+      })
+    | null
+    | undefined
+): StoredPressing {
+  if (!overlay) return base
+  const overlayRecordings = overlay.recordings ?? {}
+  const hasRecordings = Object.keys(overlayRecordings).length > 0
+  const hasMatchedTrack = overlay.tracks.some((track) => Boolean(track.recording.mbid))
+  if (!hasRecordings && !hasMatchedTrack) return base
+  const recordings = { ...base.recordings, ...overlayRecordings }
+  const baseByKey = new Map(
+    base.tracks.map((track) => [track.identityKey ?? trackIdentityKey(track), track])
+  )
+  const sourceTracks = overlay.tracks.length > 0 ? overlay.tracks : base.tracks
+  const tracks = sourceTracks.map((track) => {
+    const key = track.identityKey ?? trackIdentityKey(track)
+    const fromBase = baseByKey.get(key)
+    if (track.recording.mbid) return track
+    if (fromBase?.recording.mbid) return { ...track, recording: fromBase.recording }
+    return track
+  })
+  return hydratePressing({
+    ...base,
+    tracks,
+    recordings,
+    checkpoint: {
+      stage: overlay.checkpoint?.stage ?? base.checkpoint?.stage ?? 'research',
+      researchCursor: overlay.checkpoint?.researchCursor ?? base.checkpoint?.researchCursor ?? 0,
+      trackSampleCursor: Math.max(
+        overlay.checkpoint?.trackSampleCursor ?? 0,
+        base.checkpoint?.trackSampleCursor ?? 0
+      ),
+      deadlineStops: base.checkpoint?.deadlineStops,
+    },
+  })
+}
 export const TRACK_LEVEL_REASON = 'recording-level artist+title'
 
 function wikiRetryAfterMs(retryAfterMs: number | null | undefined): number {
@@ -604,7 +646,8 @@ async function applyTrackLevelSamples(
   nowIso: string,
   nowMs: number,
   takeFloorMs: number,
-  startCursor: number
+  startCursor: number,
+  onProgress?: (cursor: number) => Promise<void>
 ): Promise<{ cursor: number; incomplete: boolean }> {
   const playable = tracks.filter((track) => isPlayableOccurrence(track))
   let cursor = startCursor
@@ -649,75 +692,99 @@ async function applyTrackLevelSamples(
       continue
     }
     const docs: StoredRecording[] = []
+    let rateLimitError: unknown = null
     for (const hit of picked) {
       const remainingHit =
         deps.deadlineMs == null
           ? Number.POSITIVE_INFINITY
           : remainingBudgetMs(deps.deadlineMs, (deps.now ?? Date.now)())
       if (remainingBelowTakeFloor(remainingHit, takeFloorMs)) {
+        if (docs.length > 0) attachTrackLevelDocs(track, recordings, docs)
         return { cursor, incomplete: true }
       }
-      const previousRecording = recordings[hit.mbid]
+      const previousRecording =
+        recordings[hit.mbid] ?? (await deps.store.getRecording(hit.mbid))
       if (previousRecording && researchIsFresh(previousRecording, nowMs) && !deps.forceRefresh) {
+        recordings[hit.mbid] = previousRecording
         docs.push(previousRecording)
         continue
       }
-      assertWithinWorkerDeadline(deps)
-      const doc = await mb.getRecording(hit.mbid)
-      if (!doc) continue
-      const recording: StoredRecording = {
-        mbid: doc.mbid,
-        title: doc.title,
-        artist: doc.artist,
-        credits: doc.credits,
-        samplesFrom: doc.samplesFrom,
-        sampledIn: doc.sampledIn,
-        provenance: {
-          sourceUrls: [musicbrainzRecordingUrl(doc.mbid)],
-          matchStatus: 'matched',
-          confidence: 0.7,
-          reason: TRACK_LEVEL_REASON,
-          checkedAt: nowIso,
-          refreshAfter: isoFromMs(nowMs + SUCCESS_REFRESH_MS),
-          lastError: null,
-          verifiedAt: nowIso,
-          lastAttemptAt: nowIso,
-        },
+      try {
+        assertWithinWorkerDeadline(deps)
+        const doc = await mb.getRecording(hit.mbid)
+        if (!doc) continue
+        const recording: StoredRecording = {
+          mbid: doc.mbid,
+          title: doc.title,
+          artist: doc.artist,
+          credits: doc.credits,
+          samplesFrom: doc.samplesFrom,
+          sampledIn: doc.sampledIn,
+          provenance: {
+            sourceUrls: [musicbrainzRecordingUrl(doc.mbid)],
+            matchStatus: 'matched',
+            confidence: 0.7,
+            reason: TRACK_LEVEL_REASON,
+            checkedAt: nowIso,
+            refreshAfter: isoFromMs(nowMs + SUCCESS_REFRESH_MS),
+            lastError: null,
+            verifiedAt: nowIso,
+            lastAttemptAt: nowIso,
+          },
+        }
+        recordings[hit.mbid] = recording
+        await deps.store.setRecording(recording)
+        docs.push(recording)
+      } catch (error) {
+        if (isMusicBrainzRateLimitError(error) && docs.length > 0) {
+          rateLimitError = error
+          break
+        }
+        throw error
       }
-      recordings[hit.mbid] = recording
-      await deps.store.setRecording(recording)
-      docs.push(recording)
     }
     if (docs.length === 0) {
+      if (rateLimitError) throw rateLimitError
       cursor = index + 1
       continue
     }
-    const mergedFrom = mergeSampleLinks(...docs.map((doc) => doc.samplesFrom))
-    const mergedIn = mergeSampleLinks(...docs.map((doc) => doc.sampledIn))
-    const primary = docs[0]
-    if (!primary) {
-      cursor = index + 1
-      continue
-    }
-    primary.samplesFrom = mergedFrom
-    primary.sampledIn = mergedIn
-    recordings[primary.mbid] = primary
-    if (!track.recording.mbid) {
-      track.recording = {
-        matchStatus: 'matched',
-        confidence: 0.7,
-        reason: TRACK_LEVEL_REASON,
-        mbid: primary.mbid,
-        recordingUrl: musicbrainzRecordingUrl(primary.mbid),
-      }
-    } else if (recordings[track.recording.mbid]) {
-      const existing = recordings[track.recording.mbid]
-      existing.samplesFrom = mergeSampleLinks(existing.samplesFrom, mergedFrom)
-      existing.sampledIn = mergeSampleLinks(existing.sampledIn, mergedIn)
+    attachTrackLevelDocs(track, recordings, docs)
+    if (rateLimitError) {
+      await onProgress?.(cursor)
+      throw rateLimitError
     }
     cursor = index + 1
+    await onProgress?.(cursor)
   }
   return { cursor, incomplete: false }
+}
+
+function attachTrackLevelDocs(
+  track: TrackOccurrence,
+  recordings: Record<string, StoredRecording>,
+  docs: StoredRecording[]
+): void {
+  const mergedFrom = mergeSampleLinks(...docs.map((doc) => doc.samplesFrom))
+  const mergedIn = mergeSampleLinks(...docs.map((doc) => doc.sampledIn))
+  const primary = docs[0]
+  if (!primary) return
+  primary.samplesFrom = mergedFrom
+  primary.sampledIn = mergedIn
+  recordings[primary.mbid] = primary
+  if (!track.recording.mbid) {
+    track.recording = {
+      matchStatus: 'matched',
+      confidence: 0.7,
+      reason: TRACK_LEVEL_REASON,
+      mbid: primary.mbid,
+      recordingUrl: musicbrainzRecordingUrl(primary.mbid),
+    }
+    return
+  }
+  const existing = recordings[track.recording.mbid]
+  if (!existing) return
+  existing.samplesFrom = mergeSampleLinks(existing.samplesFrom, mergedFrom)
+  existing.sampledIn = mergeSampleLinks(existing.sampledIn, mergedIn)
 }
 
 export async function enrichPressing(
@@ -741,6 +808,9 @@ export async function enrichPressing(
       : previous?.entryInstanceIds ?? []
   const priorCycles = previous?.lifecycles ?? defaultLifecycles(previous?.provenance)
   let stage: LifecycleName = 'pressing'
+  let progressTracks: TrackOccurrence[] | null = null
+  let progressRecordings: Record<string, StoredRecording> | null = null
+  let progressTrackSampleCursor: number | undefined
 
   try {
     if (shouldFail(releaseId)) {
@@ -978,19 +1048,10 @@ export async function enrichPressing(
       }
     }
 
-    const trackLevel = await applyTrackLevelSamples(
-      tracks,
-      recordings,
-      facts.artist,
-      mb,
-      deps,
-      nowIso,
-      nowMs,
-      takeFloorMs,
-      trackSampleCursor
-    )
-    trackSampleCursor = trackLevel.cursor
-    if (trackLevel.cursor > (pressingDraft.checkpoint?.trackSampleCursor ?? 0)) {
+    const checkpointTrackLevel = async (cursor: number) => {
+      progressTracks = tracks
+      progressRecordings = recordings
+      progressTrackSampleCursor = cursor
       researchCycle = touchVerified(researchCycle, nowIso)
       await deps.store.setDraftPressing(
         hydratePressing({
@@ -1003,9 +1064,25 @@ export async function enrichPressing(
             match: matchCycle,
             research: researchCycle,
           },
-          checkpoint: { stage: 'research', researchCursor, trackSampleCursor },
+          checkpoint: { stage: 'research', researchCursor, trackSampleCursor: cursor },
         })
       )
+    }
+    const trackLevel = await applyTrackLevelSamples(
+      tracks,
+      recordings,
+      facts.artist,
+      mb,
+      deps,
+      nowIso,
+      nowMs,
+      takeFloorMs,
+      trackSampleCursor,
+      checkpointTrackLevel
+    )
+    trackSampleCursor = trackLevel.cursor
+    if (trackLevel.cursor > (pressingDraft.checkpoint?.trackSampleCursor ?? 0)) {
+      await checkpointTrackLevel(trackSampleCursor)
     }
 
     const mbUrl = mbRelease.url
@@ -1189,25 +1266,38 @@ export async function enrichPressing(
         stage: stageFromError(error, stage),
       }
     )
-    const letter = letterFrom(preserved, stageFromError(error, stage))
+    const overlay =
+      progressTracks && progressRecordings
+        ? {
+            tracks: progressTracks,
+            recordings: progressRecordings,
+            checkpoint: {
+              stage: 'research' as const,
+              researchCursor: preserved.checkpoint?.researchCursor ?? 0,
+              trackSampleCursor: progressTrackSampleCursor ?? 0,
+            },
+          }
+        : draft
+    const withProgress = overlayTrackLevelProgress(preserved, overlay)
+    const letter = letterFrom(withProgress, stageFromError(error, stage))
     if (letter.kind === 'exhausted') {
       await deps.store.markDead(letter)
     } else if (letter.kind === 'auth' || letter.kind === 'not_found') {
       await deps.store.markUnresolved(letter)
     }
-    await deps.store.setPressing(preserved)
+    await deps.store.setPressing(withProgress)
     if (isMusicBrainzRateLimitError(error) || isDiscogsRateLimitError(error)) {
       const timed = {
-        ...preserved,
+        ...withProgress,
         provenance: {
-          ...preserved.provenance,
-          refreshAfter: isoFromMs(retryAtMs(error, nowMs, preserved.provenance.refreshAfter)),
+          ...withProgress.provenance,
+          refreshAfter: isoFromMs(retryAtMs(error, nowMs, withProgress.provenance.refreshAfter)),
         },
       }
       await deps.store.setPressing(timed)
       return timed
     }
-    return preserved
+    return withProgress
   }
 }
 

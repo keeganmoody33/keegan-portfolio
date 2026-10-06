@@ -22,12 +22,12 @@ import {
 import { AUTH_RETRY_MS, isoFromMs, keepPriorMatch, nextBackoffMs, preservePressingOnFailure, shouldRefreshPressing, withClearedDeadlineStops } from './preserve.ts'
 import { createMemoryCrateStore, crateRedisKeys, DRAFT_TTL_SECONDS, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA, type CrateStore } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
-import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, WorkerDeadlineError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, TRACK_LEVEL_REASON } from './enrich.ts'
+import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, WorkerDeadlineError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, TRACK_LEVEL_REASON, overlayTrackLevelProgress } from './enrich.ts'
 import { isUnusableDiscogsNotes, resolveDescription, withReadableDescription } from './description.ts'
 import { COLLECTION_KEEP_PATH, scheduleKeepPing } from './keep-ping.ts'
 import { runCrateEnrichCron } from './keep.ts'
 import { crateProofAllowed, parseProofAction, PROOF_KILL_ID, runCrateProof } from './proof.ts'
-import type { MusicBrainzClient } from './musicbrainz.ts'
+import { MusicBrainzRateLimitError, type MusicBrainzClient } from './musicbrainz.ts'
 import { CRATE_MAX_ATTEMPTS, CRATE_SCHEMA_VERSION, type ResearchFact, type StoredPressing } from './types.ts'
 import { mapRelease, parseDurableCollection, DiscogsAuthError, DiscogsNotFoundError, createMemoryLastGoodStore } from '../discogs.ts'
 import { createMemoryDurableStore } from '../discogs-store.ts'
@@ -3925,6 +3925,199 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     assert.equal(result.recordings[juicyMbid]?.sampledIn[0]?.artist, 'The Notorious B.I.G.')
     assert.equal(juicy?.sourceUrl, `https://musicbrainz.org/recording/${biggieMbid}`)
     assert.equal(result.recordings[juicyMbid]?.provenance.reason, TRACK_LEVEL_REASON)
+  })
+
+  it('keeps recording-level samples when MusicBrainz 429s after a fetch', async () => {
+    const juicyMbid = '1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc'
+    const otherMbid = 'cccccccccccccccc-cccc-cccc-cccc-cccccccccccc'
+    const biggieMbid = '181c0a32-6e3f-4680-8a7d-1daf0b42e43b'
+    const mb = createMusicBrainzClientForTests()
+    mb.searchRecordingsByArtistTitle = async () => [
+      { mbid: juicyMbid, title: 'Juicy Fruit', artist: 'Mtume', lengthMs: 355000, score: 100 },
+      { mbid: otherMbid, title: 'Juicy Fruit', artist: 'Mtume', lengthMs: 356000, score: 90 },
+    ]
+    mb.getRecording = async (id) => {
+      if (id === otherMbid) throw new MusicBrainzRateLimitError(60_000)
+      if (id !== juicyMbid) return null
+      return {
+        mbid: juicyMbid,
+        title: 'Juicy Fruit',
+        artist: 'Mtume',
+        credits: [],
+        samplesFrom: [],
+        sampledIn: [
+          {
+            title: 'Juicy',
+            artist: 'The Notorious B.I.G.',
+            mbid: biggieMbid,
+            sourceUrl: `https://musicbrainz.org/recording/${biggieMbid}`,
+            source: 'musicbrainz',
+            providerId: biggieMbid,
+          },
+        ],
+      }
+    }
+    const store = createMemoryCrateStore()
+    const result = await enrichPressing(567894, {
+      store,
+      now: () => Date.parse('2026-10-06T08:00:00.000Z'),
+      fetchDiscogs: async () => mtumeDetail(),
+      mb,
+    })
+    assert.equal(result.provenance.lastError?.kind, 'rate_limit')
+    const juicy = (result.researchFacts ?? []).find(
+      (fact) =>
+        fact.kind === 'sampled_by' &&
+        /juicy/i.test(fact.relatedTitle) &&
+        /notorious/i.test(fact.relatedArtist)
+    )
+    assert.ok(juicy)
+    assert.equal(juicy?.source, 'musicbrainz')
+    assert.equal(result.tracks.some((track) => track.recording.mbid === juicyMbid), true)
+    assert.equal(result.recordings[juicyMbid]?.provenance.reason, TRACK_LEVEL_REASON)
+  })
+
+  it('reuses a stored recording-level match instead of refetching after 429', async () => {
+    const juicyMbid = '1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc'
+    const biggieMbid = '181c0a32-6e3f-4680-8a7d-1daf0b42e43b'
+    const previous = fixturePressing(567894)
+    assert.ok(previous)
+    const recording = {
+      mbid: juicyMbid,
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      credits: [],
+      samplesFrom: [],
+      sampledIn: [
+        {
+          title: 'Juicy',
+          artist: 'The Notorious B.I.G.',
+          mbid: biggieMbid,
+          sourceUrl: `https://musicbrainz.org/recording/${biggieMbid}`,
+          source: 'musicbrainz' as const,
+          providerId: biggieMbid,
+        },
+      ],
+      provenance: {
+        sourceUrls: [`https://musicbrainz.org/recording/${juicyMbid}`],
+        matchStatus: 'matched' as const,
+        confidence: 0.7,
+        reason: TRACK_LEVEL_REASON,
+        checkedAt: '2026-10-06T08:00:00.000Z',
+        refreshAfter: '2026-11-05T08:00:00.000Z',
+        lastError: null,
+        verifiedAt: '2026-10-06T08:00:00.000Z',
+        lastAttemptAt: '2026-10-06T08:00:00.000Z',
+      },
+    }
+    const store = createMemoryCrateStore({
+      pressings: {
+        567894: hydratePressing({
+          ...previous,
+          provenance: {
+            ...previous.provenance,
+            verifiedAt: '2026-10-06T08:00:00.000Z',
+            lastError: {
+              at: '2026-10-06T08:00:00.000Z',
+              kind: 'rate_limit',
+              message: 'Too many requests',
+              attempts: 1,
+            },
+          },
+        }),
+      },
+      recordings: { [juicyMbid]: recording },
+    })
+    const mb = createMusicBrainzClientForTests()
+    let fetched = 0
+    mb.searchRecordingsByArtistTitle = async () => [
+      { mbid: juicyMbid, title: 'Juicy Fruit', artist: 'Mtume', lengthMs: 355000, score: 100 },
+    ]
+    mb.getRecording = async () => {
+      fetched += 1
+      return null
+    }
+    const result = await enrichPressing(567894, {
+      store,
+      now: () => Date.parse('2026-10-06T08:01:00.000Z'),
+      fetchDiscogs: async () => mtumeDetail(),
+      mb,
+    })
+    assert.equal(fetched, 0)
+    const juicy = (result.researchFacts ?? []).find(
+      (fact) =>
+        fact.kind === 'sampled_by' &&
+        /juicy/i.test(fact.relatedTitle) &&
+        /notorious/i.test(fact.relatedArtist)
+    )
+    assert.ok(juicy)
+    assert.equal(juicy?.source, 'musicbrainz')
+    assert.equal(result.provenance.lastError, null)
+  })
+
+  it('overlays recording-level progress onto a preserved verified pressing', () => {
+    const previous = fixturePressing(567894)
+    assert.ok(previous)
+    const preserved = preservePressingOnFailure(
+      previous,
+      Date.parse('2026-10-06T08:00:00.000Z'),
+      'rate_limit',
+      'Too many requests'
+    )
+    const juicyMbid = '1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc'
+    const overlaid = overlayTrackLevelProgress(preserved, {
+      tracks: previous.tracks.map((track, index) =>
+        index === 0
+          ? {
+              ...track,
+              recording: {
+                matchStatus: 'matched',
+                confidence: 0.7,
+                reason: TRACK_LEVEL_REASON,
+                mbid: juicyMbid,
+                recordingUrl: `https://musicbrainz.org/recording/${juicyMbid}`,
+              },
+            }
+          : track
+      ),
+      recordings: {
+        [juicyMbid]: {
+          mbid: juicyMbid,
+          title: 'Juicy Fruit',
+          artist: 'Mtume',
+          credits: [],
+          samplesFrom: [],
+          sampledIn: [
+            {
+              title: 'Juicy',
+              artist: 'The Notorious B.I.G.',
+              mbid: 'biggie',
+              sourceUrl: 'https://musicbrainz.org/recording/biggie',
+              source: 'musicbrainz',
+              providerId: 'biggie',
+            },
+          ],
+          provenance: {
+            sourceUrls: [`https://musicbrainz.org/recording/${juicyMbid}`],
+            matchStatus: 'matched',
+            confidence: 0.7,
+            reason: TRACK_LEVEL_REASON,
+            checkedAt: '2026-10-06T08:00:00.000Z',
+            refreshAfter: '2026-11-05T08:00:00.000Z',
+            lastError: null,
+            verifiedAt: '2026-10-06T08:00:00.000Z',
+            lastAttemptAt: '2026-10-06T08:00:00.000Z',
+          },
+        },
+      },
+    })
+    assert.equal(overlaid.provenance.lastError?.kind, 'rate_limit')
+    assert.equal(
+      (overlaid.researchFacts ?? []).some(
+        (fact) => fact.kind === 'sampled_by' && /notorious/i.test(fact.relatedArtist)
+      ),
+      true
+    )
   })
 
   it('looks up MusicBrainz works with work-rels only so artist-credits does not 400', () => {
