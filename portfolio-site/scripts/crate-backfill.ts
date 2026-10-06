@@ -6,7 +6,7 @@
  *   npm run crate:backfill -- --retry
  *   npm run crate:backfill -- --ids=567894,573292 --retry
  *
- * `--retry` without `--ids` retries only dead and too_slow ids.
+ * `--retry` without `--ids` retries dead and inspect too_slow / rate_limit / unavailable.
  *
  * Gated HTTP (preview only unless CRON_SECRET is set):
  *   GET /api/cron/crate-backfill?ids=567894&retry=1

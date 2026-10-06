@@ -265,7 +265,7 @@ Full paginated Discogs crate for `/collection`. Paginates `per_page=100` until `
 
 **PostHog events:** `api_discogs_collection_request`, `api_discogs_error`, `api_rate_limited`
 
-A complete collection crawl from a **gated** keep/enrich/backfill run queues new and stale release ids (`queueNewAndMissing`). Visitors never enqueue. Research facts are a standard schema (`track`, `role`, `person`, `sample_of`/`sampled_by`) with `source`, `sourceId`/`sourceUrl`, and `fetchedAt`. Precedence: MusicBrainz, then Discogs extraartists, then Wikidata (Discogs master `P1954`, then MusicBrainz release group `P436`, then Discogs release `P2206` / catalog `P5813`; more than one item is ambiguous and is not merged). Samples use `P5707` inbound and outbound. Matched-track counts stay separate from per-track credit/sample coverage; release-level facts are reported separately (`withReleaseCredits` / `withReleaseSamples`). Per-fact source labels use `.house-source` (no new colors).
+A complete collection crawl from a **gated** keep/enrich/backfill run queues new and stale release ids (`queueNewAndMissing`). Visitors never enqueue. Research facts are a standard schema (`track`, `role`, `person`, `sample_of`/`sampled_by`) with `source`, `sourceId`/`sourceUrl`, and `fetchedAt`. Precedence: MusicBrainz, then Discogs extraartists, then Wikidata (Discogs master `P1954`, then MusicBrainz release group `P436`, then Discogs release `P2206` / MusicBrainz release `P5813`; more than one item is ambiguous and is not merged). Samples use `P5707` inbound and outbound, plus a **primary** recording-level path (artist + song title, mix suffixes stripped; duration is a tiebreak; merge rels across recordings of the same song). Matched-track counts stay separate from per-track credit/sample coverage; release-level facts are reported separately (`withReleaseCredits` / `withReleaseSamples`). Per-fact source labels use `.house-source` (no new colors).
 
 ---
 
@@ -295,7 +295,7 @@ Preview-only proof actions (`action=inspect|overlap|kill|recover|exhausted|resyn
 
 ### GET /api/cron/crate-backfill
 
-Resumable research backfill independent of visitor traffic. Same Bearer `CRON_SECRET` gate (missing → 404). Walks collection ids via `enrichPressing`. Query: `?ids=567894,573292&retry=1&limit=10`. `retry=1` with `ids` also `forceRefresh`. Without `ids`, `--retry` / `retry=1` retries only dead and `too_slow` ids (does not re-walk settled ids). Checkpoints a settled-id set; a missing `settled` array does **not** treat `cursor` as an index into the current id list (returns `[]`). Dead ids are skipped unless `{ retry: true }`. `remaining` is exact. Shares the enrich lock with crate-enrich.
+Resumable research backfill independent of visitor traffic. Same Bearer `CRON_SECRET` gate (missing → 404). Walks collection ids via `enrichPressing`. Query: `?ids=567894,573292&retry=1&limit=10`. `retry=1` with `ids` also `forceRefresh`. Without `ids`, `--retry` / `retry=1` retries dead and inspect `too_slow` / `rate_limit` / `unavailable` (does not re-walk settled ids). Checkpoints a settled-id set; a missing `settled` array does **not** treat `cursor` as an index into the current id list (returns `[]`). Dead ids are skipped unless `{ retry: true }`. `remaining` is exact. Shares the enrich lock with crate-enrich.
 
 Also: `npm run crate:backfill` (`scripts/crate-backfill.ts`) with `--ids=`, `--retry`, `--limit=`.
 
