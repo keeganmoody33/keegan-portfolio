@@ -2322,6 +2322,34 @@ describe('resumable backfill checkpoints', () => {
     assert.equal(second.remaining, 1)
   })
 
+  it('stops on a cooling rate_limit instead of walking the next collection id', async () => {
+    const nowMs = Date.parse('2026-10-06T08:00:00.000Z')
+    const cooling = preservePressingOnFailure(null, nowMs, 'rate_limit', 'Too many requests', {
+      releaseId: 573292,
+    })
+    const store = createMemoryCrateStore({ pressings: { 573292: cooling } })
+    const fetches: number[] = []
+    const result = await runBackfill(
+      {
+        store,
+        collection: collectionOf([BOOTSY_ROW, GOODIE_ROW]),
+        now: () => nowMs + 1_000,
+        takeFloorMs: 0,
+        budgetMs: 45_000,
+        fetchDiscogs: async (releaseId) => {
+          fetches.push(releaseId)
+          return bootsyDetail()
+        },
+        mb: createMusicBrainzClientForTests(),
+      },
+      { limit: 2 }
+    )
+    assert.equal(result.stoppedOnRateLimit, true)
+    assert.deepEqual(fetches, [])
+    assert.deepEqual(result.processed, [])
+    assert.equal(result.remaining, 2)
+  })
+
   it('uses a settled-id set so added and removed ids are neither skipped nor double-run', async () => {
     const store = createMemoryCrateStore()
     const first = await runBackfill(
@@ -3965,6 +3993,7 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
       mb,
     })
     assert.equal(result.provenance.lastError?.kind, 'rate_limit')
+    assert.equal(result.provenance.refreshAfter, '2026-10-06T08:01:00.000Z')
     const juicy = (result.researchFacts ?? []).find(
       (fact) =>
         fact.kind === 'sampled_by' &&

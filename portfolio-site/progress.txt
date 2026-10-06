@@ -1,3 +1,8 @@
+IN PROGRESS (2026-10-06 — full preview collection backfill):
+- Preview Redis `lf:preview:` only. Never prod. ~276 unique ids.
+- 429 overlay `refreshAfter` is MusicBrainz Retry-After, not the 1h preserve backoff. A cooling `rate_limit` stops the backfill walk instead of skipping to the next id (global MB limit).
+- Coverage artifact: `/opt/cursor/artifacts/preview-full-backfill.json`. Confirm Mtume 567894 Biggie Juicy if MB has the relationship.
+
 COMPLETED (2026-10-06 — collection research follow-up: P2s + track-level samples):
 - Follow-up branch `cursor/collection-research-trackmatch-7382` (PR #54), rebased onto main `#56` (`7317a89`). `#53` is squashed as `65de54e`.
 - Wikidata `P5813` is the MusicBrainz **release** id (`mbRelease.mbid`), not Discogs catalog/catno. Persist `releaseGroupMbid` whenever a release is matched; if the field is missing (`undefined`) on skipMatch, `getRelease` backfills the group without rematching. Already-looked-up `null` is left alone.

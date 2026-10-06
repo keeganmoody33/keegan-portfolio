@@ -362,6 +362,10 @@ export async function runBackfill(
         Number.isFinite(retryAt) &&
         retryAt > now()
       ) {
+        if (stored.provenance.lastError.kind === 'rate_limit') {
+          stoppedOnRateLimit = true
+          break
+        }
         continue
       }
 

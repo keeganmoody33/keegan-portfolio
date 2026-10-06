@@ -303,11 +303,13 @@ function errorMessage(error: unknown): string {
 }
 
 function retryAtMs(error: unknown, nowMs: number, refreshAfter: string): number {
+  // Honor Retry-After. Do not inherit preserve's 1h attempt backoff — that
+  // skips the limited id and walks the rest of the crate into more 429s.
   if (isMusicBrainzRateLimitError(error)) {
-    return Math.max(nowMs + error.retryAfterMs, Date.parse(refreshAfter) || nowMs)
+    return nowMs + Math.max(error.retryAfterMs, 1_000)
   }
   if (isDiscogsRateLimitError(error)) {
-    return Math.max(nowMs + error.retryAfter * 1000, Date.parse(refreshAfter) || nowMs)
+    return nowMs + Math.max(error.retryAfter * 1000, 1_000)
   }
   const parsed = Date.parse(refreshAfter)
   return Number.isFinite(parsed) ? parsed : nowMs + 60 * 60 * 1000
