@@ -1388,6 +1388,38 @@ describe('independent lifecycles (direction change)', () => {
     assert.equal(store.drafts[9107339], undefined)
   })
 
+  it('does not move provenance.verifiedAt on a skip-match Discogs-ok refresh with zero MusicBrainz calls', async () => {
+    const store = createMemoryCrateStore()
+    const firstNow = Date.parse('2026-10-01T00:00:00.000Z')
+    const firstMb = createMusicBrainzClientForTests()
+    await enrichPressing(573292, {
+      store,
+      now: () => firstNow,
+      fetchDiscogs: async () => bootsyDetail(),
+      mb: firstMb,
+    })
+    const first = await store.getPressing(573292)
+    assert.ok(first)
+    assert.ok(firstMb.requestCount > 0)
+    assert.equal(first.provenance.verifiedAt, '2026-10-01T00:00:00.000Z')
+    assert.equal(first.lifecycles?.pressing.verifiedAt, '2026-10-01T00:00:00.000Z')
+    assert.notEqual(first.mbRelease.matchStatus, 'pending')
+
+    const secondNow = Date.parse('2026-10-06T12:00:00.000Z')
+    const secondMb = createMusicBrainzClientForTests()
+    const result = await enrichPressing(573292, {
+      store,
+      now: () => secondNow,
+      fetchDiscogs: async () => bootsyDetail(),
+      mb: secondMb,
+    })
+    assert.equal(secondMb.requestCount, 0)
+    assert.equal(result.provenance.verifiedAt, '2026-10-01T00:00:00.000Z')
+    assert.equal(result.provenance.checkedAt, '2026-10-06T12:00:00.000Z')
+    assert.equal(result.lifecycles?.pressing.verifiedAt, '2026-10-06T12:00:00.000Z')
+    assert.equal(result.lifecycles?.match.verifiedAt, first.lifecycles?.match.verifiedAt)
+  })
+
   it('keeps prior verifiedAt and matched facts when MusicBrainz throws on an already-enriched pressing', async () => {
     const verifiedAt = '2026-09-01T00:00:00.000Z'
     const previous = pressingStub({
