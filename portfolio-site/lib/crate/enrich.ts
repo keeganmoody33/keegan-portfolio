@@ -774,7 +774,7 @@ export async function enrichPressing(
       ? previous
       : hasPriorVerifiedRecord(storedPrevious)
         ? storedPrevious
-        : storedPressingHasVisitorFacts(storedPrevious) && storedPrevious.provenance.lastError
+        : storedPrevious && storedPressingHasVisitorFacts(storedPrevious) && storedPrevious.provenance.lastError
           ? storedPrevious
           : storedPressingHasVisitorFacts(draft)
             ? draft
