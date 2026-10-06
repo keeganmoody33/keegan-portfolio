@@ -4,7 +4,7 @@ import Link from 'next/link'
  * Shared house footer. `MotionSwitch` stays in the repo (preference
  * CSS, head bootstrap, sessionStorage) but is not rendered while the
  * wordmark o is a static mark and nothing on this footer needs a
- * pause control.
+ * pause control. Discogs API non-affiliation is on /legal, not here.
  */
 export default function HouseFooter() {
   return (
@@ -29,9 +29,6 @@ export default function HouseFooter() {
           legal
         </Link>
       </nav>
-      <p className="mt-4 font-mono text-[11px] leading-relaxed tracking-[0.16em] text-[var(--house-dim)]">
-        This application uses Discogs’ API but is not affiliated with, sponsored or endorsed by Discogs. ‘Discogs’ is a trademark of Zink Media, LLC.
-      </p>
     </footer>
   )
 }

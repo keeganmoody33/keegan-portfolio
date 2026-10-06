@@ -5,7 +5,7 @@ Preview `dpl_6HtLeLv8AEhBzAyYCTfxHVp3u5yi` READY, `githubCommitSha` matches.
 Host: `https://keegan-portfolio-content-9ci8a7nbl-groundskeep.vercel.app`
 Share: `https://keegan-portfolio-content-9ci8a7nbl-groundskeep.vercel.app/?_vercel_share=l8skJYmus8xewEZUsSSu8xXrcZL95A9j` (expires 2026-10-07 08:31:47 UTC)
 Redis prefix on inspect / backfill / cleanup: `lf:preview:`
-`npm test`: 201 pass / 0 fail
+`npm test`: 204 pass / 0 fail
 
 Stays DRAFT. No merge, no promote, no paid-plan change.
 
@@ -95,6 +95,18 @@ From `run7-backfill-tick.json` (HTTP 200, prefix `lf:preview:`, `skipped: false`
 ## Redis cleanup
 
 `action=cleanup` then inspect: purged `[8, 9]`, `leftoverProofIds: []`, `queueHasProofIds: false`, `dead: []`. Inspect after: no 8/9 in queue / dead / unresolved. Does not empty the visitor queue or reset backfill (left running at cursor 28, remaining 248). Does not delete last-good for 573292 / 240128 / 567894.
+
+---
+
+## Keegan ask — Discogs notice off HouseFooter
+
+Moved the Discogs API non-affiliation / Zink Media trademark sentence off `HouseFooter` (every house page) onto `/legal` **Data sources**, verbatim, in `--house-muted`. Markdown twin `/legal.md` (`legalMarkdown()`) carries the same block. Organization JSON-LD is not a /legal twin and was left unchanged. `/collection` `Data provided by Discogs.` (`DiscogsCredit`) and detail Discogs source lines are untouched.
+
+| Proof | Kind | Result | Does not prove |
+| --- | --- | --- | --- |
+| Notice gone from HouseFooter; present on /legal + /legal.md | UNIT | `lib/discogs-notice.test.ts` | Does not prove production HTML until this SHA is live. |
+| Footer 375 / 1280, notice gone | LIVE | after this SHA deploys — `run7-footer-375.png`, `run7-footer-1280.png` | Does not prove Discogs terms counsel. |
+| /legal Data sources 375 / 1280 | LIVE | after this SHA deploys — `run7-legal-375.png`, `run7-legal-1280.png` | Does not prove `/legal.md` Accept negotiation in the browser. |
 
 ---
 

@@ -1,5 +1,6 @@
 import { getCatalogPageSleeves, getCrateRows, getSleeveBySlug, sleeves } from '@/lib/catalog'
 import { HOUSE_HTML_PATHS, markdownNotFoundBody, markdownTwinPath } from '@/lib/agent'
+import { DISCOGS_API_NOTICE } from '@/lib/discogs-notice'
 import { HOUSE_DESCRIPTION, HOUSE_SAME_AS, HOUSE_TAGLINE, SITE_URL, SOURCE_REPO } from '@/lib/site'
 
 export function markdownHeaders(): HeadersInit {
@@ -181,6 +182,10 @@ Done with purpose, physical products become more than merchandise. They create a
 It is always deeper than it looks. We think through every thing we ship.
 
 Our HQ is a basement. The scope is an ACOG.
+
+## Data sources
+
+${DISCOGS_API_NOTICE}
 `
 }
 
