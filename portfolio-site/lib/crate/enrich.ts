@@ -62,6 +62,7 @@ import {
 } from './research.ts'
 import {
   isWikidataTemporaryError,
+  lookupWikidataReleaseFacts,
   wikidataClientFor,
   type WikidataClient,
   type WikidataClientOptions,
@@ -415,8 +416,10 @@ async function wikidataFactsFor(
       identity: { status: 'empty', itemQid: null, matchProp: null, itemQids: [] },
     }
   }
-  const client = deps.wikidataClient ?? wikidataClientFor(deps.wikidata)
-  return client.lookupRelease(input, fetchedAt)
+  if (deps.wikidataClient) {
+    return deps.wikidataClient.lookupRelease(input, fetchedAt)
+  }
+  return lookupWikidataReleaseFacts(input, fetchedAt, deps.wikidata)
 }
 
 export function occurrencesFromDetail(detail: DiscogsReleaseDetail): TrackOccurrence[] {

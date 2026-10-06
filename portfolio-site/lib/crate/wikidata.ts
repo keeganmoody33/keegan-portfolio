@@ -416,8 +416,8 @@ export function getSharedWikidataClient(): WikidataClient {
   return sharedWikidataClient
 }
 
-export function resetSharedWikidataClient(): void {
-  sharedWikidataClient = null
+export function resetSharedWikidataClient(options?: WikidataClientOptions): void {
+  sharedWikidataClient = options === undefined ? null : createWikidataClient(options)
 }
 
 export function wikidataClientFor(options?: WikidataClientOptions): WikidataClient {
@@ -441,5 +441,8 @@ export async function lookupWikidataReleaseFacts(
 ): Promise<WikidataLookupResult> {
   const lookup: WikidataLookupInput =
     typeof input === 'number' ? { discogsReleaseId: input } : input
-  return wikidataClientFor(options).lookupRelease(lookup, fetchedAt)
+  if (!sharedWikidataClient) {
+    sharedWikidataClient = createWikidataClient(options)
+  }
+  return sharedWikidataClient.lookupRelease(lookup, fetchedAt)
 }

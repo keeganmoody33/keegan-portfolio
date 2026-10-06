@@ -37,8 +37,11 @@ import { errorForDiscogsStatus, mapDiscogsReleaseDetail, probeDiscogsIdentity } 
 import { mergeResearchFacts, normalizeCreditRole, researchFactsFromDiscogs } from './research.ts'
 import {
   createWikidataClient,
+  getSharedWikidataClient,
+  lookupWikidataReleaseFacts,
   pickWikidataIdentity,
   researchFactsFromWikidataBindings,
+  resetSharedWikidataClient,
   WikidataTemporaryError,
   wikidataReleaseQuery,
 } from './wikidata.ts'
@@ -3025,6 +3028,69 @@ describe('research facts: fallbacks, schema, and coverage', () => {
     assert.ok(sleeps.includes(2000))
     assert.ok(sleeps.some((ms) => ms >= 1000))
     assert.equal(client.requestCount, 3)
+  })
+
+  it('lookupWikidataReleaseFacts reuses one client and sleeps ≥1100ms between SPARQL requests', async () => {
+    const sleeps: number[] = []
+    const sparqlAt: number[] = []
+    let clock = 10_000
+    const fetchedAt = '2026-10-06T06:00:00.000Z'
+    const options = {
+      now: () => clock,
+      sleep: async (ms: number) => {
+        sleeps.push(ms)
+        clock += ms
+      },
+      fetchImpl: async () => {
+        sparqlAt.push(clock)
+        return Response.json({
+          results: {
+            bindings: [
+              {
+                item: { value: 'http://www.wikidata.org/entity/Q6305224' },
+                matchProp: { value: 'http://www.wikidata.org/entity/P1954' },
+              },
+            ],
+          },
+        })
+      },
+    }
+    resetSharedWikidataClient()
+    try {
+      const first = await lookupWikidataReleaseFacts(
+        { discogsReleaseId: 567894, masterId: 284145 },
+        fetchedAt,
+        options
+      )
+      const second = await lookupWikidataReleaseFacts(
+        { discogsReleaseId: 573292, masterId: 14594 },
+        fetchedAt,
+        options
+      )
+      assert.equal(first.status, 'ok')
+      assert.equal(second.status, 'ok')
+      assert.equal(sparqlAt.length, 2)
+      assert.ok(
+        (sparqlAt[1] ?? 0) - (sparqlAt[0] ?? 0) >= 1100,
+        `expected ≥1100ms between SPARQL requests, got ${JSON.stringify(sparqlAt)} sleeps=${JSON.stringify(sleeps)}`
+      )
+      assert.ok(
+        sleeps.some((ms) => ms >= 1100),
+        `expected a sleep of ≥1100ms, got ${JSON.stringify(sleeps)}`
+      )
+      assert.equal(getSharedWikidataClient().requestCount, 2)
+    } finally {
+      resetSharedWikidataClient()
+    }
+  })
+
+  it('lookupWikidataReleaseFacts does not build a new client per call', () => {
+    const src = readFileSync(fileURLToPath(new URL('./wikidata.ts', import.meta.url)), 'utf8')
+    const start = src.indexOf('export async function lookupWikidataReleaseFacts')
+    const nextExport = src.indexOf('\nexport ', start + 1)
+    const body = src.slice(start, nextExport === -1 ? undefined : nextExport)
+    assert.match(body, /sharedWikidataClient/)
+    assert.doesNotMatch(body, /wikidataClientFor/)
   })
 })
 
