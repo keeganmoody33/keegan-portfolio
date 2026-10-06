@@ -2,6 +2,7 @@ import HouseFooter from '@/components/house/HouseFooter'
 import HouseRail from '@/components/house/HouseRail'
 import HouseShell from '@/components/house/HouseShell'
 import type { Metadata } from 'next'
+import { DISCOGS_API_NOTICE } from '@/lib/discogs-notice'
 import { houseMetadata } from '@/lib/metadata'
 
 export const metadata: Metadata = houseMetadata(
@@ -67,6 +68,9 @@ export default function LegalPage() {
 
           <p>It is always deeper than it looks. We think through every thing we ship.</p>
           <p>Our HQ is a basement. The scope is an ACOG.</p>
+
+          <h2 className="pt-4 font-display text-2xl font-semibold tracking-[-0.01em]">Data sources</h2>
+          <p className="text-[var(--house-muted)]">{DISCOGS_API_NOTICE}</p>
         </div>
       </article>
       <HouseFooter />

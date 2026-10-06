@@ -8,28 +8,36 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  DiscogsAuthError,
   DiscogsRateLimitError,
   DiscogsUnavailableError,
   collectionRequestUrl,
+  crawlFullCollection,
   createMemoryLastGoodStore,
   discogsErrorHttp,
   discogsHeaders,
   discogsReleaseUrl,
+  DISCOGS_COLLECTION_PAGE,
   fetchFullCollection,
   fetchRecentReleases,
+  isCompleteCollection,
   mapRelease,
   parseDurableCollection,
   peekLastGoodCollection,
   readCachedCollection,
+  refreshDurableCollection,
   toRecentRelease,
   type DiscogsCollection,
   type DiscogsFetch,
   type ScheduleRefresh,
 } from './discogs.ts'
 import {
+  REDIS_ISR_REVALIDATE_SECONDS,
   REDIS_READ_CACHE,
+  assertPrefixedRedisKey,
   createMemoryDurableStore,
   createRedisDurableStore,
+  discogsKeyPrefix,
   discogsRedisKeys,
   isEmptyUpstashReadResult,
   isSnapshotStale,
@@ -133,6 +141,21 @@ describe('mapRelease', () => {
     assert.equal(withCover.label, 'lf')
     assert.equal(withCover.catno, 'lf-9')
     assert.equal(withCover.discogsUrl, 'https://www.discogs.com/release/9')
+    assert.equal(withCover.releaseId, 9)
+    assert.equal(withCover.instanceId, 0)
+
+    const withInstance = mapRelease({
+      id: 573292,
+      instance_id: 1671298195,
+      basic_information: {
+        id: 573292,
+        title: 'Bootsy? Player Of The Year',
+        year: 1978,
+        artists: [{ name: "Bootsy's Rubber Band" }],
+      },
+    })
+    assert.equal(withInstance.releaseId, 573292)
+    assert.equal(withInstance.instanceId, 1671298195)
 
     const thumbOnly = mapRelease({
       basic_information: {
@@ -150,6 +173,7 @@ describe('mapRelease', () => {
   it('never emits /release/0 when id is missing or zero', () => {
     assert.equal(discogsReleaseUrl(0), 'https://www.discogs.com/')
     assert.equal(discogsReleaseUrl(undefined), 'https://www.discogs.com/')
+    assert.equal(DISCOGS_COLLECTION_PAGE, 'https://www.discogs.com/user/lecturesfrom/collection')
     const missing = mapRelease({
       basic_information: { title: 'No Id', artists: [{ name: 'A' }] },
     })
@@ -186,7 +210,7 @@ describe('fetchRecentReleases', () => {
     assert.match(calls[0].url, /per_page=5/)
     assert.match(calls[0].url, /sort=added/)
     assert.equal(calls[0].init?.next?.revalidate, 300)
-    assert.equal(calls[0].init?.headers && (calls[0].init.headers as Record<string, string>)['User-Agent'], 'lecturesfrom/1.0')
+    assert.equal(calls[0].init?.headers && (calls[0].init.headers as Record<string, string>)['User-Agent'], 'lecturesfrom/1.0 +https://lecturesfrom.com')
     assert.equal(
       calls[0].init?.headers &&
         (calls[0].init.headers as Record<string, string>).Authorization,
@@ -367,7 +391,7 @@ describe('discogsErrorHttp', () => {
 describe('headers and recent shape', () => {
   it('omits Authorization when no token is present', () => {
     const headers = discogsHeaders()
-    assert.equal(headers['User-Agent'], 'lecturesfrom/1.0')
+    assert.equal(headers['User-Agent'], 'lecturesfrom/1.0 +https://lecturesfrom.com')
     assert.equal(headers.Authorization, undefined)
     assert.ok(collectionRequestUrl(1, 5).includes('per_page=5'))
   })
@@ -437,13 +461,14 @@ function createInMemoryUpstash() {
   const calls: Array<{
     op: string
     cache?: RequestCache
+    next?: { revalidate: number }
     body: unknown
   }> = []
 
   const fetchImpl: DiscogsFetch = async (_url, init) => {
     const body = JSON.parse(String(init?.body ?? 'null')) as unknown[]
     const op = String(body?.[0] ?? '').toLowerCase()
-    calls.push({ op, cache: init?.cache, body })
+    calls.push({ op, cache: init?.cache, next: init?.next, body })
 
     if (op === 'mget') {
       const values = body.slice(1).map((key) => kv.get(String(key)) ?? null)
@@ -852,8 +877,8 @@ describe('durable last-good snapshot', () => {
 
     const mgets = fake.calls.filter((call) => call.op === 'mget')
     assert.ok(mgets.length >= 1)
-    assert.equal(mgets[0]?.cache, REDIS_READ_CACHE)
-    assert.equal(REDIS_READ_CACHE, 'no-store')
+    assert.equal(mgets[0]?.next?.revalidate, REDIS_ISR_REVALIDATE_SECONDS)
+    assert.notEqual(mgets[0]?.cache, REDIS_READ_CACHE)
     assert.equal(isEmptyUpstashReadResult([null, null]), true)
 
     const { fetchImpl: blockedFetch, calls: blockedCalls } = mockFetch({
@@ -898,6 +923,75 @@ describe('durable last-good snapshot', () => {
     assert.ok(parsed)
     assert.equal(parsed.releases[0].discogsUrl, 'https://www.discogs.com/')
     assert.doesNotMatch(parsed.releases[0].discogsUrl, /\/release\/0$/)
+  })
+
+  it('does not treat an empty {releases:[], items:0} snapshot as last-good', () => {
+    const empty = {
+      releases: [] as DiscogsCollection['releases'],
+      pagination: { page: 1, pages: 1, items: 0, perPage: 100 },
+    }
+    assert.equal(isCompleteCollection(empty), false)
+    assert.equal(parseDurableCollection(empty), null)
+  })
+
+  it('throws DiscogsAuthError on collection 401 and 403 without further pages', async () => {
+    for (const status of [401, 403] as const) {
+      const { fetchImpl, calls } = mockFetch({
+        1: { status, body: { message: 'invalid token' } },
+        2: { releases: [sampleRelease(2, 'Should not fetch')], items: 2, pages: 2 },
+      })
+      await assert.rejects(
+        () => crawlFullCollection({ fetchImpl, lastGood: createMemoryLastGoodStore() }),
+        (error: unknown) => {
+          assert.ok(error instanceof DiscogsAuthError)
+          assert.equal(error.status, status)
+          return true
+        }
+      )
+      assert.equal(calls.length, 1)
+    }
+  })
+
+  it('records collection auth and rethrows so enrichment does not start', async () => {
+    const durable = createMemoryDurableStore()
+    const { fetchImpl, calls } = mockFetch({
+      1: { status: 401, body: { message: 'invalid token' } },
+    })
+    await assert.rejects(
+      () =>
+        refreshDurableCollection(
+          durable,
+          { fetchImpl, lastGood: createMemoryLastGoodStore(), durable },
+          () => NOW_MS
+        ),
+      DiscogsAuthError
+    )
+    assert.equal(calls.length, 1)
+    assert.equal(durable.setCalls, 0)
+    assert.equal(durable.errorCalls, 1)
+    assert.equal(durable.meta?.lastError?.kind, 'auth')
+  })
+})
+
+describe('preview redis prefix hard-guard', () => {
+  it('never writes unprefixed lf: keys on preview or a non-main production ref', () => {
+    withEnv({ VERCEL_ENV: 'preview' }, () => {
+      assert.equal(discogsKeyPrefix(), 'lf:preview:')
+      assert.throws(() => assertPrefixedRedisKey('lf:crate:queue:v1'))
+      assert.equal(
+        assertPrefixedRedisKey('lf:preview:crate:queue:v1'),
+        'lf:preview:crate:queue:v1'
+      )
+    })
+    withEnv(
+      { VERCEL_ENV: 'production', VERCEL_GIT_COMMIT_REF: 'cursor/collection-record-detail-7382' },
+      () => {
+        assert.equal(discogsKeyPrefix(), 'lf:preview:')
+      }
+    )
+    withEnv({ VERCEL_ENV: 'production', VERCEL_GIT_COMMIT_REF: 'main' }, () => {
+      assert.equal(discogsKeyPrefix(), 'lf:')
+    })
   })
 })
 

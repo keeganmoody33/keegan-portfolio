@@ -33,8 +33,13 @@ export default function HouseShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="house">
+      <a href="#house-content" className="house-skip">
+        skip to content
+      </a>
       {Children.toArray(before)}
-      <main>{Children.toArray(content)}</main>
+      <main id="house-content" tabIndex={-1}>
+        {Children.toArray(content)}
+      </main>
       {Children.toArray(after)}
     </div>
   )

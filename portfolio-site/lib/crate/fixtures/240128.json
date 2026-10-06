@@ -1,0 +1,2514 @@
+{
+  "schemaVersion": 1,
+  "releaseId": 240128,
+  "entryInstanceIds": [],
+  "facts": {
+    "releaseId": 240128,
+    "title": "Still Standing",
+    "artist": "Goodie Mob",
+    "label": "LaFace Records",
+    "catno": "73008-26047-1",
+    "format": "Vinyl, LP, Album",
+    "country": "US",
+    "released": "1998",
+    "year": 1998,
+    "cover": "https://i.discogs.com/iMB89NgTWpK2UQhC84i8B5s8lVEy1D38f4Ko9DMda3s/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTI0MDEy/OC0xNjE0OTA5NDgw/LTI1NDguanBlZw.jpeg",
+    "thumbnail": "https://i.discogs.com/UWnKbDz5o1GsiGj129NwC69Ug4IJb3KOPpMmaXw6XMM/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTI0MDEy/OC0xNjE0OTA5NDgw/LTI1NDguanBlZw.jpeg",
+    "discogsUrl": "https://www.discogs.com/release/240128",
+    "barcode": "730082604710"
+  },
+  "description": {
+    "text": "Mastered at Powers House of Sound, New York, NY.",
+    "source": "discogs",
+    "sourceUrl": "https://www.discogs.com/release/240128"
+  },
+  "tracks": [
+    {
+      "position": "A1",
+      "title": "The Experience",
+      "duration": "2:22",
+      "durationMs": 142000,
+      "index": 0,
+      "recording": {
+        "matchStatus": "matched",
+        "confidence": 0.9000000000000001,
+        "reason": "matched via musicbrainz release using position, title, and duration",
+        "mbid": "d0a48b7a-9014-4f92-8833-694379e55bb8",
+        "recordingUrl": "https://musicbrainz.org/recording/d0a48b7a-9014-4f92-8833-694379e55bb8"
+      }
+    },
+    {
+      "position": "A2",
+      "title": "Black Ice",
+      "duration": "3:25",
+      "durationMs": 205000,
+      "index": 1,
+      "recording": {
+        "matchStatus": "matched",
+        "confidence": 0.9000000000000001,
+        "reason": "matched via musicbrainz release using position, title, and duration",
+        "mbid": "52324e56-8d82-4128-a6f6-3a7c236deb6e",
+        "recordingUrl": "https://musicbrainz.org/recording/52324e56-8d82-4128-a6f6-3a7c236deb6e"
+      }
+    },
+    {
+      "position": "A3",
+      "title": "Fly Away",
+      "duration": "4:04",
+      "durationMs": 244000,
+      "index": 2,
+      "recording": {
+        "matchStatus": "matched",
+        "confidence": 0.9000000000000001,
+        "reason": "matched via musicbrainz release using position, title, and duration",
+        "mbid": "6a433629-d595-49be-8e96-97ce6c3dfaea",
+        "recordingUrl": "https://musicbrainz.org/recording/6a433629-d595-49be-8e96-97ce6c3dfaea"
+      }
+    },
+    {
+      "position": "A4",
+      "title": "The Damm",
+      "duration": "4:48",
+      "durationMs": 288000,
+      "index": 3,
+      "recording": {
+        "matchStatus": "matched",
+        "confidence": 0.9000000000000001,
+        "reason": "matched via musicbrainz release using position, title, and duration",
+        "mbid": "1c612a63-aaf5-42ce-a177-ed75b3f0a836",
+        "recordingUrl": "https://musicbrainz.org/recording/1c612a63-aaf5-42ce-a177-ed75b3f0a836"
+      }
+    },
+    {
+      "position": "B1",
+      "title": "They Don't Dance No Mo' (Clean)",
+      "duration": "3:25",
+      "durationMs": 205000,
+      "index": 4,
+      "recording": {
+        "matchStatus": "matched",
+        "confidence": 0.9000000000000001,
+        "reason": "matched via musicbrainz release using position, title, and duration",
+        "mbid": "d8d76b27-50d2-4dac-a645-ce1395b64041",
+        "recordingUrl": "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+      }
+    },
+    {
+      "position": "B2",
+      "title": "Beautiful Skin",
+      "duration": "6:10",
+      "durationMs": 370000,
+      "index": 5,
+      "recording": {
+        "matchStatus": "matched",
+        "confidence": 0.9000000000000001,
+        "reason": "matched via musicbrainz release using position, title, and duration",
+        "mbid": "ed6e2164-d610-40df-b9a0-467c1d2108b7",
+        "recordingUrl": "https://musicbrainz.org/recording/ed6e2164-d610-40df-b9a0-467c1d2108b7"
+      }
+    },
+    {
+      "position": "B3",
+      "title": "Gutta Butta",
+      "duration": "4:48",
+      "durationMs": 288000,
+      "index": 6,
+      "recording": {
+        "matchStatus": "matched",
+        "confidence": 0.9000000000000001,
+        "reason": "matched via musicbrainz release using position, title, and duration",
+        "mbid": "ccacd3fe-c50d-40cf-a8c0-0a9512af64ac",
+        "recordingUrl": "https://musicbrainz.org/recording/ccacd3fe-c50d-40cf-a8c0-0a9512af64ac"
+      }
+    },
+    {
+      "position": "B4",
+      "title": "Ghetto-ology",
+      "duration": "5:35",
+      "durationMs": 335000,
+      "index": 7,
+      "recording": {
+        "matchStatus": "matched",
+        "confidence": 0.9000000000000001,
+        "reason": "matched via musicbrainz release using position, title, and duration",
+        "mbid": "f0fdb82a-12b3-4be1-8303-1877d58f3405",
+        "recordingUrl": "https://musicbrainz.org/recording/f0fdb82a-12b3-4be1-8303-1877d58f3405"
+      }
+    },
+    {
+      "position": "C1",
+      "title": "Distant Wilderness",
+      "duration": "5:28",
+      "durationMs": 328000,
+      "index": 8,
+      "recording": {
+        "matchStatus": "matched",
+        "confidence": 0.9000000000000001,
+        "reason": "matched via musicbrainz release using position, title, and duration",
+        "mbid": "15ee53d4-d9f3-43e8-b82e-0d407cf7cabd",
+        "recordingUrl": "https://musicbrainz.org/recording/15ee53d4-d9f3-43e8-b82e-0d407cf7cabd"
+      }
+    },
+    {
+      "position": "C2",
+      "title": "Greeny Green",
+      "duration": "3:57",
+      "durationMs": 237000,
+      "index": 9,
+      "recording": {
+        "matchStatus": "matched",
+        "confidence": 0.9000000000000001,
+        "reason": "matched via musicbrainz release using position, title, and duration",
+        "mbid": "ff517262-8173-447a-a7d4-07a0d98c3fea",
+        "recordingUrl": "https://musicbrainz.org/recording/ff517262-8173-447a-a7d4-07a0d98c3fea"
+      }
+    },
+    {
+      "position": "C3",
+      "title": "I Refuse Limitation",
+      "duration": "6:01",
+      "durationMs": 361000,
+      "index": 10,
+      "recording": {
+        "matchStatus": "matched",
+        "confidence": 0.9000000000000001,
+        "reason": "matched via musicbrainz release using position, title, and duration",
+        "mbid": "f1434b1f-a809-4542-a4f5-8812a8cb94da",
+        "recordingUrl": "https://musicbrainz.org/recording/f1434b1f-a809-4542-a4f5-8812a8cb94da"
+      }
+    },
+    {
+      "position": "C4",
+      "title": "See You When I See You",
+      "duration": "2:29",
+      "durationMs": 149000,
+      "index": 11,
+      "recording": {
+        "matchStatus": "matched",
+        "confidence": 0.9000000000000001,
+        "reason": "matched via musicbrainz release using position, title, and duration",
+        "mbid": "9a88cf19-00a8-4800-a6dc-8a900f6db34f",
+        "recordingUrl": "https://musicbrainz.org/recording/9a88cf19-00a8-4800-a6dc-8a900f6db34f"
+      }
+    },
+    {
+      "position": "D1",
+      "title": "Inshallah",
+      "duration": "5:03",
+      "durationMs": 303000,
+      "index": 12,
+      "recording": {
+        "matchStatus": "matched",
+        "confidence": 0.9000000000000001,
+        "reason": "matched via musicbrainz release using position, title, and duration",
+        "mbid": "a8a6efa3-9f79-438e-96e7-9d134392585f",
+        "recordingUrl": "https://musicbrainz.org/recording/a8a6efa3-9f79-438e-96e7-9d134392585f"
+      }
+    },
+    {
+      "position": "D2",
+      "title": "Just About Over",
+      "duration": "5:25",
+      "durationMs": 325000,
+      "index": 13,
+      "recording": {
+        "matchStatus": "matched",
+        "confidence": 0.9000000000000001,
+        "reason": "matched via musicbrainz release using position, title, and duration",
+        "mbid": "60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3",
+        "recordingUrl": "https://musicbrainz.org/recording/60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3"
+      }
+    },
+    {
+      "position": "D3",
+      "title": "Still Standing",
+      "duration": "4:52",
+      "durationMs": 292000,
+      "index": 14,
+      "recording": {
+        "matchStatus": "matched",
+        "confidence": 0.9000000000000001,
+        "reason": "matched via musicbrainz release using position, title, and duration",
+        "mbid": "4a77f096-38eb-4d62-a69f-8c27072557c0",
+        "recordingUrl": "https://musicbrainz.org/recording/4a77f096-38eb-4d62-a69f-8c27072557c0"
+      }
+    }
+  ],
+  "mbRelease": {
+    "mbid": "45047c4a-07d3-4206-8a3c-a4aa29fc4bf3",
+    "url": "https://musicbrainz.org/release/45047c4a-07d3-4206-8a3c-a4aa29fc4bf3",
+    "matchStatus": "matched",
+    "confidence": 0.95,
+    "reason": "musicbrainz release linked by discogs url relationship"
+  },
+  "recordings": {
+    "d0a48b7a-9014-4f92-8833-694379e55bb8": {
+      "mbid": "d0a48b7a-9014-4f92-8833-694379e55bb8",
+      "title": "The Experience",
+      "artist": "Goodie Mob",
+      "credits": [
+        {
+          "name": "Shawn Grove",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d0a48b7a-9014-4f92-8833-694379e55bb8"
+        },
+        {
+          "name": "Kevin Parker",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d0a48b7a-9014-4f92-8833-694379e55bb8"
+        },
+        {
+          "name": "Kenneth Stallworth",
+          "role": "engineer",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d0a48b7a-9014-4f92-8833-694379e55bb8"
+        },
+        {
+          "name": "Jason Stokes",
+          "role": "engineer",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d0a48b7a-9014-4f92-8833-694379e55bb8"
+        },
+        {
+          "name": "Preston Crump",
+          "role": "instrument",
+          "attributes": [
+            "bass"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d0a48b7a-9014-4f92-8833-694379e55bb8"
+        },
+        {
+          "name": "Donny Mathis",
+          "role": "instrument",
+          "attributes": [
+            "guitar"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d0a48b7a-9014-4f92-8833-694379e55bb8"
+        },
+        {
+          "name": "Marvin “Chanz” Parkman",
+          "role": "instrument",
+          "attributes": [
+            "keyboard"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d0a48b7a-9014-4f92-8833-694379e55bb8"
+        },
+        {
+          "name": "Brian Dozoretz",
+          "role": "mix",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d0a48b7a-9014-4f92-8833-694379e55bb8"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d0a48b7a-9014-4f92-8833-694379e55bb8"
+        },
+        {
+          "name": "Dexter Simmons",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d0a48b7a-9014-4f92-8833-694379e55bb8"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d0a48b7a-9014-4f92-8833-694379e55bb8"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "programming",
+          "attributes": [
+            "drums (drum set)"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d0a48b7a-9014-4f92-8833-694379e55bb8"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "programming",
+          "attributes": [
+            "keyboard"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d0a48b7a-9014-4f92-8833-694379e55bb8"
+        },
+        {
+          "name": "CeeLo Green",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d0a48b7a-9014-4f92-8833-694379e55bb8"
+        }
+      ],
+      "samplesFrom": [],
+      "sampledIn": [],
+      "provenance": {
+        "sourceUrls": [
+          "https://musicbrainz.org/recording/d0a48b7a-9014-4f92-8833-694379e55bb8"
+        ],
+        "matchStatus": "matched",
+        "confidence": 0.9,
+        "reason": "musicbrainz recording lookup",
+        "checkedAt": "2026-10-06T01:22:04.419Z",
+        "refreshAfter": "2026-11-05T01:22:04.419Z",
+        "lastError": null
+      }
+    },
+    "52324e56-8d82-4128-a6f6-3a7c236deb6e": {
+      "mbid": "52324e56-8d82-4128-a6f6-3a7c236deb6e",
+      "title": "Black Ice",
+      "artist": "Goodie Mob feat. OutKast",
+      "credits": [
+        {
+          "name": "Brian Dozoretz",
+          "role": "engineer",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/52324e56-8d82-4128-a6f6-3a7c236deb6e"
+        },
+        {
+          "name": "Carlos Glover",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/52324e56-8d82-4128-a6f6-3a7c236deb6e"
+        },
+        {
+          "name": "Bernasky Wall",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/52324e56-8d82-4128-a6f6-3a7c236deb6e"
+        },
+        {
+          "name": "André 3000",
+          "role": "instrument",
+          "attributes": [
+            "bass guitar"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/52324e56-8d82-4128-a6f6-3a7c236deb6e"
+        },
+        {
+          "name": "Donny Mathis",
+          "role": "instrument",
+          "attributes": [
+            "guitar"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/52324e56-8d82-4128-a6f6-3a7c236deb6e"
+        },
+        {
+          "name": "Brian Dozoretz",
+          "role": "mix",
+          "attributes": [
+            "assistant"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/52324e56-8d82-4128-a6f6-3a7c236deb6e"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/52324e56-8d82-4128-a6f6-3a7c236deb6e"
+        },
+        {
+          "name": "Dexter Simmons",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/52324e56-8d82-4128-a6f6-3a7c236deb6e"
+        },
+        {
+          "name": "OutKast",
+          "role": "performer",
+          "attributes": [
+            "guest"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/52324e56-8d82-4128-a6f6-3a7c236deb6e"
+        },
+        {
+          "name": "Mr. DJ",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/52324e56-8d82-4128-a6f6-3a7c236deb6e"
+        },
+        {
+          "name": "Mr. DJ",
+          "role": "programming",
+          "attributes": [
+            "drums (drum set)"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/52324e56-8d82-4128-a6f6-3a7c236deb6e"
+        },
+        {
+          "name": "André 3000",
+          "role": "vocal",
+          "attributes": [
+            "guest"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/52324e56-8d82-4128-a6f6-3a7c236deb6e"
+        },
+        {
+          "name": "Big Boi",
+          "role": "vocal",
+          "attributes": [
+            "guest"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/52324e56-8d82-4128-a6f6-3a7c236deb6e"
+        },
+        {
+          "name": "Big Gipp",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/52324e56-8d82-4128-a6f6-3a7c236deb6e"
+        }
+      ],
+      "samplesFrom": [],
+      "sampledIn": [],
+      "provenance": {
+        "sourceUrls": [
+          "https://musicbrainz.org/recording/52324e56-8d82-4128-a6f6-3a7c236deb6e"
+        ],
+        "matchStatus": "matched",
+        "confidence": 0.9,
+        "reason": "musicbrainz recording lookup",
+        "checkedAt": "2026-10-06T01:22:04.419Z",
+        "refreshAfter": "2026-11-05T01:22:04.419Z",
+        "lastError": null
+      }
+    },
+    "6a433629-d595-49be-8e96-97ce6c3dfaea": {
+      "mbid": "6a433629-d595-49be-8e96-97ce6c3dfaea",
+      "title": "Fly Away",
+      "artist": "Goodie Mob",
+      "credits": [
+        {
+          "name": "Brian Dozoretz",
+          "role": "engineer",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/6a433629-d595-49be-8e96-97ce6c3dfaea"
+        },
+        {
+          "name": "Bernasky Wall",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/6a433629-d595-49be-8e96-97ce6c3dfaea"
+        },
+        {
+          "name": "Preston Crump",
+          "role": "instrument",
+          "attributes": [
+            "bass"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/6a433629-d595-49be-8e96-97ce6c3dfaea"
+        },
+        {
+          "name": "Donny Mathis",
+          "role": "instrument",
+          "attributes": [
+            "guitar"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/6a433629-d595-49be-8e96-97ce6c3dfaea"
+        },
+        {
+          "name": "Marvin “Chanz” Parkman",
+          "role": "instrument",
+          "attributes": [
+            "clavinet"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/6a433629-d595-49be-8e96-97ce6c3dfaea"
+        },
+        {
+          "name": "Brian Dozoretz",
+          "role": "mix",
+          "attributes": [
+            "assistant"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/6a433629-d595-49be-8e96-97ce6c3dfaea"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/6a433629-d595-49be-8e96-97ce6c3dfaea"
+        },
+        {
+          "name": "Dexter Simmons",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/6a433629-d595-49be-8e96-97ce6c3dfaea"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/6a433629-d595-49be-8e96-97ce6c3dfaea"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "programming",
+          "attributes": [
+            "drums (drum set)"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/6a433629-d595-49be-8e96-97ce6c3dfaea"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "programming",
+          "attributes": [
+            "keyboard"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/6a433629-d595-49be-8e96-97ce6c3dfaea"
+        },
+        {
+          "name": "Big Gipp",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/6a433629-d595-49be-8e96-97ce6c3dfaea"
+        },
+        {
+          "name": "Khujo Goodie",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/6a433629-d595-49be-8e96-97ce6c3dfaea"
+        },
+        {
+          "name": "CeeLo Green",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/6a433629-d595-49be-8e96-97ce6c3dfaea"
+        },
+        {
+          "name": "T‐Mo",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/6a433629-d595-49be-8e96-97ce6c3dfaea"
+        }
+      ],
+      "samplesFrom": [],
+      "sampledIn": [],
+      "provenance": {
+        "sourceUrls": [
+          "https://musicbrainz.org/recording/6a433629-d595-49be-8e96-97ce6c3dfaea"
+        ],
+        "matchStatus": "matched",
+        "confidence": 0.9,
+        "reason": "musicbrainz recording lookup",
+        "checkedAt": "2026-10-06T01:22:04.419Z",
+        "refreshAfter": "2026-11-05T01:22:04.419Z",
+        "lastError": null
+      }
+    },
+    "1c612a63-aaf5-42ce-a177-ed75b3f0a836": {
+      "mbid": "1c612a63-aaf5-42ce-a177-ed75b3f0a836",
+      "title": "The Damm",
+      "artist": "Goodie Mob feat. Cool Breeze",
+      "credits": [
+        {
+          "name": "Bernasky Wall",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/1c612a63-aaf5-42ce-a177-ed75b3f0a836"
+        },
+        {
+          "name": "DJ HERB",
+          "role": "instrument",
+          "attributes": [
+            "turntable"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/1c612a63-aaf5-42ce-a177-ed75b3f0a836"
+        },
+        {
+          "name": "John Frye",
+          "role": "mix",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/1c612a63-aaf5-42ce-a177-ed75b3f0a836"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/1c612a63-aaf5-42ce-a177-ed75b3f0a836"
+        },
+        {
+          "name": "Neal Pogue",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/1c612a63-aaf5-42ce-a177-ed75b3f0a836"
+        },
+        {
+          "name": "Cool Breeze",
+          "role": "performer",
+          "attributes": [
+            "guest"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/1c612a63-aaf5-42ce-a177-ed75b3f0a836"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/1c612a63-aaf5-42ce-a177-ed75b3f0a836"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "programming",
+          "attributes": [
+            "drums (drum set)"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/1c612a63-aaf5-42ce-a177-ed75b3f0a836"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "programming",
+          "attributes": [
+            "keyboard"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/1c612a63-aaf5-42ce-a177-ed75b3f0a836"
+        },
+        {
+          "name": "Big Gipp",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/1c612a63-aaf5-42ce-a177-ed75b3f0a836"
+        },
+        {
+          "name": "Cool Breeze",
+          "role": "vocal",
+          "attributes": [
+            "guest"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/1c612a63-aaf5-42ce-a177-ed75b3f0a836"
+        },
+        {
+          "name": "Khujo Goodie",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/1c612a63-aaf5-42ce-a177-ed75b3f0a836"
+        },
+        {
+          "name": "CeeLo Green",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/1c612a63-aaf5-42ce-a177-ed75b3f0a836"
+        },
+        {
+          "name": "T‐Mo",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/1c612a63-aaf5-42ce-a177-ed75b3f0a836"
+        }
+      ],
+      "samplesFrom": [],
+      "sampledIn": [],
+      "provenance": {
+        "sourceUrls": [
+          "https://musicbrainz.org/recording/1c612a63-aaf5-42ce-a177-ed75b3f0a836"
+        ],
+        "matchStatus": "matched",
+        "confidence": 0.9,
+        "reason": "musicbrainz recording lookup",
+        "checkedAt": "2026-10-06T01:22:04.419Z",
+        "refreshAfter": "2026-11-05T01:22:04.419Z",
+        "lastError": null
+      }
+    },
+    "d8d76b27-50d2-4dac-a645-ce1395b64041": {
+      "mbid": "d8d76b27-50d2-4dac-a645-ce1395b64041",
+      "title": "They Don't Dance No Mo'",
+      "artist": "Goodie Mob feat. Lil' Will",
+      "credits": [
+        {
+          "name": "Donny Mathis",
+          "role": "instrument",
+          "attributes": [
+            "guitar"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "instrument",
+          "attributes": [
+            "bass"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "instrument",
+          "attributes": [
+            "Moog"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "instrument",
+          "attributes": [
+            "synthesizer"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+        },
+        {
+          "name": "Marvin “Chanz” Parkman",
+          "role": "instrument",
+          "attributes": [
+            "keyboard"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+        },
+        {
+          "name": "David Whild",
+          "role": "instrument",
+          "attributes": [
+            "guitar"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+        },
+        {
+          "name": "Brian Frye",
+          "role": "mix",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+        },
+        {
+          "name": "Neal Pogue",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+        },
+        {
+          "name": "Jason Stokes",
+          "role": "mix",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+        },
+        {
+          "name": "Mr. DJ",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+        },
+        {
+          "name": "Mr. DJ",
+          "role": "programming",
+          "attributes": [
+            "drums (drum set)"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+        },
+        {
+          "name": "Shawn Grove",
+          "role": "recording",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+        },
+        {
+          "name": "Bernasky Wall",
+          "role": "recording",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+        },
+        {
+          "name": "Big Gipp",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+        },
+        {
+          "name": "Khujo Goodie",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+        },
+        {
+          "name": "CeeLo Green",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+        },
+        {
+          "name": "Lil’ Will",
+          "role": "vocal",
+          "attributes": [
+            "background vocals",
+            "guest"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+        },
+        {
+          "name": "T‐Mo",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+        }
+      ],
+      "samplesFrom": [],
+      "sampledIn": [],
+      "provenance": {
+        "sourceUrls": [
+          "https://musicbrainz.org/recording/d8d76b27-50d2-4dac-a645-ce1395b64041"
+        ],
+        "matchStatus": "matched",
+        "confidence": 0.9,
+        "reason": "musicbrainz recording lookup",
+        "checkedAt": "2026-10-06T01:22:04.419Z",
+        "refreshAfter": "2026-11-05T01:22:04.419Z",
+        "lastError": null
+      }
+    },
+    "ed6e2164-d610-40df-b9a0-467c1d2108b7": {
+      "mbid": "ed6e2164-d610-40df-b9a0-467c1d2108b7",
+      "title": "Beautiful Skin",
+      "artist": "Goodie Mob",
+      "credits": [
+        {
+          "name": "Shawn Grove",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ed6e2164-d610-40df-b9a0-467c1d2108b7"
+        },
+        {
+          "name": "Vincent Marshel",
+          "role": "engineer",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ed6e2164-d610-40df-b9a0-467c1d2108b7"
+        },
+        {
+          "name": "Preston Crump",
+          "role": "instrument",
+          "attributes": [
+            "bass"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ed6e2164-d610-40df-b9a0-467c1d2108b7"
+        },
+        {
+          "name": "Tarus Mateen",
+          "role": "instrument",
+          "attributes": [
+            "bass"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ed6e2164-d610-40df-b9a0-467c1d2108b7"
+        },
+        {
+          "name": "Craig Love",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ed6e2164-d610-40df-b9a0-467c1d2108b7"
+        },
+        {
+          "name": "Neal Pogue",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ed6e2164-d610-40df-b9a0-467c1d2108b7"
+        },
+        {
+          "name": "Craig Love",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ed6e2164-d610-40df-b9a0-467c1d2108b7"
+        },
+        {
+          "name": "Big Gipp",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ed6e2164-d610-40df-b9a0-467c1d2108b7"
+        },
+        {
+          "name": "Khujo Goodie",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ed6e2164-d610-40df-b9a0-467c1d2108b7"
+        },
+        {
+          "name": "CeeLo Green",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ed6e2164-d610-40df-b9a0-467c1d2108b7"
+        },
+        {
+          "name": "T‐Mo",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ed6e2164-d610-40df-b9a0-467c1d2108b7"
+        }
+      ],
+      "samplesFrom": [],
+      "sampledIn": [],
+      "provenance": {
+        "sourceUrls": [
+          "https://musicbrainz.org/recording/ed6e2164-d610-40df-b9a0-467c1d2108b7"
+        ],
+        "matchStatus": "matched",
+        "confidence": 0.9,
+        "reason": "musicbrainz recording lookup",
+        "checkedAt": "2026-10-06T01:22:04.419Z",
+        "refreshAfter": "2026-11-05T01:22:04.419Z",
+        "lastError": null
+      }
+    },
+    "ccacd3fe-c50d-40cf-a8c0-0a9512af64ac": {
+      "mbid": "ccacd3fe-c50d-40cf-a8c0-0a9512af64ac",
+      "title": "Gutta Butta",
+      "artist": "Goodie Mob",
+      "credits": [
+        {
+          "name": "Shawn Grove",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ccacd3fe-c50d-40cf-a8c0-0a9512af64ac"
+        },
+        {
+          "name": "Vincent Marshel",
+          "role": "engineer",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ccacd3fe-c50d-40cf-a8c0-0a9512af64ac"
+        },
+        {
+          "name": "Skinny Miracles",
+          "role": "instrument",
+          "attributes": [
+            "piano"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ccacd3fe-c50d-40cf-a8c0-0a9512af64ac"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "instrument",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ccacd3fe-c50d-40cf-a8c0-0a9512af64ac"
+        },
+        {
+          "name": "Alex Lowe",
+          "role": "mix",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ccacd3fe-c50d-40cf-a8c0-0a9512af64ac"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ccacd3fe-c50d-40cf-a8c0-0a9512af64ac"
+        },
+        {
+          "name": "Alvin Speights",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ccacd3fe-c50d-40cf-a8c0-0a9512af64ac"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ccacd3fe-c50d-40cf-a8c0-0a9512af64ac"
+        },
+        {
+          "name": "Big Gipp",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ccacd3fe-c50d-40cf-a8c0-0a9512af64ac"
+        },
+        {
+          "name": "Khujo Goodie",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ccacd3fe-c50d-40cf-a8c0-0a9512af64ac"
+        },
+        {
+          "name": "CeeLo Green",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ccacd3fe-c50d-40cf-a8c0-0a9512af64ac"
+        },
+        {
+          "name": "T‐Mo",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ccacd3fe-c50d-40cf-a8c0-0a9512af64ac"
+        }
+      ],
+      "samplesFrom": [],
+      "sampledIn": [],
+      "provenance": {
+        "sourceUrls": [
+          "https://musicbrainz.org/recording/ccacd3fe-c50d-40cf-a8c0-0a9512af64ac"
+        ],
+        "matchStatus": "matched",
+        "confidence": 0.9,
+        "reason": "musicbrainz recording lookup",
+        "checkedAt": "2026-10-06T01:22:04.419Z",
+        "refreshAfter": "2026-11-05T01:22:04.419Z",
+        "lastError": null
+      }
+    },
+    "f0fdb82a-12b3-4be1-8303-1877d58f3405": {
+      "mbid": "f0fdb82a-12b3-4be1-8303-1877d58f3405",
+      "title": "Ghetto-ology",
+      "artist": "Goodie Mob feat. Chiefton",
+      "credits": [
+        {
+          "name": "Bernasky Wall",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f0fdb82a-12b3-4be1-8303-1877d58f3405"
+        },
+        {
+          "name": "CeeLo Green",
+          "role": "instrument",
+          "attributes": [
+            "keyboard"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f0fdb82a-12b3-4be1-8303-1877d58f3405"
+        },
+        {
+          "name": "Craig Love",
+          "role": "instrument",
+          "attributes": [
+            "guitar"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f0fdb82a-12b3-4be1-8303-1877d58f3405"
+        },
+        {
+          "name": "Omar Phillips",
+          "role": "instrument",
+          "attributes": [
+            "congas"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f0fdb82a-12b3-4be1-8303-1877d58f3405"
+        },
+        {
+          "name": "Josh Butler",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f0fdb82a-12b3-4be1-8303-1877d58f3405"
+        },
+        {
+          "name": "Chiefton",
+          "role": "performer",
+          "attributes": [
+            "guest"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f0fdb82a-12b3-4be1-8303-1877d58f3405"
+        },
+        {
+          "name": "CeeLo Green",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f0fdb82a-12b3-4be1-8303-1877d58f3405"
+        },
+        {
+          "name": "CeeLo Green",
+          "role": "programming",
+          "attributes": [
+            "drums (drum set)"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f0fdb82a-12b3-4be1-8303-1877d58f3405"
+        },
+        {
+          "name": "Big Gipp",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f0fdb82a-12b3-4be1-8303-1877d58f3405"
+        },
+        {
+          "name": "Chiefton",
+          "role": "vocal",
+          "attributes": [
+            "guest"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f0fdb82a-12b3-4be1-8303-1877d58f3405"
+        },
+        {
+          "name": "Khujo Goodie",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f0fdb82a-12b3-4be1-8303-1877d58f3405"
+        },
+        {
+          "name": "CeeLo Green",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f0fdb82a-12b3-4be1-8303-1877d58f3405"
+        },
+        {
+          "name": "T‐Mo",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f0fdb82a-12b3-4be1-8303-1877d58f3405"
+        }
+      ],
+      "samplesFrom": [],
+      "sampledIn": [],
+      "provenance": {
+        "sourceUrls": [
+          "https://musicbrainz.org/recording/f0fdb82a-12b3-4be1-8303-1877d58f3405"
+        ],
+        "matchStatus": "matched",
+        "confidence": 0.9,
+        "reason": "musicbrainz recording lookup",
+        "checkedAt": "2026-10-06T01:22:04.419Z",
+        "refreshAfter": "2026-11-05T01:22:04.419Z",
+        "lastError": null
+      }
+    },
+    "15ee53d4-d9f3-43e8-b82e-0d407cf7cabd": {
+      "mbid": "15ee53d4-d9f3-43e8-b82e-0d407cf7cabd",
+      "title": "Distant Wilderness",
+      "artist": "Goodie Mob",
+      "credits": [
+        {
+          "name": "Shawn Grove",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/15ee53d4-d9f3-43e8-b82e-0d407cf7cabd"
+        },
+        {
+          "name": "Vincent Marshel",
+          "role": "engineer",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/15ee53d4-d9f3-43e8-b82e-0d407cf7cabd"
+        },
+        {
+          "name": "Preston Crump",
+          "role": "instrument",
+          "attributes": [
+            "bass"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/15ee53d4-d9f3-43e8-b82e-0d407cf7cabd"
+        },
+        {
+          "name": "CeeLo Green",
+          "role": "instrument",
+          "attributes": [
+            "strings"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/15ee53d4-d9f3-43e8-b82e-0d407cf7cabd"
+        },
+        {
+          "name": "Marvin “Chanz” Parkman",
+          "role": "instrument",
+          "attributes": [
+            "piano"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/15ee53d4-d9f3-43e8-b82e-0d407cf7cabd"
+        },
+        {
+          "name": "Martin Terry",
+          "role": "instrument",
+          "attributes": [
+            "guitar"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/15ee53d4-d9f3-43e8-b82e-0d407cf7cabd"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/15ee53d4-d9f3-43e8-b82e-0d407cf7cabd"
+        },
+        {
+          "name": "Claudine Pontier",
+          "role": "mix",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/15ee53d4-d9f3-43e8-b82e-0d407cf7cabd"
+        },
+        {
+          "name": "Alvin Speights",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/15ee53d4-d9f3-43e8-b82e-0d407cf7cabd"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/15ee53d4-d9f3-43e8-b82e-0d407cf7cabd"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "programming",
+          "attributes": [
+            "drums (drum set)"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/15ee53d4-d9f3-43e8-b82e-0d407cf7cabd"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "programming",
+          "attributes": [
+            "keyboard"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/15ee53d4-d9f3-43e8-b82e-0d407cf7cabd"
+        },
+        {
+          "name": "Big Gipp",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/15ee53d4-d9f3-43e8-b82e-0d407cf7cabd"
+        },
+        {
+          "name": "Khujo Goodie",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/15ee53d4-d9f3-43e8-b82e-0d407cf7cabd"
+        },
+        {
+          "name": "CeeLo Green",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/15ee53d4-d9f3-43e8-b82e-0d407cf7cabd"
+        },
+        {
+          "name": "Debra Killings",
+          "role": "vocal",
+          "attributes": [
+            "background vocals",
+            "guest"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/15ee53d4-d9f3-43e8-b82e-0d407cf7cabd"
+        },
+        {
+          "name": "T‐Mo",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/15ee53d4-d9f3-43e8-b82e-0d407cf7cabd"
+        }
+      ],
+      "samplesFrom": [],
+      "sampledIn": [],
+      "provenance": {
+        "sourceUrls": [
+          "https://musicbrainz.org/recording/15ee53d4-d9f3-43e8-b82e-0d407cf7cabd"
+        ],
+        "matchStatus": "matched",
+        "confidence": 0.9,
+        "reason": "musicbrainz recording lookup",
+        "checkedAt": "2026-10-06T01:22:04.419Z",
+        "refreshAfter": "2026-11-05T01:22:04.419Z",
+        "lastError": null
+      }
+    },
+    "ff517262-8173-447a-a7d4-07a0d98c3fea": {
+      "mbid": "ff517262-8173-447a-a7d4-07a0d98c3fea",
+      "title": "Greeny Green",
+      "artist": "Goodie Mob feat. Witchdoctor",
+      "credits": [
+        {
+          "name": "Bernasky Wall",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ff517262-8173-447a-a7d4-07a0d98c3fea"
+        },
+        {
+          "name": "Josh Butler",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ff517262-8173-447a-a7d4-07a0d98c3fea"
+        },
+        {
+          "name": "Witchdoctor",
+          "role": "performer",
+          "attributes": [
+            "guest"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ff517262-8173-447a-a7d4-07a0d98c3fea"
+        },
+        {
+          "name": "T‐Mo",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ff517262-8173-447a-a7d4-07a0d98c3fea"
+        },
+        {
+          "name": "T‐Mo",
+          "role": "programming",
+          "attributes": [
+            "drums (drum set)"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ff517262-8173-447a-a7d4-07a0d98c3fea"
+        },
+        {
+          "name": "Khujo Goodie",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ff517262-8173-447a-a7d4-07a0d98c3fea"
+        },
+        {
+          "name": "T‐Mo",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ff517262-8173-447a-a7d4-07a0d98c3fea"
+        },
+        {
+          "name": "Witchdoctor",
+          "role": "vocal",
+          "attributes": [
+            "guest"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/ff517262-8173-447a-a7d4-07a0d98c3fea"
+        }
+      ],
+      "samplesFrom": [],
+      "sampledIn": [],
+      "provenance": {
+        "sourceUrls": [
+          "https://musicbrainz.org/recording/ff517262-8173-447a-a7d4-07a0d98c3fea"
+        ],
+        "matchStatus": "matched",
+        "confidence": 0.9,
+        "reason": "musicbrainz recording lookup",
+        "checkedAt": "2026-10-06T01:22:04.419Z",
+        "refreshAfter": "2026-11-05T01:22:04.419Z",
+        "lastError": null
+      }
+    },
+    "f1434b1f-a809-4542-a4f5-8812a8cb94da": {
+      "mbid": "f1434b1f-a809-4542-a4f5-8812a8cb94da",
+      "title": "I Refuse Limitation",
+      "artist": "Goodie Mob feat. Backbone",
+      "credits": [
+        {
+          "name": "Josh Butler",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f1434b1f-a809-4542-a4f5-8812a8cb94da"
+        },
+        {
+          "name": "Blake Eiseman",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f1434b1f-a809-4542-a4f5-8812a8cb94da"
+        },
+        {
+          "name": "Kenneth Stallworth",
+          "role": "engineer",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f1434b1f-a809-4542-a4f5-8812a8cb94da"
+        },
+        {
+          "name": "Preston Crump",
+          "role": "instrument",
+          "attributes": [
+            "bass"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f1434b1f-a809-4542-a4f5-8812a8cb94da"
+        },
+        {
+          "name": "Marvin “Chanz” Parkman",
+          "role": "instrument",
+          "attributes": [
+            "keyboard"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f1434b1f-a809-4542-a4f5-8812a8cb94da"
+        },
+        {
+          "name": "Martin Terry",
+          "role": "instrument",
+          "attributes": [
+            "guitar"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f1434b1f-a809-4542-a4f5-8812a8cb94da"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f1434b1f-a809-4542-a4f5-8812a8cb94da"
+        },
+        {
+          "name": "Neal Pogue",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f1434b1f-a809-4542-a4f5-8812a8cb94da"
+        },
+        {
+          "name": "Jason Stokes",
+          "role": "mix",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f1434b1f-a809-4542-a4f5-8812a8cb94da"
+        },
+        {
+          "name": "Backbone",
+          "role": "performer",
+          "attributes": [
+            "guest"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f1434b1f-a809-4542-a4f5-8812a8cb94da"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f1434b1f-a809-4542-a4f5-8812a8cb94da"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "programming",
+          "attributes": [
+            "drums (drum set)"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f1434b1f-a809-4542-a4f5-8812a8cb94da"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "programming",
+          "attributes": [
+            "keyboard"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f1434b1f-a809-4542-a4f5-8812a8cb94da"
+        },
+        {
+          "name": "Backbone",
+          "role": "vocal",
+          "attributes": [
+            "guest"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f1434b1f-a809-4542-a4f5-8812a8cb94da"
+        },
+        {
+          "name": "Big Gipp",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f1434b1f-a809-4542-a4f5-8812a8cb94da"
+        },
+        {
+          "name": "Khujo Goodie",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f1434b1f-a809-4542-a4f5-8812a8cb94da"
+        },
+        {
+          "name": "CeeLo Green",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f1434b1f-a809-4542-a4f5-8812a8cb94da"
+        },
+        {
+          "name": "T‐Mo",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/f1434b1f-a809-4542-a4f5-8812a8cb94da"
+        }
+      ],
+      "samplesFrom": [],
+      "sampledIn": [],
+      "provenance": {
+        "sourceUrls": [
+          "https://musicbrainz.org/recording/f1434b1f-a809-4542-a4f5-8812a8cb94da"
+        ],
+        "matchStatus": "matched",
+        "confidence": 0.9,
+        "reason": "musicbrainz recording lookup",
+        "checkedAt": "2026-10-06T01:22:04.419Z",
+        "refreshAfter": "2026-11-05T01:22:04.419Z",
+        "lastError": null
+      }
+    },
+    "9a88cf19-00a8-4800-a6dc-8a900f6db34f": {
+      "mbid": "9a88cf19-00a8-4800-a6dc-8a900f6db34f",
+      "title": "See You When I See You",
+      "artist": "Goodie Mob",
+      "credits": [
+        {
+          "name": "Brian Dozoretz",
+          "role": "engineer",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/9a88cf19-00a8-4800-a6dc-8a900f6db34f"
+        },
+        {
+          "name": "Bernasky Wall",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/9a88cf19-00a8-4800-a6dc-8a900f6db34f"
+        },
+        {
+          "name": "Teddy Kumpel",
+          "role": "instrument",
+          "attributes": [
+            "mandolin"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/9a88cf19-00a8-4800-a6dc-8a900f6db34f"
+        },
+        {
+          "name": "Skinny Miracles",
+          "role": "instrument",
+          "attributes": [
+            "piano"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/9a88cf19-00a8-4800-a6dc-8a900f6db34f"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "instrument",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/9a88cf19-00a8-4800-a6dc-8a900f6db34f"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/9a88cf19-00a8-4800-a6dc-8a900f6db34f"
+        },
+        {
+          "name": "Dexter Simmons",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/9a88cf19-00a8-4800-a6dc-8a900f6db34f"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/9a88cf19-00a8-4800-a6dc-8a900f6db34f"
+        },
+        {
+          "name": "Big Gipp",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/9a88cf19-00a8-4800-a6dc-8a900f6db34f"
+        },
+        {
+          "name": "Khujo Goodie",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/9a88cf19-00a8-4800-a6dc-8a900f6db34f"
+        },
+        {
+          "name": "CeeLo Green",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/9a88cf19-00a8-4800-a6dc-8a900f6db34f"
+        },
+        {
+          "name": "T‐Mo",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/9a88cf19-00a8-4800-a6dc-8a900f6db34f"
+        }
+      ],
+      "samplesFrom": [],
+      "sampledIn": [],
+      "provenance": {
+        "sourceUrls": [
+          "https://musicbrainz.org/recording/9a88cf19-00a8-4800-a6dc-8a900f6db34f"
+        ],
+        "matchStatus": "matched",
+        "confidence": 0.9,
+        "reason": "musicbrainz recording lookup",
+        "checkedAt": "2026-10-06T01:22:04.419Z",
+        "refreshAfter": "2026-11-05T01:22:04.419Z",
+        "lastError": null
+      }
+    },
+    "a8a6efa3-9f79-438e-96e7-9d134392585f": {
+      "mbid": "a8a6efa3-9f79-438e-96e7-9d134392585f",
+      "title": "Inshallah",
+      "artist": "Goodie Mob",
+      "credits": [
+        {
+          "name": "Bernasky Wall",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/a8a6efa3-9f79-438e-96e7-9d134392585f"
+        },
+        {
+          "name": "Preston Crump",
+          "role": "instrument",
+          "attributes": [
+            "bass"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/a8a6efa3-9f79-438e-96e7-9d134392585f"
+        },
+        {
+          "name": "DJ HERB",
+          "role": "instrument",
+          "attributes": [
+            "turntable"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/a8a6efa3-9f79-438e-96e7-9d134392585f"
+        },
+        {
+          "name": "Donny Mathis",
+          "role": "instrument",
+          "attributes": [
+            "guitar"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/a8a6efa3-9f79-438e-96e7-9d134392585f"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/a8a6efa3-9f79-438e-96e7-9d134392585f"
+        },
+        {
+          "name": "Neal Pogue",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/a8a6efa3-9f79-438e-96e7-9d134392585f"
+        },
+        {
+          "name": "Jason Standard",
+          "role": "mix",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/a8a6efa3-9f79-438e-96e7-9d134392585f"
+        },
+        {
+          "name": "DJ Muggs",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/a8a6efa3-9f79-438e-96e7-9d134392585f"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/a8a6efa3-9f79-438e-96e7-9d134392585f"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "programming",
+          "attributes": [
+            "drums (drum set)"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/a8a6efa3-9f79-438e-96e7-9d134392585f"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "programming",
+          "attributes": [
+            "keyboard"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/a8a6efa3-9f79-438e-96e7-9d134392585f"
+        },
+        {
+          "name": "Big Gipp",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/a8a6efa3-9f79-438e-96e7-9d134392585f"
+        },
+        {
+          "name": "Khujo Goodie",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/a8a6efa3-9f79-438e-96e7-9d134392585f"
+        },
+        {
+          "name": "CeeLo Green",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/a8a6efa3-9f79-438e-96e7-9d134392585f"
+        },
+        {
+          "name": "T‐Mo",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/a8a6efa3-9f79-438e-96e7-9d134392585f"
+        }
+      ],
+      "samplesFrom": [],
+      "sampledIn": [],
+      "provenance": {
+        "sourceUrls": [
+          "https://musicbrainz.org/recording/a8a6efa3-9f79-438e-96e7-9d134392585f"
+        ],
+        "matchStatus": "matched",
+        "confidence": 0.9,
+        "reason": "musicbrainz recording lookup",
+        "checkedAt": "2026-10-06T01:22:04.419Z",
+        "refreshAfter": "2026-11-05T01:22:04.419Z",
+        "lastError": null
+      }
+    },
+    "60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3": {
+      "mbid": "60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3",
+      "title": "Just About Over",
+      "artist": "Goodie Mob",
+      "credits": [
+        {
+          "name": "Whild Peach",
+          "role": "arranger",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3"
+        },
+        {
+          "name": "David Whild",
+          "role": "arranger",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3"
+        },
+        {
+          "name": "Kevin Parker",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3"
+        },
+        {
+          "name": "Kenneth Stallworth",
+          "role": "engineer",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3"
+        },
+        {
+          "name": "Victor Alexander",
+          "role": "instrument",
+          "attributes": [
+            "drums (drum set)"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3"
+        },
+        {
+          "name": "Edgar Hinton",
+          "role": "instrument",
+          "attributes": [
+            "bass"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3"
+        },
+        {
+          "name": "Billy Odum",
+          "role": "instrument",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3"
+        },
+        {
+          "name": "Omar Phillips",
+          "role": "instrument",
+          "attributes": [
+            "percussion"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3"
+        },
+        {
+          "name": "Neal Pogue",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3"
+        },
+        {
+          "name": "Jason Stokes",
+          "role": "mix",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3"
+        },
+        {
+          "name": "David Whild",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3"
+        },
+        {
+          "name": "Organized Noize",
+          "role": "producer",
+          "attributes": [
+            "co"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3"
+        },
+        {
+          "name": "David Whild",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3"
+        },
+        {
+          "name": "Big Gipp",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3"
+        },
+        {
+          "name": "Khujo Goodie",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3"
+        },
+        {
+          "name": "CeeLo Green",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3"
+        },
+        {
+          "name": "Joi",
+          "role": "vocal",
+          "attributes": [
+            "background vocals",
+            "guest"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3"
+        },
+        {
+          "name": "T‐Mo",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3"
+        },
+        {
+          "name": "Whild Peach",
+          "role": "vocal",
+          "attributes": [
+            "background vocals",
+            "guest"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3"
+        }
+      ],
+      "samplesFrom": [],
+      "sampledIn": [],
+      "provenance": {
+        "sourceUrls": [
+          "https://musicbrainz.org/recording/60e9e3fe-c529-4cbc-bc09-b1a52b4a83d3"
+        ],
+        "matchStatus": "matched",
+        "confidence": 0.9,
+        "reason": "musicbrainz recording lookup",
+        "checkedAt": "2026-10-06T01:22:04.419Z",
+        "refreshAfter": "2026-11-05T01:22:04.419Z",
+        "lastError": null
+      }
+    },
+    "4a77f096-38eb-4d62-a69f-8c27072557c0": {
+      "mbid": "4a77f096-38eb-4d62-a69f-8c27072557c0",
+      "title": "Still Standing",
+      "artist": "Goodie Mob",
+      "credits": [
+        {
+          "name": "Shawn Grove",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/4a77f096-38eb-4d62-a69f-8c27072557c0"
+        },
+        {
+          "name": "Vincent Marshel",
+          "role": "engineer",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/4a77f096-38eb-4d62-a69f-8c27072557c0"
+        },
+        {
+          "name": "Bernasky Wall",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/4a77f096-38eb-4d62-a69f-8c27072557c0"
+        },
+        {
+          "name": "Preston Crump",
+          "role": "instrument",
+          "attributes": [
+            "bass"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/4a77f096-38eb-4d62-a69f-8c27072557c0"
+        },
+        {
+          "name": "Shawn Grove",
+          "role": "instrument",
+          "attributes": [
+            "acoustic guitar"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/4a77f096-38eb-4d62-a69f-8c27072557c0"
+        },
+        {
+          "name": "Kalifani",
+          "role": "instrument",
+          "attributes": [
+            "congas"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/4a77f096-38eb-4d62-a69f-8c27072557c0"
+        },
+        {
+          "name": "Mr. DJ",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/4a77f096-38eb-4d62-a69f-8c27072557c0"
+        },
+        {
+          "name": "Kevin Lively",
+          "role": "mix",
+          "attributes": [
+            "additional"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/4a77f096-38eb-4d62-a69f-8c27072557c0"
+        },
+        {
+          "name": "Alvin Speights",
+          "role": "mix",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/4a77f096-38eb-4d62-a69f-8c27072557c0"
+        },
+        {
+          "name": "Mr. DJ",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/4a77f096-38eb-4d62-a69f-8c27072557c0"
+        },
+        {
+          "name": "Mr. DJ",
+          "role": "programming",
+          "attributes": [
+            "drums (drum set)"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/4a77f096-38eb-4d62-a69f-8c27072557c0"
+        },
+        {
+          "name": "Big Gipp",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/4a77f096-38eb-4d62-a69f-8c27072557c0"
+        },
+        {
+          "name": "Khujo Goodie",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/4a77f096-38eb-4d62-a69f-8c27072557c0"
+        },
+        {
+          "name": "CeeLo Green",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/4a77f096-38eb-4d62-a69f-8c27072557c0"
+        },
+        {
+          "name": "Collier Starks",
+          "role": "vocal",
+          "attributes": [
+            "background vocals",
+            "guest"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/4a77f096-38eb-4d62-a69f-8c27072557c0"
+        },
+        {
+          "name": "Mark Starks",
+          "role": "vocal",
+          "attributes": [
+            "background vocals",
+            "guest"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/4a77f096-38eb-4d62-a69f-8c27072557c0"
+        },
+        {
+          "name": "T‐Mo",
+          "role": "vocal",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/4a77f096-38eb-4d62-a69f-8c27072557c0"
+        }
+      ],
+      "samplesFrom": [],
+      "sampledIn": [],
+      "provenance": {
+        "sourceUrls": [
+          "https://musicbrainz.org/recording/4a77f096-38eb-4d62-a69f-8c27072557c0"
+        ],
+        "matchStatus": "matched",
+        "confidence": 0.9,
+        "reason": "musicbrainz recording lookup",
+        "checkedAt": "2026-10-06T01:22:04.419Z",
+        "refreshAfter": "2026-11-05T01:22:04.419Z",
+        "lastError": null
+      }
+    }
+  },
+  "provenance": {
+    "sourceUrls": [
+      "https://www.discogs.com/release/240128",
+      "https://musicbrainz.org/release/45047c4a-07d3-4206-8a3c-a4aa29fc4bf3"
+    ],
+    "matchStatus": "matched",
+    "confidence": 0.95,
+    "reason": "musicbrainz release linked by discogs url relationship",
+    "checkedAt": "2026-10-06T01:22:04.419Z",
+    "refreshAfter": "2026-11-05T01:22:04.419Z",
+    "lastError": null
+  }
+}

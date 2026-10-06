@@ -1,6 +1,6 @@
 # PRD — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-09-28
+**Last Updated:** 2026-10-06
 **Status:** House cut in preview. Person page remains at /keeganmoody33.
 **Live URL:** [lecturesfrom.com](https://www.lecturesfrom.com) (house) · [lecturesfrom.com/keeganmoody33](https://www.lecturesfrom.com/keeganmoody33) (principal)
 
@@ -51,7 +51,9 @@ Everything that serves the core purpose: help visitors understand who Keegan is,
 | lecturesfrom logo mark + favicon + house share image | `LogoMark.tsx`, `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`, `app/(house)/opengraph-image.png` | **Shipped** |
 | Hero wordmark o = static lecturesfrom mark | `HouseWordmark.tsx` — last `o` in `from` is the static `LogoMark` (owner line-only PNG geometry / stroke width / layer order; `variant="line"` — ink strokes, no fills). Named fill regions stay (`--lf-mark-*`, default `transparent`) for a later token map. Favicon / og stay the older line-mark (untouched this pass). No standalone coin above the wordmark. | **Shipped on the house title card** |
 | Sleeves | `/catalog`, `/catalog/[slug]` | **Shipped (this PR)** |
-| Full Discogs crate | `/collection`, `/api/discogs/collection` | **Shipped** — durable Redis last-good when Upstash env is set |
+| Full Discogs crate | `/collection`, `/api/discogs/collection` | **Shipped** — durable Redis last-good when Upstash env is set; shuffle / pull one on the crate |
+| Collection record detail | `/collection/[releaseId]`, intercepting overlay `@detail/(.)[releaseId]` | **In progress (this PR)** — stored Discogs pressing + MusicBrainz credits/samples; visitors never hit live Discogs/MB |
+
 | SignalCut | `components/SignalCut.tsx` | **Shipped (this PR)** — house ↔ person only |
 | lecturesfrom nameplate wordmark (assets) | `brand/lecturesfrom-wordmark.svg`, `scripts/generate-wordmark.py` | **Assets only.** Not wired into header or pages. Hathaway vectors in `public/brand/` are a separate unused direction. |
 
@@ -136,6 +138,10 @@ These are explicitly **not** what this site is:
 ## Open Questions
 
 1. **Navigation redesign** -- Current top nav vs. fixed left sidebar (per `FRONTEND_GUIDELINES.md` and `docs/NAVIGATION_PATHWAYS_SPEC.md`). When to ship?
+
+## Prototype gaps (collection record detail)
+
+- **Discogs 6h freshness clause** is not implemented. Collection listing TTL is 24h; successful MusicBrainz research is reused indefinitely. Attribution is implemented. See Discogs [API Terms of Use](https://support.discogs.com/hc/en-us/articles/360009334593-API-Terms-of-Use). This PR stays a draft preview prototype.
 
 ---
 

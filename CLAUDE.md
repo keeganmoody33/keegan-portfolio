@@ -166,6 +166,14 @@ Only surface when directly asked. Frame constructively.
 
 ## Recent Sessions
 
+**2026-10-06:** Collection record detail (preview only)
+
+- `/collection/[releaseId]` + intercepting overlay. Covers use the grid thumbnail. OVERVIEW / TRACKS per LF Direction brief.
+- Stored crate model in Redis; fixtures for Bootsy 573292, Goodie Mob 240128, Mtume 567894. Visitors never hit live Discogs/MB.
+- Enrichment: complete crawl queues new ids; `after()` processes 1; daily `/api/cron/crate-enrich` (needs `CRON_SECRET`).
+- Do not merge or promote this branch.
+
+
 **2026-07-24:** Debt + polish sweep (5 parallel loops)
 
 - Rate limiting on all 4 API routes (lib/rate-limit.ts): chat/jd-analyzer 10/min, discogs/github 30/min
