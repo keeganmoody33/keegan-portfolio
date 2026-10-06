@@ -6,6 +6,7 @@ import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent as 
 import { posthog } from '@/lib/posthog-client'
 import {
   CRATE_EMPTY_LINE,
+  CRATE_NO_RECORDING,
   CRATE_PICK_TRACK,
   CRATE_UNAVAILABLE_LINE,
   type StoredPressing,
@@ -417,7 +418,7 @@ function RecordCover({
       <img
         src={src}
         alt={`${artist} — ${title}`}
-        className="aspect-square w-full border border-[var(--house-line)] object-cover"
+        className="aspect-square w-full object-cover"
       />
     )
   }
@@ -457,12 +458,16 @@ function TrackExtras({
   const samplesFrom = recording?.samplesFrom ?? []
   const sampledIn = recording?.sampledIn ?? []
   const unmatched = status !== 'matched' || !recording
+  const statusLine =
+    status === 'pending' || !reason || reason === CRATE_NO_RECORDING
+      ? CRATE_EMPTY_LINE
+      : reason
 
   return (
     <div>
       {unmatched && (
         <p className="font-mono text-sm text-[var(--house-dim)]">
-          {status === 'pending' ? 'no matched recording yet' : reason}
+          {statusLine}
           {checked ? ` · checked ${checked}` : null}
         </p>
       )}

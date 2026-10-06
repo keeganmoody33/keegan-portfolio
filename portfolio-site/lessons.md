@@ -8,6 +8,7 @@ Updated: 2026-10-06
 - **Discogs is the pressing; MusicBrainz is the recording.** Match the MB release via Discogs URL / barcode / catno, then position+title+duration. Vocal/instrumental siblings without a unique version token stay `ambiguous`. Do not auto-accept weak matches. No WhoSampled, no scraping.
 - **LF Direction empty copy is the whole empty language.** Missing field drops the row. Empty section: `nothing on file yet`. No track: `pick a track for credits and samples`. Store down: `couldn't reach discogs` plus retry. Never `N/A`, `Unknown`, a dash, or a red error. No spinners or shimmer — hold the hairlines and fade (`.house-fade` = `houseLockup`).
 - **Orange is hover only** on this surface. Active tab is ink + 1px ink underline. Cover is flat 1:1, same thumbnail as the grid. Title keeps Discogs casing.
+- **No 1px frame on sourced cover art.** The brief allows a line border only when the edge melts into `#0a0a0a`. Missing cover is the `#242424` square with catno, not a framed image. Pending / unmatched copy on this surface is `nothing on file yet`, not `no matched recording yet`.
 - **Hobby cron is daily.** `after()` handles 1 new item on sync. Fixtures keep the three proof records working on a preview without Redis.
 
 ## Brand / nameplate wordmark (assets only)
