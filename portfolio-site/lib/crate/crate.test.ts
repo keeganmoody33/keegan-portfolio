@@ -3927,6 +3927,14 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     assert.equal(result.recordings[juicyMbid]?.provenance.reason, TRACK_LEVEL_REASON)
   })
 
+  it('looks up MusicBrainz works with work-rels only so artist-credits does not 400', () => {
+    const src = readFileSync(fileURLToPath(new URL('./musicbrainz.ts', import.meta.url)), 'utf8')
+    const start = src.indexOf('async getRecording')
+    const body = src.slice(start, src.indexOf('export type MusicBrainzClient', start))
+    assert.match(body, /inc: 'work-rels'/)
+    assert.doesNotMatch(body, /work-rels\+artist-credits/)
+  })
+
   it('records an ambiguous recording-level miss and merges no samples', async () => {
     const mb = createMusicBrainzClientForTests()
     let fetched = 0

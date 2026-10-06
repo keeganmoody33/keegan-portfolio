@@ -472,7 +472,7 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
       const uniqueWorks = [...new Set(workIds)].slice(0, 4)
       for (const workId of uniqueWorks) {
         const workParams = new URLSearchParams({
-          inc: 'work-rels+artist-credits',
+          inc: 'work-rels',
           fmt: 'json',
         })
         const work = await getJson<{
