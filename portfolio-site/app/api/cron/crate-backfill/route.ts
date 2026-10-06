@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const result = await runBackfill(
-      { store, collection, forceRefresh: Boolean(retry && ids.length > 0) },
+      { store, collection, forceRefresh: Boolean(retry) },
       { retry, ids: ids.length > 0 ? ids : undefined, limit }
     )
     return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store' } })

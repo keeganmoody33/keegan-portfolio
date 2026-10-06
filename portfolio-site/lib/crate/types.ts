@@ -6,6 +6,8 @@ export const MUSICBRAINZ_USER_AGENT = 'lecturesfrom/1.0 ( 33@lecturesfrom.com )'
 export const MUSICBRAINZ_MIN_INTERVAL_MS = 1100
 export const WIKIDATA_USER_AGENT = 'lecturesfrom/1.0 +https://lecturesfrom.com ( 33@lecturesfrom.com )'
 export const WIKIDATA_MIN_INTERVAL_MS = 1100
+export const WIKIDATA_TIMEOUT_MS = 5000
+export const WIKIDATA_RETRY_AFTER_CAP_MS = 30_000
 export const WIKIDATA_SPARQL_URL = 'https://query.wikidata.org/sparql'
 export const CRATE_SCHEMA_VERSION = 2
 export const CRATE_MAX_ATTEMPTS = 5
@@ -68,6 +70,8 @@ export type Coverage = {
   matched: number
   withCredits: number
   withSamples: number
+  withReleaseCredits: boolean
+  withReleaseSamples: boolean
 }
 
 export type CrateCheckpoint = {
@@ -141,6 +145,7 @@ export type PressingFacts = {
   thumbnail: string
   discogsUrl: string
   barcode: string | null
+  masterId?: number | null
 }
 
 export type TrackRecordingRef = {
@@ -197,6 +202,7 @@ export type MbReleaseMatch = {
   matchStatus: MatchStatus
   confidence: number
   reason: string
+  releaseGroupMbid?: string | null
 }
 
 export type StoredPressing = {

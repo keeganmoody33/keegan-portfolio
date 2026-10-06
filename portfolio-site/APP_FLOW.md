@@ -367,6 +367,8 @@ Discogs API
 
 MusicBrainz / Discogs extraartists / Wikidata SPARQL (manual research only)
             └── crate enrich via CRON_SECRET routes and `npm run crate:backfill` (`--ids` `--retry` `--limit`)
+            └── `--retry` without `--ids` retries only dead / too_slow ids
+            └── Wikidata: P1954 (master) then P436 (MB release group) then P2206/P5813; P5707 samples; shared client
             └── Redis zset `lf:crate:queue:v1` + queued set; lock token compare-and-delete; dead/unresolved inspect sets
             └── visitor `/collection/[releaseId]` reads Redis, then fixtures, then a collection pending shell
             └── HTML `data-crate-source="redis|fixture|collection"` marks which one served

@@ -34,9 +34,15 @@ import { factRows, pressingCheckedNoMatchLine } from './view.ts'
 import { cronSecretEqual } from './cron-auth.ts'
 import { coverageOf, hydratePressing, isPlayableOccurrence, shouldQueuePressing } from './lifecycle.ts'
 import { errorForDiscogsStatus, mapDiscogsReleaseDetail, probeDiscogsIdentity } from './discogs-release.ts'
-import { mergeResearchFacts, researchFactsFromDiscogs } from './research.ts'
-import { researchFactsFromWikidataBindings, wikidataReleaseQuery } from './wikidata.ts'
-import { inspectCrate, migrateSettledIds, parseIdList, remainingBackfillIds, runBackfill } from './backfill.ts'
+import { mergeResearchFacts, normalizeCreditRole, researchFactsFromDiscogs } from './research.ts'
+import {
+  createWikidataClient,
+  pickWikidataIdentity,
+  researchFactsFromWikidataBindings,
+  WikidataTemporaryError,
+  wikidataReleaseQuery,
+} from './wikidata.ts'
+import { inspectCrate, migrateSettledIds, parseIdList, remainingBackfillIds, retryBackfillTargets, runBackfill } from './backfill.ts'
 
 function pressingStub(overrides: Partial<StoredPressing> = {}): StoredPressing {
   return {
@@ -780,6 +786,40 @@ describe('weaker refresh keeps a stronger match (P2.11)', () => {
     assert.equal(classifyQueueOutcome(kept), 'completed')
   })
 
+  it('keeps a Wikidata research lastError when the prior MusicBrainz match wins', () => {
+    const previous = hydratePressing(pressingStub())
+    const weaker = hydratePressing(
+      pressingStub({
+        mbRelease: {
+          mbid: null,
+          url: null,
+          matchStatus: 'unmatched',
+          confidence: 0,
+          reason: 'no musicbrainz release',
+        },
+        lifecycles: {
+          pressing: previous.lifecycles!.pressing,
+          match: previous.lifecycles!.match,
+          research: {
+            verifiedAt: '2026-01-01T00:00:00.000Z',
+            lastAttemptAt: '2026-10-06T06:00:00.000Z',
+            lastError: {
+              at: '2026-10-06T06:00:00.000Z',
+              kind: 'rate_limit',
+              message: 'Wikidata rate limited',
+              attempts: 0,
+            },
+            attempts: 0,
+          },
+        },
+      })
+    )
+    const kept = keepPriorMatch(previous, weaker)
+    assert.equal(kept.mbRelease.matchStatus, 'matched')
+    assert.equal(kept.lifecycles?.research.verifiedAt, previous.lifecycles?.research.verifiedAt)
+    assert.equal(kept.lifecycles?.research.lastError?.kind, 'rate_limit')
+  })
+
   it('replaces a prior match when a unique discogs url is counter-evidence', () => {
     const previous = pressingStub()
     const urlHit = pressingStub({
@@ -927,6 +967,7 @@ describe('unique discogs url stops further searches', () => {
           title: 'Bootsy? Player Of The Year',
           date: '1978',
           country: 'US',
+          releaseGroupId: null,
           tracks: [
             {
               index: 0,
@@ -959,6 +1000,7 @@ describe('unique discogs url stops further searches', () => {
         barcode: '012345',
         notes: null,
         discogsUrl: 'https://www.discogs.com/release/573292',
+        masterId: 14594,
         tracklist: [
           {
             position: 'A1',
@@ -1014,6 +1056,7 @@ function bootsyDetail() {
     barcode: '012345',
     notes: null,
     discogsUrl: 'https://www.discogs.com/release/573292',
+    masterId: 14594,
     tracklist: [
       {
         position: 'Side A',
@@ -1053,6 +1096,7 @@ function lonelyDetail() {
     barcode: null,
     notes: null,
     discogsUrl: 'https://www.discogs.com/release/9107339',
+    masterId: null,
     tracklist: [
       {
         position: 'A1',
@@ -1080,6 +1124,7 @@ function mtumeDetail() {
     barcode: null,
     notes: null,
     discogsUrl: 'https://www.discogs.com/release/567894',
+    masterId: 284145,
     extraartists: [
       { name: 'Larkin Arnold', role: 'Executive-Producer', id: 255778, tracks: null },
       { name: 'Herb Powers Jr.', role: 'Mastered By', id: 264125, tracks: null },
@@ -1192,6 +1237,7 @@ describe('independent lifecycles (direction change)', () => {
           title: 'Bootsy? Player Of The Year',
           date: '1978',
           country: 'US',
+          releaseGroupId: null,
           tracks: [
             {
               index: 0,
@@ -2642,7 +2688,7 @@ describe('research facts: fallbacks, schema, and coverage', () => {
     assert.equal(mapped.tracklist[0]?.extraartists?.[0]?.name, 'James Mtume')
   })
 
-  it('recovers Discogs credits for Mtume 567894 and keeps Wikidata empty without P2206', async () => {
+  it('recovers Discogs credits for Mtume 567894 and looks up Wikidata by master P1954', async () => {
     const store = createMemoryCrateStore()
     const nowIso = '2026-10-06T06:00:00.000Z'
     const tracks = occurrencesFromDetail(mtumeDetail())
@@ -2655,7 +2701,13 @@ describe('research facts: fallbacks, schema, and coverage', () => {
     assert.ok(people.includes('Scott Folks'))
     assert.ok(people.includes('Tony Humphries'))
     assert.ok(discogs.every((fact) => fact.source === 'discogs'))
-    assert.match(wikidataReleaseQuery(567894), /P2206/)
+    const query = wikidataReleaseQuery({ discogsReleaseId: 567894, masterId: 284145 })
+    assert.match(query, /P1954/)
+    assert.match(query, /P2206/)
+    assert.match(query, /P5707/)
+    assert.doesNotMatch(query, /P736/)
+    assert.doesNotMatch(query, /P144/)
+    assert.doesNotMatch(query, /P4969/)
     const wiki = researchFactsFromWikidataBindings([], 567894, nowIso)
     assert.deepEqual(wiki, [])
     const result = await enrichPressing(567894, {
@@ -2670,30 +2722,309 @@ describe('research facts: fallbacks, schema, and coverage', () => {
     assert.equal(sources.has('discogs'), true)
     assert.equal(sources.has('wikidata'), false)
     assert.equal(result.coverage?.matched, 0)
+    assert.equal(result.coverage?.withReleaseCredits, true)
     assert.ok((result.coverage?.withCredits ?? 0) >= 2)
     assert.notEqual(result.coverage?.matched, result.coverage?.withCredits)
   })
 
-  it('maps Wikidata SPARQL bindings only when P2206 hits, with a User-Agent query', () => {
+  it('does not count release-level credits as every-track coverage', () => {
+    const tracks = occurrencesFromDetail(mtumeDetail())
+    const nowIso = '2026-10-06T06:00:00.000Z'
+    const releaseOnly: ResearchFact = {
+      kind: 'credit',
+      trackKey: '',
+      track: null,
+      role: 'producer',
+      person: 'James Mtume',
+      relatedTitle: '',
+      relatedArtist: '',
+      source: 'wikidata',
+      sourceId: 'Q1',
+      sourceUrl: 'https://www.wikidata.org/wiki/Q6305224',
+      fetchedAt: nowIso,
+    }
+    const coverage = coverageOf({ tracks, recordings: {}, researchFacts: [releaseOnly] })
+    assert.equal(coverage.withCredits, 0)
+    assert.equal(coverage.withReleaseCredits, true)
+    assert.equal(coverage.withSamples, 0)
+    assert.equal(coverage.withReleaseSamples, false)
+  })
+
+  it('maps Wikidata SPARQL credits to the claim-bearing item and P5707 samples', () => {
     const fetchedAt = '2026-10-06T06:00:00.000Z'
     const facts = researchFactsFromWikidataBindings(
       [
         {
-          item: { value: 'http://www.wikidata.org/entity/Q1' },
-          itemLabel: { value: 'Example release' },
+          item: { value: 'http://www.wikidata.org/entity/Q6305224' },
+          itemLabel: { value: 'Juicy Fruit' },
+          matchProp: { value: 'http://www.wikidata.org/entity/P1954' },
           prop: { value: 'http://www.wikidata.org/entity/P162' },
           value: { value: 'http://www.wikidata.org/entity/Q2' },
           valueLabel: { value: 'Example Producer' },
+          direction: { value: 'out' },
+        },
+        {
+          item: { value: 'http://www.wikidata.org/entity/Q6305224' },
+          itemLabel: { value: 'Juicy Fruit' },
+          matchProp: { value: 'http://www.wikidata.org/entity/P1954' },
+          prop: { value: 'http://www.wikidata.org/entity/P5707' },
+          value: { value: 'http://www.wikidata.org/entity/Q9' },
+          valueLabel: { value: 'Sampled Work' },
+          direction: { value: 'out' },
+        },
+        {
+          item: { value: 'http://www.wikidata.org/entity/Q6305224' },
+          itemLabel: { value: 'Juicy Fruit' },
+          matchProp: { value: 'http://www.wikidata.org/entity/P1954' },
+          prop: { value: 'http://www.wikidata.org/entity/P5707' },
+          value: { value: 'http://www.wikidata.org/entity/Q8' },
+          valueLabel: { value: 'Later Record' },
+          direction: { value: 'in' },
+        },
+      ],
+      567894,
+      fetchedAt
+    )
+    assert.equal(facts.length, 3)
+    const producer = facts.find((fact) => fact.kind === 'credit')
+    assert.equal(producer?.source, 'wikidata')
+    assert.equal(producer?.role, 'producer')
+    assert.equal(producer?.person, 'Example Producer')
+    assert.equal(producer?.sourceUrl, 'https://www.wikidata.org/wiki/Q6305224')
+    const sampleOf = facts.find((fact) => fact.kind === 'sample_of')
+    assert.equal(sampleOf?.relatedTitle, 'Sampled Work')
+    assert.equal(sampleOf?.sourceUrl, 'https://www.wikidata.org/wiki/Q6305224')
+    const sampledBy = facts.find((fact) => fact.kind === 'sampled_by')
+    assert.equal(sampledBy?.relatedTitle, 'Later Record')
+    assert.equal(sampledBy?.sourceUrl, 'https://www.wikidata.org/wiki/Q8')
+  })
+
+  it('classifies more than one Wikidata item as ambiguous and does not merge', () => {
+    const identity = pickWikidataIdentity([
+      {
+        item: { value: 'http://www.wikidata.org/entity/Q1' },
+        matchProp: { value: 'http://www.wikidata.org/entity/P1954' },
+      },
+      {
+        item: { value: 'http://www.wikidata.org/entity/Q2' },
+        matchProp: { value: 'http://www.wikidata.org/entity/P1954' },
+      },
+    ])
+    assert.equal(identity.status, 'ambiguous')
+    const facts = researchFactsFromWikidataBindings(
+      [
+        {
+          item: { value: 'http://www.wikidata.org/entity/Q1' },
+          matchProp: { value: 'http://www.wikidata.org/entity/P1954' },
+          prop: { value: 'http://www.wikidata.org/entity/P162' },
+          valueLabel: { value: 'One' },
+        },
+        {
+          item: { value: 'http://www.wikidata.org/entity/Q2' },
+          matchProp: { value: 'http://www.wikidata.org/entity/P1954' },
+          prop: { value: 'http://www.wikidata.org/entity/P162' },
+          valueLabel: { value: 'Two' },
         },
       ],
       1,
-      fetchedAt
+      '2026-10-06T06:00:00.000Z'
     )
-    assert.equal(facts.length, 1)
-    assert.equal(facts[0]?.source, 'wikidata')
-    assert.equal(facts[0]?.role, 'producer')
-    assert.equal(facts[0]?.person, 'Example Producer')
-    assert.equal(facts[0]?.fetchedAt, fetchedAt)
+    assert.deepEqual(facts, [])
+  })
+
+  it('prefers P1954 over P436 over P2206/P5813', () => {
+    const identity = pickWikidataIdentity([
+      {
+        item: { value: 'http://www.wikidata.org/entity/Q7617150' },
+        matchProp: { value: 'http://www.wikidata.org/entity/P436' },
+      },
+      {
+        item: { value: 'http://www.wikidata.org/entity/Q4944093' },
+        matchProp: { value: 'http://www.wikidata.org/entity/P1954' },
+      },
+    ])
+    assert.equal(identity.status, 'ok')
+    assert.equal(identity.itemQid, 'Q4944093')
+    assert.equal(identity.matchProp, 'P1954')
+  })
+
+  it('normalizes role synonyms and drops a release-level duplicate of a track credit', () => {
+    assert.equal(normalizeCreditRole('Executive-Producer'), 'executive producer')
+    const trackKey = 'a\u001fjuicy fruit\u001f\u001f\u001ftrack'
+    const merged = mergeResearchFacts(
+      [
+        {
+          kind: 'credit',
+          trackKey: '',
+          track: null,
+          role: 'Producer',
+          person: 'James Mtume',
+          relatedTitle: '',
+          relatedArtist: '',
+          source: 'discogs',
+          sourceId: '36715',
+          sourceUrl: 'https://www.discogs.com/release/567894',
+          fetchedAt: '2026-10-06T06:00:00.000Z',
+        },
+        {
+          kind: 'credit',
+          trackKey,
+          track: { position: 'A', title: 'Juicy Fruit (Vocal)' },
+          role: 'produced by',
+          person: 'James Mtume',
+          relatedTitle: '',
+          relatedArtist: '',
+          source: 'discogs',
+          sourceId: '36715',
+          sourceUrl: 'https://www.discogs.com/release/567894',
+          fetchedAt: '2026-10-06T06:00:00.000Z',
+        },
+      ]
+    )
+    assert.equal(merged.length, 1)
+    assert.equal(merged[0]?.trackKey, trackKey)
+  })
+
+  it('keeps prior Wikidata facts when SPARQL is temporarily unavailable', async () => {
+    const nowIso = '2026-10-06T06:00:00.000Z'
+    const wikiFact: ResearchFact = {
+      kind: 'credit',
+      trackKey: '',
+      track: null,
+      role: 'producer',
+      person: 'Wikidata Only',
+      relatedTitle: '',
+      relatedArtist: '',
+      source: 'wikidata',
+      sourceId: 'Q2',
+      sourceUrl: 'https://www.wikidata.org/wiki/Q6305224',
+      fetchedAt: '2026-01-01T00:00:00.000Z',
+    }
+    const previous = hydratePressing(
+      pressingStub({
+        releaseId: 567894,
+        facts: {
+          releaseId: 567894,
+          title: 'Juicy Fruit',
+          artist: 'Mtume',
+          label: 'Epic',
+          catno: '49-03834',
+          format: 'Vinyl, 12", 45 RPM, Stereo',
+          country: 'US',
+          released: '1983',
+          year: 1983,
+          cover: '',
+          thumbnail: '',
+          discogsUrl: 'https://www.discogs.com/release/567894',
+          barcode: null,
+          masterId: 284145,
+        },
+        tracks: occurrencesFromDetail(mtumeDetail()),
+        mbRelease: {
+          mbid: null,
+          url: null,
+          matchStatus: 'unmatched',
+          confidence: 0,
+          reason: 'no musicbrainz release',
+          releaseGroupMbid: null,
+        },
+        researchFacts: [wikiFact],
+        provenance: {
+          sourceUrls: ['https://www.discogs.com/release/567894'],
+          matchStatus: 'unmatched',
+          confidence: 0,
+          reason: 'no musicbrainz release',
+          checkedAt: nowIso,
+          refreshAfter: '2026-11-01T00:00:00.000Z',
+          lastError: null,
+          verifiedAt: '2026-01-01T00:00:00.000Z',
+        },
+        lifecycles: {
+          pressing: {
+            verifiedAt: nowIso,
+            lastAttemptAt: nowIso,
+            lastError: null,
+            attempts: 0,
+          },
+          match: {
+            verifiedAt: nowIso,
+            lastAttemptAt: nowIso,
+            lastError: null,
+            attempts: 0,
+          },
+          research: {
+            verifiedAt: '2026-01-01T00:00:00.000Z',
+            lastAttemptAt: '2026-01-01T00:00:00.000Z',
+            lastError: null,
+            attempts: 0,
+          },
+        },
+      })
+    )
+    const store = createMemoryCrateStore({ pressings: { 567894: previous } })
+    const result = await enrichPressing(567894, {
+      store,
+      now: () => Date.parse(nowIso),
+      fetchDiscogs: async () => mtumeDetail(),
+      fetchWikidata: async () => {
+        throw new WikidataTemporaryError(429, 1200)
+      },
+      mb: createMusicBrainzClientForTests(),
+      forceRefresh: true,
+    })
+    const kept = (result.researchFacts ?? []).filter((fact) => fact.source === 'wikidata')
+    assert.equal(kept.length, 1)
+    assert.equal(kept[0]?.person, 'Wikidata Only')
+    assert.equal(result.lifecycles?.research.verifiedAt, '2026-01-01T00:00:00.000Z')
+    assert.equal(result.lifecycles?.research.lastError?.kind, 'rate_limit')
+  })
+
+  it('shares one Wikidata client so the 1.1s interval is enforced and honors Retry-After', async () => {
+    const sleeps: number[] = []
+    let clock = 10_000
+    let calls = 0
+    const client = createWikidataClient({
+      minIntervalMs: 1100,
+      now: () => clock,
+      sleep: async (ms) => {
+        sleeps.push(ms)
+        clock += ms
+      },
+      timeoutMs: 5_000,
+      fetchImpl: async (_input, init) => {
+        calls += 1
+        if (calls === 1) {
+          return new Response('', {
+            status: 429,
+            headers: { 'Retry-After': '2' },
+          })
+        }
+        assert.equal(init?.method, 'POST')
+        return Response.json({
+          results: {
+            bindings: [
+              {
+                item: { value: 'http://www.wikidata.org/entity/Q6305224' },
+                matchProp: { value: 'http://www.wikidata.org/entity/P1954' },
+              },
+            ],
+          },
+        })
+      },
+    })
+    const first = await client.lookupRelease(
+      { discogsReleaseId: 567894, masterId: 284145 },
+      '2026-10-06T06:00:00.000Z'
+    )
+    const second = await client.lookupRelease(
+      { discogsReleaseId: 573292, masterId: 14594 },
+      '2026-10-06T06:00:00.000Z'
+    )
+    assert.equal(first.status, 'ok')
+    assert.equal(second.status, 'ok')
+    assert.ok(sleeps.includes(2000))
+    assert.ok(sleeps.some((ms) => ms >= 1000))
+    assert.equal(client.requestCount, 3)
   })
 })
 
@@ -2774,6 +3105,80 @@ describe('backfill cursor migration and targeted retry', () => {
     assert.deepEqual(parseIdList('567894,573292,567894'), [567894, 573292])
     assert.deepEqual(parseIdList(''), [])
     assert.deepEqual(parseIdList(null), [])
+  })
+
+  it('retries only dead and too_slow ids when retry has no ids', async () => {
+    assert.deepEqual(
+      remainingBackfillIds([567894, 573292, 240128], [567894, 573292], [240128], true, [240128]),
+      [240128]
+    )
+    assert.deepEqual(
+      remainingBackfillIds([567894, 573292], [567894, 573292], [567894], true, [567894]),
+      [567894]
+    )
+    assert.deepEqual(
+      remainingBackfillIds([567894, 573292], [567894], [], true),
+      [567894, 573292]
+    )
+    const store = createMemoryCrateStore()
+    await store.markDead({
+      releaseId: 567894,
+      kind: 'exhausted',
+      message: 'gave up',
+      attempts: 5,
+      at: '2026-10-06T00:00:00.000Z',
+      stage: 'pressing',
+    })
+    await store.markUnresolved({
+      releaseId: 240128,
+      kind: 'too_slow',
+      message: 'too slow',
+      attempts: 0,
+      at: '2026-10-06T00:00:00.000Z',
+      stage: 'match',
+    })
+    const targets = await retryBackfillTargets(store)
+    assert.deepEqual([...targets].sort((left, right) => left - right), [240128, 567894])
+    await store.setBackfill({
+      cursor: 0,
+      settled: [567894, 573292, 240128],
+      startedAt: '2026-10-06T00:00:00.000Z',
+      updatedAt: '2026-10-06T00:00:00.000Z',
+      completed: 3,
+      unresolved: 1,
+      failed: 1,
+      discogsRequests: 0,
+      mbRequests: 0,
+      status: 'idle',
+    })
+    const fetches: number[] = []
+    await runBackfill(
+      {
+        store,
+        collection: collectionOf([
+          {
+            id: 567894,
+            title: 'Juicy Fruit',
+            year: 1983,
+            artist: 'Mtume',
+            label: 'Epic',
+            catno: '49-03834',
+          },
+          BOOTSY_ROW,
+          GOODIE_ROW,
+        ]),
+        now: () => Date.parse('2026-10-06T07:00:00.000Z'),
+        takeFloorMs: 0,
+        budgetMs: 45_000,
+        fetchDiscogs: async (id) => {
+          fetches.push(id)
+          return id === 567894 ? mtumeDetail() : bootsyDetail()
+        },
+        mb: createMusicBrainzClientForTests(),
+      },
+      { retry: true }
+    )
+    assert.deepEqual([...fetches].sort((left, right) => left - right), [240128, 567894])
   })
 
   it('runs specific ids with retry and forceRefresh', async () => {

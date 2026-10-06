@@ -58,7 +58,7 @@ Runtime: **Deno**. Imports use URL specifiers with pinned versions where availab
 | PostHog | <https://us.i.posthog.com> | Project key in client init | NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST |
 | Discogs | <https://api.discogs.com> | Header: `Authorization: Discogs token=<token>`, User-Agent required | DISCOGS_TOKEN (Next.js env) |
 | MusicBrainz | <https://musicbrainz.org/ws/2> | User-Agent with contact; ~1 req/s | (none — manual crate enrich only) |
-| Wikidata SPARQL | <https://query.wikidata.org/sparql> | User-Agent with contact; ~1 req/s; CC0 | (none — fallback after Discogs extraartists; lookup by P2206 only) |
+| Wikidata SPARQL | <https://query.wikidata.org/sparql> | User-Agent with contact; ~1 req/s; 5s timeout; honors Retry-After; CC0 | (none — fallback after Discogs extraartists; P1954 / P436 / P2206 / P5813) |
 | GitHub | <https://api.github.com/users/keeganmoody33/events/public> | None (unauthenticated, 60 req/hr) | (none — `/api/github` does not read a token) |
 | Upstash Redis | REST (`KV_REST_API_URL` / `UPSTASH_REDIS_REST_URL`) | Bearer token | KV_REST_API_URL, KV_REST_API_TOKEN (preferred); UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN (fallback) |
 | Supabase | NEXT_PUBLIC_SUPABASE_URL/functions/v1/* | Header: `Authorization: Bearer <anon_key>` | NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY |
@@ -67,7 +67,7 @@ Runtime: **Deno**. Imports use URL specifiers with pinned versions where availab
 
 **MusicBrainz:** manual crate enrich only (`lib/crate/musicbrainz.ts`). User-Agent `lecturesfrom/1.0 ( 33@lecturesfrom.com )`, minimum 1.1s between requests. Visitor record-detail reads Redis or committed fixtures — never live MusicBrainz, Discogs release detail, or Wikidata. No WhoSampled. No scraping. Research runs via CRON_SECRET-gated `/api/cron/crate-backfill` (`?ids=&retry=1`) and `npm run crate:backfill`. No Vercel cron. `CRON_SECRET` is not in production and must not be added without Keegan's yes.
 
-**Wikidata:** SPARQL fallback after Discogs extraartists. User-Agent `lecturesfrom/1.0 +https://lecturesfrom.com ( 33@lecturesfrom.com )`, 1.1s interval. Lookup only by Discogs release id `P2206`. Credit/sample properties: P175/P86/P676/P162/P87/P736/P144/P4969. CC0. Facts that cannot be tied to P2206 are not attached.
+**Wikidata:** SPARQL fallback after Discogs extraartists. User-Agent `lecturesfrom/1.0 +https://lecturesfrom.com ( 33@lecturesfrom.com )`, one shared client, 1.1s interval, 5s timeout, honors `Retry-After`. Identity: Discogs master `P1954`, then MusicBrainz release group `P436`, then Discogs release `P2206` / catalog `P5813`. More than one item at the winning key is ambiguous and is not merged. Credits: P175/P86/P676/P162/P87. Samples: `P5707` inbound and outbound (not P736/P144/P4969). `sourceUrl` is the claim-bearing item. 429/5xx/timeout keep prior Wikidata facts. CC0.
 
 ---
 

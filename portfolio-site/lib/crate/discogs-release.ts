@@ -25,6 +25,7 @@ export type DiscogsReleaseDetail = {
   barcode: string | null
   notes: string | null
   discogsUrl: string
+  masterId: number | null
   extraartists?: Array<{
     name: string
     role: string
@@ -117,6 +118,7 @@ export function mapDiscogsReleaseDetail(raw: {
   images?: DiscogsImage[]
   extraartists?: DiscogsArtist[]
   tracklist?: DiscogsTrack[]
+  master_id?: number
 }): DiscogsReleaseDetail | null {
   if (typeof raw.id !== 'number' || !Number.isInteger(raw.id) || raw.id <= 0) {
     return null
@@ -139,6 +141,10 @@ export function mapDiscogsReleaseDetail(raw: {
     barcode: barcodeOf(raw.identifiers),
     notes: raw.notes?.trim() ? raw.notes.trim() : null,
     discogsUrl: discogsReleaseUrl(raw.id),
+    masterId:
+      typeof raw.master_id === 'number' && Number.isInteger(raw.master_id) && raw.master_id > 0
+        ? raw.master_id
+        : null,
     extraartists: (raw.extraartists ?? [])
       .map(mapCreditArtist)
       .filter((artist): artist is NonNullable<typeof artist> => artist != null),

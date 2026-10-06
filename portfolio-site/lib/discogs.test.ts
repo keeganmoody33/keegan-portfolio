@@ -553,7 +553,7 @@ describe('env resolution and key prefix', () => {
   })
 
   it('namespaces preview/dev away from production keys', () => {
-    withEnv({ VERCEL_ENV: 'production' }, () => {
+    withEnv({ VERCEL_ENV: 'production', VERCEL_GIT_COMMIT_REF: 'main' }, () => {
       const keys = discogsRedisKeys()
       assert.equal(keys.prefix, 'lf:')
       assert.equal(keys.collection, 'lf:discogs:collection:v1')

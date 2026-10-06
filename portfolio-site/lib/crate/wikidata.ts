@@ -1,6 +1,9 @@
+import { readRetryAfterMs } from './musicbrainz.ts'
 import {
   WIKIDATA_MIN_INTERVAL_MS,
+  WIKIDATA_RETRY_AFTER_CAP_MS,
   WIKIDATA_SPARQL_URL,
+  WIKIDATA_TIMEOUT_MS,
   WIKIDATA_USER_AGENT,
   type ResearchFact,
 } from './types.ts'
@@ -12,7 +15,30 @@ export type WikidataClientOptions = {
   now?: () => number
   sleep?: (ms: number) => Promise<void>
   minIntervalMs?: number
+  timeoutMs?: number
 }
+
+export type WikidataLookupInput = {
+  discogsReleaseId: number
+  masterId?: number | null
+  catalogId?: string | null
+  mbReleaseGroupId?: string | null
+}
+
+export type WikidataMatchProp = 'P1954' | 'P436' | 'P2206' | 'P5813'
+
+export type WikidataIdentity = {
+  status: 'ok' | 'empty' | 'ambiguous'
+  itemQid: string | null
+  matchProp: WikidataMatchProp | null
+  itemQids: string[]
+}
+
+export type WikidataLookupResult =
+  | { status: 'ok'; facts: ResearchFact[]; identity: WikidataIdentity }
+  | { status: 'empty'; facts: ResearchFact[]; identity: WikidataIdentity }
+  | { status: 'ambiguous'; facts: ResearchFact[]; identity: WikidataIdentity }
+  | { status: 'temporary'; error: WikidataTemporaryError }
 
 const CREDIT_PROPS: Record<string, string> = {
   P175: 'performer',
@@ -22,10 +48,11 @@ const CREDIT_PROPS: Record<string, string> = {
   P87: 'librettist',
 }
 
-const SAMPLE_PROPS: Record<string, 'sample_of' | 'sampled_by'> = {
-  P736: 'sample_of',
-  P144: 'sample_of',
-  P4969: 'sampled_by',
+const MATCH_RANK: Record<string, number> = {
+  P1954: 0,
+  P436: 1,
+  P2206: 2,
+  P5813: 2,
 }
 
 type SparqlBinding = Record<string, { type?: string; value?: string }>
@@ -52,42 +79,145 @@ function propIdFromUri(value: string | undefined): string {
   return match?.[1] ?? value
 }
 
+function sparqlEscape(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+}
+
 export function wikidataEntityUrl(qid: string): string {
   return `https://www.wikidata.org/wiki/${qid}`
 }
 
-export function wikidataReleaseQuery(discogsReleaseId: number): string {
-  const id = String(discogsReleaseId)
-  return `SELECT ?item ?itemLabel ?prop ?value ?valueLabel WHERE {
-  ?item wdt:P2206 "${id}" .
-  VALUES ?prop { wd:P175 wd:P86 wd:P676 wd:P162 wd:P87 wd:P736 wd:P144 wd:P4969 }
-  {
-    ?item ?wdt ?value .
-    ?prop wikibase:directClaim ?wdt .
-  } UNION {
-    ?value wdt:P4969 ?item .
-    BIND(wd:P4969 AS ?prop)
+export class WikidataTemporaryError extends Error {
+  readonly kind: 'unavailable' | 'rate_limit'
+  readonly temporary = true as const
+  readonly status: number | 'timeout'
+  readonly retryAfterMs: number | null
+
+  constructor(status: number | 'timeout', retryAfterMs: number | null = null, message?: string) {
+    super(
+      message ??
+        (status === 'timeout'
+          ? 'Wikidata timed out'
+          : status === 429
+            ? 'Wikidata rate limited'
+            : 'Wikidata unavailable')
+    )
+    this.name = 'WikidataTemporaryError'
+    this.status = status
+    this.retryAfterMs = retryAfterMs
+    this.kind = status === 429 ? 'rate_limit' : 'unavailable'
+    Object.setPrototypeOf(this, new.target.prototype)
+  }
+}
+
+export function isWikidataTemporaryError(error: unknown): error is WikidataTemporaryError {
+  if (error instanceof WikidataTemporaryError) return true
+  if (!error || typeof error !== 'object') return false
+  const candidate = error as { name?: unknown; temporary?: unknown; kind?: unknown }
+  return (
+    candidate.name === 'WikidataTemporaryError' &&
+    candidate.temporary === true &&
+    (candidate.kind === 'rate_limit' || candidate.kind === 'unavailable')
+  )
+}
+
+export function isTemporaryWikidataStatus(status: number | 'timeout'): boolean {
+  if (status === 'timeout') return true
+  return status === 408 || status === 429 || status >= 500
+}
+
+export function wikidataReleaseQuery(input: WikidataLookupInput | number): string {
+  const lookup: WikidataLookupInput =
+    typeof input === 'number' ? { discogsReleaseId: input } : input
+  const pairs: string[] = []
+  if (lookup.masterId && lookup.masterId > 0) {
+    pairs.push(`(wd:P1954 "${sparqlEscape(String(lookup.masterId))}")`)
+  }
+  if (lookup.mbReleaseGroupId?.trim()) {
+    pairs.push(`(wd:P436 "${sparqlEscape(lookup.mbReleaseGroupId.trim())}")`)
+  }
+  pairs.push(`(wd:P2206 "${sparqlEscape(String(lookup.discogsReleaseId))}")`)
+  if (lookup.catalogId?.trim()) {
+    pairs.push(`(wd:P5813 "${sparqlEscape(lookup.catalogId.trim())}")`)
+  }
+  return `SELECT ?item ?itemLabel ?matchProp ?prop ?value ?valueLabel ?direction WHERE {
+  VALUES (?matchKey ?matchValue) { ${pairs.join(' ')} }
+  ?item ?matchWdt ?matchValue .
+  ?matchKey wikibase:directClaim ?matchWdt .
+  BIND(?matchKey AS ?matchProp)
+  OPTIONAL {
+    {
+      VALUES ?prop { wd:P175 wd:P86 wd:P676 wd:P162 wd:P87 }
+      ?item ?creditWdt ?value .
+      ?prop wikibase:directClaim ?creditWdt .
+      BIND("out" AS ?direction)
+    } UNION {
+      ?item wdt:P5707 ?value .
+      BIND(wd:P5707 AS ?prop)
+      BIND("out" AS ?direction)
+    } UNION {
+      ?value wdt:P5707 ?item .
+      BIND(wd:P5707 AS ?prop)
+      BIND("in" AS ?direction)
+    }
   }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
 }`
 }
 
+export function pickWikidataIdentity(bindings: SparqlBinding[]): WikidataIdentity {
+  const empty: WikidataIdentity = {
+    status: 'empty',
+    itemQid: null,
+    matchProp: null,
+    itemQids: [],
+  }
+  const byRank = new Map<number, { prop: string; items: Set<string> }>()
+  for (const row of bindings) {
+    const itemQid = entityIdFromUri(row.item?.value)
+    const matchProp = propIdFromUri(row.matchProp?.value)
+    if (!itemQid || !matchProp) continue
+    const rank = MATCH_RANK[matchProp]
+    if (rank == null) continue
+    const bucket = byRank.get(rank) ?? { prop: matchProp, items: new Set<string>() }
+    bucket.items.add(itemQid)
+    if (MATCH_RANK[bucket.prop] !== rank) bucket.prop = matchProp
+    byRank.set(rank, bucket)
+  }
+  const ranks = [...byRank.keys()].sort((left, right) => left - right)
+  const winner = ranks[0] != null ? byRank.get(ranks[0]) : undefined
+  if (!winner || winner.items.size === 0) return empty
+  const itemQids = [...winner.items]
+  const matchProp = winner.prop as WikidataMatchProp
+  if (itemQids.length > 1) {
+    return { status: 'ambiguous', itemQid: null, matchProp, itemQids }
+  }
+  const itemQid = itemQids[0]
+  if (!itemQid) return empty
+  return { status: 'ok', itemQid, matchProp, itemQids }
+}
+
 export function researchFactsFromWikidataBindings(
   bindings: SparqlBinding[],
   discogsReleaseId: number,
-  fetchedAt: string
+  fetchedAt: string,
+  selectedItemQid?: string | null
 ): ResearchFact[] {
+  const identity = selectedItemQid
+    ? { status: 'ok' as const, itemQid: selectedItemQid, matchProp: null, itemQids: [selectedItemQid] }
+    : pickWikidataIdentity(bindings)
+  if (identity.status !== 'ok' || !identity.itemQid) return []
+  const itemQid = identity.itemQid
   const facts: ResearchFact[] = []
   const seen = new Set<string>()
   for (const row of bindings) {
-    const itemQid = entityIdFromUri(row.item?.value)
+    if (entityIdFromUri(row.item?.value) !== itemQid) continue
     const valueQid = entityIdFromUri(row.value?.value)
     const prop = propIdFromUri(row.prop?.value)
     const valueLabel = row.valueLabel?.value?.trim() ?? ''
-    const itemLabel = row.itemLabel?.value?.trim() ?? ''
-    if (!itemQid || !prop) continue
+    const direction = (row.direction?.value ?? 'out').toLowerCase()
+    if (!prop) continue
     const creditRole = CREDIT_PROPS[prop]
-    const sampleKind = SAMPLE_PROPS[prop]
     let fact: ResearchFact | null = null
     if (creditRole && valueLabel) {
       fact = {
@@ -100,27 +230,27 @@ export function researchFactsFromWikidataBindings(
         relatedArtist: '',
         source: 'wikidata',
         sourceId: valueQid || valueLabel,
-        sourceUrl: wikidataEntityUrl(valueQid || itemQid),
+        sourceUrl: wikidataEntityUrl(itemQid),
         fetchedAt,
       }
-    } else if (sampleKind && (valueLabel || itemLabel)) {
-      const relatedTitle = sampleKind === 'sampled_by' ? valueLabel || itemLabel : valueLabel
+    } else if (prop === 'P5707' && valueLabel) {
+      const sampledBy = direction === 'in'
       fact = {
-        kind: sampleKind,
+        kind: sampledBy ? 'sampled_by' : 'sample_of',
         trackKey: '',
         track: null,
-        role: prop === 'P736' ? 'cover of' : prop === 'P144' ? 'based on' : 'derivative work',
+        role: sampledBy ? 'sampled in' : 'samples',
         person: '',
-        relatedTitle,
+        relatedTitle: valueLabel,
         relatedArtist: '',
         source: 'wikidata',
-        sourceId: valueQid || itemQid,
-        sourceUrl: wikidataEntityUrl(valueQid || itemQid),
+        sourceId: valueQid || valueLabel,
+        sourceUrl: wikidataEntityUrl(sampledBy ? valueQid || itemQid : itemQid),
         fetchedAt,
       }
     }
     if (!fact) continue
-    const key = `${fact.kind}:${fact.role}:${fact.person}:${fact.relatedTitle}`
+    const key = `${fact.kind}:${fact.role}:${fact.person}:${fact.relatedTitle}:${fact.sourceUrl}`
     if (seen.has(key)) continue
     seen.add(key)
     facts.push(fact)
@@ -129,61 +259,187 @@ export function researchFactsFromWikidataBindings(
   return facts
 }
 
+function lookupResultFromBindings(
+  bindings: SparqlBinding[],
+  discogsReleaseId: number,
+  fetchedAt: string
+): Exclude<WikidataLookupResult, { status: 'temporary' }> {
+  const identity = pickWikidataIdentity(bindings)
+  if (identity.status === 'ambiguous') {
+    return { status: 'ambiguous', facts: [], identity }
+  }
+  if (identity.status === 'empty' || !identity.itemQid) {
+    return { status: 'empty', facts: [], identity }
+  }
+  const facts = researchFactsFromWikidataBindings(
+    bindings,
+    discogsReleaseId,
+    fetchedAt,
+    identity.itemQid
+  )
+  return { status: 'ok', facts, identity }
+}
+
+function isAbortError(error: unknown): boolean {
+  if (error instanceof Error && error.name === 'AbortError') return true
+  return typeof error === 'object' && error !== null && 'name' in error && error.name === 'AbortError'
+}
+
 export function createWikidataClient(options: WikidataClientOptions = {}) {
   const fetchImpl = options.fetchImpl ?? fetch
   const now = options.now ?? Date.now
   const sleep = options.sleep ?? defaultSleep
   const minInterval = options.minIntervalMs ?? WIKIDATA_MIN_INTERVAL_MS
+  const timeoutMs = options.timeoutMs ?? WIKIDATA_TIMEOUT_MS
   let lastAt = 0
   let requestCount = 0
+
+  async function waitForSlot(): Promise<void> {
+    const wait = lastAt + minInterval - now()
+    if (wait > 0) await sleep(wait)
+    lastAt = now()
+    requestCount += 1
+  }
+
+  async function postSparql(query: string, signal: AbortSignal): Promise<Response> {
+    await waitForSlot()
+    const body = new URLSearchParams({
+      query,
+      format: 'json',
+    })
+    return fetchImpl(WIKIDATA_SPARQL_URL, {
+      method: 'POST',
+      headers: {
+        'User-Agent': WIKIDATA_USER_AGENT,
+        Accept: 'application/sparql-results+json',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body,
+      signal,
+    })
+  }
 
   return {
     get requestCount() {
       return requestCount
     },
+    async lookupRelease(
+      input: WikidataLookupInput,
+      fetchedAt: string
+    ): Promise<WikidataLookupResult> {
+      const query = wikidataReleaseQuery(input)
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), timeoutMs)
+      try {
+        let response: Response
+        try {
+          response = await postSparql(query, controller.signal)
+        } catch (error) {
+          if (isAbortError(error) || controller.signal.aborted) {
+            throw new WikidataTemporaryError('timeout')
+          }
+          throw new WikidataTemporaryError(503)
+        }
+        if (response.status === 429) {
+          const retryAfterMs = Math.min(
+            readRetryAfterMs(response),
+            WIKIDATA_RETRY_AFTER_CAP_MS
+          )
+          if (retryAfterMs > 0 && !controller.signal.aborted) {
+            await sleep(retryAfterMs)
+            try {
+              response = await postSparql(query, controller.signal)
+            } catch (error) {
+              if (isAbortError(error) || controller.signal.aborted) {
+                throw new WikidataTemporaryError('timeout', retryAfterMs)
+              }
+              throw new WikidataTemporaryError(503, retryAfterMs)
+            }
+          }
+          if (response.status === 429) {
+            throw new WikidataTemporaryError(429, retryAfterMs)
+          }
+        }
+        if (isTemporaryWikidataStatus(response.status)) {
+          throw new WikidataTemporaryError(
+            response.status,
+            response.status === 429 ? readRetryAfterMs(response) : null
+          )
+        }
+        if (!response.ok) {
+          return {
+            status: 'empty',
+            facts: [],
+            identity: { status: 'empty', itemQid: null, matchProp: null, itemQids: [] },
+          }
+        }
+        let data: SparqlResponse
+        try {
+          data = (await response.json()) as SparqlResponse
+        } catch {
+          throw new WikidataTemporaryError(503)
+        }
+        return lookupResultFromBindings(
+          data.results?.bindings ?? [],
+          input.discogsReleaseId,
+          fetchedAt
+        )
+      } catch (error) {
+        if (isWikidataTemporaryError(error)) {
+          return { status: 'temporary', error }
+        }
+        if (isAbortError(error)) {
+          return { status: 'temporary', error: new WikidataTemporaryError('timeout') }
+        }
+        throw error
+      } finally {
+        clearTimeout(timer)
+      }
+    },
     async lookupDiscogsRelease(
       discogsReleaseId: number,
       fetchedAt: string
     ): Promise<ResearchFact[]> {
-      const wait = lastAt + minInterval - now()
-      if (wait > 0) await sleep(wait)
-      lastAt = now()
-      requestCount += 1
-      const body = new URLSearchParams({
-        query: wikidataReleaseQuery(discogsReleaseId),
-        format: 'json',
-      })
-      const response = await fetchImpl(WIKIDATA_SPARQL_URL, {
-        method: 'POST',
-        headers: {
-          'User-Agent': WIKIDATA_USER_AGENT,
-          Accept: 'application/sparql-results+json',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body,
-      })
-      if (!response.ok) return []
-      let data: SparqlResponse
-      try {
-        data = (await response.json()) as SparqlResponse
-      } catch {
-        return []
-      }
-      return researchFactsFromWikidataBindings(
-        data.results?.bindings ?? [],
-        discogsReleaseId,
-        fetchedAt
-      )
+      const result = await this.lookupRelease({ discogsReleaseId }, fetchedAt)
+      if (result.status === 'temporary') throw result.error
+      return result.facts
     },
   }
 }
 
 export type WikidataClient = ReturnType<typeof createWikidataClient>
 
+let sharedWikidataClient: WikidataClient | null = null
+
+export function getSharedWikidataClient(): WikidataClient {
+  if (!sharedWikidataClient) sharedWikidataClient = createWikidataClient()
+  return sharedWikidataClient
+}
+
+export function resetSharedWikidataClient(): void {
+  sharedWikidataClient = null
+}
+
+export function wikidataClientFor(options?: WikidataClientOptions): WikidataClient {
+  if (
+    options &&
+    (options.fetchImpl ||
+      options.now ||
+      options.sleep ||
+      options.minIntervalMs != null ||
+      options.timeoutMs != null)
+  ) {
+    return createWikidataClient(options)
+  }
+  return getSharedWikidataClient()
+}
+
 export async function lookupWikidataReleaseFacts(
-  discogsReleaseId: number,
+  input: WikidataLookupInput | number,
   fetchedAt: string,
   options: WikidataClientOptions = {}
-): Promise<ResearchFact[]> {
-  return createWikidataClient(options).lookupDiscogsRelease(discogsReleaseId, fetchedAt)
+): Promise<WikidataLookupResult> {
+  const lookup: WikidataLookupInput =
+    typeof input === 'number' ? { discogsReleaseId: input } : input
+  return wikidataClientFor(options).lookupRelease(lookup, fetchedAt)
 }

@@ -152,6 +152,7 @@ function proofDiscogsDetail(releaseId: number): DiscogsReleaseDetail {
     barcode: null,
     notes: null,
     discogsUrl: `https://www.discogs.com/release/${releaseId}`,
+    masterId: null,
     tracklist: [{ position: 'A1', title: 'Proof', duration: '1:00', type_: 'track' }],
   }
 }

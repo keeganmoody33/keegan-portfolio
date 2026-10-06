@@ -69,8 +69,8 @@ export function coverageOf(
 ): Coverage {
   const playable = pressing.tracks.filter((track) => isPlayableOccurrence(track))
   const facts = pressing.researchFacts ?? []
-  const hasReleaseCredit = facts.some((fact) => fact.kind === 'credit' && !fact.trackKey)
-  const hasReleaseSample = facts.some(
+  const withReleaseCredits = facts.some((fact) => fact.kind === 'credit' && !fact.trackKey)
+  const withReleaseSamples = facts.some(
     (fact) => (fact.kind === 'sample_of' || fact.kind === 'sampled_by') && !fact.trackKey
   )
   let matched = 0
@@ -84,11 +84,9 @@ export function coverageOf(
     const recording = track.recording.mbid ? pressing.recordings[track.recording.mbid] : undefined
     const trackFacts = facts.filter((fact) => fact.trackKey === key)
     const credit =
-      hasReleaseCredit ||
       trackFacts.some((fact) => fact.kind === 'credit') ||
       Boolean(recording && recording.credits.length > 0)
     const sample =
-      hasReleaseSample ||
       trackFacts.some((fact) => fact.kind === 'sample_of' || fact.kind === 'sampled_by') ||
       Boolean(
         recording && (recording.samplesFrom.length > 0 || recording.sampledIn.length > 0)
@@ -101,11 +99,20 @@ export function coverageOf(
     matched,
     withCredits,
     withSamples,
+    withReleaseCredits,
+    withReleaseSamples,
   }
 }
 
 export function coverageLine(coverage: Coverage): string {
-  return `matched ${coverage.matched}/${coverage.tracks} · credits ${coverage.withCredits} · samples ${coverage.withSamples}`
+  const parts = [
+    `matched ${coverage.matched}/${coverage.tracks}`,
+    `credits ${coverage.withCredits}`,
+    `samples ${coverage.withSamples}`,
+  ]
+  if (coverage.withReleaseCredits) parts.push('album credits')
+  if (coverage.withReleaseSamples) parts.push('album samples')
+  return parts.join(' · ')
 }
 
 export function isPlayableOccurrence(track: TrackOccurrence): boolean {

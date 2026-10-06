@@ -6,6 +6,8 @@
  *   npm run crate:backfill -- --retry
  *   npm run crate:backfill -- --ids=567894,573292 --retry
  *
+ * `--retry` without `--ids` retries only dead and too_slow ids.
+ *
  * Gated HTTP (preview only unless CRON_SECRET is set):
  *   GET /api/cron/crate-backfill?ids=567894&retry=1
  *   Authorization: Bearer $CRON_SECRET
@@ -46,7 +48,7 @@ if (!collection) {
 
 const { retry, ids, limit } = parseArgs(process.argv.slice(2))
 const result = await runBackfill(
-  { store, collection, forceRefresh: Boolean(retry && ids.length > 0) },
+  { store, collection, forceRefresh: Boolean(retry) },
   { retry, ids: ids.length > 0 ? ids : undefined, limit }
 )
 console.log(JSON.stringify(result, null, 2))

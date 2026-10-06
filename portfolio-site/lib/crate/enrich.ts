@@ -18,6 +18,7 @@ import {
   isPlayableOccurrence,
   researchIsFresh,
   trackIdentityKey,
+  touchAttempt,
   touchVerified,
 } from './lifecycle.ts'
 import {
@@ -59,13 +60,22 @@ import {
   mergeResearchFacts,
   researchFactsFromDiscogs,
 } from './research.ts'
-import { lookupWikidataReleaseFacts, type WikidataClientOptions } from './wikidata.ts'
+import {
+  isWikidataTemporaryError,
+  wikidataClientFor,
+  type WikidataClient,
+  type WikidataClientOptions,
+  type WikidataLookupInput,
+  type WikidataLookupResult,
+} from './wikidata.ts'
 import {
   CRATE_SCHEMA_VERSION,
   type DeadLetter,
   type DurableErrorKind,
+  type FetchState,
   type LifecycleName,
   type PressingFacts,
+  type ProvenanceError,
   type ResearchFact,
   type SourcedText,
   type StoredPressing,
@@ -181,7 +191,7 @@ function assertWithinWorkerDeadline(deps: EnrichDeps): void {
 
 export function lastErrorNeedsRematch(previous: StoredPressing | null): boolean {
   const kind = previous?.provenance.lastError?.kind
-  return kind === 'exhausted' || kind === 'not_found'
+  return kind === 'exhausted' || kind === 'not_found' || kind === 'too_slow'
 }
 
 export function shouldSkipMatch(
@@ -208,8 +218,9 @@ export type EnrichDeps = {
   inflightTtlSeconds?: number
   deadlineMs?: number
   forceRefresh?: boolean
-  fetchWikidata?: (releaseId: number, fetchedAt: string) => Promise<ResearchFact[]>
+  fetchWikidata?: (input: WikidataLookupInput, fetchedAt: string) => Promise<ResearchFact[]>
   wikidata?: WikidataClientOptions
+  wikidataClient?: WikidataClient
 }
 
 function errorKind(error: unknown): DurableErrorKind {
@@ -299,6 +310,7 @@ export function factsFromDiscogsDetail(detail: DiscogsReleaseDetail): PressingFa
     thumbnail: detail.thumb || detail.cover,
     discogsUrl: detail.discogsUrl,
     barcode: detail.barcode,
+    masterId: detail.masterId ?? null,
   }
 }
 
@@ -317,6 +329,7 @@ export function factsFromCollectionRelease(release: DiscogsRelease, releaseId: n
     thumbnail: release.thumbnail || release.cover,
     discogsUrl: release.discogsUrl,
     barcode: null,
+    masterId: null,
   }
 }
 
@@ -353,14 +366,57 @@ function emptyRecordingRef(reason: string): TrackOccurrence['recording'] {
   }
 }
 
-async function wikidataFactsFor(
+function priorWikidataFacts(previous: StoredPressing | null): ResearchFact[] {
+  return (previous?.researchFacts ?? []).filter((fact) => fact.source === 'wikidata')
+}
+
+function wikidataLookupInput(
   releaseId: number,
+  facts: PressingFacts,
+  mbRelease: StoredPressing['mbRelease']
+): WikidataLookupInput {
+  return {
+    discogsReleaseId: releaseId,
+    masterId: facts.masterId ?? null,
+    catalogId: facts.catno,
+    mbReleaseGroupId: mbRelease.releaseGroupMbid ?? null,
+  }
+}
+
+async function wikidataFactsFor(
+  input: WikidataLookupInput,
   fetchedAt: string,
   deps: EnrichDeps
-): Promise<ResearchFact[]> {
-  if (deps.fetchWikidata) return deps.fetchWikidata(releaseId, fetchedAt)
-  if (process.env.NODE_TEST_CONTEXT) return []
-  return lookupWikidataReleaseFacts(releaseId, fetchedAt, deps.wikidata)
+): Promise<WikidataLookupResult> {
+  if (deps.fetchWikidata) {
+    try {
+      const facts = await deps.fetchWikidata(input, fetchedAt)
+      return {
+        status: 'ok',
+        facts,
+        identity: {
+          status: facts.length > 0 ? 'ok' : 'empty',
+          itemQid: null,
+          matchProp: null,
+          itemQids: [],
+        },
+      }
+    } catch (error) {
+      if (isWikidataTemporaryError(error)) {
+        return { status: 'temporary', error }
+      }
+      throw error
+    }
+  }
+  if (process.env.NODE_TEST_CONTEXT) {
+    return {
+      status: 'empty',
+      facts: [],
+      identity: { status: 'empty', itemQid: null, matchProp: null, itemQids: [] },
+    }
+  }
+  const client = deps.wikidataClient ?? wikidataClientFor(deps.wikidata)
+  return client.lookupRelease(input, fetchedAt)
 }
 
 export function occurrencesFromDetail(detail: DiscogsReleaseDetail): TrackOccurrence[] {
@@ -629,7 +685,14 @@ export async function enrichPressing(
           match: priorCycles.match,
           research: priorCycles.research,
         },
-        coverage: { tracks: playable.length, matched: 0, withCredits: 0, withSamples: 0 },
+        coverage: {
+          tracks: playable.length,
+          matched: 0,
+          withCredits: 0,
+          withSamples: 0,
+          withReleaseCredits: false,
+          withReleaseSamples: false,
+        },
         checkpoint: {
           stage: skipMatch ? 'research' : 'match',
           researchCursor: previous?.checkpoint?.researchCursor ?? 0,
@@ -665,6 +728,7 @@ export async function enrichPressing(
         matchStatus: releaseMatch.matchStatus,
         confidence: releaseMatch.confidence,
         reason: releaseMatch.reason,
+        releaseGroupMbid: mbReleaseDoc?.releaseGroupId ?? null,
       }
       matchCycle = touchVerified(priorCycles.match, nowIso)
       researchCursor = 0
@@ -768,16 +832,39 @@ export async function enrichPressing(
     const mbUrl = mbRelease.url
     const sourceUrls = [facts.discogsUrl]
     if (mbUrl) sourceUrls.push(mbUrl)
-    let wikiFacts: ResearchFact[] = []
+    const priorWiki = priorWikidataFacts(previous)
+    let wikiFacts: ResearchFact[] = priorWiki
+    let wikiError: ProvenanceError | null = null
+    let wikiTemporary = false
     const wikiRemaining =
       deps.deadlineMs == null
         ? Number.POSITIVE_INFINITY
         : remainingBudgetMs(deps.deadlineMs, (deps.now ?? Date.now)())
     if (!remainingBelowTakeFloor(wikiRemaining, takeFloorMs)) {
-      try {
-        wikiFacts = await wikidataFactsFor(releaseId, nowIso, deps)
-      } catch {
+      const outcome = await wikidataFactsFor(
+        wikidataLookupInput(releaseId, facts, mbRelease),
+        nowIso,
+        deps
+      )
+      if (outcome.status === 'temporary') {
+        wikiTemporary = true
+        wikiFacts = priorWiki
+        wikiError = {
+          at: nowIso,
+          kind: outcome.error.kind,
+          message: outcome.error.message,
+          attempts: 0,
+        }
+      } else if (outcome.status === 'ambiguous') {
         wikiFacts = []
+        wikiError = {
+          at: nowIso,
+          kind: 'ambiguous',
+          message: 'wikidata identity is ambiguous',
+          attempts: 0,
+        }
+      } else {
+        wikiFacts = outcome.facts
       }
     }
     const researchFacts = mergeResearchFacts(
@@ -786,12 +873,26 @@ export async function enrichPressing(
       wikiFacts
     )
     if (wikiFacts.length > 0) {
-      sourceUrls.push('https://www.wikidata.org/')
+      const wikiUrl = wikiFacts.find((fact) => fact.sourceUrl.includes('wikidata.org'))?.sourceUrl
+      sourceUrls.push(wikiUrl ?? 'https://www.wikidata.org/')
     }
-    const researched =
-      acceptedMbids.length > 0 || researchFacts.length > 0
-        ? touchVerified(researchCycle, nowIso)
-        : priorCycles.research
+    let researched: FetchState
+    if (wikiTemporary) {
+      researched = touchAttempt(
+        { ...researchCycle, verifiedAt: priorCycles.research.verifiedAt },
+        nowIso,
+        wikiError
+      )
+    } else if (acceptedMbids.length > 0 || researchFacts.length > 0) {
+      researched = touchVerified(researchCycle, nowIso)
+      if (wikiError?.kind === 'ambiguous') {
+        researched = { ...researched, lastError: { ...wikiError, attempts: 0 } }
+      }
+    } else if (wikiError) {
+      researched = touchAttempt(priorCycles.research, nowIso, wikiError)
+    } else {
+      researched = priorCycles.research
+    }
     assertWithinWorkerDeadline(deps)
     const nextPressing: StoredPressing = hydratePressing({
       schemaVersion: CRATE_SCHEMA_VERSION,
@@ -964,6 +1065,7 @@ export async function processEnrichmentQueue(
   const inflightTtl = deps.inflightTtlSeconds ?? INFLIGHT_TTL_SECONDS
   const cap = limit ?? Number.POSITIVE_INFINITY
   const mb = deps.mb ?? createMusicBrainzClient({ now: deps.now })
+  const wikidataClient = deps.wikidataClient ?? wikidataClientFor(deps.wikidata)
   const processed: number[] = []
   const completed: number[] = []
   const failed: number[] = []
@@ -984,8 +1086,20 @@ export async function processEnrichmentQueue(
       const ids = await deps.store.takeDue(1, now(), inflightTtl)
       const releaseId = ids[0]
       if (releaseId == null) break
+      // takeDue is async; remaining can drop below the floor after the loop's
+      // check. Nack without a deadline stop so enrichPressing does not immediately
+      // throw WorkerDeadlineError for an id we should not have taken.
+      if (remainingBelowTakeFloor(remainingBudgetMs(deadlineMs, now()), takeFloorMs)) {
+        await deps.store.nack(releaseId, now())
+        break
+      }
       try {
-        const pressing = await enrichPressing(releaseId, { ...deps, mb, deadlineMs })
+        const pressing = await enrichPressing(releaseId, {
+          ...deps,
+          mb,
+          wikidataClient,
+          deadlineMs,
+        })
         const kind = pressing.provenance.lastError?.kind
         const outcome = classifyQueueOutcome(pressing)
         if (kind === 'auth') {

@@ -14,8 +14,37 @@ const SOURCE_ORDER: Record<SourceName, number> = {
   wikidata: 2,
 }
 
+const ROLE_SYNONYMS: Record<string, string> = {
+  producer: 'producer',
+  'produced by': 'producer',
+  'executive producer': 'executive producer',
+  'executive-producer': 'executive producer',
+  'exec-producer': 'executive producer',
+  'exec producer': 'executive producer',
+  'written-by': 'written by',
+  'written by': 'written by',
+  writer: 'written by',
+  composer: 'composer',
+  lyricist: 'lyricist',
+  'lyrics by': 'lyricist',
+  'lyrics': 'lyricist',
+  librettist: 'librettist',
+  performer: 'performer',
+  vocals: 'performer',
+  'mastered by': 'mastered by',
+  mastering: 'mastered by',
+  remix: 'remixer',
+  remixer: 'remixer',
+  'remixed by': 'remixer',
+}
+
 export function normalizeFactText(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, ' ')
+}
+
+export function normalizeCreditRole(role: string): string {
+  const collapsed = normalizeFactText(role).replace(/[_/]+/g, ' ').replace(/-/g, ' ')
+  return ROLE_SYNONYMS[collapsed] ?? collapsed
 }
 
 export function splitCreditRoles(role: string): string[] {
@@ -29,11 +58,15 @@ export function factDedupeKey(fact: ResearchFact): string {
   return [
     fact.kind,
     fact.trackKey,
-    normalizeFactText(fact.role),
+    fact.kind === 'credit' ? normalizeCreditRole(fact.role) : normalizeFactText(fact.role),
     normalizeFactText(fact.person),
     normalizeFactText(fact.relatedTitle),
     normalizeFactText(fact.relatedArtist),
   ].join('\u001f')
+}
+
+function creditIdentityKey(fact: ResearchFact): string {
+  return [normalizeCreditRole(fact.role), normalizeFactText(fact.person)].join('\u001f')
 }
 
 export function mergeResearchFacts(...groups: ResearchFact[][]): ResearchFact[] {
@@ -43,6 +76,8 @@ export function mergeResearchFacts(...groups: ResearchFact[][]): ResearchFact[] 
     .sort((left, right) => SOURCE_ORDER[left.source] - SOURCE_ORDER[right.source])
   const seen = new Set<string>()
   const merged: ResearchFact[] = []
+  const creditTracks = new Map<string, Set<string>>()
+  const creditReleaseIndex = new Map<string, number>()
   for (const fact of ranked) {
     if (!fact.person && fact.kind === 'credit') continue
     if (
@@ -51,6 +86,27 @@ export function mergeResearchFacts(...groups: ResearchFact[][]): ResearchFact[] 
       !fact.relatedArtist
     ) {
       continue
+    }
+    if (fact.kind === 'credit') {
+      const identity = creditIdentityKey(fact)
+      const tracks = creditTracks.get(identity) ?? new Set<string>()
+      if (!fact.trackKey) {
+        if (tracks.size > 0) continue
+        if (creditReleaseIndex.has(identity)) continue
+        creditReleaseIndex.set(identity, merged.length)
+      } else {
+        if (tracks.has(fact.trackKey)) continue
+        const releaseAt = creditReleaseIndex.get(identity)
+        if (releaseAt != null) {
+          merged.splice(releaseAt, 1)
+          creditReleaseIndex.delete(identity)
+          for (const [key, index] of creditReleaseIndex) {
+            if (index > releaseAt) creditReleaseIndex.set(key, index - 1)
+          }
+        }
+        tracks.add(fact.trackKey)
+        creditTracks.set(identity, tracks)
+      }
     }
     const key = factDedupeKey(fact)
     if (seen.has(key)) continue
