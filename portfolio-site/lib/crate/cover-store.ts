@@ -28,11 +28,19 @@ function positiveIds(releaseIds: number[]): number[] {
 }
 
 class RedisCoverStore implements CoverStore {
+  private readonly keys: ReturnType<typeof crateRedisKeys>
+  private readonly readRedis: Redis
+  private readonly writeRedis: Redis
+
   constructor(
-    private readonly keys: ReturnType<typeof crateRedisKeys>,
-    private readonly readRedis: Redis,
-    private readonly writeRedis: Redis
-  ) {}
+    keys: ReturnType<typeof crateRedisKeys>,
+    readRedis: Redis,
+    writeRedis: Redis
+  ) {
+    this.keys = keys
+    this.readRedis = readRedis
+    this.writeRedis = writeRedis
+  }
 
   async get(releaseId: number): Promise<CoverManifest | null> {
     if (process.env.NEXT_PHASE === 'phase-production-build') return null

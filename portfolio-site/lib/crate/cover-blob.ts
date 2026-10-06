@@ -24,8 +24,9 @@ export async function putCoverBlob(
   const token = options.token === undefined ? blobReadWriteToken() : options.token
   if (!token) return null
   const putImpl = options.putImpl ?? put
+  const payload = body instanceof Blob ? body : Buffer.from(body)
   try {
-    const result = await putImpl(pathname, body, {
+    const result = await putImpl(pathname, payload, {
       access: 'public',
       addRandomSuffix: false,
       allowOverwrite: true,

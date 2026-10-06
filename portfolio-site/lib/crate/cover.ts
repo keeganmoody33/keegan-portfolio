@@ -22,10 +22,8 @@ export {
   isSelfHostedCoverUrl,
   parseDiscogsImageDimensions,
   pickLargestCover,
-  type CoverCandidate,
-  type CoverManifest,
-  type CoverSource,
 } from './cover-display.ts'
+export type { CoverCandidate, CoverManifest, CoverSource } from './cover-display.ts'
 
 export const COVER_ART_USER_AGENT = 'lecturesfrom/1.0 (33@lecturesfrom.com)'
 export const COVER_ART_MIN_INTERVAL_MS = 1100
