@@ -1,6 +1,6 @@
 # Frontend Guidelines — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-09-28
+**Last Updated:** 2026-10-06
 **Supersedes:** `docs/DESIGN_PLAYBOOK.md` (archived -- all content folded into this doc)
 **CSS Framework:** Tailwind CSS 3.4.19 + CSS Custom Properties
 **Fonts:** Google Fonts (Chakra Petch, Doto, Space Grotesk, Roboto Mono, Roboto Slab)
@@ -314,6 +314,7 @@ Animated 60px x 60px grid pattern on body:
 | `.lf-motion-switch` | Footer Motion | Kept in `MotionSwitch.tsx`. HouseFooter does not render it while the o is static. Preference CSS, head bootstrap, and sessionStorage remain. |
 | `.lf-logo-globe-core` | Core layer | Face-on rest pose. `animation: none; transform: none`. No independent spin. |
 | `.house-spine` | Crate row | 3 columns below `sm` (format/catno on a second title line); 5 columns from `md` |
+| `.house-fade` | Record detail entrance | Reuses `houseLockup` (700ms opacity). Instant under `prefers-reduced-motion`. No shimmer, no spinner. |
 
 
 ### Button Patterns
@@ -357,7 +358,7 @@ Animated 60px x 60px grid pattern on body:
 | `gridShift` | 8s | linear infinite | Body grid background movement |
 | `sprayStroke` | 0.15s | cubic-bezier(0.25, 0.46, 0.45, 0.94) | Hero name character reveal |
 | `marquee` | 40s | linear infinite | Horizontal ticker scroll |
-| `houseLockup` | 700ms | ease-out both | Root wordmark opacity fade (`0` → `1`). No letter-spacing. Instant under `prefers-reduced-motion`. |
+| `houseLockup` | 700ms | ease-out both | Root wordmark opacity fade (`0` → `1`). No letter-spacing. Instant under `prefers-reduced-motion`. Also used by `.house-fade` on record detail. |
 | SIGNAL CUT first | 420ms | tear 0–60 / snow 60–280 / black 280–360 / fade 360–420 | House <-> person, first crossing in the tab |
 | SIGNAL CUT repeat | 160ms | tear 0–40 / black 40–120 / fade 120–160 | Later crossings in the same tab |
 | SIGNAL CUT reduced | 80ms | instant black, no tear/snow/id/fade | `prefers-reduced-motion: reduce` |
@@ -411,6 +412,7 @@ Two dialects. House pages (`/`, `/catalog`, sleeves, `/collection`, `/legal`) sh
 - **Wordmark:** size to the content slot (`clamp` / `cqi`). Never `18vw` or a raw `12rem` that can overflow. Desktop cap stays `12rem`.
 - **Spines:** format and catalog number stay visible at 375 (second meta line). Status column is the last grid track so it meets the hairline and the SPINES header. Do not leave empty `auto` tracks with `gap` when columns are `display: none`.
 - **No-art Discogs tiles:** `NoArtTile` (hairline + artist/title in meta type). `IssuePlate` is for house sleeves only.
+- **Record detail:** house dark only. At 1280, cover left and rows right. At 375, full-width cover then rows. Hairlines between sections. No cards, radius, or shadows. Title is Chakra Petch 600 tracking `-0.01em`, Discogs case untouched. Artist muted on its own line. Description Space Grotesk, 2–4 sourced sentences. Labels `.house-meta`. Tabs OVERVIEW / TRACKS: active ink + 1px ink underline, inactive muted, hover orange. Cover is square, same thumbnail as the grid, 1px `--house-line` border. Orange is hover only — never the active tab, never a fill. Empty copy: `nothing on file yet` / `pick a track for credits and samples` / `couldn't reach discogs`. Missing cover is `#242424` with catno centered.
 
 ### Current Responsive Rules
 

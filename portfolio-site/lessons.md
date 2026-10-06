@@ -1,6 +1,14 @@
 # Lessons Learned
 
-Updated: 2026-09-28
+Updated: 2026-10-06
+
+## Collection record detail (2026-10-06)
+
+- **Visitor path never calls Discogs or MusicBrainz.** Read Redis last-good, then committed fixtures, then a pending shell from the collection snapshot. Enrichment is `after()` + cron. A failed refresh must not overwrite a successful pressing.
+- **Discogs is the pressing; MusicBrainz is the recording.** Match the MB release via Discogs URL / barcode / catno, then position+title+duration. Vocal/instrumental siblings without a unique version token stay `ambiguous`. Do not auto-accept weak matches. No WhoSampled, no scraping.
+- **LF Direction empty copy is the whole empty language.** Missing field drops the row. Empty section: `nothing on file yet`. No track: `pick a track for credits and samples`. Store down: `couldn't reach discogs` plus retry. Never `N/A`, `Unknown`, a dash, or a red error. No spinners or shimmer — hold the hairlines and fade (`.house-fade` = `houseLockup`).
+- **Orange is hover only** on this surface. Active tab is ink + 1px ink underline. Cover is flat 1:1, same thumbnail as the grid. Title keeps Discogs casing.
+- **Hobby cron is daily.** `after()` handles 1 new item on sync. Fixtures keep the three proof records working on a preview without Redis.
 
 ## Brand / nameplate wordmark (assets only)
 

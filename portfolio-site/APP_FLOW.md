@@ -1,6 +1,6 @@
 # App Flow — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-09-28
+**Last Updated:** 2026-10-06
 **Framework:** Next.js (App Router)
 **Deployment:** Vercel (auto-deploy on push to main)
 
@@ -15,7 +15,8 @@
 | `/`              | `app/(house)/page.tsx`               | House title card + crate (Server Component). The last `o` in the wordmark `from` is a static `LogoMark` (owner line-only PNG geometry; `variant="line"` — ink strokes, no fills; house palette fills on hold; no `LogoGlobe`, no spin) at Chakra Petch x-height on the alphabetic baseline; there is no standalone coin above the wordmark. Wordmark (`HouseWordmark`, Chakra Petch) entrance is a 700ms opacity fade. HouseFooter does not render the Motion switch while the o is static; `MotionSwitch.tsx`, head bootstrap, and pause CSS stay in the repo. Nameplate and Hathaway SVGs are not mounted. No page turntable. No return-visit redirect. |
 | `/catalog`       | `app/(house)/catalog/page.tsx`       | Crate permalink (same spines as `/`)                            |
 | `/catalog/[slug]`| `app/(house)/catalog/[slug]/page.tsx`| Sleeve (cover, liner, tracks). Unknown slugs 404.               |
-| `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate (ISR 300s; durable last-good in Redis when configured) |
+| `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate (ISR 300s; durable last-good in Redis when configured). Cover click opens `/collection/[releaseId]`. |
+| `/collection/[releaseId]` | `app/(house)/collection/[releaseId]/page.tsx` | Record detail (overview / tracks). Intercepting overlay at `@detail/(.)[releaseId]` when opened from the grid; full page on direct visit / refresh. |
 | `/legal`         | `app/(house)/legal/page.tsx`         | Entity + long about                                             |
 | `/icon.svg`      | `app/icon.svg`                       | Site icon; `prefers-color-scheme` stroke. Older line-mark — left untouched this pass (follow-up). Applies to house and person. |
 | `/favicon.ico`   | `app/favicon.ico`                    | 16/32/48 ico: `#ececec` rounded plate, mark `#20262b` (matches apple-icon). Older line-mark — left untouched this pass (follow-up). |
@@ -40,6 +41,7 @@
 |-------|--------|------|---------|
 | `/api/chat` | POST | `app/api/chat/route.ts` | Proxy to Supabase `chat` Edge Function |
 | `/api/discogs/collection` | GET | `app/api/discogs/collection/route.ts` | Full Discogs crate (`revalidate: 300`, Redis last-good when configured). Career `/api/discogs` was removed. |
+| `/api/cron/crate-enrich` | GET | `app/api/cron/crate-enrich/route.ts` | Daily drain of the crate enrichment queue. Bearer `CRON_SECRET`. Missing secret → 404. |
 | `/api/github` | GET | `app/api/github/route.ts` | Proxy to GitHub public events API |
 | `/api/jd-analyzer` | POST | `app/api/jd-analyzer/route.ts` | Proxy to Supabase `jd-analyzer` Edge Function |
 
@@ -291,6 +293,28 @@ Land on /keeganmoody33
 
 ---
 
+### 8. Collection record detail
+
+**Trigger:** Click a cover on `/collection`, or open `/collection/[releaseId]` directly.
+
+**Steps:**
+
+1. Grid link saves scroll/focus in sessionStorage (`lf:collection:scroll`, `lf:collection:focus`) and routes to `/collection/{releaseId}` with `scroll={false}`.
+2. From the grid, the intercepting overlay (`@detail/(.)[releaseId]`) covers the crate. Direct visit or refresh renders the full page.
+3. Overview is the default tab: sourced description (omit if none), fact rows (label, catno, format, country, released — drop a missing field), a few stored sample/credit connections.
+4. Tracks tab lists the owned pressing in Discogs order. Selecting a track shows stored credits, samples from, and sampled in.
+5. Back / Escape / collection link returns to the grid. Overlay uses `router.back()`; full page links to `/collection`. Focus returns to the cover.
+
+**Success state:** Stored pressing facts, tracklist, and MusicBrainz credits/samples. Cover is the same thumbnail as the grid.
+
+**Error state:** Dim mono `couldn't reach discogs` plus a retry text link (orange on hover). Never red. Last-good stored data is preferred over this.
+
+**Empty states:** Missing field drops its row (never `N/A` / `Unknown` / `—`). Empty section: `nothing on file yet`. No track picked: `pick a track for credits and samples`. Missing cover: `#242424` square with catno centered. Layout holds with hairlines; content fades in (`.house-fade`; instant under reduced motion).
+
+**PostHog events:** `collection_record_open`, `collection_record_tab`, `collection_record_track`, `collection_record_close`
+
+---
+
 ## Mobile vs Desktop Differences
 
 | Element | Desktop | Mobile |
@@ -299,7 +323,7 @@ Land on /keeganmoody33
 | Navigation | Horizontal top bar | Same; items `whitespace-nowrap`, right group `gap-x-3 gap-y-2` |
 | BannerRotator | Full-bleed bar; `pr-16` on content only when dots show | Same |
 | Timeline | Full-width cards | Same layout (no responsive changes) |
-| JD Analyzer | Full-width textarea | Same layout |
+| Record detail | At 1280: cover left, rows right | At 375: full-width cover, then rows |
 
 ---
 
@@ -318,7 +342,14 @@ Supabase DB
 Discogs API
     └── fetchFullCollection() ──→ house `/collection`, `/api/discogs/collection`, `/collection.md`
             └── Upstash Redis last-good (`lf:discogs:collection:v1`) when env is set
+            └── on complete crawl: queue new/missing ids (`lf:crate:queue:v1`)
             └── not used on `/keeganmoody33` (career `/api/discogs` / RecentDigs removed)
+
+MusicBrainz API (background only)
+    └── crate enrich (`after()` 1 item + daily `/api/cron/crate-enrich`)
+            └── Redis `lf:crate:pressing:{id}:v1` + `lf:crate:recording:{mbid}:v1`
+            └── visitor `/collection/[releaseId]` reads stored results or committed fixtures
+            └── never called on a visitor request
 
 YouTube IFrame API (client-side, no proxy)
     └── youtube.com/iframe_api ──→ YouTubePlayer component

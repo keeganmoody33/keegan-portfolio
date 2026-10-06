@@ -379,6 +379,14 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   .house-wordmark { animation: none; }
 }
 
+.house-fade {
+  animation: houseLockup 700ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .house-fade { animation: none; }
+}
+
 .house-hairline {
   border-color: var(--house-line);
 }

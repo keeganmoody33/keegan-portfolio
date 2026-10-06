@@ -133,6 +133,21 @@ describe('mapRelease', () => {
     assert.equal(withCover.label, 'lf')
     assert.equal(withCover.catno, 'lf-9')
     assert.equal(withCover.discogsUrl, 'https://www.discogs.com/release/9')
+    assert.equal(withCover.releaseId, 9)
+    assert.equal(withCover.instanceId, 0)
+
+    const withInstance = mapRelease({
+      id: 573292,
+      instance_id: 1671298195,
+      basic_information: {
+        id: 573292,
+        title: 'Bootsy? Player Of The Year',
+        year: 1978,
+        artists: [{ name: "Bootsy's Rubber Band" }],
+      },
+    })
+    assert.equal(withInstance.releaseId, 573292)
+    assert.equal(withInstance.instanceId, 1671298195)
 
     const thumbOnly = mapRelease({
       basic_information: {

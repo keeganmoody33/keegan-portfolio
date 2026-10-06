@@ -1,4 +1,12 @@
-COMPLETED (2026-09-28 — pivot (−4, −3); ring contrast sampled on the ring):
+COMPLETED (2026-10-06 — collection record detail, preview only):
+- Cover click on `/collection` opens `/collection/[releaseId]` (intercepting overlay + full-page fallback). Back/Escape restores scroll and cover focus.
+- Stored pressing model in Upstash (`lf:crate:pressing:{id}:v1` etc.). Discogs = pressing identity and track order. MusicBrainz = recording match, credits, typed samples. Visitors read Redis → fixtures → collection pending. Never live Discogs/MB on the page request.
+- Sync hook: complete collection crawl queues new/missing ids; `after()` enriches 1 item. Daily `/api/cron/crate-enrich` drains 2 when `CRON_SECRET` is set.
+- Fixtures committed for Bootsy 573292, Goodie Mob 240128, Mtume 567894 (Mtume vocal/instrumental stays ambiguous).
+- LF Direction brief: house tokens only, OVERVIEW/TRACKS tabs, hairline rows, sourced lines, empty copy (`nothing on file yet` / `pick a track for credits and samples` / `couldn't reach discogs`). `.house-fade` reuses `houseLockup`.
+- Preview only. Do not merge or deploy to production from this branch.
+
+
 - Pivot is (−4, −3) viewBox units from the ring centre (`−4/248`, `−3/248`). Drawing ~−3.95, −3.07. Blue −32.339552° (ellipse ∩ inner-arc from the new pivot), horiz 0° ends on the arc, green 30.27366° (arc ∩ ring). Ellipse, hairline, line-only, transparent `--lf-mark-*`, favicon / og unchanged.
 - Ring contrast is polar samples on the outer-ring annulus (pivot excluded). Recapture vs `#0a0a0a`: 375 DPR1 ring brightest `#8c8c8c` 5.89:1 (top-of-ring AA hotspot; also the mark-wide peak), typical/median `#373737` 1.66:1; pivot overlap `#8a8a8a` 5.73:1. 40px box ring brightest `#9a9a9a` 7.04:1 (green∩ring; also the mark-wide peak), typical `#494949` 2.20:1; pivot overlap `#898989` 5.66:1. 512 overlay Hausdorff 4.24px, median 1.00, p95 2.83.
 

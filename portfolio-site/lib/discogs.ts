@@ -18,6 +18,8 @@ export type DiscogsRelease = {
   label: string
   catno: string
   discogsUrl: string
+  releaseId: number
+  instanceId: number
 }
 
 export type DiscogsRecentRelease = {
@@ -68,6 +70,10 @@ export type DiscogsClientOptions = {
   now?: () => number
   isProductionBuild?: boolean
   cacheMode?: DiscogsCacheMode
+  onCollectionComplete?: (
+    previous: DiscogsCollection | null,
+    next: DiscogsCollection
+  ) => Promise<void>
 }
 
 export type DiscogsErrorHttp = {
@@ -92,6 +98,8 @@ type DiscogsBasicInformation = {
 }
 
 type DiscogsApiRelease = {
+  id?: number
+  instance_id?: number
   basic_information?: DiscogsBasicInformation
 }
 
@@ -250,6 +258,13 @@ export function discogsReleaseUrl(id: number | undefined): string {
   return DISCOGS_SITE_URL
 }
 
+export function extractReleaseIdFromUrl(url: string): number | null {
+  const match = url.match(/\/release\/([1-9]\d*)$/)
+  if (!match || !match[1]) return null
+  const id = Number.parseInt(match[1], 10)
+  return Number.isInteger(id) && id > 0 ? id : null
+}
+
 export function sanitizeDiscogsUrl(url: string): string {
   if (RELEASE_URL_PATTERN.test(url)) return url
   return DISCOGS_SITE_URL
@@ -264,6 +279,18 @@ export function mapRelease(release: DiscogsApiRelease): DiscogsRelease {
   const label = info.labels?.[0]
   const thumb = info.thumb ?? ''
   const cover = info.cover_image || thumb
+  const releaseId =
+    typeof info.id === 'number' && Number.isInteger(info.id) && info.id > 0
+      ? info.id
+      : typeof release.id === 'number' && Number.isInteger(release.id) && release.id > 0
+        ? release.id
+        : 0
+  const instanceId =
+    typeof release.instance_id === 'number' &&
+    Number.isInteger(release.instance_id) &&
+    release.instance_id > 0
+      ? release.instance_id
+      : 0
 
   return {
     title: info.title ?? '',
@@ -274,7 +301,9 @@ export function mapRelease(release: DiscogsApiRelease): DiscogsRelease {
     format: formatLine(info.formats),
     label: label?.name ?? '',
     catno: label?.catno ?? '',
-    discogsUrl: discogsReleaseUrl(info.id),
+    discogsUrl: discogsReleaseUrl(releaseId || undefined),
+    releaseId,
+    instanceId,
   }
 }
 
@@ -300,6 +329,16 @@ export function isCompleteCollection(collection: DiscogsCollection): boolean {
 function isDiscogsRelease(value: unknown): value is DiscogsRelease {
   if (!value || typeof value !== 'object') return false
   const release = value as Record<string, unknown>
+  const releaseIdOk =
+    release.releaseId === undefined ||
+    (typeof release.releaseId === 'number' &&
+      Number.isInteger(release.releaseId) &&
+      release.releaseId >= 0)
+  const instanceIdOk =
+    release.instanceId === undefined ||
+    (typeof release.instanceId === 'number' &&
+      Number.isInteger(release.instanceId) &&
+      release.instanceId >= 0)
   return (
     typeof release.title === 'string' &&
     typeof release.artist === 'string' &&
@@ -309,7 +348,9 @@ function isDiscogsRelease(value: unknown): value is DiscogsRelease {
     typeof release.format === 'string' &&
     typeof release.label === 'string' &&
     typeof release.catno === 'string' &&
-    typeof release.discogsUrl === 'string'
+    typeof release.discogsUrl === 'string' &&
+    releaseIdOk &&
+    instanceIdOk
   )
 }
 
@@ -331,9 +372,16 @@ export function parseDurableCollection(value: unknown): DiscogsCollection | null
   const releases: DiscogsRelease[] = []
   for (const item of record.releases) {
     if (!isDiscogsRelease(item)) return null
+    const discogsUrl = sanitizeDiscogsUrl(item.discogsUrl)
+    const releaseId =
+      item.releaseId && item.releaseId > 0
+        ? item.releaseId
+        : extractReleaseIdFromUrl(discogsUrl) ?? 0
     releases.push({
       ...item,
-      discogsUrl: sanitizeDiscogsUrl(item.discogsUrl),
+      discogsUrl,
+      releaseId,
+      instanceId: item.instanceId ?? 0,
     })
   }
 
@@ -488,6 +536,39 @@ export async function crawlFullCollection(
   return collection
 }
 
+async function notifyCollectionComplete(
+  options: DiscogsClientOptions,
+  previous: DiscogsCollection | null,
+  next: DiscogsCollection
+): Promise<void> {
+  if (options.onCollectionComplete) {
+    try {
+      await options.onCollectionComplete(previous, next)
+    } catch {
+      // Collection snapshot already saved.
+    }
+    return
+  }
+
+  try {
+    const { getDefaultCrateStore } = await import('./crate/store.ts')
+    const { queueNewAndMissing } = await import('./crate/sync.ts')
+    const { processEnrichmentQueue } = await import('./crate/enrich.ts')
+    const store = getDefaultCrateStore()
+    if (!store) return
+    const previousIds = (previous?.releases ?? [])
+      .map((release) => release.releaseId || extractReleaseIdFromUrl(release.discogsUrl) || 0)
+      .filter((id) => id > 0)
+    await queueNewAndMissing(store, previousIds, next)
+    const schedule = options.scheduleRefresh ?? defaultScheduleRefresh
+    schedule(async () => {
+      await processEnrichmentQueue({ store }, 1)
+    })
+  } catch {
+    // Enrichment is best-effort. Last-good collection still stands.
+  }
+}
+
 async function refreshDurableCollection(
   durable: DurableStore,
   options: DiscogsClientOptions,
@@ -497,12 +578,20 @@ async function refreshDurableCollection(
   if (!locked) return
 
   try {
+    let previous: DiscogsCollection | null = null
+    try {
+      const snapshot = await durable.get()
+      previous = parseDurableCollection(snapshot?.collection)
+    } catch {
+      previous = null
+    }
     const collection = await crawlFullCollection({
       ...options,
       durable,
       cacheMode: 'fresh',
     })
     await durable.setComplete(collection, now())
+    await notifyCollectionComplete(options, previous, collection)
   } catch (error) {
     try {
       await durable.recordError(errorKind(error), now())
@@ -645,6 +734,7 @@ export async function fetchFullCollection(
         if (!locked) return
         try {
           await durable.setComplete(collection, now())
+          await notifyCollectionComplete(options, null, collection)
         } finally {
           await durable.releaseLock()
         }

@@ -1,0 +1,508 @@
+{
+  "schemaVersion": 1,
+  "releaseId": 573292,
+  "entryInstanceIds": [],
+  "facts": {
+    "releaseId": 573292,
+    "title": "Bootsy? Player Of The Year",
+    "artist": "Bootsy's Rubber Band",
+    "label": "Warner Bros. Records",
+    "catno": "BSK 3093",
+    "format": "Vinyl, LP, Album, Winchester Pressing, Gatefold",
+    "country": "US",
+    "released": "1978",
+    "year": 1978,
+    "cover": "https://i.discogs.com/NM4hWKDDFmVxaE0jxWxJpm9vej8-Y3DP4eAvHJHB-PA/rs:fit/g:sm/q:90/h:597/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTU3MzI5/Mi0xNTQyODQwNjkz/LTU5OTcuanBlZw.jpeg",
+    "thumbnail": "https://i.discogs.com/Dj9kM58wcuhL8Zu4css7og4dP83QHjDjNeWrW5d5Vr0/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTU3MzI5/Mi0xNTQyODQwNjkz/LTU5OTcuanBlZw.jpeg",
+    "discogsUrl": "https://www.discogs.com/release/573292",
+    "barcode": null
+  },
+  "description": {
+    "text": "Capitol, Winchester pressing denoted by \"·─◁\" etch in runouts. In matrix no's variant 3 transcript \" ̶[̶i̶l̶l̶e̶g̶i̶b̶l̶e̶]̶ ̶\" stands for several inscribed characters that can't be deciphered due to accumulation of circular inscribed crossings, which makes the original inscriptions impossible to read. Records Inc., a subsidiary and licensee of Warner Bros. Inc., a Warner Communications Company [W logo]® • 3300 Warner Blvd., Burbank, Calif.",
+    "source": "discogs",
+    "sourceUrl": "https://www.discogs.com/release/573292"
+  },
+  "tracks": [
+    {
+      "position": "A1",
+      "title": "Bootsy? (What's The Name Of This Town)",
+      "duration": "6:59",
+      "durationMs": 419000,
+      "index": 0,
+      "recording": {
+        "matchStatus": "matched",
+        "confidence": 0.99,
+        "reason": "matched via musicbrainz release using position, title, and duration",
+        "mbid": "08b1c4e3-b0eb-4dd2-b870-740d6eebe627",
+        "recordingUrl": "https://musicbrainz.org/recording/08b1c4e3-b0eb-4dd2-b870-740d6eebe627"
+      }
+    },
+    {
+      "position": "A2",
+      "title": "May The Force Be With You",
+      "duration": "6:02",
+      "durationMs": 362000,
+      "index": 1,
+      "recording": {
+        "matchStatus": "matched",
+        "confidence": 0.99,
+        "reason": "matched via musicbrainz release using position, title, and duration",
+        "mbid": "c2291306-1dbe-4d8a-9df1-1bd00062710d",
+        "recordingUrl": "https://musicbrainz.org/recording/c2291306-1dbe-4d8a-9df1-1bd00062710d"
+      }
+    },
+    {
+      "position": "A3",
+      "title": "Very Yes",
+      "duration": "8:24",
+      "durationMs": 504000,
+      "index": 2,
+      "recording": {
+        "matchStatus": "matched",
+        "confidence": 0.99,
+        "reason": "matched via musicbrainz release using position, title, and duration",
+        "mbid": "dc955663-9073-4e88-9dcc-1a58f1edc697",
+        "recordingUrl": "https://musicbrainz.org/recording/dc955663-9073-4e88-9dcc-1a58f1edc697"
+      }
+    },
+    {
+      "position": "A+1",
+      "title": "Bootzilla",
+      "duration": "5:38",
+      "durationMs": 338000,
+      "index": 3,
+      "recording": {
+        "matchStatus": "matched",
+        "confidence": 0.99,
+        "reason": "matched via musicbrainz release using position, title, and duration",
+        "mbid": "e77f6739-6b7f-4c0b-8421-c3e32078be38",
+        "recordingUrl": "https://musicbrainz.org/recording/e77f6739-6b7f-4c0b-8421-c3e32078be38"
+      }
+    },
+    {
+      "position": "A+2",
+      "title": "Hollywood Squares",
+      "duration": "6:15",
+      "durationMs": 375000,
+      "index": 4,
+      "recording": {
+        "matchStatus": "matched",
+        "confidence": 0.99,
+        "reason": "matched via musicbrainz release using position, title, and duration",
+        "mbid": "39f3b951-b116-42ac-8c48-1408524ff050",
+        "recordingUrl": "https://musicbrainz.org/recording/39f3b951-b116-42ac-8c48-1408524ff050"
+      }
+    },
+    {
+      "position": "A+3",
+      "title": "Roto-Rooter",
+      "duration": "6:25",
+      "durationMs": 385000,
+      "index": 5,
+      "recording": {
+        "matchStatus": "ambiguous",
+        "confidence": 0.35,
+        "reason": "duration disagrees with the candidate recording; not auto-accepted",
+        "mbid": null,
+        "recordingUrl": null
+      }
+    },
+    {
+      "position": "A+4",
+      "title": "As In (I Love You)",
+      "duration": "5:08",
+      "durationMs": 308000,
+      "index": 6,
+      "recording": {
+        "matchStatus": "matched",
+        "confidence": 0.99,
+        "reason": "matched via musicbrainz release using position, title, and duration",
+        "mbid": "82ab9b93-6343-4715-9f17-db9c4607b14b",
+        "recordingUrl": "https://musicbrainz.org/recording/82ab9b93-6343-4715-9f17-db9c4607b14b"
+      }
+    }
+  ],
+  "mbRelease": {
+    "mbid": "72089134-a550-446e-b26d-8d3b523b05d6",
+    "url": "https://musicbrainz.org/release/72089134-a550-446e-b26d-8d3b523b05d6",
+    "matchStatus": "matched",
+    "confidence": 0.95,
+    "reason": "musicbrainz release linked by discogs url relationship"
+  },
+  "recordings": {
+    "08b1c4e3-b0eb-4dd2-b870-740d6eebe627": {
+      "mbid": "08b1c4e3-b0eb-4dd2-b870-740d6eebe627",
+      "title": "Bootsy? (What’s the Name of This Town)",
+      "artist": "Bootsy’s Rubber Band",
+      "credits": [
+        {
+          "name": "Mike Iacopelli",
+          "role": "engineer",
+          "attributes": [
+            "assistant"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/08b1c4e3-b0eb-4dd2-b870-740d6eebe627"
+        },
+        {
+          "name": "Jim Vitti",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/08b1c4e3-b0eb-4dd2-b870-740d6eebe627"
+        },
+        {
+          "name": "George Clinton",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/08b1c4e3-b0eb-4dd2-b870-740d6eebe627"
+        },
+        {
+          "name": "Bootsy Collins",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/08b1c4e3-b0eb-4dd2-b870-740d6eebe627"
+        }
+      ],
+      "samplesFrom": [],
+      "sampledIn": [],
+      "provenance": {
+        "sourceUrls": [
+          "https://musicbrainz.org/recording/08b1c4e3-b0eb-4dd2-b870-740d6eebe627"
+        ],
+        "matchStatus": "matched",
+        "confidence": 0.9,
+        "reason": "musicbrainz recording lookup",
+        "checkedAt": "2026-10-06T01:21:50.879Z",
+        "refreshAfter": "2026-11-05T01:21:50.879Z",
+        "lastError": null
+      }
+    },
+    "c2291306-1dbe-4d8a-9df1-1bd00062710d": {
+      "mbid": "c2291306-1dbe-4d8a-9df1-1bd00062710d",
+      "title": "May the Force Be With You",
+      "artist": "Bootsy’s Rubber Band",
+      "credits": [
+        {
+          "name": "Mike Iacopelli",
+          "role": "engineer",
+          "attributes": [
+            "assistant"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/c2291306-1dbe-4d8a-9df1-1bd00062710d"
+        },
+        {
+          "name": "Jim Vitti",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/c2291306-1dbe-4d8a-9df1-1bd00062710d"
+        },
+        {
+          "name": "George Clinton",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/c2291306-1dbe-4d8a-9df1-1bd00062710d"
+        },
+        {
+          "name": "Bootsy Collins",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/c2291306-1dbe-4d8a-9df1-1bd00062710d"
+        }
+      ],
+      "samplesFrom": [],
+      "sampledIn": [
+        {
+          "title": "Power",
+          "artist": "Rapsody feat. Kendrick Lamar & Lance Skiiiwalker",
+          "mbid": "dd7ae286-af24-4bc2-8636-20662aa4be7a",
+          "sourceUrl": "https://musicbrainz.org/recording/dd7ae286-af24-4bc2-8636-20662aa4be7a",
+          "source": "musicbrainz"
+        }
+      ],
+      "provenance": {
+        "sourceUrls": [
+          "https://musicbrainz.org/recording/c2291306-1dbe-4d8a-9df1-1bd00062710d"
+        ],
+        "matchStatus": "matched",
+        "confidence": 0.9,
+        "reason": "musicbrainz recording lookup",
+        "checkedAt": "2026-10-06T01:21:50.879Z",
+        "refreshAfter": "2026-11-05T01:21:50.879Z",
+        "lastError": null
+      }
+    },
+    "dc955663-9073-4e88-9dcc-1a58f1edc697": {
+      "mbid": "dc955663-9073-4e88-9dcc-1a58f1edc697",
+      "title": "Very Yes",
+      "artist": "Bootsy’s Rubber Band",
+      "credits": [
+        {
+          "name": "Mike Iacopelli",
+          "role": "engineer",
+          "attributes": [
+            "assistant"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/dc955663-9073-4e88-9dcc-1a58f1edc697"
+        },
+        {
+          "name": "Jim Vitti",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/dc955663-9073-4e88-9dcc-1a58f1edc697"
+        },
+        {
+          "name": "George Clinton",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/dc955663-9073-4e88-9dcc-1a58f1edc697"
+        },
+        {
+          "name": "Bootsy Collins",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/dc955663-9073-4e88-9dcc-1a58f1edc697"
+        }
+      ],
+      "samplesFrom": [],
+      "sampledIn": [
+        {
+          "title": "Where Do We Go From Here (interlude)",
+          "artist": "2Pac",
+          "mbid": "d0ce3a3e-4fc8-4207-a3a7-0fb305395bca",
+          "sourceUrl": "https://musicbrainz.org/recording/d0ce3a3e-4fc8-4207-a3a7-0fb305395bca",
+          "source": "musicbrainz"
+        }
+      ],
+      "provenance": {
+        "sourceUrls": [
+          "https://musicbrainz.org/recording/dc955663-9073-4e88-9dcc-1a58f1edc697"
+        ],
+        "matchStatus": "matched",
+        "confidence": 0.9,
+        "reason": "musicbrainz recording lookup",
+        "checkedAt": "2026-10-06T01:21:50.879Z",
+        "refreshAfter": "2026-11-05T01:21:50.879Z",
+        "lastError": null
+      }
+    },
+    "e77f6739-6b7f-4c0b-8421-c3e32078be38": {
+      "mbid": "e77f6739-6b7f-4c0b-8421-c3e32078be38",
+      "title": "Bootzilla",
+      "artist": "Bootsy’s Rubber Band",
+      "credits": [
+        {
+          "name": "Mike Iacopelli",
+          "role": "engineer",
+          "attributes": [
+            "assistant"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/e77f6739-6b7f-4c0b-8421-c3e32078be38"
+        },
+        {
+          "name": "Jim Vitti",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/e77f6739-6b7f-4c0b-8421-c3e32078be38"
+        },
+        {
+          "name": "George Clinton",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/e77f6739-6b7f-4c0b-8421-c3e32078be38"
+        },
+        {
+          "name": "Bootsy Collins",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/e77f6739-6b7f-4c0b-8421-c3e32078be38"
+        }
+      ],
+      "samplesFrom": [],
+      "sampledIn": [],
+      "provenance": {
+        "sourceUrls": [
+          "https://musicbrainz.org/recording/e77f6739-6b7f-4c0b-8421-c3e32078be38"
+        ],
+        "matchStatus": "matched",
+        "confidence": 0.9,
+        "reason": "musicbrainz recording lookup",
+        "checkedAt": "2026-10-06T01:21:50.879Z",
+        "refreshAfter": "2026-11-05T01:21:50.879Z",
+        "lastError": null
+      }
+    },
+    "39f3b951-b116-42ac-8c48-1408524ff050": {
+      "mbid": "39f3b951-b116-42ac-8c48-1408524ff050",
+      "title": "Hollywood Squares",
+      "artist": "Bootsy’s Rubber Band",
+      "credits": [
+        {
+          "name": "Mike Iacopelli",
+          "role": "engineer",
+          "attributes": [
+            "assistant"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/39f3b951-b116-42ac-8c48-1408524ff050"
+        },
+        {
+          "name": "Jim Vitti",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/39f3b951-b116-42ac-8c48-1408524ff050"
+        },
+        {
+          "name": "George Clinton",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/39f3b951-b116-42ac-8c48-1408524ff050"
+        },
+        {
+          "name": "Bootsy Collins",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/39f3b951-b116-42ac-8c48-1408524ff050"
+        }
+      ],
+      "samplesFrom": [],
+      "sampledIn": [
+        {
+          "title": "All We Got Left Is the Beat",
+          "artist": "LL Cool J",
+          "mbid": "362f1a38-fc73-44fc-a78d-ee3dc628e310",
+          "sourceUrl": "https://musicbrainz.org/recording/362f1a38-fc73-44fc-a78d-ee3dc628e310",
+          "source": "musicbrainz"
+        },
+        {
+          "title": "Fuckin’ Wit Uh House Party",
+          "artist": "WC",
+          "mbid": "3de2fbc2-e1c6-42cc-a70d-cf1b79ff0cd6",
+          "sourceUrl": "https://musicbrainz.org/recording/3de2fbc2-e1c6-42cc-a70d-cf1b79ff0cd6",
+          "source": "musicbrainz"
+        },
+        {
+          "title": "I’m a Player",
+          "artist": "Too $hort",
+          "mbid": "fb9a3b45-5559-44e4-8bcc-6476cce7a0ba",
+          "sourceUrl": "https://musicbrainz.org/recording/fb9a3b45-5559-44e4-8bcc-6476cce7a0ba",
+          "source": "musicbrainz"
+        }
+      ],
+      "provenance": {
+        "sourceUrls": [
+          "https://musicbrainz.org/recording/39f3b951-b116-42ac-8c48-1408524ff050"
+        ],
+        "matchStatus": "matched",
+        "confidence": 0.9,
+        "reason": "musicbrainz recording lookup",
+        "checkedAt": "2026-10-06T01:21:50.879Z",
+        "refreshAfter": "2026-11-05T01:21:50.879Z",
+        "lastError": null
+      }
+    },
+    "82ab9b93-6343-4715-9f17-db9c4607b14b": {
+      "mbid": "82ab9b93-6343-4715-9f17-db9c4607b14b",
+      "title": "As In (I Love You)",
+      "artist": "Bootsy’s Rubber Band",
+      "credits": [
+        {
+          "name": "Mike Iacopelli",
+          "role": "engineer",
+          "attributes": [
+            "assistant"
+          ],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/82ab9b93-6343-4715-9f17-db9c4607b14b"
+        },
+        {
+          "name": "Jim Vitti",
+          "role": "engineer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/82ab9b93-6343-4715-9f17-db9c4607b14b"
+        },
+        {
+          "name": "George Clinton",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/82ab9b93-6343-4715-9f17-db9c4607b14b"
+        },
+        {
+          "name": "Bootsy Collins",
+          "role": "producer",
+          "attributes": [],
+          "level": "recording",
+          "source": "musicbrainz",
+          "sourceUrl": "https://musicbrainz.org/recording/82ab9b93-6343-4715-9f17-db9c4607b14b"
+        }
+      ],
+      "samplesFrom": [],
+      "sampledIn": [],
+      "provenance": {
+        "sourceUrls": [
+          "https://musicbrainz.org/recording/82ab9b93-6343-4715-9f17-db9c4607b14b"
+        ],
+        "matchStatus": "matched",
+        "confidence": 0.9,
+        "reason": "musicbrainz recording lookup",
+        "checkedAt": "2026-10-06T01:21:50.879Z",
+        "refreshAfter": "2026-11-05T01:21:50.879Z",
+        "lastError": null
+      }
+    }
+  },
+  "provenance": {
+    "sourceUrls": [
+      "https://www.discogs.com/release/573292",
+      "https://musicbrainz.org/release/72089134-a550-446e-b26d-8d3b523b05d6"
+    ],
+    "matchStatus": "matched",
+    "confidence": 0.95,
+    "reason": "musicbrainz release linked by discogs url relationship",
+    "checkedAt": "2026-10-06T01:21:50.879Z",
+    "refreshAfter": "2026-11-05T01:21:50.879Z",
+    "lastError": null
+  }
+}

@@ -1,6 +1,6 @@
 # Backend Structure — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-09-26
+**Last Updated:** 2026-10-06
 **Database:** Supabase (PostgreSQL)
 **Edge Functions Runtime:** Deno
 **API Layer:** Next.js Route Handlers (proxy pattern)
@@ -263,6 +263,36 @@ Full paginated Discogs crate for `/collection`. Paginates `per_page=100` until `
 
 **PostHog events:** `api_discogs_collection_request`, `api_discogs_error`, `api_rate_limited`
 
+A complete collection crawl also queues new and stale release ids for crate enrichment (`queueNewAndMissing`). `after()` then processes **1** pressing. Enrichment never runs on a visitor record-detail request.
+
+---
+
+### GET /api/cron/crate-enrich
+
+Daily drain of the crate enrichment queue. Vercel cron `0 8 * * *`.
+
+**Auth:** `Authorization: Bearer $CRON_SECRET`. Missing `CRON_SECRET` → HTTP 404 (route is not public). Wrong bearer → 401.
+
+**Behavior:** Read last-good collection, enqueue new/missing ids, `processEnrichmentQueue` limit 2. MusicBrainz ~1.1s. Discogs release detail uses `lecturesfrom/1.0`. Failed refresh preserves the last successful pressing.
+
+**Response:** `{ processed: number[], skipped: boolean }` or `{ processed: [], skipped: true, reason: 'no store' }` when Redis env is absent.
+
+---
+
+### Crate stored pressing (Upstash)
+
+Visitor `/collection/[releaseId]` reads stored results only (`lib/crate/read.ts`): Redis → committed fixtures (`573292`, `240128`, `567894`) → collection pending shell. Never live Discogs release or MusicBrainz on that path.
+
+| Key | Purpose |
+|-----|---------|
+| `lf:crate:queue:v1` | Release ids waiting for enrich (preview prefix `lf:preview:` when `VERCEL_ENV !== 'production'`) |
+| `lf:crate:seen:v1` | Ids observed in the last complete collection crawl |
+| `lf:crate:enrich:lock:v1` | `SET NX EX` ~50s |
+| `lf:crate:pressing:{id}:v1` | Stored pressing: facts, sourced description, Discogs track occurrences, MB release match, recordings map, provenance |
+| `lf:crate:recording:{mbid}:v1` | Credits + sample relationships at recording level |
+
+Match statuses: `matched` / `ambiguous` / `unmatched` / `pending`. Weak matches and vocal/instrumental siblings stay `ambiguous`. No WhoSampled. No invented copy.
+
 ---
 
 ### GET /api/github
@@ -411,6 +441,7 @@ Both deployed via `supabase functions deploy <name>`. Source in `supabase/functi
 | `KV_REST_API_TOKEN` | Server-only | No | Pair with `KV_REST_API_URL`. Read-write token; do not use `KV_REST_API_READ_ONLY_TOKEN`. |
 | `UPSTASH_REDIS_REST_URL` | Server-only | No | Fallback if KV_* pair is missing. |
 | `UPSTASH_REDIS_REST_TOKEN` | Server-only | No | Fallback if KV_* pair is missing. |
+| `CRON_SECRET` | Server-only | No | Bearer for `/api/cron/crate-enrich`. Missing → 404. |
 
 ### Supabase Secrets (set via `supabase secrets set`)
 
@@ -431,7 +462,7 @@ All Next.js env vars above must also be set in Vercel for production deployment.
 |-------|------|
 | `/api/chat` | `question` must be non-empty string |
 | `/api/jd-analyzer` | `input` must be non-empty string; URL detection via `input.trim().startsWith('http')` |
-| `/api/discogs/collection` | No input validation (GET, no params) |
+| `/api/cron/crate-enrich` | Bearer `CRON_SECRET`; missing secret 404s |
 | Chat / JD analyzer | Missing env vars return 500 before external calls |
 | Discogs routes | `DISCOGS_TOKEN` optional; missing token is not an error |
 
@@ -453,7 +484,7 @@ All API routes follow the same pattern:
 
 - `achievements` table is populated but not queried by any Edge Function
 - In-memory rate limiting is per-instance (stopgap for Vercel)
-- Discogs collection uses 5-minute ISR plus a durable Redis last-good snapshot when Upstash env is set; no Discogs webhook; no cron
+- Discogs collection uses 5-minute ISR plus a durable Redis last-good snapshot when Upstash env is set; no Discogs webhook. Crate enrichment is `after()` (1 item) plus daily `/api/cron/crate-enrich` when `CRON_SECRET` is set.
 - Supabase client in `lib/supabase.ts` uses non-null assertion -- will throw if env vars missing at module load
 - Deno std lib in Edge Functions pinned to `0.168.0` (~45 versions behind)
 

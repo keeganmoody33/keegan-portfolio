@@ -57,11 +57,14 @@ Runtime: **Deno**. Imports use URL specifiers with pinned versions where availab
 | Firecrawl | <https://api.firecrawl.dev/v1/scrape> | Header: `Authorization: Bearer <token>` | FIRECRAWL_API_KEY (Supabase secrets) |
 | PostHog | <https://us.i.posthog.com> | Project key in client init | NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST |
 | Discogs | <https://api.discogs.com> | Header: `Authorization: Discogs token=<token>`, User-Agent required | DISCOGS_TOKEN (Next.js env) |
+| MusicBrainz | <https://musicbrainz.org/ws/2> | User-Agent with contact; ~1 req/s | (none — background enrich only) |
 | GitHub | <https://api.github.com/users/keeganmoody33/events/public> | None (unauthenticated, 60 req/hr) | (none — `/api/github` does not read a token) |
 | Upstash Redis | REST (`KV_REST_API_URL` / `UPSTASH_REDIS_REST_URL`) | Bearer token | KV_REST_API_URL, KV_REST_API_TOKEN (preferred); UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN (fallback) |
 | Supabase | NEXT_PUBLIC_SUPABASE_URL/functions/v1/* | Header: `Authorization: Bearer <anon_key>` | NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY |
 
 **Discogs:** `api.discogs.com`; optional `DISCOGS_TOKEN` (public `lecturesfrom` collection). Full crate (`fetchFullCollection()`) at `/api/discogs/collection` and house `/collection` serves a durable last-good copy from Upstash Redis when configured; Discogs is crawled at most about once a day behind a `SET NX EX` lock. Redis reads are `cache: 'no-store'` (empty MGETs must not enter Next's Data Cache) and are skipped during `next build`, so `/collection` stays ISR (`revalidate = 300`). User-Agent: `lecturesfrom/1.0`. Missing Redis env = today's in-memory last-good + Discogs crawl. Errors use `Cache-Control: no-store`. Do not call `Redis.fromEnv()` (it only warns, then fails later). Not used on `/keeganmoody33` (career `/api/discogs` / RecentDigs removed).
+
+**MusicBrainz:** background crate enrich only (`lib/crate/musicbrainz.ts`). User-Agent `lecturesfrom/1.0 ( 33@lecturesfrom.com )`, minimum 1.1s between requests. Visitor record-detail reads Redis (`lf:crate:pressing:{id}:v1`) or committed fixtures — never live MusicBrainz or Discogs release detail. Failed refresh must not overwrite a successful pressing. Queue drain: `after()` processes 1 item on collection sync; daily GET `/api/cron/crate-enrich` (Bearer `CRON_SECRET`) processes 2. No WhoSampled. No scraping.
 
 ---
 

@@ -1,0 +1,532 @@
+'use client'
+
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { posthog } from '@/lib/posthog-client'
+import {
+  CRATE_EMPTY_LINE,
+  CRATE_PICK_TRACK,
+  CRATE_UNAVAILABLE_LINE,
+  type StoredPressing,
+} from '@/lib/crate/types.ts'
+import { checkedDate, creditLine, factRows, overviewConnections } from '@/lib/crate/view.ts'
+
+const SCROLL_KEY = 'lf:collection:scroll'
+const FOCUS_KEY = 'lf:collection:focus'
+
+type TabId = 'overview' | 'tracks'
+
+const TABS: Array<{ id: TabId; label: string }> = [
+  { id: 'overview', label: 'overview' },
+  { id: 'tracks', label: 'tracks' },
+]
+
+const focusRing =
+  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--house-ink)]'
+
+export function saveCollectionScroll(releaseId: number) {
+  if (typeof window === 'undefined') return
+  sessionStorage.setItem(SCROLL_KEY, String(window.scrollY))
+  sessionStorage.setItem(FOCUS_KEY, String(releaseId))
+}
+
+export function restoreCollectionScroll() {
+  if (typeof window === 'undefined') return
+  const y = sessionStorage.getItem(SCROLL_KEY)
+  if (y) {
+    window.scrollTo(0, Number.parseInt(y, 10) || 0)
+    sessionStorage.removeItem(SCROLL_KEY)
+  }
+  const id = sessionStorage.getItem(FOCUS_KEY)
+  if (id) {
+    const node = document.getElementById(`crate-cover-${id}`)
+    node?.focus({ preventScroll: true })
+    sessionStorage.removeItem(FOCUS_KEY)
+  }
+}
+
+export default function RecordDetail({
+  pressing,
+  mode,
+  unavailable = false,
+}: {
+  pressing: StoredPressing
+  mode: 'page' | 'overlay'
+  unavailable?: boolean
+}) {
+  const router = useRouter()
+  const titleId = useId()
+  const closeRef = useRef<HTMLAnchorElement | HTMLButtonElement | null>(null)
+  const [tab, setTab] = useState<TabId>('overview')
+  const [selected, setSelected] = useState<number | null>(null)
+  const facts = pressing.facts
+  const connections = overviewConnections(pressing)
+  const selectedTrack = selected == null ? null : pressing.tracks[selected]
+  const selectedRecording =
+    selectedTrack?.recording.mbid
+      ? pressing.recordings[selectedTrack.recording.mbid]
+      : undefined
+
+  const close = useCallback(() => {
+    posthog.capture('collection_record_close', {
+      release_id: pressing.releaseId,
+      mode,
+    })
+    if (mode === 'overlay' || window.history.length > 1) {
+      router.back()
+      return
+    }
+    router.push('/collection')
+  }, [mode, pressing.releaseId, router])
+
+  useEffect(() => {
+    closeRef.current?.focus({ preventScroll: true })
+    if (mode !== 'overlay') return undefined
+    const nodes = document.querySelectorAll(
+      '[data-collection-root], .house header, .house footer'
+    )
+    nodes.forEach((node) => {
+      if (node instanceof HTMLElement) {
+        node.setAttribute('inert', '')
+        node.setAttribute('aria-hidden', 'true')
+      }
+    })
+    return () => {
+      nodes.forEach((node) => {
+        if (node instanceof HTMLElement) {
+          node.removeAttribute('inert')
+          node.removeAttribute('aria-hidden')
+        }
+      })
+    }
+  }, [mode])
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        close()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [close])
+
+  function selectTab(next: TabId, focus = false) {
+    setTab(next)
+    if (focus) {
+      const button = document.getElementById(`tab-${next}`)
+      if (button instanceof HTMLButtonElement) button.focus()
+    }
+    posthog.capture('collection_record_tab', {
+      release_id: pressing.releaseId,
+      tab: next,
+    })
+  }
+
+  function onTabKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    const current = TABS.findIndex((item) => item.id === tab)
+    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+      event.preventDefault()
+      const delta = event.key === 'ArrowRight' ? 1 : -1
+      const next = TABS[(current + delta + TABS.length) % TABS.length]
+      if (next) selectTab(next.id, true)
+    }
+    if (event.key === 'Home') {
+      event.preventDefault()
+      selectTab('overview', true)
+    }
+    if (event.key === 'End') {
+      event.preventDefault()
+      selectTab('tracks', true)
+    }
+  }
+
+  const shell = (
+    <article className="house-fade px-6 py-12 sm:px-10" aria-labelledby={titleId}>
+      <p className="house-meta mb-8">
+        {mode === 'overlay' ? (
+          <button
+            type="button"
+            ref={(node) => {
+              closeRef.current = node
+            }}
+            onClick={close}
+            className={`hover:text-[var(--house-orange)] ${focusRing}`}
+          >
+            collection
+          </button>
+        ) : (
+          <Link
+            href="/collection"
+            scroll={false}
+            ref={(node) => {
+              closeRef.current = node
+            }}
+            className={`hover:text-[var(--house-orange)] ${focusRing}`}
+          >
+            collection
+          </Link>
+        )}
+        <span className="mx-3">/</span>
+        {facts.catno || String(facts.releaseId)}
+      </p>
+
+      {unavailable && (
+        <p className="mb-8 font-mono text-sm text-[var(--house-dim)]">
+          {CRATE_UNAVAILABLE_LINE}{' '}
+          <button
+            type="button"
+            onClick={() => router.refresh()}
+            className={`hover:text-[var(--house-orange)] ${focusRing}`}
+          >
+            retry
+          </button>
+        </p>
+      )}
+
+      <div className="grid gap-10 min-[1280px]:grid-cols-2 min-[1280px]:items-start">
+        <RecordCover
+          src={facts.thumbnail || facts.cover}
+          artist={facts.artist}
+          title={facts.title}
+          catno={facts.catno}
+        />
+        <div>
+          <h1
+            id={titleId}
+            className="font-display text-4xl font-semibold tracking-[-0.01em] sm:text-6xl"
+          >
+            {facts.title}
+          </h1>
+          {facts.artist ? (
+            <p className="mt-3 text-[var(--house-muted)]">{facts.artist}</p>
+          ) : null}
+
+          <div
+            role="tablist"
+            aria-label="record"
+            className="mt-8 flex gap-6 border-b border-[var(--house-line)]"
+            onKeyDown={onTabKeyDown}
+          >
+            {TABS.map((item) => {
+              const selectedTab = tab === item.id
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="tab"
+                  id={`tab-${item.id}`}
+                  aria-controls={`panel-${item.id}`}
+                  aria-selected={selectedTab}
+                  tabIndex={selectedTab ? 0 : -1}
+                  className={`house-meta -mb-px border-b pb-2 ${focusRing} ${
+                    selectedTab
+                      ? 'border-[var(--house-ink)] text-[var(--house-ink)]'
+                      : 'border-transparent hover:text-[var(--house-orange)]'
+                  }`}
+                  onClick={() => selectTab(item.id)}
+                >
+                  {item.label}
+                </button>
+              )
+            })}
+          </div>
+
+          {tab === 'overview' && (
+            <div
+              role="tabpanel"
+              id="panel-overview"
+              aria-labelledby="tab-overview"
+              className="pt-6"
+            >
+              {pressing.description && (
+                <div className="mb-8">
+                  <p className="max-w-xl font-sans text-base leading-relaxed text-[var(--house-ink)]">
+                    {pressing.description.text}
+                  </p>
+                  <SourceLine
+                    source={pressing.description.source}
+                    href={pressing.description.sourceUrl}
+                  />
+                </div>
+              )}
+
+              <dl>
+                {factRows(pressing).map((row) => (
+                  <div
+                    key={row.label}
+                    className="grid grid-cols-[7rem_minmax(0,1fr)] items-baseline gap-4 border-t border-[var(--house-line)] py-3 last:border-b"
+                  >
+                    <dt className="house-meta">{row.label}</dt>
+                    <dd
+                      className={
+                        row.tone === 'dim'
+                          ? 'font-mono text-sm text-[var(--house-dim)]'
+                          : 'text-sm text-[var(--house-ink)]'
+                      }
+                    >
+                      {row.value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              {facts.discogsUrl && (
+                <SourceLine source="discogs" href={facts.discogsUrl} />
+              )}
+
+              <section className="mt-10" aria-label="connections">
+                <h2 className="house-meta mb-3">connections</h2>
+                {connections.length === 0 ? (
+                  <p className="font-mono text-sm text-[var(--house-dim)]">
+                    {CRATE_EMPTY_LINE}
+                  </p>
+                ) : (
+                  <ul className="list-none p-0">
+                    {connections.map((row) => (
+                      <li
+                        key={`${row.label}-${row.href}`}
+                        className="border-t border-[var(--house-line)] py-3 last:border-b"
+                      >
+                        <p className="house-meta">{row.label}</p>
+                        <a
+                          href={row.href}
+                          className={`mt-1 inline-block text-sm hover:text-[var(--house-orange)] ${focusRing}`}
+                          rel="noopener noreferrer"
+                          target="_blank"
+                        >
+                          {row.title}
+                        </a>
+                        <SourceLine source={row.source} href={row.href} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            </div>
+          )}
+
+          {tab === 'tracks' && (
+            <div
+              role="tabpanel"
+              id="panel-tracks"
+              aria-labelledby="tab-tracks"
+              className="pt-6"
+            >
+              {pressing.tracks.length === 0 ? (
+                <p className="font-mono text-sm text-[var(--house-dim)]">
+                  {CRATE_EMPTY_LINE}
+                </p>
+              ) : (
+                <ul className="list-none p-0">
+                  {pressing.tracks.map((track, index) => {
+                    const active = selected === index
+                    return (
+                      <li key={`${track.position}-${track.index}`} className="border-t border-[var(--house-line)] last:border-b">
+                        <button
+                          type="button"
+                          aria-pressed={active}
+                          className={`grid w-full grid-cols-[2.5rem_minmax(0,1fr)_auto] items-baseline gap-4 py-3 text-left ${focusRing} ${
+                            active ? 'text-[var(--house-ink)]' : ''
+                          } hover:text-[var(--house-orange)]`}
+                          onClick={() => {
+                            setSelected(index)
+                            posthog.capture('collection_record_track', {
+                              release_id: pressing.releaseId,
+                              position: track.position,
+                            })
+                          }}
+                        >
+                          <span className="font-mono text-[11px] text-[var(--house-dim)]">
+                            {track.position}
+                          </span>
+                          <span className="min-w-0 text-sm">
+                            <span className="text-[var(--house-dim)]" aria-hidden>
+                              ·{' '}
+                            </span>
+                            {track.title}
+                          </span>
+                          {track.duration ? (
+                            <span className="justify-self-end font-mono text-sm tabular-nums text-[var(--house-dim)]">
+                              {track.duration}
+                            </span>
+                          ) : null}
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+
+              <section className="mt-10" aria-label="track details">
+                {selectedTrack == null ? (
+                  <p className="font-mono text-sm text-[var(--house-dim)]">
+                    {CRATE_PICK_TRACK}
+                  </p>
+                ) : (
+                  <TrackExtras
+                    checked={checkedDate(
+                      selectedRecording?.provenance.checkedAt ??
+                        pressing.provenance.checkedAt
+                    )}
+                    status={selectedTrack.recording.matchStatus}
+                    reason={selectedTrack.recording.reason}
+                    recording={selectedRecording}
+                    recordingUrl={selectedTrack.recording.recordingUrl}
+                  />
+                )}
+              </section>
+            </div>
+          )}
+        </div>
+      </div>
+    </article>
+  )
+
+  if (mode === 'overlay') {
+    return (
+      <div
+        className="fixed inset-0 z-30 overflow-auto bg-[var(--house-bg)]"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+      >
+        {shell}
+      </div>
+    )
+  }
+
+  return shell
+}
+
+function RecordCover({
+  src,
+  artist,
+  title,
+  catno,
+}: {
+  src: string
+  artist: string
+  title: string
+  catno: string | null
+}) {
+  if (src) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt={`${artist} — ${title}`}
+        className="aspect-square w-full border border-[var(--house-line)] object-cover"
+      />
+    )
+  }
+  return (
+    <div className="flex aspect-square w-full items-center justify-center bg-[var(--house-line)]">
+      {catno ? (
+        <p className="font-mono text-sm text-[var(--house-dim)]">{catno}</p>
+      ) : null}
+    </div>
+  )
+}
+
+function SourceLine({ source, href }: { source: string; href: string }) {
+  return (
+    <p className="mt-2 font-mono text-[11px] tracking-[0.16em] text-[var(--house-dim)]">
+      <a href={href} className={`hover:text-[var(--house-orange)] ${focusRing}`} rel="noopener noreferrer" target="_blank">
+        {source}
+      </a>
+    </p>
+  )
+}
+
+function TrackExtras({
+  checked,
+  status,
+  reason,
+  recording,
+  recordingUrl,
+}: {
+  checked: string | null
+  status: string
+  reason: string
+  recording: StoredPressing['recordings'][string] | undefined
+  recordingUrl: string | null
+}) {
+  const credits = recording?.credits ?? []
+  const samplesFrom = recording?.samplesFrom ?? []
+  const sampledIn = recording?.sampledIn ?? []
+  const unmatched = status !== 'matched' || !recording
+
+  return (
+    <div>
+      {unmatched && (
+        <p className="font-mono text-sm text-[var(--house-dim)]">
+          {status === 'pending' ? 'no matched recording yet' : reason}
+          {checked ? ` · checked ${checked}` : null}
+        </p>
+      )}
+      {!unmatched && recordingUrl && (
+        <SourceLine source="musicbrainz" href={recordingUrl} />
+      )}
+      {!unmatched && checked && (
+        <p className="mt-2 font-mono text-[11px] text-[var(--house-dim)]">
+          checked {checked}
+        </p>
+      )}
+
+      <h3 className="house-meta mt-8">credits</h3>
+      {unmatched || credits.length === 0 ? (
+        <p className="mt-2 font-mono text-sm text-[var(--house-dim)]">{CRATE_EMPTY_LINE}</p>
+      ) : (
+        <ul className="mt-2 list-none p-0">
+          {credits.map((credit, index) => (
+            <li
+              key={`${credit.role}-${credit.name}-${index}`}
+              className="border-t border-[var(--house-line)] py-3 last:border-b"
+            >
+              <p className="text-sm">
+                {credit.name}
+                <span className="text-[var(--house-muted)]"> · {creditLine(credit)}</span>
+              </p>
+              <SourceLine source={credit.source} href={credit.sourceUrl} />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <h3 className="house-meta mt-8">samples from</h3>
+      <SampleList items={unmatched ? [] : samplesFrom} />
+
+      <h3 className="house-meta mt-8">sampled in</h3>
+      <SampleList items={unmatched ? [] : sampledIn} />
+    </div>
+  )
+}
+
+function SampleList({
+  items,
+}: {
+  items: Array<{ title: string; artist: string; sourceUrl: string; source: string }>
+}) {
+  if (items.length === 0) {
+    return <p className="mt-2 font-mono text-sm text-[var(--house-dim)]">{CRATE_EMPTY_LINE}</p>
+  }
+  return (
+    <ul className="mt-2 list-none p-0">
+      {items.map((item) => (
+        <li key={item.sourceUrl} className="border-t border-[var(--house-line)] py-3 last:border-b">
+          <a
+            href={item.sourceUrl}
+            className={`text-sm hover:text-[var(--house-orange)] ${focusRing}`}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            {item.artist ? `${item.artist} — ${item.title}` : item.title}
+          </a>
+          <SourceLine source={item.source} href={item.sourceUrl} />
+        </li>
+      ))}
+    </ul>
+  )
+}

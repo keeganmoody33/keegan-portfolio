@@ -1,5 +1,5 @@
 {
-  "redirects": [
+    "redirects": [
     {
       "source": "/KeeganMoody33",
       "destination": "/keeganmoody33",
@@ -9,6 +9,12 @@
       "source": "/keeganMoody33",
       "destination": "/keeganmoody33",
       "permanent": true
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/crate-enrich",
+      "schedule": "0 8 * * *"
     }
   ]
 }

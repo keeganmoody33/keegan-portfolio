@@ -176,16 +176,24 @@ function createRequester(
   }
 }
 
-function createRedis(
+export function createUpstashRedis(
   config: RedisRestConfig,
   init: CachedFetchInit,
-  fetchImpl: UpstashFetch
+  fetchImpl: UpstashFetch = fetch
 ): Redis {
   return new Redis(
     createRequester(config, init, fetchImpl) as unknown as ConstructorParameters<
       typeof Redis
     >[0]
   )
+}
+
+function createRedis(
+  config: RedisRestConfig,
+  init: CachedFetchInit,
+  fetchImpl: UpstashFetch
+): Redis {
+  return createUpstashRedis(config, init, fetchImpl)
 }
 
 class RedisDurableStore implements DurableStore {
