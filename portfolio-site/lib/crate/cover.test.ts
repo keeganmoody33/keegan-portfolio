@@ -19,6 +19,7 @@ import { blobReadWriteToken, putCoverBlob } from './cover-blob.ts'
 import { createMemoryCoverStore } from './cover-store.ts'
 import {
   assertCoverSyncAllowed,
+  discogsCoverMinIntervalMs,
   parseCoverSyncArgs,
   syncCovers,
 } from './cover-sync.ts'
@@ -168,6 +169,12 @@ describe('cover sync guards', () => {
       parseCoverSyncArgs(['--ids=573292,240128', '--limit=10', '--force', '--prod', '--dry-run']),
       { ids: [573292, 240128], limit: 10, force: true, prod: true, dryRun: true }
     )
+  })
+
+  it('paces unauthenticated Discogs at 25/min', () => {
+    assert.equal(discogsCoverMinIntervalMs({}), 2500)
+    assert.equal(discogsCoverMinIntervalMs({ DISCOGS_TOKEN: '   ' }), 2500)
+    assert.equal(discogsCoverMinIntervalMs({ DISCOGS_TOKEN: 'secret' }), 1100)
   })
 
   it('refuses production Redis keys without --prod', () => {

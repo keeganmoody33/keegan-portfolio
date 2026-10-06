@@ -18,6 +18,15 @@ import type { CoverStore } from './cover-store.ts'
 import { fixturePressing } from './read.ts'
 import type { CrateStore } from './store.ts'
 
+export const DISCOGS_AUTH_MIN_INTERVAL_MS = 1100
+export const DISCOGS_UNAUTH_MIN_INTERVAL_MS = 2500
+
+export function discogsCoverMinIntervalMs(
+  env: Record<string, string | undefined> = process.env
+): number {
+  return env.DISCOGS_TOKEN?.trim() ? DISCOGS_AUTH_MIN_INTERVAL_MS : DISCOGS_UNAUTH_MIN_INTERVAL_MS
+}
+
 export type CoverSyncArgs = {
   ids?: number[]
   limit?: number
@@ -106,7 +115,7 @@ export async function syncCovers(options: {
   const caaPacer = createCoverPacer({ userAgent: COVER_ART_USER_AGENT })
   const discogsPacer = createCoverPacer({
     userAgent: DISCOGS_USER_AGENT,
-    minIntervalMs: 1100,
+    minIntervalMs: discogsCoverMinIntervalMs(env),
   })
   const rows: CoverSyncRow[] = []
   const lookup = options.lookup

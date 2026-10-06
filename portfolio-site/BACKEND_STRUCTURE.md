@@ -309,7 +309,7 @@ Read-only inspect of queue, dead set, unresolved set, inspect hash, backfill cur
 
 ### Cover sync (manual)
 
-`npm run covers:sync -- [--ids=573292,240128 --limit=N --force --dry-run --prod]` (`scripts/covers-sync.ts`). Discovers CAA front (MB release mbid, then release group) then the largest Discogs primary image. Writes Redis manifests at `lf:preview:crate:cover:{id}:v1` (prod `lf:` only with `--prod`). Puts CAA bytes on Vercel Blob at `covers/{sha256}.{ext}` when `BLOB_READ_WRITE_TOKEN` is set; missing token no-ops. Discogs images are never uploaded. CAA/MB paced at 1.1s with User-Agent `lecturesfrom/1.0 (33@lecturesfrom.com)`. Discogs uses the existing client User-Agent plus the same interval.
+`npm run covers:sync -- [--ids=573292,240128 --limit=N --force --dry-run --prod]` (`scripts/covers-sync.ts`). Discovers CAA front (MB release mbid, then release group) then the largest Discogs primary image. Writes Redis manifests at `lf:preview:crate:cover:{id}:v1` (prod `lf:` only with `--prod`). Puts CAA bytes on Vercel Blob at `covers/{sha256}.{ext}` when `BLOB_READ_WRITE_TOKEN` is set; missing token no-ops. Discogs images are never uploaded. CAA/MB paced at 1.1s with User-Agent `lecturesfrom/1.0 (33@lecturesfrom.com)`. Discogs uses the existing client User-Agent and 1.1s when `DISCOGS_TOKEN` is set, otherwise 2.5s (unauthenticated 25/min cap).
 
 ---
 
