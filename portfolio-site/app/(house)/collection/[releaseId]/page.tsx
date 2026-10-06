@@ -1,18 +1,12 @@
 import RecordDetailRoute, {
   recordDetailMetadata,
 } from '@/components/house/RecordDetailRoute'
-import { CRATE_FIXTURE_IDS } from '@/lib/crate/read'
 import type { Metadata } from 'next'
 
-export const revalidate = 300
-export const dynamicParams = true
+export const dynamic = 'force-dynamic'
 
 type PageProps = {
   params: Promise<{ releaseId: string }>
-}
-
-export function generateStaticParams() {
-  return CRATE_FIXTURE_IDS.map((releaseId) => ({ releaseId: String(releaseId) }))
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

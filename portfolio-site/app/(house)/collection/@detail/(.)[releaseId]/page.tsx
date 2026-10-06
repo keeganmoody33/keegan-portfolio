@@ -1,6 +1,6 @@
 import RecordDetailRoute from '@/components/house/RecordDetailRoute'
 
-export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 type PageProps = {
   params: Promise<{ releaseId: string }>

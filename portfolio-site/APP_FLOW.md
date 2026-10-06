@@ -350,7 +350,7 @@ MusicBrainz API (background only)
             └── Redis zset `lf:crate:queue:v1` + queued set; lock token compare-and-delete
             └── visitor `/collection/[releaseId]` reads Redis, then fixtures, then a collection pending shell
             └── HTML `data-crate-source="redis|fixture|collection"` marks which one served
-            └── never called on a visitor request. A Redis miss may `after()`-enqueue that id.
+            └── never called on a visitor request. Detail routes are `force-dynamic`. A Redis miss `after()`-enqueues that id to the front and processes one.
 
 YouTube IFrame API (client-side, no proxy)
     └── youtube.com/iframe_api ──→ YouTubePlayer component

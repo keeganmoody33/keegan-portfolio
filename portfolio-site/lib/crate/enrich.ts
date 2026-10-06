@@ -483,6 +483,14 @@ export async function processEnrichmentQueue(
       // lock ttl still expires
     }
   }
+  console.info(
+    JSON.stringify({
+      event: 'crate-enrich',
+      processed,
+      skipped: false,
+      stoppedOnRateLimit,
+    })
+  )
   return { processed, skipped: false, stoppedOnRateLimit }
 }
 

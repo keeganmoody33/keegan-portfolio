@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import RecordDetail from '@/components/house/RecordDetail'
 import {
   parseReleaseParam,
-  readStoredPressing,
+  readStoredPressingOnce,
   unavailablePressing,
 } from '@/lib/crate/read'
 import { houseMetadata } from '@/lib/metadata'
@@ -13,7 +13,7 @@ export async function recordDetailMetadata(rawId: string): Promise<Metadata> {
   if (!releaseId) {
     return { title: 'not found — lecturesfrom' }
   }
-  const read = await readStoredPressing(releaseId)
+  const read = await readStoredPressingOnce(releaseId)
   if (read.status === 'not_found') {
     return { title: 'not found — lecturesfrom' }
   }
@@ -40,7 +40,7 @@ export default async function RecordDetailRoute({
   const releaseId = parseReleaseParam(rawId)
   if (!releaseId) notFound()
 
-  const read = await readStoredPressing(releaseId)
+  const read = await readStoredPressingOnce(releaseId)
   if (read.status === 'not_found') notFound()
   if (read.status === 'unavailable') {
     return (

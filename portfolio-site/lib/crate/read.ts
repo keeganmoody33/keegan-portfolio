@@ -1,11 +1,10 @@
 import { cache } from 'react'
 import {
+  defaultScheduleRefresh,
   isCompleteCollection,
   readCachedCollection,
   type DiscogsRelease,
 } from '../discogs.ts'
-
-const readCollectionOnce = cache(async () => readCachedCollection())
 import { collectionReleaseId } from './sync.ts'
 import { getDefaultCrateStore, type CrateStore } from './store.ts'
 import { CRATE_SCHEMA_VERSION, type StoredPressing, type TrackOccurrence } from './types.ts'
@@ -13,6 +12,8 @@ import { isoFromMs } from './preserve.ts'
 import bootsy from './fixtures/573292.json' with { type: 'json' }
 import goodieMob from './fixtures/240128.json' with { type: 'json' }
 import mtume from './fixtures/567894.json' with { type: 'json' }
+
+const readCollectionOnce = cache(async () => readCachedCollection())
 
 const FIXTURES: Record<number, StoredPressing> = {}
 
@@ -36,6 +37,18 @@ export const CRATE_FIXTURE_IDS = Object.freeze(
 export function fixturePressing(releaseId: number): StoredPressing | null {
   return FIXTURES[releaseId] ?? null
 }
+
+function scheduleMissedPressing(store: CrateStore, releaseId: number): void {
+  defaultScheduleRefresh(async () => {
+    const { processEnrichmentQueue } = await import('./enrich.ts')
+    await store.enqueue([releaseId], { front: true })
+    await processEnrichmentQueue({ store }, 1)
+  })
+}
+
+export const readStoredPressingOnce = cache(async (releaseId: number) =>
+  readStoredPressing(releaseId)
+)
 
 export function parseReleaseParam(raw: string): number | null {
   if (!/^[1-9]\d{0,10}$/.test(raw)) return null
@@ -151,6 +164,9 @@ export async function readStoredPressing(
           pressing: withCollectionArt(stored, listed),
           from: 'store',
         }
+      }
+      if (options.store === undefined) {
+        scheduleMissedPressing(store, releaseId)
       }
     } catch {
       const fixture = fixturePressing(releaseId)

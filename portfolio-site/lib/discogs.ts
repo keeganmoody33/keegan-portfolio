@@ -504,10 +504,15 @@ function maybeScheduleVisitEnrich(schedule: ScheduleRefresh): void {
   schedule(async () => {
     const { getDefaultCrateStore, VISIT_THROTTLE_SECONDS } = await import('./crate/store.ts')
     const { processEnrichmentQueue } = await import('./crate/enrich.ts')
+    const { queueNewAndMissing } = await import('./crate/sync.ts')
     const store = getDefaultCrateStore()
     if (!store) return
     if (!(await store.acquireVisitThrottle(VISIT_THROTTLE_SECONDS))) return
-    await processEnrichmentQueue({ store }, 1)
+    const collection = await readCachedCollection()
+    if (collection) {
+      await queueNewAndMissing(store, await store.getSeen(), collection)
+    }
+    await processEnrichmentQueue({ store, collection: collection ?? undefined }, 1)
   })
 }
 
