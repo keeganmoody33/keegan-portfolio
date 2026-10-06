@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import RequestTally from '@/components/house/RequestTally'
 
 /**
  * Shared house footer. `MotionSwitch` stays in the repo (preference
@@ -29,6 +30,7 @@ export default function HouseFooter() {
           legal
         </Link>
       </nav>
+      <RequestTally />
     </footer>
   )
 }

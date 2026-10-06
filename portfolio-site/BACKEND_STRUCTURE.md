@@ -298,6 +298,16 @@ Proxies to GitHub public events API. Returns aggregated activity stats for keega
 
 ---
 
+### GET /api/tally
+
+Public running totals for the house footer tally (`components/house/RequestTally.tsx`).
+
+- **Counting:** `proxy.ts` records one hit per page request (GET, not `/api/*`, not `/_next/*`, not prefetch or RSC data fetches), classified by User-Agent in `lib/tally.ts`, and writes it with `event.waitUntil` so the page is never delayed. Bots that never run JavaScript are counted too.
+- **Storage:** the existing Upstash Redis store (`KV_REST_API_URL` / `KV_REST_API_TOKEN`). Hash `lf:tally:v1` (production) or `lf:preview:tally:v1` (everything else), one field per category; `lf:tally:v1:since` holds the first hit's ISO time. Deploys do not reset it.
+- **Response 200:** `{ since: string | null, presumedHuman: number, automated: number, byCategory: Record<category, number> }`, `Cache-Control: public, s-maxage=60, stale-while-revalidate=300`.
+- **Response 503:** `{ error: "tally unavailable" }` when Redis is not configured or unreachable. The footer hides the tally.
+- **Limits:** identity is self declared (User-Agent only). Nothing is network or cryptographically verified yet.
+
 ### POST /api/jd-analyzer
 
 Proxies to Supabase `jd-analyzer` Edge Function.

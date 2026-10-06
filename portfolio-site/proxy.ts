@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import type { NextFetchEvent, NextRequest } from 'next/server'
 import {
   appendVaryAccept,
   htmlPathForMarkdownUrl,
@@ -11,6 +11,8 @@ import {
   requestWantsMarkdown,
   shouldBypassAgentMiddleware,
 } from '@/lib/agent'
+import { classifyUserAgent, isCountablePageRequest } from '@/lib/tally'
+import { recordHit } from '@/lib/tally-store'
 
 function markdown404(): NextResponse {
   return new NextResponse(markdownNotFoundBody(), {
@@ -31,11 +33,16 @@ function applyHouseHeaders(response: NextResponse, pathname: string): NextRespon
   return response
 }
 
-export function proxy(request: NextRequest) {
+export function proxy(request: NextRequest, event?: NextFetchEvent) {
   const pathname = normalizePath(request.nextUrl.pathname)
 
   if (shouldBypassAgentMiddleware(pathname)) {
     return NextResponse.next()
+  }
+
+  // Footer tally: count every page request, human or not, without delaying it.
+  if (event && isCountablePageRequest(request.method, pathname, request.headers)) {
+    event.waitUntil(recordHit(classifyUserAgent(request.headers.get('user-agent'))))
   }
 
   const wantsMarkdown = requestWantsMarkdown(request)
