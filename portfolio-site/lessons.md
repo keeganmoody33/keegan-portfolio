@@ -10,6 +10,7 @@ Updated: 2026-10-06
 - **Orange is hover only** on this surface. Active tab is ink + 1px ink underline. Cover is flat 1:1, same thumbnail as the grid. Title keeps Discogs casing.
 - **No 1px frame on sourced cover art.** The brief allows a line border only when the edge melts into `#0a0a0a`. Missing cover is the `#242424` square with catno, not a framed image. Pending / unmatched copy on this surface is `nothing on file yet`, not `no matched recording yet`.
 - **Hobby cron is daily.** `after()` handles 1 new item on sync. Fixtures keep the three proof records working on a preview without Redis.
+- **A missing collection snapshot is unavailable, not a 404.** `readCachedCollection()` returning null must not collapse to `[]` — Next will cache that miss and grid links 404. Only a complete populated snapshot may 404 an id it does not contain.
 
 ## Brand / nameplate wordmark (assets only)
 

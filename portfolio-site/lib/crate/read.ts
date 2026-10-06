@@ -1,4 +1,8 @@
-import { readCachedCollection, type DiscogsRelease } from '../discogs.ts'
+import {
+  isCompleteCollection,
+  readCachedCollection,
+  type DiscogsRelease,
+} from '../discogs.ts'
 import { collectionReleaseId } from './sync.ts'
 import { getDefaultCrateStore, type CrateStore } from './store.ts'
 import { CRATE_SCHEMA_VERSION, type StoredPressing, type TrackOccurrence } from './types.ts'
@@ -113,12 +117,20 @@ export async function readStoredPressing(
   options: { store?: CrateStore | null; collection?: DiscogsRelease[] | null } = {}
 ): Promise<RecordDetailRead> {
   let collectionReleases = options.collection
+  let collectionComplete = options.collection !== undefined
   if (collectionReleases === undefined) {
     try {
       const collection = await readCachedCollection()
-      collectionReleases = collection?.releases ?? []
+      if (collection) {
+        collectionReleases = collection.releases
+        collectionComplete = isCompleteCollection(collection)
+      } else {
+        collectionReleases = null
+        collectionComplete = false
+      }
     } catch {
       collectionReleases = null
+      collectionComplete = false
     }
   }
 
@@ -159,8 +171,12 @@ export async function readStoredPressing(
     }
   }
 
-  if (collectionReleases === null && !listed) return { status: 'unavailable' }
-  if (!listed) return { status: 'not_found' }
+  if (!listed) {
+    if (!collectionReleases || collectionReleases.length === 0 || !collectionComplete) {
+      return { status: 'unavailable' }
+    }
+    return { status: 'not_found' }
+  }
   return {
     status: 'ok',
     pressing: pendingPressingFromRelease(listed, releaseId),

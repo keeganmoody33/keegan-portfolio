@@ -22,7 +22,7 @@ import { enrichPressing, sentencesFrom } from './enrich.ts'
 import type { MusicBrainzClient } from './musicbrainz.ts'
 import { CRATE_SCHEMA_VERSION, type StoredPressing } from './types.ts'
 import { mapRelease, parseDurableCollection } from '../discogs.ts'
-import { fixturePressing, parseReleaseParam } from './read.ts'
+import { fixturePressing, parseReleaseParam, readStoredPressing } from './read.ts'
 import { factRows } from './view.ts'
 
 function pressingStub(overrides: Partial<StoredPressing> = {}): StoredPressing {
@@ -337,6 +337,58 @@ describe('record detail helpers', () => {
     assert.equal(parseReleaseParam('573292'), 573292)
     assert.equal(parseReleaseParam('0573292'), null)
     assert.equal(parseReleaseParam('nope'), null)
+  })
+
+  it('does not 404 a crate id when the collection snapshot is missing or empty', async () => {
+    const missing = await readStoredPressing(9107339, { store: null, collection: null })
+    assert.equal(missing.status, 'unavailable')
+    const empty = await readStoredPressing(9107339, { store: null, collection: [] })
+    assert.equal(empty.status, 'unavailable')
+  })
+
+  it('404s only after a populated collection snapshot omits the id', async () => {
+    const listed = await readStoredPressing(9107339, {
+      store: null,
+      collection: [
+        {
+          title: 'One Is A Lonesome Number',
+          artist: 'Joe Williams',
+          year: 1963,
+          thumbnail: 'https://example.com/t.jpg',
+          cover: 'https://example.com/c.jpg',
+          format: 'Vinyl, LP',
+          label: 'Roulette',
+          catno: 'R 52102',
+          discogsUrl: 'https://www.discogs.com/release/9107339',
+          releaseId: 9107339,
+          instanceId: 1,
+        },
+      ],
+    })
+    assert.equal(listed.status, 'ok')
+    if (listed.status === 'ok') {
+      assert.equal(listed.from, 'collection')
+      assert.equal(listed.pressing.tracks.length, 0)
+    }
+    const omitted = await readStoredPressing(9, {
+      store: null,
+      collection: [
+        {
+          title: 'One Is A Lonesome Number',
+          artist: 'Joe Williams',
+          year: 1963,
+          thumbnail: '',
+          cover: '',
+          format: 'Vinyl, LP',
+          label: 'Roulette',
+          catno: 'R 52102',
+          discogsUrl: 'https://www.discogs.com/release/9107339',
+          releaseId: 9107339,
+          instanceId: 1,
+        },
+      ],
+    })
+    assert.equal(omitted.status, 'not_found')
   })
 
   it('drops missing fact rows instead of inventing placeholders', () => {
