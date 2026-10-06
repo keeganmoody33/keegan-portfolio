@@ -4,7 +4,11 @@ import {
   type DiscogsFetch,
 } from '../discogs.ts'
 import { inspectCrate, type InspectSnapshot } from './backfill.ts'
-import { enrichPressing, processEnrichmentQueue } from './enrich.ts'
+import {
+  ENRICH_BUDGET_MS,
+  enrichPressing,
+  processEnrichmentQueue,
+} from './enrich.ts'
 import {
   DISCOGS_IDENTITY_URL,
   probeDiscogsIdentity,
@@ -166,7 +170,7 @@ async function proveOverlap(store: CrateStore): Promise<Record<string, unknown>>
   const deps = {
     store,
     takeFloorMs: 0,
-    budgetMs: 8_000,
+    budgetMs: ENRICH_BUDGET_MS,
     fetchDiscogs,
   }
   const [first, second] = await Promise.all([
@@ -273,7 +277,7 @@ async function proveExhausted(store: CrateStore): Promise<Record<string, unknown
         store,
         mb,
         takeFloorMs: 0,
-        budgetMs: 8_000,
+        budgetMs: ENRICH_BUDGET_MS,
         fetchDiscogs: async (releaseId) => proofDiscogsDetail(releaseId),
       },
       1
@@ -392,7 +396,7 @@ async function proveAuth(
     {
       store,
       takeFloorMs: 0,
-      budgetMs: 8_000,
+      budgetMs: ENRICH_BUDGET_MS,
       fetchDiscogs: async () => {
         throw new DiscogsAuthError(identity.status === 403 ? 403 : 401)
       },

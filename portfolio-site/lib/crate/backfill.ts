@@ -9,6 +9,8 @@ import {
   enrichPressing,
   isBackfillSettled,
   isWorkerDeadlineError,
+  remainingBelowTakeFloor,
+  remainingBudgetMs,
   type EnrichDeps,
 } from './enrich.ts'
 import { createMusicBrainzClient } from './musicbrainz.ts'
@@ -143,7 +145,22 @@ export function migrateSettledIds(previous: BackfillState, ids: number[]): numbe
     }
     return settled
   }
-  return ids.slice(0, Math.max(0, previous.cursor))
+  void ids
+  return []
+}
+
+export function parseIdList(raw: string | null | undefined): number[] {
+  if (!raw?.trim()) return []
+  const ids: number[] = []
+  const seen = new Set<number>()
+  for (const part of raw.split(',')) {
+    const n = Number.parseInt(part.trim(), 10)
+    if (Number.isInteger(n) && n > 0 && !seen.has(n)) {
+      ids.push(n)
+      seen.add(n)
+    }
+  }
+  return ids
 }
 
 export function remainingBackfillIds(
@@ -152,7 +169,7 @@ export function remainingBackfillIds(
   dead: Iterable<number>,
   retry = false
 ): number[] {
-  const settledSet = new Set(settled)
+  const settledSet = retry ? new Set<number>() : new Set(settled)
   const deadSet = retry ? new Set<number>() : new Set(dead)
   return ids.filter((id) => !settledSet.has(id) && !deadSet.has(id))
 }
@@ -164,14 +181,15 @@ function refreshAfterMs(pressing: StoredPressing | null): number {
 
 export async function runBackfill(
   deps: EnrichDeps & { collection: DiscogsCollection },
-  options: { limit?: number; retry?: boolean } = {}
+  options: { limit?: number; retry?: boolean; ids?: number[] } = {}
 ): Promise<BackfillResult> {
   const store = deps.store
   const now = deps.now ?? Date.now
   const started = now()
-  const ids = collectionReleaseIds(deps.collection)
+  const collectionIds = collectionReleaseIds(deps.collection)
+  const ids = options.ids && options.ids.length > 0 ? options.ids : collectionIds
   const previous = (await store.getBackfill()) ?? emptyBackfillPrevious(started)
-  const settled = new Set(migrateSettledIds(previous, ids))
+  const settled = new Set(migrateSettledIds(previous, collectionIds))
   const prefix = crateRedisKeys().prefix
 
   const snapshotCounts = async (
@@ -307,8 +325,9 @@ export async function runBackfill(
   try {
     for (const releaseId of ids) {
       if (processed.length >= cap) break
-      if (now() + takeFloorMs >= deadlineMs) break
-      if (settled.has(releaseId)) continue
+      if (remainingBelowTakeFloor(remainingBudgetMs(deadlineMs, now()), takeFloorMs)) break
+      if (settled.has(releaseId) && !options.retry) continue
+      if (options.retry) settled.delete(releaseId)
       if (!options.retry && deadAtStart.has(releaseId)) continue
 
       const stored = await store.getPressing(releaseId)

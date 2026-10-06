@@ -10,11 +10,5 @@
       "destination": "/keeganmoody33",
       "permanent": true
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/cron/crate-enrich",
-      "schedule": "37 4 * * *"
-    }
   ]
 }

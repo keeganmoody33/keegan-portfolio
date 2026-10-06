@@ -4,13 +4,32 @@ export const CRATE_UNAVAILABLE_LINE = "couldn't reach discogs"
 export const CRATE_NO_RECORDING = 'no matched recording yet'
 export const MUSICBRAINZ_USER_AGENT = 'lecturesfrom/1.0 ( 33@lecturesfrom.com )'
 export const MUSICBRAINZ_MIN_INTERVAL_MS = 1100
+export const WIKIDATA_USER_AGENT = 'lecturesfrom/1.0 +https://lecturesfrom.com ( 33@lecturesfrom.com )'
+export const WIKIDATA_MIN_INTERVAL_MS = 1100
+export const WIKIDATA_SPARQL_URL = 'https://query.wikidata.org/sparql'
 export const CRATE_SCHEMA_VERSION = 2
 export const CRATE_MAX_ATTEMPTS = 5
 export const CRATE_RESEARCH_REFRESH_MS = 180 * 24 * 60 * 60 * 1000
 
 export type MatchStatus = 'matched' | 'ambiguous' | 'unmatched' | 'pending'
 
-export type SourceName = 'discogs' | 'musicbrainz'
+export type SourceName = 'discogs' | 'musicbrainz' | 'wikidata'
+
+export type ResearchFactKind = 'credit' | 'sample_of' | 'sampled_by'
+
+export type ResearchFact = {
+  kind: ResearchFactKind
+  trackKey: string
+  track: { position: string; title: string } | null
+  role: string
+  person: string
+  relatedTitle: string
+  relatedArtist: string
+  source: SourceName
+  sourceId: string
+  sourceUrl: string
+  fetchedAt: string
+}
 
 export type DurableErrorKind =
   | 'rate_limit'
@@ -148,7 +167,7 @@ export type Credit = {
   role: string
   attributes: string[]
   level: 'recording' | 'release' | 'work'
-  source: 'musicbrainz'
+  source: SourceName
   sourceUrl: string
   providerId?: string
 }
@@ -158,7 +177,7 @@ export type SampleLink = {
   artist: string
   mbid: string
   sourceUrl: string
-  source: 'musicbrainz'
+  source: SourceName
   providerId?: string
 }
 
@@ -190,6 +209,7 @@ export type StoredPressing = {
   tracks: TrackOccurrence[]
   mbRelease: MbReleaseMatch
   recordings: Record<string, StoredRecording>
+  researchFacts?: ResearchFact[]
   provenance: Provenance
   lifecycles?: Lifecycles
   coverage?: Coverage
@@ -201,6 +221,15 @@ export type DiscogsTracklistItem = {
   title: string
   duration: string
   type_: string
+  extraartists?: DiscogsCreditArtist[]
+  artists?: Array<{ name: string; id: number | null }>
+}
+
+export type DiscogsCreditArtist = {
+  name: string
+  role: string
+  id: number | null
+  tracks: string | null
 }
 
 export type MbReleaseTrack = {

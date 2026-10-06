@@ -304,7 +304,7 @@ Animated 60px x 60px grid pattern on body:
 | `.log-warn` | Orange log entry | `color: var(--accent-orange)` |
 | `.log-info` | Muted log entry | `color: var(--text-muted)` |
 | `.house-meta` | House metadata | Roboto Mono, 0.625rem, 0.22em tracking, uppercase, `--house-muted`. Lives in `@layer components` so utilities (active-tab ink) can override. `[aria-selected=true]` is ink. |
-| `.house-source` | Source lines | Roboto Mono, 0.625rem, 0.16em tracking, lowercase, `--house-dim`. Use for every source (`discogs`, `musicbrainz`) and for the checked-no-match empty line. Links use `min-h-6` so the target is ≥24px without changing the type. |
+| `.house-source` | Source lines | Roboto Mono, 0.625rem, 0.16em tracking, lowercase, `--house-dim`. Use for every source (`discogs`, `musicbrainz`, `wikidata`) and for the checked-no-match empty line. Links use `min-h-6` so the target is ≥24px without changing the type. No new colors. |
 | `.house-credit` | Discogs TOU line | Same size/family/dim as `.house-source`, **no** `text-transform`. Exact string `Data provided by Discogs.` linking the pressing URL (detail) or the lecturesfrom collection page (grid). No `nofollow`. |
 | `.house-skip` | Skip to content | Same family/size/tracking as `.house-source`, ink on house bg. Visually hidden (`clip-path`) until focused. |
 | `.house-text-button` | Collection crate text controls | Roboto Mono, 0.625rem, 0.16em tracking, uppercase, `--house-muted` `#8a8a8a`. Ink `#ececec` on `:focus-visible`. Orange `#e23d00` on hover only. `min-h-6` (24px). No fill, radius, or new colors. |

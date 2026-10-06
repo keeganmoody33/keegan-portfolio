@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cronGate } from '@/lib/crate/cron-auth'
-import { runBackfill } from '@/lib/crate/backfill'
+import { parseIdList, runBackfill } from '@/lib/crate/backfill'
 import { getDefaultCrateStore } from '@/lib/crate/store'
 import { readCachedCollection } from '@/lib/discogs'
 
@@ -22,8 +22,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ skipped: true, reason: 'no collection' })
   }
 
+  const retry = request.nextUrl.searchParams.get('retry') === '1'
+  const ids = parseIdList(request.nextUrl.searchParams.get('ids'))
+  const limitRaw = request.nextUrl.searchParams.get('limit')
+  const limitParsed = limitRaw ? Number.parseInt(limitRaw, 10) : NaN
+  const limit = Number.isInteger(limitParsed) && limitParsed > 0 ? limitParsed : undefined
+
   try {
-    const result = await runBackfill({ store, collection })
+    const result = await runBackfill(
+      { store, collection, forceRefresh: Boolean(retry && ids.length > 0) },
+      { retry, ids: ids.length > 0 ? ids : undefined, limit }
+    )
     return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store' } })
   } catch {
     return NextResponse.json(

@@ -41,8 +41,9 @@
 |-------|--------|------|---------|
 | `/api/chat` | POST | `app/api/chat/route.ts` | Proxy to Supabase `chat` Edge Function |
 | `/api/discogs/collection` | GET | `app/api/discogs/collection/route.ts` | Full Discogs crate (`revalidate: 300`, Redis last-good when configured). Career `/api/discogs` was removed. |
-| `/api/cron/crate-enrich` | GET | `app/api/cron/crate-enrich/route.ts` | Daily ~45s drain of the crate enrichment queue. Bearer `CRON_SECRET` (`timingSafeEqual`). Missing secret → 404. |
-| `/api/cron/crate-backfill` | GET | `app/api/cron/crate-backfill/route.ts` | Resumable initial backfill from collection cursor (not queue head). `remaining` is exact. Same auth. Preview Redis prefix `lf:preview:`. |
+| `/api/cron/crate-enrich` | GET | `app/api/cron/crate-enrich/route.ts` | Manual (CRON_SECRET) ~45s drain of the crate enrichment queue. No Vercel schedule. Missing secret → 404. |
+| `/api/cron/crate-backfill` | GET | `app/api/cron/crate-backfill/route.ts` | Manual research run. `?ids=` and `?retry=1` and `?limit=`. `remaining` is exact. Same auth. Preview Redis prefix `lf:preview:`. |
+| `/api/cron/collection-keep` | GET | `app/api/cron/collection-keep/route.ts` | Manual listing refresh + optional 1-item drain. Same auth. Visitors never ping this. |
 | `/api/cron/crate-inspect` | GET | `app/api/cron/crate-inspect/route.ts` | Read-only queue / dead / unresolved / backfill snapshot. Same auth. |
 | `/api/github` | GET | `app/api/github/route.ts` | Proxy to GitHub public events API |
 | `/api/jd-analyzer` | POST | `app/api/jd-analyzer/route.ts` | Proxy to Supabase `jd-analyzer` Edge Function |
@@ -361,17 +362,18 @@ Supabase DB
 Discogs API
     └── fetchFullCollection() ──→ house `/collection`, `/api/discogs/collection`, `/collection.md`
             └── Upstash Redis last-good (`lf:discogs:collection:v1`) when env is set
-            └── on complete crawl: queue new/missing ids (`lf:crate:queue:v1`)
+            └── visitors read Redis or crawl in-memory; a visit never writes Redis
             └── not used on `/keeganmoody33` (career `/api/discogs` / RecentDigs removed)
 
-MusicBrainz API (background only)
-            └── crate enrich (ISR keep-route ping; budgeted daily cron + explicit backfill)
+MusicBrainz / Discogs extraartists / Wikidata SPARQL (manual research only)
+            └── crate enrich via CRON_SECRET routes and `npm run crate:backfill` (`--ids` `--retry` `--limit`)
             └── Redis zset `lf:crate:queue:v1` + queued set; lock token compare-and-delete; dead/unresolved inspect sets
             └── visitor `/collection/[releaseId]` reads Redis, then fixtures, then a collection pending shell
             └── HTML `data-crate-source="redis|fixture|collection"` marks which one served
-            └── never called on a visitor request. Detail routes are `force-dynamic`. A Redis miss `after()`-enqueues that id to the front and processes one.
+            └── never called on a visitor request. Detail routes are `force-dynamic`. A visit does not enqueue or process.
             └── successful research is reused; a later Discogs refresh does not rematch unchanged identities
             └── prototype gap: Discogs 6h freshness clause is not implemented (24h listing TTL)
+            └── no Vercel cron; too_slow recovery is a manual `--retry`, not a visit re-queue
 
 YouTube IFrame API (client-side, no proxy)
     └── youtube.com/iframe_api ──→ YouTubePlayer component

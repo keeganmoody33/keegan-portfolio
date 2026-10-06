@@ -25,15 +25,28 @@ export type DiscogsReleaseDetail = {
   barcode: string | null
   notes: string | null
   discogsUrl: string
+  extraartists?: Array<{
+    name: string
+    role: string
+    id: number | null
+    tracks: string | null
+  }>
   tracklist: Array<{
     position: string
     title: string
     duration: string
     type_: string
+    extraartists?: Array<{
+      name: string
+      role: string
+      id: number | null
+      tracks: string | null
+    }>
+    artists?: Array<{ name: string; id: number | null }>
   }>
 }
 
-type DiscogsArtist = { name?: string; join?: string }
+type DiscogsArtist = { name?: string; join?: string; role?: string; id?: number; tracks?: string }
 type DiscogsLabel = { name?: string; catno?: string }
 type DiscogsFormat = { name?: string; descriptions?: string[]; text?: string }
 type DiscogsIdentifier = { type?: string; value?: string }
@@ -43,6 +56,8 @@ type DiscogsTrack = {
   title?: string
   duration?: string
   type_?: string
+  extraartists?: DiscogsArtist[]
+  artists?: DiscogsArtist[]
 }
 
 function formatLine(formats: DiscogsFormat[] | undefined): string | null {
@@ -69,6 +84,22 @@ function barcodeOf(identifiers: DiscogsIdentifier[] | undefined): string | null 
     }
   }
   return null
+}
+
+function mapCreditArtist(artist: DiscogsArtist): {
+  name: string
+  role: string
+  id: number | null
+  tracks: string | null
+} | null {
+  const name = artist.name?.trim()
+  if (!name) return null
+  return {
+    name,
+    role: artist.role?.trim() ?? '',
+    id: typeof artist.id === 'number' && artist.id > 0 ? artist.id : null,
+    tracks: artist.tracks?.trim() ? artist.tracks.trim() : null,
+  }
 }
 
 export function mapDiscogsReleaseDetail(raw: {
@@ -108,11 +139,23 @@ export function mapDiscogsReleaseDetail(raw: {
     barcode: barcodeOf(raw.identifiers),
     notes: raw.notes?.trim() ? raw.notes.trim() : null,
     discogsUrl: discogsReleaseUrl(raw.id),
+    extraartists: (raw.extraartists ?? [])
+      .map(mapCreditArtist)
+      .filter((artist): artist is NonNullable<typeof artist> => artist != null),
     tracklist: (raw.tracklist ?? []).map((track) => ({
       position: track.position ?? '',
       title: track.title ?? '',
       duration: track.duration ?? '',
       type_: track.type_ ?? 'track',
+      extraartists: (track.extraartists ?? [])
+        .map(mapCreditArtist)
+        .filter((artist): artist is NonNullable<typeof artist> => artist != null),
+      artists: (track.artists ?? [])
+        .map((artist) => ({
+          name: artist.name?.trim() ?? '',
+          id: typeof artist.id === 'number' && artist.id > 0 ? artist.id : null,
+        }))
+        .filter((artist) => artist.name),
     })),
   }
 }
