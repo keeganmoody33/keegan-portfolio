@@ -1,5 +1,4 @@
 import { cache } from 'react'
-import { after } from 'next/server.js'
 import {
   isCompleteCollection,
   readCachedCollection,
@@ -8,7 +7,6 @@ import {
 import { collectionReleaseId } from './sync.ts'
 import {
   getDefaultCrateStore,
-  VISIT_THROTTLE_SECONDS,
   type CrateStore,
 } from './store.ts'
 import { CRATE_SCHEMA_VERSION, type StoredPressing, type TrackOccurrence } from './types.ts'
@@ -43,51 +41,6 @@ export const CRATE_FIXTURE_IDS = Object.freeze(
 export function fixturePressing(releaseId: number): StoredPressing | null {
   const pressing = FIXTURES[releaseId]
   return pressing ? hydratePressing(pressing) : null
-}
-
-export async function visitEnqueueIfListed(
-  store: CrateStore,
-  releaseId: number,
-  listed: boolean,
-  collectionComplete: boolean
-): Promise<{ enqueued: boolean; throttled: boolean }> {
-  if (!listed || !collectionComplete) {
-    return { enqueued: false, throttled: false }
-  }
-  const acquired = await store.acquireVisitThrottle(VISIT_THROTTLE_SECONDS)
-  if (!acquired) {
-    return { enqueued: false, throttled: true }
-  }
-  // too_slow is unresolved+dropped, not dead. enqueue() without { retry: true }
-  // therefore re-queues it. With cron off in production that listed visit is the
-  // only recovery, bounded by VISIT_THROTTLE_SECONDS and DEADLINE_STOP_LIMIT.
-  await store.enqueue([releaseId], { front: false })
-  return { enqueued: true, throttled: false }
-}
-
-function scheduleListedPressing(
-  store: CrateStore,
-  releaseId: number,
-  listed: boolean,
-  collectionComplete: boolean
-): void {
-  if (process.env.NEXT_PHASE === 'phase-production-build') return
-  if (!listed || !collectionComplete) return
-  const work = async () => {
-    const scheduled = await visitEnqueueIfListed(store, releaseId, listed, collectionComplete)
-    if (!scheduled.enqueued) return
-    const { processEnrichmentQueue } = await import('./enrich.ts')
-    await processEnrichmentQueue({ store }, 1)
-  }
-  if (process.env.NODE_TEST_CONTEXT) {
-    void work()
-    return
-  }
-  try {
-    after(() => work())
-  } catch {
-    void work()
-  }
 }
 
 export const readStoredPressingOnce = cache(async (releaseId: number) =>
@@ -166,8 +119,9 @@ export function pendingPressingFromRelease(
       matchStatus: 'pending',
       confidence: 0,
       reason: 'queued for enrichment',
-      },
+    },
     recordings: {},
+    researchFacts: [],
     provenance: {
       sourceUrls: release.discogsUrl ? [release.discogsUrl] : [],
       matchStatus: 'pending',
@@ -225,18 +179,12 @@ export async function readStoredPressing(
       if (stored && !storedPressingHasVisitorFacts(stored)) {
         const fixture = fixturePressing(releaseId)
         if (fixture) {
-          if (options.store === undefined) {
-            scheduleListedPressing(store, releaseId, Boolean(listed), collectionComplete)
-          }
           return {
             status: 'ok',
             pressing: presentPressing(fixture, listed),
             from: 'fixture',
           }
         }
-      }
-      if (!stored && options.store === undefined) {
-        scheduleListedPressing(store, releaseId, Boolean(listed), collectionComplete)
       }
     } catch {
       const fixture = fixturePressing(releaseId)

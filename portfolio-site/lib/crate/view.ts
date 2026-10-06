@@ -1,10 +1,22 @@
-import { CRATE_NO_RECORDING, type Credit, type SampleLink, type StoredPressing, type StoredRecording } from './types.ts'
+import {
+  CRATE_NO_RECORDING,
+  type Credit,
+  type ResearchFact,
+  type SampleLink,
+  type SourceName,
+  type StoredPressing,
+  type StoredRecording,
+  type TrackOccurrence,
+} from './types.ts'
+import { creditLine, creditsFromFacts, factsForTrack, sampledByFacts, samplesFromFacts } from './research.ts'
+
+export { creditLine }
 
 export type Connection = {
   label: string
   title: string
   href: string
-  source: 'musicbrainz'
+  source: SourceName
 }
 
 export function checkedDate(iso: string | null | undefined): string | null {
@@ -42,6 +54,7 @@ export function pressingCheckedNoMatchLine(pressing: StoredPressing): string | n
 export function overviewConnections(pressing: StoredPressing, limit = 3): Connection[] {
   const rows: Connection[] = []
   const seen = new Set<string>()
+  const facts = pressing.researchFacts ?? []
 
   function add(row: Connection) {
     const key = `${row.label}:${row.href}`
@@ -49,6 +62,30 @@ export function overviewConnections(pressing: StoredPressing, limit = 3): Connec
     seen.add(key)
     rows.push(row)
   }
+
+  for (const fact of facts) {
+    if (fact.kind === 'sample_of') {
+      add({
+        label: `${fact.track?.title ?? pressing.facts.title} samples`,
+        title: fact.relatedArtist
+          ? `${fact.relatedArtist} — ${fact.relatedTitle}`
+          : fact.relatedTitle,
+        href: fact.sourceUrl,
+        source: fact.source,
+      })
+    } else if (fact.kind === 'sampled_by') {
+      add({
+        label: `${fact.track?.title ?? pressing.facts.title} sampled in`,
+        title: fact.relatedArtist
+          ? `${fact.relatedArtist} — ${fact.relatedTitle}`
+          : fact.relatedTitle,
+        href: fact.sourceUrl,
+        source: fact.source,
+      })
+    }
+  }
+
+  if (rows.length >= limit) return rows
 
   for (const track of pressing.tracks) {
     const mbid = track.recording.mbid
@@ -60,7 +97,7 @@ export function overviewConnections(pressing: StoredPressing, limit = 3): Connec
         label: `${track.title} samples`,
         title: sample.artist ? `${sample.artist} — ${sample.title}` : sample.title,
         href: sample.sourceUrl,
-        source: 'musicbrainz',
+        source: sample.source,
       })
     }
     for (const sample of recording.sampledIn) {
@@ -68,12 +105,22 @@ export function overviewConnections(pressing: StoredPressing, limit = 3): Connec
         label: `${track.title} sampled in`,
         title: sample.artist ? `${sample.artist} — ${sample.title}` : sample.title,
         href: sample.sourceUrl,
-        source: 'musicbrainz',
+        source: sample.source,
       })
     }
   }
 
   if (rows.length >= limit) return rows
+
+  for (const fact of creditsFromFacts(facts)) {
+    if (!notableFact(fact)) continue
+    add({
+      label: fact.role,
+      title: fact.person,
+      href: fact.sourceUrl,
+      source: fact.source,
+    })
+  }
 
   for (const recording of Object.values(pressing.recordings) as StoredRecording[]) {
     for (const credit of recording.credits) {
@@ -82,7 +129,7 @@ export function overviewConnections(pressing: StoredPressing, limit = 3): Connec
         label: creditLine(credit),
         title: recording.title,
         href: credit.sourceUrl,
-        source: 'musicbrainz',
+        source: credit.source,
       })
     }
   }
@@ -90,16 +137,15 @@ export function overviewConnections(pressing: StoredPressing, limit = 3): Connec
   return rows
 }
 
-export function creditLine(credit: Credit): string {
-  const attrs = credit.attributes.filter(Boolean).join(' ')
-  if (attrs) return `${attrs} ${credit.role}`
-  return credit.role
-}
-
 function notableCredit(credit: Credit): boolean {
   const role = credit.role.toLowerCase()
   if (role === 'producer' || role === 'vocal' || role === 'performer') return true
   return credit.attributes.includes('guest')
+}
+
+function notableFact(fact: ResearchFact): boolean {
+  const role = fact.role.toLowerCase()
+  return role === 'producer' || role === 'vocal' || role === 'performer'
 }
 
 export function factRows(pressing: StoredPressing): Array<{ label: string; value: string; tone: 'ink' | 'dim' }> {
@@ -111,6 +157,25 @@ export function factRows(pressing: StoredPressing): Array<{ label: string; value
   if (facts.country) rows.push({ label: 'country', value: facts.country, tone: 'ink' })
   if (facts.released) rows.push({ label: 'released', value: facts.released, tone: 'dim' })
   return rows
+}
+
+export function trackResearchFacts(
+  pressing: StoredPressing,
+  track: TrackOccurrence | null
+): ResearchFact[] {
+  return factsForTrack(pressing.researchFacts ?? [], track)
+}
+
+export function trackCreditFacts(pressing: StoredPressing, track: TrackOccurrence | null): ResearchFact[] {
+  return creditsFromFacts(trackResearchFacts(pressing, track))
+}
+
+export function trackSampleFacts(pressing: StoredPressing, track: TrackOccurrence | null): ResearchFact[] {
+  return samplesFromFacts(trackResearchFacts(pressing, track))
+}
+
+export function trackSampledByFacts(pressing: StoredPressing, track: TrackOccurrence | null): ResearchFact[] {
+  return sampledByFacts(trackResearchFacts(pressing, track))
 }
 
 export type SampleLinkView = SampleLink

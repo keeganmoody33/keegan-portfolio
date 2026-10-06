@@ -14,6 +14,7 @@ import type { BackfillState, CollectionEntry, DeadLetter, StoredPressing, Stored
 
 export const VISIT_THROTTLE_SECONDS = 300
 export const INFLIGHT_TTL_SECONDS = 90
+export const DRAFT_TTL_SECONDS = 900
 
 export const TAKE_LUA = `
 local now = tonumber(ARGV[1])
@@ -274,7 +275,9 @@ class RedisCrateStore implements CrateStore {
   }
 
   async setDraftPressing(pressing: StoredPressing): Promise<void> {
-    await this.writeRedis.set(this.keys.pressingDraft(pressing.releaseId), pressing)
+    await this.writeRedis.set(this.keys.pressingDraft(pressing.releaseId), pressing, {
+      ex: DRAFT_TTL_SECONDS,
+    })
   }
 
   async getDraftPressing(releaseId: number): Promise<StoredPressing | null> {
@@ -343,6 +346,7 @@ class RedisCrateStore implements CrateStore {
 
   async drop(releaseId: number): Promise<void> {
     await this.ack(releaseId)
+    await this.discardDraftPressing(releaseId)
   }
 
   async clearInflight(releaseId: number): Promise<void> {
@@ -451,6 +455,7 @@ class RedisCrateStore implements CrateStore {
 export type MemoryCrateStore = CrateStore & {
   pressings: Record<number, StoredPressing>
   drafts: Record<number, StoredPressing>
+  draftExpires: Record<number, number>
   recordings: Record<string, StoredRecording>
   queue: Array<{ id: number; score: number }>
   queued: Set<number>
@@ -483,6 +488,7 @@ export function createMemoryCrateStore(
   const store: MemoryCrateStore = {
     pressings: { ...(initial.pressings ?? {}) },
     drafts: {},
+    draftExpires: {},
     recordings: { ...(initial.recordings ?? {}) },
     queue: initialQueue.filter((row) => row.id > 0),
     queued: new Set(initialQueue.map((row) => row.id).filter((id) => id > 0)),
@@ -516,12 +522,20 @@ export function createMemoryCrateStore(
     },
     async setDraftPressing(pressing: StoredPressing) {
       store.drafts[pressing.releaseId] = pressing
+      store.draftExpires[pressing.releaseId] = store.now() + DRAFT_TTL_SECONDS * 1000
     },
     async getDraftPressing(releaseId: number) {
+      const expires = store.draftExpires[releaseId]
+      if (expires != null && expires <= store.now()) {
+        delete store.drafts[releaseId]
+        delete store.draftExpires[releaseId]
+        return null
+      }
       return store.drafts[releaseId] ?? null
     },
     async discardDraftPressing(releaseId: number) {
       delete store.drafts[releaseId]
+      delete store.draftExpires[releaseId]
     },
     async getRecording(mbid: string) {
       return store.recordings[mbid] ?? null
@@ -581,6 +595,7 @@ export function createMemoryCrateStore(
     },
     async drop(releaseId: number) {
       await store.ack(releaseId)
+      await store.discardDraftPressing(releaseId)
     },
     async clearInflight(releaseId: number) {
       store.inflight.delete(releaseId)
@@ -641,6 +656,7 @@ export function createMemoryCrateStore(
       await store.ack(releaseId)
       delete store.pressings[releaseId]
       delete store.drafts[releaseId]
+      delete store.draftExpires[releaseId]
       store.dead.delete(releaseId)
       store.unresolved.delete(releaseId)
       store.inspect.delete(releaseId)

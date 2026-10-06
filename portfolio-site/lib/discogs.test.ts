@@ -553,7 +553,7 @@ describe('env resolution and key prefix', () => {
   })
 
   it('namespaces preview/dev away from production keys', () => {
-    withEnv({ VERCEL_ENV: 'production' }, () => {
+    withEnv({ VERCEL_ENV: 'production', VERCEL_GIT_COMMIT_REF: 'main' }, () => {
       const keys = discogsRedisKeys()
       assert.equal(keys.prefix, 'lf:')
       assert.equal(keys.collection, 'lf:discogs:collection:v1')
@@ -609,33 +609,13 @@ describe('durable last-good snapshot', () => {
     assert.equal((await readCachedCollection({ durable, lastGood: memory }))?.releases.length, 4)
   })
 
-  it('serves a stale snapshot, schedules one refresh, and respects the lock', async () => {
+  it('serves a stale snapshot without scheduling a refresh or writing Redis', async () => {
     const cached = completeCollection(2, 'Stale')
     const durable = createMemoryDurableStore({
       collection: cached,
       meta: { fetchedAt: STALE_AT, items: 2, lastError: null },
     })
-    const { fetchImpl: liveFetch, calls: liveCalls } = twoPageFetch()
-
-    let releaseFirstPage: () => void = () => {}
-    let signalFirstPage: () => void = () => {}
-    const firstPageStarted = new Promise<void>((resolve) => {
-      signalFirstPage = resolve
-    })
-    const firstPageGate = new Promise<void>((resolve) => {
-      releaseFirstPage = resolve
-    })
-
-    let discogsCalls = 0
-    const fetchImpl: DiscogsFetch = async (url, init) => {
-      discogsCalls += 1
-      if (discogsCalls === 1) {
-        signalFirstPage()
-        await firstPageGate
-      }
-      return liveFetch(url, init)
-    }
-
+    const { fetchImpl, calls } = twoPageFetch()
     const { tasks, scheduleRefresh } = captureSchedule()
     const collection = await fetchFullCollection({
       fetchImpl,
@@ -647,26 +627,10 @@ describe('durable last-good snapshot', () => {
 
     assert.equal(collection.releases[0].title, 'Stale 1')
     assert.equal(collection.releases.length, 2)
-    assert.equal(tasks.length, 1)
-    assert.equal(liveCalls.length, 0)
-
-    const first = tasks[0]()
-    await firstPageStarted
-    const second = tasks[0]()
-    await Promise.resolve()
-    assert.equal(durable.lockCalls, 2)
-    assert.equal(discogsCalls, 1)
-
-    releaseFirstPage()
-    await first
-    await second
-
-    assert.equal(durable.setCalls, 1)
-    assert.equal((durable.collection as DiscogsCollection).releases.length, 179)
-    assert.equal(durable.meta?.lastError, null)
-    assert.equal(durable.lockHeld, false)
-    assert.equal(liveCalls.length, 2)
-    assert.equal(discogsCalls, 2)
+    assert.equal(tasks.length, 0)
+    assert.equal(calls.length, 0)
+    assert.equal(durable.setCalls, 0)
+    assert.equal(durable.lockCalls, 0)
   })
 
   it('keeps the stored copy when a refresh hits 429 and records the error', async () => {
@@ -692,12 +656,10 @@ describe('durable last-good snapshot', () => {
       now: () => NOW_MS,
     })
     assert.equal(collection.releases[0].title, 'Keep 1')
-    await tasks[0]()
-
+    assert.equal(tasks.length, 0)
     assert.equal(durable.setCalls, 0)
     assert.equal((durable.collection as DiscogsCollection).releases[0].title, 'Keep 1')
-    assert.equal(durable.meta?.lastError?.kind, 'rate_limit')
-    assert.equal(durable.meta?.lastError?.at, NOW_MS)
+    assert.equal(durable.meta?.lastError, null)
   })
 
   it('keeps the stored copy when a refresh is a partial crawl', async () => {
@@ -723,14 +685,13 @@ describe('durable last-good snapshot', () => {
       now: () => NOW_MS,
     })
     assert.equal(collection.releases[0].title, 'Keep 1')
-    await tasks[0]()
-
+    assert.equal(tasks.length, 0)
     assert.equal(durable.setCalls, 0)
     assert.equal((durable.collection as DiscogsCollection).releases.length, 3)
-    assert.equal(durable.meta?.lastError?.kind, 'unavailable')
+    assert.equal(durable.meta?.lastError, null)
   })
 
-  it('crawls Discogs when the store is empty and writes a complete copy', async () => {
+  it('crawls Discogs when the store is empty and does not write Redis', async () => {
     const durable = createMemoryDurableStore()
     const { fetchImpl, calls } = twoPageFetch()
     const { tasks, scheduleRefresh } = captureSchedule()
@@ -747,10 +708,9 @@ describe('durable last-good snapshot', () => {
     assert.equal(collection.releases.length, 179)
     assert.equal(calls.length, 2)
     assert.equal(calls[0].init?.next?.revalidate, 300)
-    await tasks[0]()
-    assert.equal(durable.setCalls, 1)
-    assert.equal((durable.collection as DiscogsCollection).pagination.items, 179)
-    assert.equal(durable.meta?.fetchedAt, NOW_MS)
+    assert.equal(tasks.length, 0)
+    assert.equal(durable.setCalls, 0)
+    assert.equal(durable.collection, null)
   })
 
   it('throws DiscogsRateLimitError when the store is empty and Discogs returns 429', async () => {
@@ -801,8 +761,8 @@ describe('durable last-good snapshot', () => {
 
     assert.equal(collection.releases.length, 179)
     assert.equal(calls.length, 2)
-    await tasks[0]()
-    assert.equal(durable.setCalls, 1)
+    assert.equal(tasks.length, 0)
+    assert.equal(durable.setCalls, 0)
   })
 
   it('falls back when stored JSON is corrupt', async () => {
@@ -823,9 +783,10 @@ describe('durable last-good snapshot', () => {
 
     assert.equal(collection.releases.length, 179)
     assert.equal(calls.length, 2)
-    await tasks[0]()
+    await Promise.resolve()
     assert.equal(parseDurableCollection({ nope: true }), null)
-    assert.equal(durable.setCalls, 1)
+    assert.equal(tasks.length, 0)
+    assert.equal(durable.setCalls, 0)
   })
 
   it('does not read or write Redis during next build', async () => {
@@ -853,7 +814,7 @@ describe('durable last-good snapshot', () => {
     assert.equal(durable.setCalls, 0)
   })
 
-  it('does not cache an empty Redis read, so a later snapshot is visible without crawling', async () => {
+  it('does not write Redis on an empty visit crawl; a later manual snapshot is readable', async () => {
     const fake = createInMemoryUpstash()
     const durable = createRedisDurableStore(
       { url: 'http://upstash.test', token: 'test-token' },
@@ -873,13 +834,22 @@ describe('durable last-good snapshot', () => {
     })
     assert.equal(first.releases.length, 179)
     assert.equal(liveCalls.length, 2)
-    await tasks[0]()
+    assert.equal(tasks.length, 0)
+    const setsBefore = fake.calls.filter((call) => call.op === 'set').length
+    assert.equal(setsBefore, 0)
 
     const mgets = fake.calls.filter((call) => call.op === 'mget')
     assert.ok(mgets.length >= 1)
     assert.equal(mgets[0]?.next?.revalidate, REDIS_ISR_REVALIDATE_SECONDS)
     assert.notEqual(mgets[0]?.cache, REDIS_READ_CACHE)
     assert.equal(isEmptyUpstashReadResult([null, null]), true)
+
+    const { fetchImpl: refreshFetch } = twoPageFetch()
+    await refreshDurableCollection(
+      durable,
+      { fetchImpl: refreshFetch, lastGood: memory, durable },
+      () => NOW_MS
+    )
 
     const { fetchImpl: blockedFetch, calls: blockedCalls } = mockFetch({
       1: { status: 429, retryAfter: '60', body: { message: 'RAW' } },

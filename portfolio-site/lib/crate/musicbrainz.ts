@@ -253,6 +253,7 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
       title: string
       date: string | null
       country: string | null
+      releaseGroupId: string | null
       tracks: Array<{
         index: number
         number: string
@@ -264,7 +265,7 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
       }>
     } | null> {
       const params = new URLSearchParams({
-        inc: 'recordings+artist-credits+labels+url-rels',
+        inc: 'recordings+artist-credits+labels+url-rels+release-groups',
         fmt: 'json',
       })
       const data = await getJson<{
@@ -273,6 +274,7 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
         title?: string
         date?: string
         country?: string
+        'release-group'?: { id?: string }
         media?: Array<{
           position?: number
           tracks?: Array<{
@@ -325,6 +327,7 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
         title: data.title ?? '',
         date: data.date ?? null,
         country: data.country ?? null,
+        releaseGroupId: data['release-group']?.id?.trim() ? data['release-group'].id : null,
         tracks,
       }
     },
