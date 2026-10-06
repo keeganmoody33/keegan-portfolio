@@ -139,6 +139,10 @@ These are explicitly **not** what this site is:
 
 1. **Navigation redesign** -- Current top nav vs. fixed left sidebar (per `FRONTEND_GUIDELINES.md` and `docs/NAVIGATION_PATHWAYS_SPEC.md`). When to ship?
 
+## Prototype gaps (collection record detail)
+
+- **Discogs 6h freshness clause** is not implemented. Collection listing TTL is 24h; successful MusicBrainz research is reused indefinitely. Attribution is implemented. See Discogs [API Terms of Use](https://support.discogs.com/hc/en-us/articles/360009334593-API-Terms-of-Use). This PR stays a draft preview prototype.
+
 ---
 
 ## Related Docs

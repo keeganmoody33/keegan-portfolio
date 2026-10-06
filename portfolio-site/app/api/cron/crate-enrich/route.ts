@@ -1,21 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cronSecretEqual } from '@/lib/crate/cron-auth'
+import { cronGate } from '@/lib/crate/cron-auth'
 import { processEnrichmentQueue } from '@/lib/crate/enrich'
 import { getDefaultCrateStore } from '@/lib/crate/store'
 import { queueNewAndMissing } from '@/lib/crate/sync'
-import { readCachedCollection } from '@/lib/discogs'
+import { readCachedCollection, refreshDurableCollection } from '@/lib/discogs'
+import {
+  DISCOGS_SNAPSHOT_TTL_MS,
+  getDefaultRedisDurableStore,
+  isSnapshotStale,
+} from '@/lib/discogs-store'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
-  const secret = process.env.CRON_SECRET
-  if (!secret) {
-    return new NextResponse(null, { status: 404 })
-  }
-  if (!cronSecretEqual(request.headers.get('authorization'), secret)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+  const denied = cronGate(request)
+  if (denied) return denied
 
   const store = getDefaultCrateStore()
   if (!store) {
@@ -23,6 +24,19 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const durable = getDefaultRedisDurableStore()
+    if (durable) {
+      let fetchedAt: number | null = null
+      try {
+        const snapshot = await durable.get()
+        fetchedAt = snapshot?.meta?.fetchedAt ?? null
+      } catch {
+        fetchedAt = null
+      }
+      if (isSnapshotStale(fetchedAt, Date.now(), DISCOGS_SNAPSHOT_TTL_MS)) {
+        await refreshDurableCollection(durable, {}, Date.now)
+      }
+    }
     const collection = await readCachedCollection()
     if (collection) {
       await queueNewAndMissing(store, await store.getSeen(), collection)

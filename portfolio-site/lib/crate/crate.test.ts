@@ -19,6 +19,9 @@ import { keepPriorMatch, nextBackoffMs, preservePressingOnFailure, shouldRefresh
 import { createMemoryCrateStore, INFLIGHT_TTL_SECONDS } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
 import { enrichPressing, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom } from './enrich.ts'
+import { isUnusableDiscogsNotes, resolveDescription, withReadableDescription } from './description.ts'
+import { COLLECTION_KEEP_PATH, scheduleKeepPing } from './keep-ping.ts'
+import { parseProofAction, PROOF_KILL_ID, runCrateProof } from './proof.ts'
 import type { MusicBrainzClient } from './musicbrainz.ts'
 import { CRATE_MAX_ATTEMPTS, CRATE_SCHEMA_VERSION, type StoredPressing } from './types.ts'
 import { mapRelease, parseDurableCollection } from '../discogs.ts'
@@ -1247,6 +1250,82 @@ describe('resumable backfill checkpoints', () => {
     assert.equal(result.completed, 1)
     assert.equal(result.backfill.cursor, 1)
     assert.ok(result.releasesPerMin >= 0)
+  })
+})
+
+describe('readable discogs description', () => {
+  it('rejects matrix dumps and company-address notes, then uses the fixture paraphrase', () => {
+    const matrix =
+      'Runout, etched: BSK-1-3093 WW1. Matrix / Runout (Side B): BSK-2-3093 WW1 #2 — ◁.'
+    const address =
+      'Manufactured by Warner Bros. Records Inc., 3300 Warner Blvd., Burbank, CA 91510. A Warner Communications Company.'
+    assert.equal(sentencesFrom(matrix), null)
+    assert.equal(isUnusableDiscogsNotes(matrix), true)
+    assert.equal(sentencesFrom(address), null)
+    assert.equal(isUnusableDiscogsNotes(address), true)
+    const resolved = resolveDescription({
+      notes: address,
+      url: 'https://www.discogs.com/release/573292',
+      releaseId: 573292,
+    })
+    assert.ok(resolved)
+    assert.match(resolved.text, /Winchester/)
+    assert.match(resolved.text, /sunglasses/)
+    const dumped = pressingStub({
+      description: {
+        text: address,
+        source: 'discogs',
+        sourceUrl: 'https://www.discogs.com/release/573292',
+      },
+    })
+    const readable = withReadableDescription(dumped)
+    assert.match(readable.description?.text ?? '', /gatefold/)
+  })
+})
+
+describe('isr-safe collection keep ping', () => {
+  it('pings the force-dynamic keep route with a 300s revalidate', async () => {
+    const calls: Array<{ url: string; init?: RequestInit & { next?: { revalidate: number } } }> = []
+    const ok = scheduleKeepPing(
+      {
+        CRON_SECRET: 'a'.repeat(32),
+        VERCEL_URL: 'example.vercel.app',
+      },
+      async (url, init) => {
+        calls.push({ url, init })
+        return new Response('{}', { status: 200 })
+      }
+    )
+    await Promise.resolve()
+    assert.equal(ok, true)
+    assert.equal(calls[0]?.url, `https://example.vercel.app${COLLECTION_KEEP_PATH}`)
+    assert.equal(calls[0]?.init?.next?.revalidate, 300)
+    assert.match(String(calls[0]?.init?.headers && 'Authorization' in (calls[0].init.headers as object)
+      ? (calls[0].init.headers as Record<string, string>).Authorization
+      : ''), /^Bearer /)
+  })
+
+  it('does not ping when CRON_SECRET is missing', () => {
+    const ok = scheduleKeepPing({ VERCEL_URL: 'example.vercel.app' }, async () => {
+      throw new Error('must not fetch')
+    })
+    assert.equal(ok, false)
+  })
+})
+
+describe('live-proof helpers', () => {
+  it('recovers the same id after clearInflight', async () => {
+    const store = createMemoryCrateStore()
+    const kill = await runCrateProof(store, 'kill')
+    assert.deepEqual(kill.taken, [PROOF_KILL_ID])
+    assert.deepEqual(kill.overlappingWhileInflight, [])
+    const recover = await runCrateProof(store, 'recover', { ids: [PROOF_KILL_ID] })
+    assert.deepEqual(recover.recovered, [PROOF_KILL_ID])
+  })
+
+  it('parses proof actions and rejects unknown ones', () => {
+    assert.equal(parseProofAction('overlap'), 'overlap')
+    assert.equal(parseProofAction('nope'), null)
   })
 })
 

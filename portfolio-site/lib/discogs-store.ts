@@ -4,6 +4,7 @@ import type { DiscogsCollection } from './discogs.ts'
 
 export const DISCOGS_SNAPSHOT_TTL_MS = 24 * 60 * 60 * 1000
 export const DISCOGS_REFRESH_LOCK_SECONDS = 120
+export const REDIS_ISR_REVALIDATE_SECONDS = 300
 export const REDIS_READ_CACHE: RequestCache = 'no-store'
 
 export type DurableErrorKind = 'rate_limit' | 'unavailable' | 'partial'
@@ -46,6 +47,10 @@ export type DiscogsRedisKeys = {
 
 type CachedFetchInit = RequestInit & {
   next?: { revalidate: number }
+}
+
+export const REDIS_DURABLE_READ_INIT: CachedFetchInit = {
+  next: { revalidate: REDIS_ISR_REVALIDATE_SECONDS },
 }
 
 export type UpstashFetch = (
@@ -207,7 +212,7 @@ class RedisDurableStore implements DurableStore {
     fetchImpl: UpstashFetch = fetch
   ) {
     this.keys = discogsRedisKeys(env)
-    this.readRedis = createRedis(config, { cache: REDIS_READ_CACHE }, fetchImpl)
+    this.readRedis = createRedis(config, REDIS_DURABLE_READ_INIT, fetchImpl)
     this.writeRedis = createRedis(config, { cache: 'no-store' }, fetchImpl)
   }
 

@@ -1,6 +1,6 @@
 import { cache } from 'react'
+import { after } from 'next/server.js'
 import {
-  defaultScheduleRefresh,
   isCompleteCollection,
   readCachedCollection,
   type DiscogsRelease,
@@ -9,6 +9,7 @@ import { collectionReleaseId } from './sync.ts'
 import { getDefaultCrateStore, type CrateStore } from './store.ts'
 import { CRATE_SCHEMA_VERSION, type StoredPressing, type TrackOccurrence } from './types.ts'
 import { isoFromMs, storedPressingHasVisitorFacts } from './preserve.ts'
+import { withReadableDescription } from './description.ts'
 import { hydratePressing } from './lifecycle.ts'
 import bootsy from './fixtures/573292.json' with { type: 'json' }
 import goodieMob from './fixtures/240128.json' with { type: 'json' }
@@ -41,11 +42,21 @@ export function fixturePressing(releaseId: number): StoredPressing | null {
 }
 
 function scheduleMissedPressing(store: CrateStore, releaseId: number): void {
-  defaultScheduleRefresh(async () => {
+  if (process.env.NEXT_PHASE === 'phase-production-build') return
+  const work = async () => {
     const { processEnrichmentQueue } = await import('./enrich.ts')
     await store.enqueue([releaseId], { front: true })
     await processEnrichmentQueue({ store }, 1)
-  })
+  }
+  if (process.env.NODE_TEST_CONTEXT) {
+    void work()
+    return
+  }
+  try {
+    after(() => work())
+  } catch {
+    void work()
+  }
 }
 
 export const readStoredPressingOnce = cache(async (releaseId: number) =>
@@ -163,7 +174,7 @@ export async function readStoredPressing(
       if (stored && storedPressingHasVisitorFacts(stored)) {
         return {
           status: 'ok',
-          pressing: withCollectionArt(hydratePressing(stored), listed),
+          pressing: presentPressing(hydratePressing(stored), listed),
           from: 'store',
         }
       }
@@ -172,7 +183,7 @@ export async function readStoredPressing(
         if (fixture) {
           return {
             status: 'ok',
-            pressing: withCollectionArt(fixture, listed),
+            pressing: presentPressing(fixture, listed),
             from: 'fixture',
           }
         }
@@ -185,7 +196,7 @@ export async function readStoredPressing(
       if (fixture) {
         return {
           status: 'ok',
-          pressing: withCollectionArt(fixture, listed),
+          pressing: presentPressing(fixture, listed),
           from: 'fixture',
         }
       }
@@ -197,7 +208,7 @@ export async function readStoredPressing(
   if (fixture) {
     return {
       status: 'ok',
-      pressing: withCollectionArt(fixture, listed),
+      pressing: presentPressing(fixture, listed),
       from: 'fixture',
     }
   }
@@ -213,6 +224,13 @@ export async function readStoredPressing(
     pressing: pendingPressingFromRelease(listed, releaseId),
     from: 'collection',
   }
+}
+
+function presentPressing(
+  pressing: StoredPressing,
+  listed: DiscogsRelease | null | undefined
+): StoredPressing {
+  return withReadableDescription(withCollectionArt(pressing, listed))
 }
 
 function withCollectionArt(

@@ -44,6 +44,7 @@ import {
   TERMINAL_REFRESH_MS,
 } from './preserve.ts'
 import { fixturePressing } from './read.ts'
+import { resolveDescription } from './description.ts'
 import {
   INFLIGHT_TTL_SECONDS,
   randomLockToken,
@@ -61,6 +62,8 @@ import {
   type StoredRecording,
   type TrackOccurrence,
 } from './types.ts'
+
+export { sentencesFrom } from './description.ts'
 
 export const ENRICH_LOCK_SECONDS = 60
 export const ENRICH_BATCH_DEFAULT = 1
@@ -139,29 +142,17 @@ export function failRefreshFromEnv(
   return raw.split(',').some((part) => part.trim() === String(releaseId))
 }
 
-export function sentencesFrom(raw: string | null | undefined, max = 4): string | null {
-  if (!raw) return null
-  const cleaned = raw.replace(/\s+/g, ' ').trim()
-  if (cleaned.length < 24) return null
-  const parts = cleaned.split(/(?<=[.!?])\s+/).filter((part) => part.trim().length > 12)
-  const kept = parts.filter((part) => !isMatrixDump(part))
-  if (kept.length === 0) return null
-  return kept.slice(0, max).join(' ')
-}
-
-function isMatrixDump(sentence: string): boolean {
-  return /matrix|runout|etched|inscribed|variant \d|catalog number transcript|illegible/i.test(
-    sentence
-  )
-}
-
 export function sourcedDescription(
   discogsNotes: string | null,
-  discogsUrl: string
+  discogsUrl: string,
+  options: { previous?: SourcedText | null; releaseId?: number } = {}
 ): SourcedText | null {
-  const discogsText = sentencesFrom(discogsNotes)
-  if (!discogsText) return null
-  return { text: discogsText, source: 'discogs', sourceUrl: discogsUrl }
+  return resolveDescription({
+    notes: discogsNotes,
+    url: discogsUrl,
+    previous: options.previous,
+    releaseId: options.releaseId,
+  })
 }
 
 export function factsFromDiscogsDetail(detail: DiscogsReleaseDetail): PressingFacts {
@@ -443,7 +434,10 @@ export async function enrichPressing(
         sourceUrl: facts.discogsUrl,
         providerId: String(releaseId),
       },
-      description: sourcedDescription(detail.notes, facts.discogsUrl),
+      description: sourcedDescription(detail.notes, facts.discogsUrl, {
+        previous: previous?.description ?? null,
+        releaseId,
+      }),
       tracks: skipMatch ? adoptPriorRecordings(tracks, previous?.tracks) : tracks,
       mbRelease: skipMatch && previous
         ? previous.mbRelease
@@ -611,7 +605,10 @@ export async function enrichPressing(
         sourceUrl: facts.discogsUrl,
         providerId: String(releaseId),
       },
-      description: sourcedDescription(detail.notes, facts.discogsUrl),
+      description: sourcedDescription(detail.notes, facts.discogsUrl, {
+        previous: previous?.description ?? null,
+        releaseId,
+      }),
       tracks,
       mbRelease,
       recordings,
@@ -689,6 +686,7 @@ export type EnrichQueueResult = {
   skipped: boolean
   stoppedOnRateLimit: boolean
   stoppedOnAuth: boolean
+  mbRequests: number
 }
 
 export async function processEnrichmentQueue(
@@ -698,7 +696,9 @@ export async function processEnrichmentQueue(
   const token = deps.lockToken ?? randomLockToken()
   const lockTtl = deps.lockTtlSeconds ?? ENRICH_LOCK_SECONDS
   const locked = await deps.store.acquireEnrichLock(lockTtl, token)
-  if (!locked) return { processed: [], skipped: true, stoppedOnRateLimit: false, stoppedOnAuth: false }
+  if (!locked) {
+    return { processed: [], skipped: true, stoppedOnRateLimit: false, stoppedOnAuth: false, mbRequests: 0 }
+  }
 
   const now = deps.now ?? Date.now
   const started = now()
@@ -792,7 +792,7 @@ export async function processEnrichmentQueue(
       mbRequests: mb.requestCount,
     })
   )
-  return { processed, skipped: false, stoppedOnRateLimit, stoppedOnAuth }
+  return { processed, skipped: false, stoppedOnRateLimit, stoppedOnAuth, mbRequests: mb.requestCount }
 }
 
 export function releaseIdsFromCollection(collection: DiscogsCollection): number[] {

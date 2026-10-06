@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cronGate } from '@/lib/crate/cron-auth'
-import { runBackfill } from '@/lib/crate/backfill'
+import { parseProofAction, parseProofIds, runCrateProof } from '@/lib/crate/proof'
 import { getDefaultCrateStore } from '@/lib/crate/store'
-import { readCachedCollection } from '@/lib/discogs'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -14,20 +13,25 @@ export async function GET(request: NextRequest) {
 
   const store = getDefaultCrateStore()
   if (!store) {
-    return NextResponse.json({ skipped: true, reason: 'no store' })
+    return NextResponse.json({ error: 'no store' }, { status: 503, headers: { 'Cache-Control': 'no-store' } })
   }
 
-  const collection = await readCachedCollection()
-  if (!collection) {
-    return NextResponse.json({ skipped: true, reason: 'no collection' })
+  const action = parseProofAction(request.nextUrl.searchParams.get('action'))
+  if (!action) {
+    return NextResponse.json(
+      { error: 'unknown action' },
+      { status: 400, headers: { 'Cache-Control': 'no-store' } }
+    )
   }
 
   try {
-    const result = await runBackfill({ store, collection })
+    const result = await runCrateProof(store, action, {
+      ids: parseProofIds(request.nextUrl.searchParams.get('ids')),
+    })
     return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store' } })
   } catch {
     return NextResponse.json(
-      { error: 'backfill failed' },
+      { error: 'proof failed' },
       { status: 502, headers: { 'Cache-Control': 'no-store' } }
     )
   }

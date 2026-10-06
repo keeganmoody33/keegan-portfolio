@@ -1,9 +1,25 @@
 import { collectionReleaseIds } from './sync.ts'
 import { processEnrichmentQueue, type EnrichDeps } from './enrich.ts'
 import { crateRedisKeys, type CrateStore } from './store.ts'
-import { isoFromMs } from './preserve.ts'
-import type { BackfillState, DeadLetter } from './types.ts'
+import { isoFromMs, storedPressingHasVisitorFacts } from './preserve.ts'
+import type { BackfillState, DeadLetter, StoredPressing } from './types.ts'
 import type { DiscogsCollection } from '../discogs.ts'
+
+export const INSPECT_PRESSING_IDS = [573292, 240128, 567894] as const
+
+export type InspectPressingDump = {
+  releaseId: number
+  title: string
+  hasVisitorFacts: boolean
+  matchStatus: string
+  verifiedAt: string | null
+  lastAttemptAt: string | null
+  lastError: StoredPressing['provenance']['lastError']
+  description: string | null
+  tracks: Array<{ position: string; title: string; match: string }>
+  coverage: StoredPressing['coverage'] | null
+  checkedAt: string
+}
 
 export type InspectSnapshot = {
   prefix: string
@@ -12,6 +28,27 @@ export type InspectSnapshot = {
   unresolved: number[]
   inspect: DeadLetter[]
   backfill: BackfillState | null
+  pressings: Record<string, InspectPressingDump | null>
+}
+
+function dumpPressing(pressing: StoredPressing): InspectPressingDump {
+  return {
+    releaseId: pressing.releaseId,
+    title: pressing.facts.title,
+    hasVisitorFacts: storedPressingHasVisitorFacts(pressing),
+    matchStatus: pressing.provenance.matchStatus,
+    verifiedAt: pressing.provenance.verifiedAt ?? null,
+    lastAttemptAt: pressing.provenance.lastAttemptAt ?? null,
+    lastError: pressing.provenance.lastError,
+    description: pressing.description?.text ?? null,
+    tracks: pressing.tracks.map((track) => ({
+      position: track.position,
+      title: track.title,
+      match: track.recording.matchStatus,
+    })),
+    coverage: pressing.coverage ?? null,
+    checkedAt: pressing.provenance.checkedAt,
+  }
 }
 
 export async function inspectCrate(
@@ -19,13 +56,19 @@ export async function inspectCrate(
   env: Record<string, string | undefined> = process.env
 ): Promise<InspectSnapshot> {
   const keys = crateRedisKeys(env)
-  const [queue, dead, unresolved, inspect, backfill] = await Promise.all([
+  const [queue, dead, unresolved, inspect, backfill, pressings] = await Promise.all([
     store.getQueue(),
     store.getDead(),
     store.getUnresolved(),
     store.getInspect(),
     store.getBackfill(),
+    store.getPressings([...INSPECT_PRESSING_IDS]),
   ])
+  const dumped: Record<string, InspectPressingDump | null> = {}
+  for (const id of INSPECT_PRESSING_IDS) {
+    const stored = pressings.get(id)
+    dumped[String(id)] = stored ? dumpPressing(stored) : null
+  }
   return {
     prefix: keys.prefix,
     queue,
@@ -33,6 +76,7 @@ export async function inspectCrate(
     unresolved,
     inspect,
     backfill,
+    pressings: dumped,
   }
 }
 

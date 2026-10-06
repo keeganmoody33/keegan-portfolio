@@ -254,10 +254,6 @@ export default function RecordDetail({
                   <p className="max-w-xl font-sans text-base leading-relaxed text-[var(--house-ink)]">
                     {pressing.description.text}
                   </p>
-                  <SourceLine
-                    source={pressing.description.source}
-                    href={pressing.description.sourceUrl}
-                  />
                 </div>
               )}
 

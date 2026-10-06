@@ -27,6 +27,7 @@ import {
   type ScheduleRefresh,
 } from './discogs.ts'
 import {
+  REDIS_ISR_REVALIDATE_SECONDS,
   REDIS_READ_CACHE,
   createMemoryDurableStore,
   createRedisDurableStore,
@@ -452,13 +453,14 @@ function createInMemoryUpstash() {
   const calls: Array<{
     op: string
     cache?: RequestCache
+    next?: { revalidate: number }
     body: unknown
   }> = []
 
   const fetchImpl: DiscogsFetch = async (_url, init) => {
     const body = JSON.parse(String(init?.body ?? 'null')) as unknown[]
     const op = String(body?.[0] ?? '').toLowerCase()
-    calls.push({ op, cache: init?.cache, body })
+    calls.push({ op, cache: init?.cache, next: init?.next, body })
 
     if (op === 'mget') {
       const values = body.slice(1).map((key) => kv.get(String(key)) ?? null)
@@ -867,8 +869,8 @@ describe('durable last-good snapshot', () => {
 
     const mgets = fake.calls.filter((call) => call.op === 'mget')
     assert.ok(mgets.length >= 1)
-    assert.equal(mgets[0]?.cache, REDIS_READ_CACHE)
-    assert.equal(REDIS_READ_CACHE, 'no-store')
+    assert.equal(mgets[0]?.next?.revalidate, REDIS_ISR_REVALIDATE_SECONDS)
+    assert.notEqual(mgets[0]?.cache, REDIS_READ_CACHE)
     assert.equal(isEmptyUpstashReadResult([null, null]), true)
 
     const { fetchImpl: blockedFetch, calls: blockedCalls } = mockFetch({

@@ -109,6 +109,7 @@ export function crateRedisKeys(env: Record<string, string | undefined> = process
 export type EnqueueOptions = {
   front?: boolean
   nowMs?: number
+  score?: number
 }
 
 export type CrateStore = {
@@ -123,6 +124,7 @@ export type CrateStore = {
   ack(releaseId: number): Promise<void>
   nack(releaseId: number, retryAtMs: number): Promise<void>
   drop(releaseId: number): Promise<void>
+  clearInflight(releaseId: number): Promise<void>
   getSeen(): Promise<number[]>
   setSeen(releaseIds: number[]): Promise<void>
   acquireEnrichLock(ttlSeconds: number, token: string): Promise<boolean>
@@ -254,7 +256,7 @@ class RedisCrateStore implements CrateStore {
   async enqueue(releaseIds: number[], options: EnqueueOptions = {}): Promise<number[]> {
     const ids = positiveIds(releaseIds)
     if (ids.length === 0) return []
-    const score = options.front ? 0 : (options.nowMs ?? Date.now())
+    const score = options.score ?? (options.front ? 0 : (options.nowMs ?? Date.now()))
     const added = await this.writeRedis.eval<string[], unknown>(
       ENQUEUE_LUA,
       [this.keys.queue, this.keys.queued],
@@ -291,6 +293,10 @@ class RedisCrateStore implements CrateStore {
 
   async drop(releaseId: number): Promise<void> {
     await this.ack(releaseId)
+  }
+
+  async clearInflight(releaseId: number): Promise<void> {
+    await this.writeRedis.del(this.keys.inflight(releaseId))
   }
 
   async getSeen(): Promise<number[]> {
@@ -452,12 +458,12 @@ export function createMemoryCrateStore(
     async enqueue(releaseIds: number[], options: EnqueueOptions = {}) {
       const ids = positiveIds(releaseIds)
       const added: number[] = []
-      const score = options.front ? 0 : (options.nowMs ?? store.now())
+      const score = options.score ?? (options.front ? 0 : (options.nowMs ?? store.now()))
       for (const id of ids) {
         if (store.queued.has(id)) {
-          if (options.front) {
+          if (options.front || options.score != null) {
             const existing = store.queue.find((row) => row.id === id)
-            if (existing) existing.score = 0
+            if (existing) existing.score = options.score ?? 0
           }
           continue
         }
@@ -494,6 +500,9 @@ export function createMemoryCrateStore(
     },
     async drop(releaseId: number) {
       await store.ack(releaseId)
+    },
+    async clearInflight(releaseId: number) {
+      store.inflight.delete(releaseId)
     },
     async getSeen() {
       return [...store.seen]

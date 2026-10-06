@@ -348,12 +348,13 @@ Discogs API
             └── not used on `/keeganmoody33` (career `/api/discogs` / RecentDigs removed)
 
 MusicBrainz API (background only)
-            └── crate enrich (`after()` keeps the promise; budgeted daily cron + visit drain 1/5min + explicit backfill)
+            └── crate enrich (ISR keep-route ping; budgeted daily cron + explicit backfill)
             └── Redis zset `lf:crate:queue:v1` + queued set; lock token compare-and-delete; dead/unresolved inspect sets
             └── visitor `/collection/[releaseId]` reads Redis, then fixtures, then a collection pending shell
             └── HTML `data-crate-source="redis|fixture|collection"` marks which one served
             └── never called on a visitor request. Detail routes are `force-dynamic`. A Redis miss `after()`-enqueues that id to the front and processes one.
             └── successful research is reused; a later Discogs refresh does not rematch unchanged identities
+            └── prototype gap: Discogs 6h freshness clause is not implemented (24h listing TTL)
 
 YouTube IFrame API (client-side, no proxy)
     └── youtube.com/iframe_api ──→ YouTubePlayer component

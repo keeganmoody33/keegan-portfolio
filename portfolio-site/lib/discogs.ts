@@ -1,4 +1,5 @@
 import { after } from 'next/server.js'
+import { scheduleKeepPing } from './crate/keep-ping.ts'
 import {
   DISCOGS_REFRESH_LOCK_SECONDS,
   DISCOGS_SNAPSHOT_TTL_MS,
@@ -508,6 +509,7 @@ export function defaultScheduleRefresh(task: () => Promise<void>): void {
     void task()
     return
   }
+  if (scheduleKeepPing()) return
 
   try {
     after(() => task())
@@ -520,17 +522,8 @@ function maybeScheduleVisitEnrich(schedule: ScheduleRefresh): void {
   if (process.env.NODE_TEST_CONTEXT) return
   if (process.env.NEXT_PHASE === 'phase-production-build') return
   schedule(async () => {
-    const { getDefaultCrateStore, VISIT_THROTTLE_SECONDS } = await import('./crate/store.ts')
-    const { processEnrichmentQueue } = await import('./crate/enrich.ts')
-    const { queueNewAndMissing } = await import('./crate/sync.ts')
-    const store = getDefaultCrateStore()
-    if (!store) return
-    if (!(await store.acquireVisitThrottle(VISIT_THROTTLE_SECONDS))) return
-    const collection = await readCachedCollection()
-    if (collection) {
-      await queueNewAndMissing(store, await store.getSeen(), collection)
-    }
-    await processEnrichmentQueue({ store, collection: collection ?? undefined }, 1)
+    const { keepCollectionFresh } = await import('./crate/keep.ts')
+    await keepCollectionFresh()
   })
 }
 
@@ -628,7 +621,7 @@ async function notifyCollectionComplete(
   }
 }
 
-async function refreshDurableCollection(
+export async function refreshDurableCollection(
   durable: DurableStore,
   options: DiscogsClientOptions,
   now: () => number
