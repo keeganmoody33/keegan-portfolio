@@ -49,6 +49,7 @@ describe('isCountablePageRequest', () => {
   it('counts a plain page GET', () => assert.equal(isCountablePageRequest('GET', '/catalog', headers()), true))
   it('skips non-GET', () => assert.equal(isCountablePageRequest('POST', '/catalog', headers()), false))
   it('skips API routes', () => assert.equal(isCountablePageRequest('GET', '/api/tally', headers()), false))
+  it('skips well-known discovery paths', () => assert.equal(isCountablePageRequest('GET', '/.well-known/security.txt', headers()), false))
   it('skips prefetches', () => assert.equal(isCountablePageRequest('GET', '/catalog', headers({ 'next-router-prefetch': '1' })), false))
   it('skips speculative loads', () => assert.equal(isCountablePageRequest('GET', '/catalog', headers({ 'sec-purpose': 'prefetch;prerender' })), false))
   it('skips client data fetches', () => assert.equal(isCountablePageRequest('GET', '/catalog', headers({ rsc: '1' })), false))

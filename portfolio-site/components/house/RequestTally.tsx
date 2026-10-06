@@ -100,10 +100,10 @@ export default function RequestTally() {
             disabled={!data}
             className="flex min-h-11 items-center gap-3 text-[var(--house-ink)] hover:text-[var(--house-orange)] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[var(--house-orange)] disabled:cursor-default sm:min-h-8"
           >
-            <span className="sr-only">{human ? 'presumed human requests' : 'automated requests'}</span>
+            <span className="sr-only">{human ? 'presumed human requests' : 'automated requests'}</span>{' '}
             <span className="rounded-[2px] bg-[var(--house-lcd)] px-1.5 py-0.5 font-[family-name:var(--house-font-lcd)] text-[13px] font-extrabold leading-none tracking-[0.04em] text-[var(--house-lcd-ink)] tabular-nums">
               {value === null ? '·······' : fmt(value)}
-            </span>
+            </span>{' '}
             <span className="uppercase tracking-[0.18em] underline underline-offset-[3px]">{open ? 'close' : 'breakdown'}</span>
           </button>
         </span>

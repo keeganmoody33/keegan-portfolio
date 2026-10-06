@@ -80,7 +80,7 @@ type HeaderSource = { get(name: string): string | null }
  */
 export function isCountablePageRequest(method: string, pathname: string, headers: HeaderSource): boolean {
   if (method !== 'GET') return false
-  if (pathname.startsWith('/api/') || pathname.startsWith('/_next/') || pathname.startsWith('/_vercel/')) return false
+  if (pathname.startsWith('/api/') || pathname.startsWith('/_next/') || pathname.startsWith('/_vercel/') || pathname.startsWith('/.well-known/')) return false
   const purpose = `${headers.get('purpose') ?? ''} ${headers.get('sec-purpose') ?? ''}`.toLowerCase()
   if (purpose.includes('prefetch') || purpose.includes('prerender')) return false
   if (headers.get('next-router-prefetch') || headers.get('rsc') || headers.get('next-router-state-tree')) return false
