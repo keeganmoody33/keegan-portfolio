@@ -313,6 +313,15 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   outline-offset: 2px;
 }
 
+[role='tabpanel']:focus {
+  outline: none;
+}
+
+[role='tabpanel']:focus-visible {
+  outline: 2px solid var(--house-ink);
+  outline-offset: 2px;
+}
+
 .house-rail {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);

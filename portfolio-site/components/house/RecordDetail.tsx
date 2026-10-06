@@ -80,6 +80,10 @@ export default function RecordDetail({
       : undefined
 
   const extrasId = `track-extras-${pressing.releaseId}`
+  const heading = unavailable
+    ? facts.catno || String(facts.releaseId)
+    : facts.title
+  const placeholderCatno = facts.catno || String(facts.releaseId)
 
   const close = useCallback(() => {
     posthog.capture('collection_record_close', {
@@ -215,22 +219,42 @@ export default function RecordDetail({
         </p>
       )}
 
+      {unavailable ? (
+      <div className="grid gap-10 min-[1280px]:grid-cols-2 min-[1280px]:items-start">
+        <RecordCover
+          src=""
+          artist=""
+          title={heading}
+          catno={placeholderCatno}
+        />
+        <div>
+          <h1
+            id={titleId}
+            className="font-display text-4xl font-semibold tracking-[-0.01em] [overflow-wrap:anywhere] sm:text-6xl"
+          >
+            {heading}
+          </h1>
+        </div>
+      </div>
+      ) : (
       <div className="grid gap-10 min-[1280px]:grid-cols-2 min-[1280px]:items-start">
         <RecordCover
           src={facts.thumbnail || facts.cover}
           artist={facts.artist}
           title={facts.title}
-          catno={facts.catno}
+          catno={placeholderCatno}
         />
         <div>
           <h1
             id={titleId}
-            className="font-display text-4xl font-semibold tracking-[-0.01em] sm:text-6xl"
+            className="font-display text-4xl font-semibold tracking-[-0.01em] [overflow-wrap:anywhere] sm:text-6xl"
           >
             {facts.title}
           </h1>
           {facts.artist ? (
-            <p className="mt-3 text-[var(--house-muted)]">{facts.artist}</p>
+            <p className="mt-3 text-[var(--house-muted)] [overflow-wrap:anywhere]">
+              {facts.artist}
+            </p>
           ) : null}
 
           <div
@@ -269,7 +293,7 @@ export default function RecordDetail({
             aria-labelledby="tab-overview"
             hidden={tab !== 'overview'}
             tabIndex={0}
-            className="pt-6"
+            className={`pt-6 outline-none ${focusRing}`}
           >
               {pressing.description && (
                 <div className="mb-8">
@@ -289,8 +313,8 @@ export default function RecordDetail({
                     <dd
                       className={
                         row.tone === 'dim'
-                          ? 'font-mono text-sm text-[var(--house-dim)]'
-                          : 'text-sm text-[var(--house-ink)]'
+                          ? 'font-mono text-sm text-[var(--house-dim)] [overflow-wrap:anywhere]'
+                          : 'text-sm text-[var(--house-ink)] [overflow-wrap:anywhere]'
                       }
                     >
                       {row.value}
@@ -341,7 +365,7 @@ export default function RecordDetail({
             aria-labelledby="tab-tracks"
             hidden={tab !== 'tracks'}
             tabIndex={0}
-            className="pt-6"
+            className={`pt-6 outline-none ${focusRing}`}
           >
               {pressing.tracks.length === 0 ? (
                 <p className="font-mono text-sm text-[var(--house-dim)]">
@@ -441,6 +465,7 @@ export default function RecordDetail({
             </div>
         </div>
       </div>
+      )}
     </article>
   )
 
@@ -487,7 +512,9 @@ function RecordCover({
   return (
     <div className="flex aspect-square w-full max-w-[480px] items-center justify-center border border-[var(--house-line)] bg-[var(--house-line)] min-[1280px]:max-w-none">
       {catno ? (
-        <p className="font-mono text-sm text-[var(--house-dim)]">{catno}</p>
+        <p className="px-4 text-center font-mono text-sm text-[var(--house-ink)] [overflow-wrap:anywhere]">
+          {catno}
+        </p>
       ) : null}
     </div>
   )

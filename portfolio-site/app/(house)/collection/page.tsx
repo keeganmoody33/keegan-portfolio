@@ -50,8 +50,9 @@ export default async function CollectionPage() {
           {collectionSleeve.notes}
         </p>
       )}
-      <p className="mt-2 font-mono text-[11px] tracking-[0.16em] text-[var(--house-dim)]">
-        {items === null ? 'count unavailable' : `${items} releases`}
+      <p className="mt-2 flex flex-wrap items-baseline gap-x-3 font-mono text-[11px] tracking-[0.16em] text-[var(--house-dim)]">
+        <span>{items === null ? 'count unavailable' : `${items} releases`}</span>
+        <DiscogsCredit href={DISCOGS_COLLECTION_PAGE} inline />
       </p>
 
       {unavailable && (

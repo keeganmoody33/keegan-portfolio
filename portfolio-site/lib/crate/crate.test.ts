@@ -16,7 +16,7 @@ import {
   parseDurationToMs,
 } from './match.ts'
 import { AUTH_RETRY_MS, keepPriorMatch, nextBackoffMs, preservePressingOnFailure, shouldRefreshPressing } from './preserve.ts'
-import { createMemoryCrateStore, crateRedisKeys, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA } from './store.ts'
+import { createMemoryCrateStore, crateRedisKeys, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA, type CrateStore } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
 import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome } from './enrich.ts'
 import { isUnusableDiscogsNotes, resolveDescription, withReadableDescription } from './description.ts'
@@ -27,7 +27,7 @@ import type { MusicBrainzClient } from './musicbrainz.ts'
 import { CRATE_MAX_ATTEMPTS, CRATE_SCHEMA_VERSION, type StoredPressing } from './types.ts'
 import { mapRelease, parseDurableCollection, DiscogsAuthError, DiscogsNotFoundError, createMemoryLastGoodStore } from '../discogs.ts'
 import { createMemoryDurableStore } from '../discogs-store.ts'
-import { fixturePressing, parseReleaseParam, readStoredPressing, visitEnqueueIfListed } from './read.ts'
+import { fixturePressing, parseReleaseParam, readStoredPressing, unavailableHeading, unavailablePressing, visitEnqueueIfListed } from './read.ts'
 import { factRows, pressingCheckedNoMatchLine } from './view.ts'
 import { cronSecretEqual } from './cron-auth.ts'
 import { coverageOf, isPlayableOccurrence, shouldQueuePressing } from './lifecycle.ts'
@@ -391,6 +391,56 @@ describe('record detail helpers', () => {
     assert.equal(missing.status, 'unavailable')
     const empty = await readStoredPressing(9107339, { store: null, collection: [] })
     assert.equal(empty.status, 'unavailable')
+  })
+
+  it('fills unavailable heading from catno or id and keeps listed catno when redis throws', async () => {
+    assert.equal(unavailableHeading(9107339), '9107339')
+    assert.equal(unavailableHeading(26098312, { catno: 'BS-1025' }), 'BS-1025')
+    const byId = unavailablePressing(9107339)
+    assert.equal(byId.facts.title, '9107339')
+    assert.equal(byId.facts.catno, '9107339')
+    const listed = unavailablePressing(26098312, {
+      title: 'Marshall Flippo',
+      artist: 'Marshall Flippo',
+      year: 0,
+      thumbnail: '',
+      cover: '',
+      format: 'Vinyl',
+      label: 'Square Dance',
+      catno: 'BS-1025',
+      discogsUrl: 'https://www.discogs.com/release/26098312',
+      releaseId: 26098312,
+      instanceId: 1,
+    })
+    assert.equal(listed.facts.title, 'BS-1025')
+    assert.equal(listed.facts.catno, 'BS-1025')
+    const throwing: Pick<CrateStore, 'getPressing'> = {
+      getPressing: async () => {
+        throw new Error('redis down')
+      },
+    }
+    const down = await readStoredPressing(9107339, {
+      store: throwing as CrateStore,
+      collection: [
+        {
+          title: 'One Is A Lonesome Number',
+          artist: 'Joe Williams',
+          year: 1963,
+          thumbnail: '',
+          cover: '',
+          format: 'Vinyl, LP',
+          label: 'Roulette',
+          catno: 'R 52102',
+          discogsUrl: 'https://www.discogs.com/release/9107339',
+          releaseId: 9107339,
+          instanceId: 1,
+        },
+      ],
+    })
+    assert.equal(down.status, 'unavailable')
+    if (down.status === 'unavailable') {
+      assert.equal(down.listed?.catno, 'R 52102')
+    }
   })
 
   it('404s only after a populated collection snapshot omits the id', async () => {

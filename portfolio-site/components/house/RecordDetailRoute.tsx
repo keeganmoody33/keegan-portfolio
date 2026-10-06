@@ -45,7 +45,7 @@ export default async function RecordDetailRoute({
   if (read.status === 'unavailable') {
     return (
       <RecordDetail
-        pressing={unavailablePressing(releaseId)}
+        pressing={unavailablePressing(releaseId, read.listed)}
         mode={mode}
         unavailable
       />

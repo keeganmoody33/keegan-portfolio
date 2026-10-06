@@ -97,20 +97,33 @@ export function parseReleaseParam(raw: string): number | null {
   return Number.isSafeInteger(id) ? id : null
 }
 
-export function unavailablePressing(releaseId: number, nowMs = Date.now()): StoredPressing {
+export function unavailableHeading(
+  releaseId: number,
+  listed?: Pick<DiscogsRelease, 'catno'> | null
+): string {
+  const catno = listed?.catno?.trim()
+  return catno || String(releaseId)
+}
+
+export function unavailablePressing(
+  releaseId: number,
+  listed?: DiscogsRelease | null,
+  nowMs = Date.now()
+): StoredPressing {
+  const heading = unavailableHeading(releaseId, listed)
   return pendingPressingFromRelease(
     {
-      title: '',
+      title: heading,
       artist: '',
       year: 0,
       thumbnail: '',
       cover: '',
       format: '',
       label: '',
-      catno: '',
-      discogsUrl: '',
+      catno: heading,
+      discogsUrl: listed?.discogsUrl || '',
       releaseId,
-      instanceId: 0,
+      instanceId: listed?.instanceId ?? 0,
     },
     releaseId,
     nowMs
@@ -167,7 +180,7 @@ export function pendingPressingFromRelease(
 export type RecordDetailRead =
   | { status: 'ok'; pressing: StoredPressing; from: 'store' | 'fixture' | 'collection' }
   | { status: 'not_found' }
-  | { status: 'unavailable' }
+  | { status: 'unavailable'; listed: DiscogsRelease | null }
 
 export async function readStoredPressing(
   releaseId: number,
@@ -231,7 +244,7 @@ export async function readStoredPressing(
           from: 'fixture',
         }
       }
-      return { status: 'unavailable' }
+      return { status: 'unavailable', listed: listed ?? null }
     }
   }
 
@@ -246,7 +259,7 @@ export async function readStoredPressing(
 
   if (!listed) {
     if (!collectionReleases || collectionReleases.length === 0 || !collectionComplete) {
-      return { status: 'unavailable' }
+      return { status: 'unavailable', listed: null }
     }
     return { status: 'not_found' }
   }
