@@ -6,12 +6,19 @@ import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent as 
 import { posthog } from '@/lib/posthog-client'
 import {
   CRATE_EMPTY_LINE,
-  CRATE_NO_RECORDING,
   CRATE_PICK_TRACK,
   CRATE_UNAVAILABLE_LINE,
   type StoredPressing,
 } from '@/lib/crate/types.ts'
-import { checkedDate, creditLine, factRows, overviewConnections } from '@/lib/crate/view.ts'
+import {
+  checkedDate,
+  checkedNoMatchLine,
+  creditLine,
+  factRows,
+  overviewConnections,
+  pressingCheckedNoMatchLine,
+} from '@/lib/crate/view.ts'
+import DiscogsCredit from '@/components/house/DiscogsCredit'
 import { coverageLine, isPlayableOccurrence } from '@/lib/crate/lifecycle.ts'
 
 const SCROLL_KEY = 'lf:collection:scroll'
@@ -72,12 +79,14 @@ export default function RecordDetail({
       ? pressing.recordings[selectedTrack.recording.mbid]
       : undefined
 
+  const extrasId = `track-extras-${pressing.releaseId}`
+
   const close = useCallback(() => {
     posthog.capture('collection_record_close', {
       release_id: pressing.releaseId,
       mode,
     })
-    if (mode === 'overlay' || window.history.length > 1) {
+    if (mode === 'overlay') {
       router.back()
       return
     }
@@ -85,8 +94,8 @@ export default function RecordDetail({
   }, [mode, pressing.releaseId, router])
 
   useEffect(() => {
-    closeRef.current?.focus({ preventScroll: true })
     if (mode !== 'overlay') return undefined
+    closeRef.current?.focus({ preventScroll: true })
     const nodes = document.querySelectorAll(
       '[data-collection-root], .house header, .house footer'
     )
@@ -103,19 +112,24 @@ export default function RecordDetail({
           node.removeAttribute('aria-hidden')
         }
       })
+      restoreCollectionScroll()
     }
   }, [mode])
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
+      if (event.key !== 'Escape') return
+      if (selected != null) {
         event.preventDefault()
-        close()
+        setSelected(null)
+        return
       }
+      event.preventDefault()
+      close()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [close])
+  }, [close, selected])
 
   function selectTab(next: TabId, focus = false) {
     setTab(next)
@@ -232,7 +246,7 @@ export default function RecordDetail({
                   className={`house-meta -mb-px border-b pb-2 ${focusRing} ${
                     selectedTab
                       ? 'border-[var(--house-ink)] text-[var(--house-ink)]'
-                      : 'border-transparent hover:text-[var(--house-orange)]'
+                      : 'border-transparent text-[var(--house-muted)] hover:text-[var(--house-orange)]'
                   }`}
                   onClick={() => selectTab(item.id)}
                 >
@@ -242,16 +256,17 @@ export default function RecordDetail({
             })}
           </div>
 
-          {tab === 'overview' && (
-            <div
-              role="tabpanel"
-              id="panel-overview"
-              aria-labelledby="tab-overview"
-              className="pt-6"
-            >
+          <div
+            role="tabpanel"
+            id="panel-overview"
+            aria-labelledby="tab-overview"
+            hidden={tab !== 'overview'}
+            tabIndex={0}
+            className="pt-6"
+          >
               {pressing.description && (
                 <div className="mb-8">
-                  <p className="max-w-xl font-sans text-base leading-relaxed text-[var(--house-ink)]">
+                  <p className="max-w-xl text-base leading-relaxed text-[var(--house-ink)]">
                     {pressing.description.text}
                   </p>
                 </div>
@@ -279,22 +294,15 @@ export default function RecordDetail({
               {facts.discogsUrl && (
                 <div className="mt-2">
                   <SourceLine source="discogs" href={facts.discogsUrl} />
-                  <p className="house-source mt-2">
-                    <a
-                      href="https://www.discogs.com/"
-                      className={`hover:text-[var(--house-orange)] ${focusRing}`}
-                    >
-                      Data provided by Discogs.
-                    </a>
-                  </p>
+                  <DiscogsCredit href={facts.discogsUrl} />
                 </div>
               )}
 
               <section className="mt-10" aria-label="connections">
                 <h2 className="house-meta mb-3">connections</h2>
                 {connections.length === 0 ? (
-                  <p className="font-mono text-sm text-[var(--house-dim)]">
-                    {CRATE_EMPTY_LINE}
+                  <p className="house-source">
+                    {pressingCheckedNoMatchLine(pressing) ?? CRATE_EMPTY_LINE}
                   </p>
                 ) : (
                   <ul className="list-none p-0">
@@ -319,15 +327,15 @@ export default function RecordDetail({
                 )}
               </section>
             </div>
-          )}
 
-          {tab === 'tracks' && (
-            <div
-              role="tabpanel"
-              id="panel-tracks"
-              aria-labelledby="tab-tracks"
-              className="pt-6"
-            >
+          <div
+            role="tabpanel"
+            id="panel-tracks"
+            aria-labelledby="tab-tracks"
+            hidden={tab !== 'tracks'}
+            tabIndex={0}
+            className="pt-6"
+          >
               {pressing.tracks.length === 0 ? (
                 <p className="font-mono text-sm text-[var(--house-dim)]">
                   {CRATE_EMPTY_LINE}
@@ -356,8 +364,10 @@ export default function RecordDetail({
                         <button
                           type="button"
                           aria-pressed={active}
+                          aria-expanded={active}
+                          aria-controls={extrasId}
                           className={`grid w-full grid-cols-[2.5rem_minmax(0,1fr)_auto] items-baseline gap-4 py-3 text-left ${focusRing} ${
-                            active ? 'text-[var(--house-ink)]' : ''
+                            active ? 'text-[var(--house-ink)]' : 'text-[var(--house-muted)]'
                           } hover:text-[var(--house-orange)]`}
                           onClick={() => {
                             setSelected(index)
@@ -389,29 +399,40 @@ export default function RecordDetail({
                 </>
               )}
 
-              <section className="mt-10" aria-label="track details">
+              <section
+                className="mt-10"
+                id={extrasId}
+                aria-labelledby={selectedTrack ? `${extrasId}-heading` : undefined}
+              >
                 {selectedTrack == null ? (
                   <p className="font-mono text-sm text-[var(--house-dim)]">
                     {CRATE_PICK_TRACK}
                   </p>
                 ) : (
-                  <TrackExtras
-                    checked={checkedDate(
-                      selectedRecording?.provenance.verifiedAt ??
-                        selectedRecording?.provenance.checkedAt ??
-                        pressing.lifecycles?.match.verifiedAt ??
-                        pressing.provenance.verifiedAt ??
-                        (pressing.provenance.lastError ? null : pressing.provenance.checkedAt)
-                    )}
-                    status={selectedTrack.recording.matchStatus}
-                    reason={selectedTrack.recording.reason}
-                    recording={selectedRecording}
-                    recordingUrl={selectedTrack.recording.recordingUrl}
-                  />
+                  <>
+                    <h2
+                      id={`${extrasId}-heading`}
+                      className="mb-3 text-sm text-[var(--house-ink)]"
+                    >
+                      {selectedTrack.title}
+                    </h2>
+                    <TrackExtras
+                      checked={checkedDate(
+                        selectedRecording?.provenance.verifiedAt ??
+                          selectedRecording?.provenance.checkedAt ??
+                          pressing.lifecycles?.match.verifiedAt ??
+                          pressing.provenance.verifiedAt ??
+                          (pressing.provenance.lastError ? null : pressing.provenance.checkedAt)
+                      )}
+                      status={selectedTrack.recording.matchStatus}
+                      reason={selectedTrack.recording.reason}
+                      recording={selectedRecording}
+                      recordingUrl={selectedTrack.recording.recordingUrl}
+                    />
+                  </>
                 )}
               </section>
             </div>
-          )}
         </div>
       </div>
     </article>
@@ -450,12 +471,15 @@ function RecordCover({
       <img
         src={src}
         alt={`${artist} — ${title}`}
-        className="aspect-square w-full border border-[var(--house-line)] object-cover"
+        loading="eager"
+        fetchPriority="high"
+        decoding="async"
+        className="aspect-square w-full max-w-[480px] border border-[var(--house-line)] object-cover min-[1280px]:max-w-none"
       />
     )
   }
   return (
-    <div className="flex aspect-square w-full items-center justify-center border border-[var(--house-line)] bg-[var(--house-line)]">
+    <div className="flex aspect-square w-full max-w-[480px] items-center justify-center border border-[var(--house-line)] bg-[var(--house-line)] min-[1280px]:max-w-none">
       {catno ? (
         <p className="font-mono text-sm text-[var(--house-dim)]">{catno}</p>
       ) : null}
@@ -466,7 +490,12 @@ function RecordCover({
 function SourceLine({ source, href }: { source: string; href: string }) {
   return (
     <p className="house-source mt-2">
-      <a href={href} className={`hover:text-[var(--house-orange)] ${focusRing}`} rel="noopener noreferrer" target="_blank">
+      <a
+        href={href}
+        className={`inline-flex min-h-6 items-center hover:text-[var(--house-orange)] ${focusRing}`}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
         {source}
       </a>
     </p>
@@ -490,30 +519,29 @@ function TrackExtras({
   const samplesFrom = recording?.samplesFrom ?? []
   const sampledIn = recording?.sampledIn ?? []
   const unmatched = status !== 'matched' || !recording
-  const statusLine =
-    status === 'pending' || !reason || reason === CRATE_NO_RECORDING
-      ? CRATE_EMPTY_LINE
-      : reason
+  const afterCheck = checkedNoMatchLine(status, reason, checked)
+
+  if (unmatched) {
+    return (
+      <p className="house-source">
+        {afterCheck ?? CRATE_EMPTY_LINE}
+      </p>
+    )
+  }
 
   return (
     <div>
-      {unmatched && (
-        <p className="house-source">
-          {statusLine}
-          {checked ? ` · checked ${checked}` : null}
-        </p>
-      )}
-      {!unmatched && recordingUrl && (
+      {recordingUrl && (
         <SourceLine source="musicbrainz" href={recordingUrl} />
       )}
-      {!unmatched && checked && (
+      {checked && (
         <p className="mt-2 font-mono text-[11px] text-[var(--house-dim)]">
           checked {checked}
         </p>
       )}
 
       <h3 className="house-meta mt-8">credits</h3>
-      {unmatched || credits.length === 0 ? (
+      {credits.length === 0 ? (
         <p className="mt-2 font-mono text-sm text-[var(--house-dim)]">{CRATE_EMPTY_LINE}</p>
       ) : (
         <ul className="mt-2 list-none p-0">
@@ -533,10 +561,10 @@ function TrackExtras({
       )}
 
       <h3 className="house-meta mt-8">samples from</h3>
-      <SampleList items={unmatched ? [] : samplesFrom} />
+      <SampleList items={samplesFrom} />
 
       <h3 className="house-meta mt-8">sampled in</h3>
-      <SampleList items={unmatched ? [] : sampledIn} />
+      <SampleList items={sampledIn} />
     </div>
   )
 }

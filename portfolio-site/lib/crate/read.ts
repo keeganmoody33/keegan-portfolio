@@ -6,7 +6,11 @@ import {
   type DiscogsRelease,
 } from '../discogs.ts'
 import { collectionReleaseId } from './sync.ts'
-import { getDefaultCrateStore, type CrateStore } from './store.ts'
+import {
+  getDefaultCrateStore,
+  VISIT_THROTTLE_SECONDS,
+  type CrateStore,
+} from './store.ts'
 import { CRATE_SCHEMA_VERSION, type StoredPressing, type TrackOccurrence } from './types.ts'
 import { isoFromMs, storedPressingHasVisitorFacts } from './preserve.ts'
 import { withReadableDescription } from './description.ts'
@@ -41,11 +45,35 @@ export function fixturePressing(releaseId: number): StoredPressing | null {
   return pressing ? hydratePressing(pressing) : null
 }
 
-function scheduleMissedPressing(store: CrateStore, releaseId: number): void {
+export async function visitEnqueueIfListed(
+  store: CrateStore,
+  releaseId: number,
+  listed: boolean,
+  collectionComplete: boolean
+): Promise<{ enqueued: boolean; throttled: boolean }> {
+  if (!listed || !collectionComplete) {
+    return { enqueued: false, throttled: false }
+  }
+  const acquired = await store.acquireVisitThrottle(VISIT_THROTTLE_SECONDS)
+  if (!acquired) {
+    return { enqueued: false, throttled: true }
+  }
+  await store.enqueue([releaseId], { front: false })
+  return { enqueued: true, throttled: false }
+}
+
+function scheduleListedPressing(
+  store: CrateStore,
+  releaseId: number,
+  listed: boolean,
+  collectionComplete: boolean
+): void {
   if (process.env.NEXT_PHASE === 'phase-production-build') return
+  if (!listed || !collectionComplete) return
   const work = async () => {
+    const scheduled = await visitEnqueueIfListed(store, releaseId, listed, collectionComplete)
+    if (!scheduled.enqueued) return
     const { processEnrichmentQueue } = await import('./enrich.ts')
-    await store.enqueue([releaseId], { front: true })
     await processEnrichmentQueue({ store }, 1)
   }
   if (process.env.NODE_TEST_CONTEXT) {
@@ -181,6 +209,9 @@ export async function readStoredPressing(
       if (stored && !storedPressingHasVisitorFacts(stored)) {
         const fixture = fixturePressing(releaseId)
         if (fixture) {
+          if (options.store === undefined) {
+            scheduleListedPressing(store, releaseId, Boolean(listed), collectionComplete)
+          }
           return {
             status: 'ok',
             pressing: presentPressing(fixture, listed),
@@ -189,7 +220,7 @@ export async function readStoredPressing(
         }
       }
       if (!stored && options.store === undefined) {
-        scheduleMissedPressing(store, releaseId)
+        scheduleListedPressing(store, releaseId, Boolean(listed), collectionComplete)
       }
     } catch {
       const fixture = fixturePressing(releaseId)

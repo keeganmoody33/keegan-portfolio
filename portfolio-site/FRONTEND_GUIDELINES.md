@@ -303,8 +303,10 @@ Animated 60px x 60px grid pattern on body:
 | `.log-success` | Green log entry | `color: #4ADE80` |
 | `.log-warn` | Orange log entry | `color: var(--accent-orange)` |
 | `.log-info` | Muted log entry | `color: var(--text-muted)` |
-| `.house-meta` | House metadata | Roboto Mono, 0.625rem, 0.22em tracking, uppercase |
-| `.house-source` | Source lines | Roboto Mono, 0.625rem, 0.16em tracking, lowercase, `--house-dim`. Use for every source (`discogs`, `musicbrainz`) and for the checked-no-match empty line. |
+| `.house-meta` | House metadata | Roboto Mono, 0.625rem, 0.22em tracking, uppercase, `--house-muted`. Lives in `@layer components` so utilities (active-tab ink) can override. `[aria-selected=true]` is ink. |
+| `.house-source` | Source lines | Roboto Mono, 0.625rem, 0.16em tracking, lowercase, `--house-dim`. Use for every source (`discogs`, `musicbrainz`) and for the checked-no-match empty line. Links use `min-h-6` so the target is ≥24px without changing the type. |
+| `.house-credit` | Discogs TOU line | Same size/family/dim as `.house-source`, **no** `text-transform`. Exact string `Data provided by Discogs.` linking the pressing URL (detail) or the lecturesfrom collection page (grid). No `nofollow`. |
+| `.house-skip` | Skip to content | Same family/size/tracking as `.house-source`, ink on house bg. Visually hidden (`clip-path`) until focused. |
 | `.house-lcd` | LCD chip | `--house-lcd` on `--house-lcd-ink`, Doto 800, `10px 16px` padding. Defined, unused. |
 | `.house-rail` | House top rail | Three columns; atl / issue / year always visible; gutters `px-6 sm:px-10` |
 | `.house-wordmark` | Root lockup | Chakra Petch 600, tracking `-0.01em`, `line-height: 0.85`. `min(11.5rem, 16.5cqi)` so `lecturesfrom` keeps the Space Grotesk width (0.961 of `min(12rem, 17.2cqi)`). Entrance is a 700ms opacity fade (`houseLockup`). Last `o` in `from` is a static `LogoMark` (owner line-only PNG trace; `variant` default `'line'` on this branch) over an in-flow transparent o (advance from the glyph; circle outer ink fills x-height `0.498em`). Full word is `.sr-only`; painted run is `aria-hidden`. Instant under `prefers-reduced-motion`. Slot `overflow-x: clip`. Nameplate and Hathaway SVGs are not mounted. |
@@ -413,7 +415,7 @@ Two dialects. House pages (`/`, `/catalog`, sleeves, `/collection`, `/legal`) sh
 - **Wordmark:** size to the content slot (`clamp` / `cqi`). Never `18vw` or a raw `12rem` that can overflow. Desktop cap stays `12rem`.
 - **Spines:** format and catalog number stay visible at 375 (second meta line). Status column is the last grid track so it meets the hairline and the SPINES header. Do not leave empty `auto` tracks with `gap` when columns are `display: none`.
 - **No-art Discogs tiles:** `NoArtTile` (hairline + artist/title in meta type). `IssuePlate` is for house sleeves only.
-- **Record detail:** house dark only. At 1280, cover left and rows right. At 375, full-width cover then rows. Hairlines between sections. No cards, radius, or shadows. Title is Chakra Petch 600 tracking `-0.01em`, Discogs case untouched. Artist muted on its own line. Description Space Grotesk, a tight 2–4 sentence paraphrase of Discogs pressing notes (never a raw matrix/runout dump; drop if the notes are thin). Labels `.house-meta`. Exactly one dim `.house-source` `discogs` line after the fact rows, linking the pressing — no per-row sources. Next to it, `Data provided by Discogs.` links to discogs.com without `nofollow`. House footer: dim mono Discogs API / Zink Media trademark line. Tabs OVERVIEW / TRACKS: active ink + 1px ink underline, inactive muted, hover orange. Cover is square, same thumbnail as the grid, 1px `--house-line` (`#242424`) border, no radius or shadow. Orange is hover only — never the active tab, never a fill. Empty copy: `nothing on file yet` / `pick a track for credits and samples` / `{reason} · checked YYYY-MM-DD` / `couldn't reach discogs`. Missing cover is `#242424` with catno centered.
+- **Record detail:** house dark only. At 1280, cover left and rows right. At 375 and 768, stacked; cap the cover at `max-w-[480px]` so the title is on the first screen. Hairlines between sections. No cards, radius, or shadows. Title is Chakra Petch 600 tracking `-0.01em`, Discogs case untouched. Artist muted on its own line. Description Space Grotesk (inherit house sans — do not add `font-sans`, which is the system stack). Labels `.house-meta`. After the fact rows: lowercase `.house-source` `discogs` plus exact-case `.house-credit` `Data provided by Discogs.`, both linking `facts.discogsUrl` (not the homepage, no `nofollow`). `/collection` grid carries the same credit line to `https://www.discogs.com/user/lecturesfrom/collection`. House footer: dim mono Discogs API / Zink Media trademark line. Tabs OVERVIEW / TRACKS: active ink + 1px ink underline (`[aria-selected=true]`), inactive muted, hover orange. Selected track title is ink; other playable titles muted. Credits block is headed by the track title as an `h2`. Cover is square, same thumbnail as the grid, 1px `--house-line` (`#242424`) border, no radius or shadow. Orange is hover only — never the active tab, never a fill. Empty copy: `nothing on file yet` / `pick a track for credits and samples` / `{reason} · checked YYYY-MM-DD` / `couldn't reach discogs`. After a check, unresolved tracks and empty Overview connections render **only** the checked-no-match line — no extra `nothing on file yet` blocks. Missing cover is `#242424` with catno centered.
 
 ### Current Responsive Rules
 
@@ -439,20 +441,20 @@ Person-page components render the same layout across breakpoints.
 
 ### What Exists
 
-- Images have `alt` attributes
+- Images have `alt` attributes. Collection grid covers use `alt=""` (caption is the accessible name). Record detail cover keeps `${artist} — ${title}` and loads `eager` / `fetchPriority=high`.
 - The wordmark-o `LogoMark` is `decorative` (`aria-hidden` + `focusable="false"`) so the `h1` wordmark is the only accessible name. The wordmark keeps a `.sr-only` full word `lecturesfrom`; the painted run is `aria-hidden`. Group ids omitted. Standalone `LogoMark` uses pass `decorative={false}` (`<title>` lecturesfrom).
 - HouseFooter does not render the Motion switch while the wordmark o is static. `MotionSwitch.tsx`, pause CSS, and the root layout head script stay in the repo for restore. `/keeganmoody33` does not share this footer (marquee / `gridShift` remain).
-- External links have `target="_blank"` and `rel="noopener noreferrer"`
+- External links have `target="_blank"` and `rel="noopener noreferrer"`. House source links use `min-h-6` so the target is at least 24px.
 - Form submission via Enter key (Chat)
 - Disabled states on buttons during loading
 - Theme toggle buttons have `title` attributes
 - Lazy loading on images (`loading="lazy"`)
+- HouseShell skip-to-content (`.house-skip`) is visually hidden until focused, then jumps to `#house-content`. Collection overlay: first Escape clears a selected track, second closes (`router.back()`) and restores `#crate-cover-{id}`. Page mode Escape and close always `router.push('/collection')` (never `history.back()`), after the same track-first Escape. Overlay-only autofocus on `collection`. Both OVERVIEW/TRACKS panels stay mounted (`hidden` + `tabIndex={0}` on the inactive). Track rows expose `aria-expanded` / `aria-controls`. Selected title is an `h2` over the extras.
 
 ### What's Missing (Improvement Areas)
 
 - No ARIA labels on most interactive elements
 - No keyboard navigation beyond default browser behavior
-- No skip-to-content link
 - No focus visible indicators beyond browser defaults
 - Hover-only interactions on Publications (no keyboard alternative)
 - No `aria-live` regions for dynamic content (chat messages, analysis results). Exception: `NowPlayingLiveRegion` renders an empty polite live region (`#yt-now-playing-live`, `sr-only`) on the career page at load; drop writes "Now Playing unavailable". Tailwind safelists `sr-only` and scans `components/` (not `lib/`) so the live region is hidden without emitting unused utilities from catalog prose.

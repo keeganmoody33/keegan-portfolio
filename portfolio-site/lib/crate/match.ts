@@ -66,7 +66,8 @@ export function coreTitle(value: string): string {
 
 export function normalizePosition(value: string): string {
   const compact = value.toLowerCase().replace(/[\s./_]/g, '')
-  return compact.replace(/([^0-9])-+|-+(?=[^0-9])/g, '$1')
+  const discOne = compact.replace(/^1-(?=\d)/, '')
+  return discOne.replace(/([^0-9])-+|-+(?=[^0-9])/g, '$1')
 }
 
 export function titlesSimilar(a: string, b: string): boolean {
@@ -306,7 +307,8 @@ function uniqueAcceptable(
   context: ReleaseMatchContext | undefined,
   via: ReleaseMatchVia
 ): ReleaseMatchResult | null {
-  const unique = uniqueByMbid(hits)
+  const scored = hits.filter((hit) => (hit.score ?? 0) >= UNIQUE_SEARCH_SCORE)
+  const unique = uniqueByMbid(scored)
   if (unique.length === 0) return null
   if (unique.length > 1) {
     if (via === 'artist_title') {

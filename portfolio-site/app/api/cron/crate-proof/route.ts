@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cronGate } from '@/lib/crate/cron-auth'
-import { parseProofAction, parseProofIds, runCrateProof } from '@/lib/crate/proof'
+import {
+  crateProofAllowed,
+  parseProofAction,
+  parseProofIds,
+  runCrateProof,
+} from '@/lib/crate/proof'
 import { getDefaultCrateStore } from '@/lib/crate/store'
 
 export const runtime = 'nodejs'
@@ -8,6 +13,13 @@ export const maxDuration = 60
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
+  if (!crateProofAllowed()) {
+    return NextResponse.json(
+      { error: 'proof refused in production' },
+      { status: 404, headers: { 'Cache-Control': 'no-store' } }
+    )
+  }
+
   const denied = cronGate(request)
   if (denied) return denied
 

@@ -1,7 +1,9 @@
 import { Redis } from '@upstash/redis'
 import { randomUUID } from 'node:crypto'
 import {
+  REDIS_PRESSING_READ_INIT,
   REDIS_READ_CACHE,
+  assertPrefixedRedisKey,
   createUpstashRedis,
   discogsKeyPrefix,
   resolveRedisRestConfig,
@@ -11,7 +13,7 @@ import {
 import type { BackfillState, CollectionEntry, DeadLetter, StoredPressing, StoredRecording } from './types.ts'
 
 export const VISIT_THROTTLE_SECONDS = 300
-export const INFLIGHT_TTL_SECONDS = 60
+export const INFLIGHT_TTL_SECONDS = 90
 
 export const TAKE_LUA = `
 local now = tonumber(ARGV[1])
@@ -32,16 +34,20 @@ return taken
 
 export const ENQUEUE_LUA = `
 local score = tonumber(ARGV[1])
-local front = ARGV[2]
+local retry = ARGV[2]
 local added = {}
 for i = 3, #ARGV do
   local id = ARGV[i]
-  if redis.call('SISMEMBER', KEYS[2], id) == 0 then
-    redis.call('SADD', KEYS[2], id)
-    redis.call('ZADD', KEYS[1], score, id)
-    table.insert(added, id)
-  elseif front == '1' then
-    redis.call('ZADD', KEYS[1], 0, id)
+  if retry ~= '1' and redis.call('SISMEMBER', KEYS[3], id) == 1 then
+  else
+    if retry == '1' then
+      redis.call('SREM', KEYS[3], id)
+    end
+    if redis.call('SISMEMBER', KEYS[2], id) == 0 then
+      redis.call('SADD', KEYS[2], id)
+      redis.call('ZADD', KEYS[1], score, id)
+      table.insert(added, id)
+    end
   end
 end
 return added
@@ -56,6 +62,7 @@ return 1
 
 export const NACK_LUA = `
 redis.call('ZADD', KEYS[1], tonumber(ARGV[2]), ARGV[1])
+redis.call('SADD', KEYS[2], ARGV[1])
 redis.call('DEL', KEYS[3])
 return 1
 `
@@ -79,6 +86,7 @@ export type CrateRedisKeys = {
   pressing: (releaseId: number) => string
   recording: (mbid: string) => string
   inflight: (releaseId: number) => string
+  pressingDraft: (releaseId: number) => string
   dead: string
   unresolved: string
   inspect: string
@@ -88,21 +96,26 @@ export type CrateRedisKeys = {
 export function crateRedisKeys(env: Record<string, string | undefined> = process.env): CrateRedisKeys {
   const prefix = discogsKeyPrefix(env)
   return {
-    prefix,
-    queue: `${prefix}crate:queue:v1`,
-    queued: `${prefix}crate:queued:v1`,
-    seen: `${prefix}crate:seen:v1`,
-    enrichLock: `${prefix}crate:enrich:lock:v1`,
-    enrichMeta: `${prefix}crate:enrich:meta:v1`,
-    visitThrottle: `${prefix}crate:visit:v1`,
-    inflightPrefix: `${prefix}crate:inflight:`,
-    pressing: (releaseId: number) => `${prefix}crate:pressing:${releaseId}:v1`,
-    recording: (mbid: string) => `${prefix}crate:recording:${mbid}:v1`,
-    inflight: (releaseId: number) => `${prefix}crate:inflight:${releaseId}:v1`,
-    dead: `${prefix}crate:dead:v1`,
-    unresolved: `${prefix}crate:unresolved:v1`,
-    inspect: `${prefix}crate:inspect:v1`,
-    backfill: `${prefix}crate:backfill:v1`,
+    prefix: assertPrefixedRedisKey(prefix, env),
+    queue: assertPrefixedRedisKey(`${prefix}crate:queue:v1`, env),
+    queued: assertPrefixedRedisKey(`${prefix}crate:queued:v1`, env),
+    seen: assertPrefixedRedisKey(`${prefix}crate:seen:v1`, env),
+    enrichLock: assertPrefixedRedisKey(`${prefix}crate:enrich:lock:v1`, env),
+    enrichMeta: assertPrefixedRedisKey(`${prefix}crate:enrich:meta:v1`, env),
+    visitThrottle: assertPrefixedRedisKey(`${prefix}crate:visit:v1`, env),
+    inflightPrefix: assertPrefixedRedisKey(`${prefix}crate:inflight:`, env),
+    pressing: (releaseId: number) =>
+      assertPrefixedRedisKey(`${prefix}crate:pressing:${releaseId}:v1`, env),
+    recording: (mbid: string) =>
+      assertPrefixedRedisKey(`${prefix}crate:recording:${mbid}:v1`, env),
+    inflight: (releaseId: number) =>
+      assertPrefixedRedisKey(`${prefix}crate:inflight:${releaseId}:v1`, env),
+    pressingDraft: (releaseId: number) =>
+      assertPrefixedRedisKey(`${prefix}crate:pressing:${releaseId}:draft:v1`, env),
+    dead: assertPrefixedRedisKey(`${prefix}crate:dead:v1`, env),
+    unresolved: assertPrefixedRedisKey(`${prefix}crate:unresolved:v1`, env),
+    inspect: assertPrefixedRedisKey(`${prefix}crate:inspect:v1`, env),
+    backfill: assertPrefixedRedisKey(`${prefix}crate:backfill:v1`, env),
   }
 }
 
@@ -110,12 +123,17 @@ export type EnqueueOptions = {
   front?: boolean
   nowMs?: number
   score?: number
+  retry?: boolean
 }
 
 export type CrateStore = {
   getPressing(releaseId: number): Promise<StoredPressing | null>
   getPressings(releaseIds: number[]): Promise<Map<number, StoredPressing>>
   setPressing(pressing: StoredPressing): Promise<void>
+  setDraftPressing(pressing: StoredPressing): Promise<void>
+  getDraftPressing(releaseId: number): Promise<StoredPressing | null>
+  commitDraftPressing(releaseId: number): Promise<void>
+  discardDraftPressing(releaseId: number): Promise<void>
   getRecording(mbid: string): Promise<StoredRecording | null>
   setRecording(recording: StoredRecording): Promise<void>
   getQueue(): Promise<number[]>
@@ -137,6 +155,7 @@ export type CrateStore = {
   getInspect(): Promise<DeadLetter[]>
   getBackfill(): Promise<BackfillState | null>
   setBackfill(state: BackfillState): Promise<void>
+  purgePressing(releaseId: number): Promise<void>
 }
 
 export function randomLockToken(): string {
@@ -201,16 +220,23 @@ class RedisCrateStore implements CrateStore {
   private readonly keys: CrateRedisKeys
   private readonly readRedis: Redis
   private readonly writeRedis: Redis
+  private readonly pressingReadRedis: Redis
 
-  constructor(keys: CrateRedisKeys, readRedis: Redis, writeRedis: Redis) {
+  constructor(
+    keys: CrateRedisKeys,
+    readRedis: Redis,
+    writeRedis: Redis,
+    pressingReadRedis: Redis
+  ) {
     this.keys = keys
     this.readRedis = readRedis
     this.writeRedis = writeRedis
+    this.pressingReadRedis = pressingReadRedis
   }
 
   async getPressing(releaseId: number): Promise<StoredPressing | null> {
     if (process.env.NEXT_PHASE === 'phase-production-build') return null
-    const value = await this.readRedis.get<unknown>(this.keys.pressing(releaseId))
+    const value = await this.pressingReadRedis.get<unknown>(this.keys.pressing(releaseId))
     return isStoredPressing(value) ? value : null
   }
 
@@ -223,7 +249,7 @@ class RedisCrateStore implements CrateStore {
     for (let i = 0; i < ids.length; i += chunkSize) {
       const chunk = ids.slice(i, i + chunkSize)
       const keys = chunk.map((id) => this.keys.pressing(id))
-      const values = await this.readRedis.mget<(unknown | null)[]>(...keys)
+      const values = await this.pressingReadRedis.mget<(unknown | null)[]>(...keys)
       const rows = Array.isArray(values) ? values : []
       chunk.forEach((id, index) => {
         const value = rows[index]
@@ -235,6 +261,30 @@ class RedisCrateStore implements CrateStore {
 
   async setPressing(pressing: StoredPressing): Promise<void> {
     await this.writeRedis.set(this.keys.pressing(pressing.releaseId), pressing)
+    await this.writeRedis.del(this.keys.pressingDraft(pressing.releaseId))
+  }
+
+  async setDraftPressing(pressing: StoredPressing): Promise<void> {
+    await this.writeRedis.set(this.keys.pressingDraft(pressing.releaseId), pressing)
+  }
+
+  async getDraftPressing(releaseId: number): Promise<StoredPressing | null> {
+    if (process.env.NEXT_PHASE === 'phase-production-build') return null
+    const value = await this.writeRedis.get<unknown>(this.keys.pressingDraft(releaseId))
+    return isStoredPressing(value) ? value : null
+  }
+
+  async commitDraftPressing(releaseId: number): Promise<void> {
+    const draft = await this.writeRedis.get<unknown>(this.keys.pressingDraft(releaseId))
+    if (!isStoredPressing(draft)) return
+    const pipeline = this.writeRedis.pipeline()
+    pipeline.set(this.keys.pressing(releaseId), draft)
+    pipeline.del(this.keys.pressingDraft(releaseId))
+    await pipeline.exec()
+  }
+
+  async discardDraftPressing(releaseId: number): Promise<void> {
+    await this.writeRedis.del(this.keys.pressingDraft(releaseId))
   }
 
   async getRecording(mbid: string): Promise<StoredRecording | null> {
@@ -259,8 +309,8 @@ class RedisCrateStore implements CrateStore {
     const score = options.score ?? (options.front ? 0 : (options.nowMs ?? Date.now()))
     const added = await this.writeRedis.eval<string[], unknown>(
       ENQUEUE_LUA,
-      [this.keys.queue, this.keys.queued],
-      [String(score), options.front ? '1' : '0', ...ids.map(String)]
+      [this.keys.queue, this.keys.queued, this.keys.dead],
+      [String(score), options.retry ? '1' : '0', ...ids.map(String)]
     )
     return asNumberArray(added)
   }
@@ -382,10 +432,21 @@ class RedisCrateStore implements CrateStore {
   async setBackfill(state: BackfillState): Promise<void> {
     await this.writeRedis.set(this.keys.backfill, state)
   }
+
+  async purgePressing(releaseId: number): Promise<void> {
+    await this.ack(releaseId)
+    await this.writeRedis.del(this.keys.pressing(releaseId), this.keys.pressingDraft(releaseId))
+    const pipeline = this.writeRedis.pipeline()
+    pipeline.srem(this.keys.dead, String(releaseId))
+    pipeline.srem(this.keys.unresolved, String(releaseId))
+    pipeline.hdel(this.keys.inspect, String(releaseId))
+    await pipeline.exec()
+  }
 }
 
 export type MemoryCrateStore = CrateStore & {
   pressings: Record<number, StoredPressing>
+  drafts: Record<number, StoredPressing>
   recordings: Record<string, StoredRecording>
   queue: Array<{ id: number; score: number }>
   queued: Set<number>
@@ -417,6 +478,7 @@ export function createMemoryCrateStore(
     : []
   const store: MemoryCrateStore = {
     pressings: { ...(initial.pressings ?? {}) },
+    drafts: {},
     recordings: { ...(initial.recordings ?? {}) },
     queue: initialQueue.filter((row) => row.id > 0),
     queued: new Set(initialQueue.map((row) => row.id).filter((id) => id > 0)),
@@ -443,6 +505,22 @@ export function createMemoryCrateStore(
     },
     async setPressing(pressing: StoredPressing) {
       store.pressings[pressing.releaseId] = pressing
+      delete store.drafts[pressing.releaseId]
+    },
+    async setDraftPressing(pressing: StoredPressing) {
+      store.drafts[pressing.releaseId] = pressing
+    },
+    async getDraftPressing(releaseId: number) {
+      return store.drafts[releaseId] ?? null
+    },
+    async commitDraftPressing(releaseId: number) {
+      const draft = store.drafts[releaseId]
+      if (!draft) return
+      store.pressings[releaseId] = draft
+      delete store.drafts[releaseId]
+    },
+    async discardDraftPressing(releaseId: number) {
+      delete store.drafts[releaseId]
     },
     async getRecording(mbid: string) {
       return store.recordings[mbid] ?? null
@@ -460,11 +538,13 @@ export function createMemoryCrateStore(
       const added: number[] = []
       const score = options.score ?? (options.front ? 0 : (options.nowMs ?? store.now()))
       for (const id of ids) {
+        if (!options.retry && store.dead.has(id)) {
+          continue
+        }
+        if (options.retry) {
+          store.dead.delete(id)
+        }
         if (store.queued.has(id)) {
-          if (options.front || options.score != null) {
-            const existing = store.queue.find((row) => row.id === id)
-            if (existing) existing.score = options.score ?? 0
-          }
           continue
         }
         store.queued.add(id)
@@ -553,6 +633,14 @@ export function createMemoryCrateStore(
     async setBackfill(state: BackfillState) {
       store.backfill = state
     },
+    async purgePressing(releaseId: number) {
+      await store.ack(releaseId)
+      delete store.pressings[releaseId]
+      delete store.drafts[releaseId]
+      store.dead.delete(releaseId)
+      store.unresolved.delete(releaseId)
+      store.inspect.delete(releaseId)
+    },
   }
   return store
 }
@@ -567,7 +655,8 @@ export function createRedisCrateStore(
   const keys = crateRedisKeys(env)
   const readRedis = createUpstashRedis(config, { cache: REDIS_READ_CACHE }, fetchImpl)
   const writeRedis = createUpstashRedis(config, { cache: 'no-store' }, fetchImpl)
-  return new RedisCrateStore(keys, readRedis, writeRedis)
+  const pressingReadRedis = createUpstashRedis(config, REDIS_PRESSING_READ_INIT, fetchImpl)
+  return new RedisCrateStore(keys, readRedis, writeRedis, pressingReadRedis)
 }
 
 export function getDefaultCrateStore(

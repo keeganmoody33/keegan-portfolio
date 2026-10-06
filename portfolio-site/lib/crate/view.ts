@@ -1,4 +1,4 @@
-import type { Credit, SampleLink, StoredPressing, StoredRecording } from './types.ts'
+import { CRATE_NO_RECORDING, type Credit, type SampleLink, type StoredPressing, type StoredRecording } from './types.ts'
 
 export type Connection = {
   label: string
@@ -12,6 +12,31 @@ export function checkedDate(iso: string | null | undefined): string | null {
   const parsed = Date.parse(iso)
   if (!Number.isFinite(parsed)) return null
   return new Date(parsed).toISOString().slice(0, 10)
+}
+
+export function checkedNoMatchLine(
+  status: string,
+  reason: string,
+  checked: string | null
+): string | null {
+  if (status === 'pending' || status === 'matched') return null
+  if (status !== 'unmatched' && status !== 'ambiguous') return null
+  if (!checked) return null
+  const text = reason.trim()
+  if (!text || text === CRATE_NO_RECORDING) return null
+  return `${text} · checked ${checked}`
+}
+
+export function pressingCheckedNoMatchLine(pressing: StoredPressing): string | null {
+  return checkedNoMatchLine(
+    pressing.provenance.matchStatus,
+    pressing.provenance.reason,
+    checkedDate(
+      pressing.provenance.verifiedAt ??
+        pressing.lifecycles?.match.verifiedAt ??
+        (pressing.provenance.lastError ? null : pressing.provenance.checkedAt)
+    )
+  )
 }
 
 export function overviewConnections(pressing: StoredPressing, limit = 3): Connection[] {

@@ -33,7 +33,7 @@ export default function CollectionGrid({
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={src}
-            alt={`${release.artist} — ${release.title}`}
+            alt=""
             loading={eager ? 'eager' : 'lazy'}
             fetchPriority={index === 0 ? 'high' : undefined}
             decoding="async"

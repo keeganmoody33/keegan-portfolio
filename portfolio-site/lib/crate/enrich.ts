@@ -65,10 +65,20 @@ import {
 
 export { sentencesFrom } from './description.ts'
 
-export const ENRICH_LOCK_SECONDS = 60
+export const ENRICH_LOCK_SECONDS = 90
 export const ENRICH_BATCH_DEFAULT = 1
 export const ENRICH_BUDGET_MS = 45_000
 export const ENRICH_TAKE_FLOOR_MS = 8_000
+export const WORKER_MAX_DURATION_MS = 60_000
+export const WORKER_DEADLINE_MARGIN_MS = 8_000
+
+export function workerDeadlineMs(nowMs = Date.now()): number {
+  return nowMs + WORKER_MAX_DURATION_MS - WORKER_DEADLINE_MARGIN_MS
+}
+
+export function remainingBudgetMs(deadlineMs: number, nowMs: number): number {
+  return Math.max(0, deadlineMs - nowMs)
+}
 
 export type EnrichDeps = {
   store: CrateStore
@@ -81,6 +91,8 @@ export type EnrichDeps = {
   takeFloorMs?: number
   lockToken?: string
   lockTtlSeconds?: number
+  inflightTtlSeconds?: number
+  deadlineMs?: number
   forceRefresh?: boolean
 }
 
@@ -136,9 +148,10 @@ export function failRefreshFromEnv(
   releaseId: number,
   env: Record<string, string | undefined> = process.env
 ): boolean {
+  if (env.VERCEL_ENV === 'production') return false
+  if (env.NODE_TEST_CONTEXT || env.NODE_ENV === 'test') return false
   const raw = env.CRATE_ENRICH_FAIL_IDS?.trim()
-  if (!raw) return false
-  if (raw === '*') return true
+  if (!raw || raw === '*') return false
   return raw.split(',').some((part) => part.trim() === String(releaseId))
 }
 
@@ -468,7 +481,7 @@ export async function enrichPressing(
       coverage: { tracks: playable.length, matched: 0, withCredits: 0, withSamples: 0 },
       checkpoint: { stage: skipMatch ? 'research' : 'match', researchCursor: previous?.checkpoint?.researchCursor ?? 0 },
     })
-    await deps.store.setPressing(pressingDraft)
+    await deps.store.setDraftPressing(pressingDraft)
 
     tracks = pressingDraft.tracks
     let mbRelease = pressingDraft.mbRelease
@@ -497,7 +510,7 @@ export async function enrichPressing(
       }
       matchCycle = touchVerified(priorCycles.match, nowIso)
       researchCursor = 0
-      await deps.store.setPressing(
+      await deps.store.setDraftPressing(
         hydratePressing({
           ...pressingDraft,
           tracks,
@@ -541,6 +554,7 @@ export async function enrichPressing(
       try {
         const doc = await mb.getRecording(mbid)
         if (!doc) {
+          if (previousRecording) recordings[mbid] = previousRecording
           researchCursor = index + 1
           continue
         }
@@ -567,7 +581,7 @@ export async function enrichPressing(
         await deps.store.setRecording(recording)
         researchCursor = index + 1
         researchCycle = touchVerified(researchCycle, nowIso)
-        await deps.store.setPressing(
+        await deps.store.setDraftPressing(
           hydratePressing({
             ...pressingDraft,
             tracks,
@@ -646,8 +660,10 @@ export async function enrichPressing(
     return pressing
   } catch (error) {
     const kind = errorKind(error)
+    const draft = await deps.store.getDraftPressing(releaseId)
+    const latest = storedPressingHasVisitorFacts(draft) ? draft : previous
     const preserved = preservePressingOnFailure(
-      previous,
+      latest,
       nowMs,
       kind,
       errorMessage(error),
@@ -683,10 +699,48 @@ export async function enrichPressing(
 
 export type EnrichQueueResult = {
   processed: number[]
+  completed: number[]
+  failed: number[]
+  unresolved: number[]
   skipped: boolean
   stoppedOnRateLimit: boolean
   stoppedOnAuth: boolean
   mbRequests: number
+}
+
+export function classifyQueueOutcome(pressing: StoredPressing): 'completed' | 'failed' | 'unresolved' {
+  const kind = pressing.provenance.lastError?.kind
+  if (kind === 'exhausted') return 'failed'
+  if (kind === 'auth' || kind === 'not_found') return 'unresolved'
+  if (
+    pressing.provenance.matchStatus === 'unmatched' ||
+    pressing.provenance.matchStatus === 'ambiguous'
+  ) {
+    return 'unresolved'
+  }
+  if (kind === 'partial') return 'completed'
+  if (kind) return 'failed'
+  return 'completed'
+}
+
+function emptyQueueResult(skipped: boolean): EnrichQueueResult {
+  return {
+    processed: [],
+    completed: [],
+    failed: [],
+    unresolved: [],
+    skipped,
+    stoppedOnRateLimit: false,
+    stoppedOnAuth: false,
+    mbRequests: 0,
+  }
+}
+
+export function skippedAuthQueueResult(): EnrichQueueResult {
+  return {
+    ...emptyQueueResult(true),
+    stoppedOnAuth: true,
+  }
 }
 
 export async function processEnrichmentQueue(
@@ -697,28 +751,41 @@ export async function processEnrichmentQueue(
   const lockTtl = deps.lockTtlSeconds ?? ENRICH_LOCK_SECONDS
   const locked = await deps.store.acquireEnrichLock(lockTtl, token)
   if (!locked) {
-    return { processed: [], skipped: true, stoppedOnRateLimit: false, stoppedOnAuth: false, mbRequests: 0 }
+    return emptyQueueResult(true)
   }
 
   const now = deps.now ?? Date.now
   const started = now()
-  const budgetMs = deps.budgetMs ?? ENRICH_BUDGET_MS
   const takeFloorMs = deps.takeFloorMs ?? ENRICH_TAKE_FLOOR_MS
+  const deadlineMs =
+    deps.deadlineMs ?? started + (deps.budgetMs ?? ENRICH_BUDGET_MS)
+  const inflightTtl = deps.inflightTtlSeconds ?? INFLIGHT_TTL_SECONDS
   const cap = limit ?? Number.POSITIVE_INFINITY
   const mb = deps.mb ?? createMusicBrainzClient({ now: deps.now })
   const processed: number[] = []
+  const completed: number[] = []
+  const failed: number[] = []
+  const unresolved: number[] = []
   let stoppedOnRateLimit = false
   let stoppedOnAuth = false
 
+  const record = (releaseId: number, bucket: 'completed' | 'failed' | 'unresolved') => {
+    processed.push(releaseId)
+    if (bucket === 'completed') completed.push(releaseId)
+    else if (bucket === 'failed') failed.push(releaseId)
+    else unresolved.push(releaseId)
+  }
+
   try {
     while (processed.length < cap) {
-      if (now() - started >= budgetMs - takeFloorMs) break
-      const ids = await deps.store.takeDue(1, now(), INFLIGHT_TTL_SECONDS)
+      if (now() + takeFloorMs >= deadlineMs) break
+      const ids = await deps.store.takeDue(1, now(), inflightTtl)
       const releaseId = ids[0]
       if (releaseId == null) break
       try {
         const pressing = await enrichPressing(releaseId, { ...deps, mb })
         const kind = pressing.provenance.lastError?.kind
+        const outcome = classifyQueueOutcome(pressing)
         if (kind === 'auth') {
           console.error(
             JSON.stringify({
@@ -729,35 +796,38 @@ export async function processEnrichmentQueue(
             })
           )
           await deps.store.nack(releaseId, now() + TERMINAL_REFRESH_MS)
-          processed.push(releaseId)
+          record(releaseId, outcome)
           stoppedOnAuth = true
           break
         }
         if (kind === 'exhausted') {
           await deps.store.drop(releaseId)
-          processed.push(releaseId)
+          record(releaseId, outcome)
         } else if (kind === 'not_found') {
           await deps.store.drop(releaseId)
-          processed.push(releaseId)
+          record(releaseId, outcome)
         } else if (kind) {
           const retryAt = Date.parse(pressing.provenance.refreshAfter)
           await deps.store.nack(
             releaseId,
             Number.isFinite(retryAt) ? retryAt : now() + 60 * 60 * 1000
           )
-          processed.push(releaseId)
+          record(releaseId, outcome)
           if (kind === 'rate_limit') {
             stoppedOnRateLimit = true
             break
           }
         } else {
           await deps.store.ack(releaseId)
-          processed.push(releaseId)
+          record(releaseId, outcome)
         }
       } catch (error) {
         const retryAt = now() + 60 * 60 * 1000
         await deps.store.nack(releaseId, retryAt)
-        processed.push(releaseId)
+        record(
+          releaseId,
+          isMusicBrainzAuthError(error) || isDiscogsAuthError(error) ? 'unresolved' : 'failed'
+        )
         if (isMusicBrainzAuthError(error) || isDiscogsAuthError(error)) {
           stoppedOnAuth = true
           console.error(
@@ -786,13 +856,25 @@ export async function processEnrichmentQueue(
     JSON.stringify({
       event: 'crate-enrich',
       processed,
+      completed,
+      failed,
+      unresolved,
       skipped: false,
       stoppedOnRateLimit,
       stoppedOnAuth,
       mbRequests: mb.requestCount,
     })
   )
-  return { processed, skipped: false, stoppedOnRateLimit, stoppedOnAuth, mbRequests: mb.requestCount }
+  return {
+    processed,
+    completed,
+    failed,
+    unresolved,
+    skipped: false,
+    stoppedOnRateLimit,
+    stoppedOnAuth,
+    mbRequests: mb.requestCount,
+  }
 }
 
 export function releaseIdsFromCollection(collection: DiscogsCollection): number[] {

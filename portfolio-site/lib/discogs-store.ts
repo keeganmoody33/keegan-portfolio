@@ -5,9 +5,10 @@ import type { DiscogsCollection } from './discogs.ts'
 export const DISCOGS_SNAPSHOT_TTL_MS = 24 * 60 * 60 * 1000
 export const DISCOGS_REFRESH_LOCK_SECONDS = 120
 export const REDIS_ISR_REVALIDATE_SECONDS = 300
+export const REDIS_PRESSING_REVALIDATE_SECONDS = 60
 export const REDIS_READ_CACHE: RequestCache = 'no-store'
 
-export type DurableErrorKind = 'rate_limit' | 'unavailable' | 'partial'
+export type DurableErrorKind = 'rate_limit' | 'unavailable' | 'partial' | 'auth'
 
 export type DurableErrorRecord = {
   at: number
@@ -53,6 +54,10 @@ export const REDIS_DURABLE_READ_INIT: CachedFetchInit = {
   next: { revalidate: REDIS_ISR_REVALIDATE_SECONDS },
 }
 
+export const REDIS_PRESSING_READ_INIT: CachedFetchInit = {
+  next: { revalidate: REDIS_PRESSING_REVALIDATE_SECONDS },
+}
+
 export type UpstashFetch = (
   input: string,
   init?: CachedFetchInit
@@ -84,17 +89,38 @@ export function resolveRedisRestConfig(
   return null
 }
 
+const PRODUCTION_REDIS_PREFIX = 'lf:'
+const PREVIEW_REDIS_PREFIX = 'lf:preview:'
+
+function isProductionRedisNamespace(env: EnvMap): boolean {
+  if (env.VERCEL_ENV !== 'production') return false
+  const ref = env.VERCEL_GIT_COMMIT_REF
+  if (ref && ref !== 'main') return false
+  return true
+}
+
 export function discogsKeyPrefix(env: EnvMap = process.env): string {
-  return env.VERCEL_ENV === 'production' ? 'lf:' : 'lf:preview:'
+  return isProductionRedisNamespace(env) ? PRODUCTION_REDIS_PREFIX : PREVIEW_REDIS_PREFIX
+}
+
+export function assertPrefixedRedisKey(key: string, env: EnvMap = process.env): string {
+  const prefix = discogsKeyPrefix(env)
+  if (prefix === PREVIEW_REDIS_PREFIX && /^lf:(?!preview:)/.test(key)) {
+    throw new Error(`preview Redis must not write unprefixed key: ${key}`)
+  }
+  if (!key.startsWith(prefix)) {
+    throw new Error(`Redis key must start with ${prefix}`)
+  }
+  return key
 }
 
 export function discogsRedisKeys(env: EnvMap = process.env): DiscogsRedisKeys {
   const prefix = discogsKeyPrefix(env)
   return {
-    prefix,
-    collection: `${prefix}discogs:collection:v1`,
-    meta: `${prefix}discogs:meta:v1`,
-    lock: `${prefix}discogs:lock:v1`,
+    prefix: assertPrefixedRedisKey(prefix, env),
+    collection: assertPrefixedRedisKey(`${prefix}discogs:collection:v1`, env),
+    meta: assertPrefixedRedisKey(`${prefix}discogs:meta:v1`, env),
+    lock: assertPrefixedRedisKey(`${prefix}discogs:lock:v1`, env),
   }
 }
 
@@ -126,7 +152,8 @@ function parseMeta(value: unknown): DiscogsDurableMeta | null {
       typeof errorRecord.at === 'number' &&
       (errorRecord.kind === 'rate_limit' ||
         errorRecord.kind === 'unavailable' ||
-        errorRecord.kind === 'partial')
+        errorRecord.kind === 'partial' ||
+        errorRecord.kind === 'auth')
     ) {
       lastError = { at: errorRecord.at, kind: errorRecord.kind }
     }

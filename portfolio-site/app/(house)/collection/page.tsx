@@ -1,6 +1,7 @@
 import CollectionGrid from '@/components/house/CollectionGrid'
+import DiscogsCredit from '@/components/house/DiscogsCredit'
 import { getSleeveBySlug } from '@/lib/catalog'
-import { fetchFullCollection } from '@/lib/discogs'
+import { DISCOGS_COLLECTION_PAGE, fetchFullCollection } from '@/lib/discogs'
 import type { Metadata } from 'next'
 import { houseMetadata } from '@/lib/metadata'
 
@@ -58,6 +59,9 @@ export default async function CollectionPage() {
       )}
 
       <CollectionGrid releases={releases} />
+      <div className="mt-8">
+        <DiscogsCredit href={DISCOGS_COLLECTION_PAGE} />
+      </div>
     </div>
   )
 }

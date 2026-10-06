@@ -100,6 +100,9 @@ export type BackfillResult = {
   stoppedOnRateLimit: boolean
   skipped: boolean
   backfill: BackfillState
+  completedThis: number
+  failedThis: number
+  unresolvedThis: number
 }
 
 export async function runBackfill(
@@ -136,20 +139,23 @@ export async function runBackfill(
   }
   const mbStart = mb.requestCount
   const result = await processEnrichmentQueue(
-    { ...deps, mb, fetchDiscogs: wrappedFetch },
+    { ...deps, mb, fetchDiscogs: wrappedFetch, deadlineMs: deps.deadlineMs },
     options.limit
   )
   const mbRequests = previous.mbRequests + Math.max(0, mb.requestCount - mbStart)
 
   const dead = await store.getDead()
-  const unresolved = await store.getUnresolved()
-  const processed = result.processed.length
-  const nextCursor = Math.min(ids.length, cursor + processed)
+  const unresolvedSet = await store.getUnresolved()
+  const handled = result.processed.length
+  const completedThis = result.completed.length
+  const failedThis = result.failed.length
+  const unresolvedThis = result.unresolved.length
+  const nextCursor = Math.min(ids.length, cursor + handled)
   const elapsedMs = Math.max(1, now() - started)
   const minutes = elapsedMs / 60_000
-  const completed = previous.completed + processed
+  const completed = previous.completed + completedThis
   const remaining = Math.max(0, ids.length - nextCursor)
-  const releasesPerMin = completed > 0 ? processed / minutes : 0
+  const releasesPerMin = completedThis > 0 ? completedThis / minutes : 0
   const estimatedRemainingMs =
     releasesPerMin > 0 ? Math.round((remaining / releasesPerMin) * 60_000) : null
 
@@ -158,7 +164,7 @@ export async function runBackfill(
     startedAt: previous.startedAt,
     updatedAt: isoFromMs(now()),
     completed,
-    unresolved: unresolved.length,
+    unresolved: unresolvedSet.length,
     failed: dead.length,
     discogsRequests,
     mbRequests,
@@ -176,7 +182,7 @@ export async function runBackfill(
     prefix: crateRedisKeys().prefix,
     processed: result.processed,
     completed,
-    unresolved: unresolved.length,
+    unresolved: unresolvedSet.length,
     failed: dead.length,
     remaining,
     elapsedMs,
@@ -190,5 +196,8 @@ export async function runBackfill(
     stoppedOnRateLimit: result.stoppedOnRateLimit,
     skipped: result.skipped,
     backfill,
+    completedThis,
+    failedThis,
+    unresolvedThis,
   }
 }

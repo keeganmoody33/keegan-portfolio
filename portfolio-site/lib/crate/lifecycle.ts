@@ -141,7 +141,11 @@ export function shouldRetryFailure(
   return nowMs >= at
 }
 
-export function shouldQueuePressing(pressing: StoredPressing | null, nowMs: number): boolean {
+export function shouldQueuePressing(
+  pressing: StoredPressing | null,
+  nowMs: number,
+  env: Record<string, string | undefined> = process.env
+): boolean {
   if (!pressing) return true
   const cycles = pressing.lifecycles ?? defaultLifecycles(pressing.provenance)
   const refreshAfter = pressing.provenance.refreshAfter
@@ -156,6 +160,18 @@ export function shouldQueuePressing(pressing: StoredPressing | null, nowMs: numb
   ).length
   const cursor = pressing.checkpoint?.researchCursor ?? 0
   if (pressing.checkpoint?.stage === 'research' && cursor < matched && !pressing.provenance.lastError) {
+    return true
+  }
+  const refreshMs = researchRefreshWindowMs(env)
+  if (refreshMs == null) return false
+  const after = Date.parse(refreshAfter)
+  if (Number.isFinite(after) && nowMs >= after && !pressing.provenance.lastError) {
+    return true
+  }
+  const researchVerified = cycles.research.verifiedAt
+    ? Date.parse(cycles.research.verifiedAt)
+    : NaN
+  if (Number.isFinite(researchVerified) && nowMs - researchVerified >= refreshMs) {
     return true
   }
   return false

@@ -16,18 +16,19 @@ import {
   parseDurationToMs,
 } from './match.ts'
 import { keepPriorMatch, nextBackoffMs, preservePressingOnFailure, shouldRefreshPressing } from './preserve.ts'
-import { createMemoryCrateStore, crateRedisKeys, INFLIGHT_TTL_SECONDS, TAKE_LUA } from './store.ts'
+import { createMemoryCrateStore, crateRedisKeys, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
-import { enrichPressing, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom } from './enrich.ts'
+import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome } from './enrich.ts'
 import { isUnusableDiscogsNotes, resolveDescription, withReadableDescription } from './description.ts'
 import { COLLECTION_KEEP_PATH, scheduleKeepPing } from './keep-ping.ts'
-import { parseProofAction, PROOF_KILL_ID, runCrateProof } from './proof.ts'
+import { runCrateEnrichCron } from './keep.ts'
+import { crateProofAllowed, parseProofAction, PROOF_KILL_ID, runCrateProof } from './proof.ts'
 import type { MusicBrainzClient } from './musicbrainz.ts'
 import { CRATE_MAX_ATTEMPTS, CRATE_SCHEMA_VERSION, type StoredPressing } from './types.ts'
-import { mapRelease, parseDurableCollection } from '../discogs.ts'
-import { DiscogsAuthError, DiscogsNotFoundError } from '../discogs.ts'
-import { fixturePressing, parseReleaseParam, readStoredPressing } from './read.ts'
-import { factRows } from './view.ts'
+import { mapRelease, parseDurableCollection, DiscogsAuthError, DiscogsNotFoundError, createMemoryLastGoodStore } from '../discogs.ts'
+import { createMemoryDurableStore } from '../discogs-store.ts'
+import { fixturePressing, parseReleaseParam, readStoredPressing, visitEnqueueIfListed } from './read.ts'
+import { factRows, pressingCheckedNoMatchLine } from './view.ts'
 import { cronSecretEqual } from './cron-auth.ts'
 import { coverageOf, isPlayableOccurrence, shouldQueuePressing } from './lifecycle.ts'
 import { inspectCrate, runBackfill } from './backfill.ts'
@@ -105,7 +106,9 @@ describe('duration and title helpers', () => {
     )
     assert.equal(normalizePosition('A-1'), 'a1')
     assert.equal(normalizePosition('A+1'), 'a+1')
-    assert.equal(normalizePosition('1-1'), '1-1')
+    assert.equal(normalizePosition('1-1'), '1')
+    assert.equal(normalizePosition('1-3'), '3')
+    assert.equal(normalizePosition('2-1'), '2-1')
     assert.equal(normalizePosition('11'), '11')
   })
 })
@@ -342,6 +345,23 @@ describe('failure preservation', () => {
     assert.equal(shouldRefreshPressing(stale, Date.parse('2026-10-06T00:00:00.000Z')), false)
     assert.equal(
       shouldRefreshPressing(pressingStub(), Date.parse('2026-10-06T00:00:00.000Z')),
+      false
+    )
+  })
+
+  it('re-queues a successful pressing after refreshAfter when research refresh is on', () => {
+    const stale = pressingStub({
+      provenance: {
+        ...pressingStub().provenance,
+        refreshAfter: '2026-01-01T00:00:00.000Z',
+        lastError: null,
+      },
+    })
+    const nowMs = Date.parse('2026-10-06T00:00:00.000Z')
+    assert.equal(shouldQueuePressing(stale, nowMs, {}), false)
+    assert.equal(shouldQueuePressing(stale, nowMs, { CRATE_RESEARCH_REFRESH: '1' }), true)
+    assert.equal(
+      shouldQueuePressing(pressingStub(), nowMs, { CRATE_RESEARCH_REFRESH: '1' }),
       false
     )
   })
@@ -587,6 +607,14 @@ describe('overlap-safe queue (P1.3)', () => {
     await store.enqueue([573292], { front: true, nowMs: 90 })
     assert.deepEqual(await store.getQueue(), [573292, 240128])
   })
+
+  it('does not reset a backed-off score when enqueue front is set', async () => {
+    const store = createMemoryCrateStore()
+    await store.enqueue([573292], { score: 9_000 })
+    await store.enqueue([240128], { score: 0 })
+    await store.enqueue([573292], { front: true, nowMs: 0 })
+    assert.deepEqual(await store.getQueue(), [240128, 573292])
+  })
 })
 
 describe('enrich lock token (P1.4)', () => {
@@ -657,6 +685,7 @@ describe('weaker refresh keeps a stronger match (P2.11)', () => {
     assert.equal(kept.mbRelease.mbid, previous.mbRelease.mbid)
     assert.equal(kept.tracks[0]?.recording.mbid, previous.tracks[0]?.recording.mbid)
     assert.equal(kept.provenance.lastError?.kind, 'partial')
+    assert.equal(classifyQueueOutcome(kept), 'completed')
   })
 
   it('replaces a prior match when a unique discogs url is counter-evidence', () => {
@@ -739,12 +768,12 @@ describe('version tokens and positions (P2.13)', () => {
 })
 
 describe('barcode and catno unique hits need confirmation', () => {
-  it('marks a single barcode hit ambiguous without score and title', () => {
+  it('skips a weak barcode hit so later match paths can run', () => {
     const result = classifyReleaseMatch([{ mbid: 'mb-1', via: 'barcode', score: 40, title: 'Other' }], {
       title: 'Juicy Fruit',
       trackCount: 2,
     })
-    assert.equal(result.matchStatus, 'ambiguous')
+    assert.equal(result.matchStatus, 'unmatched')
     assert.equal(result.mbid, null)
   })
 
@@ -755,6 +784,30 @@ describe('barcode and catno unique hits need confirmation', () => {
     )
     assert.equal(result.matchStatus, 'matched')
     assert.equal(result.mbid, 'mb-1')
+  })
+
+  it('filters catno hits by score before uniqueness so one strong hit can resolve', () => {
+    const result = classifyReleaseMatch(
+      [
+        { mbid: 'mb-weak', via: 'catno', score: 40, title: 'Other Pressing', trackCount: 12 },
+        { mbid: 'mb-strong', via: 'catno', score: 100, title: 'Juicy Fruit', trackCount: 2 },
+      ],
+      { title: 'Juicy Fruit', trackCount: 2 }
+    )
+    assert.equal(result.matchStatus, 'matched')
+    assert.equal(result.mbid, 'mb-strong')
+  })
+
+  it('keeps mtume unmatched when artist+title has several high-score editions', () => {
+    const result = classifyReleaseMatch(
+      [
+        { mbid: 'ed-1', via: 'artist_title', score: 100, title: 'Juicy Fruit', trackCount: 2 },
+        { mbid: 'ed-2', via: 'artist_title', score: 99, title: 'Juicy Fruit', trackCount: 2 },
+      ],
+      { title: 'Juicy Fruit', trackCount: 2 }
+    )
+    assert.equal(result.matchStatus, 'unmatched')
+    assert.equal(result.mbid, null)
   })
 })
 
@@ -886,6 +939,33 @@ function bootsyDetail() {
         position: 'A2',
         title: 'Hollywood Squares',
         duration: '6:15',
+        type_: 'track',
+      },
+    ],
+  }
+}
+
+function lonelyDetail() {
+  return {
+    id: 9107339,
+    title: 'One Is A Lonesome Number',
+    artist: 'Lecturer',
+    year: 1977,
+    released: '1977',
+    country: 'US',
+    thumb: '',
+    cover: '',
+    format: 'Vinyl, LP',
+    label: 'lf',
+    catno: 'lf-9107339',
+    barcode: null,
+    notes: null,
+    discogsUrl: 'https://www.discogs.com/release/9107339',
+    tracklist: [
+      {
+        position: 'A1',
+        title: 'One',
+        duration: '3:00',
         type_: 'track',
       },
     ],
@@ -1113,6 +1193,64 @@ describe('independent lifecycles (direction change)', () => {
     assert.equal(stored?.tracks.length, 2)
   })
 
+  it('keeps last-good on the live key while a rematch writes staging', async () => {
+    const previous = pressingStub()
+    const store = createMemoryCrateStore({ pressings: { 573292: previous } })
+    let sawEmptyLive = false
+    const base = createMusicBrainzClientForTests()
+    const mb: MusicBrainzClient = {
+      ...base,
+      async lookupDiscogsReleaseUrl() {
+        const live = await store.getPressing(573292)
+        if (!live || live.tracks.length === 0) sawEmptyLive = true
+        return ['mb-url']
+      },
+    }
+    await enrichPressing(573292, {
+      store,
+      mb,
+      forceRefresh: true,
+      fetchDiscogs: async () => bootsyDetail(),
+    })
+    assert.equal(sawEmptyLive, false)
+    assert.equal(store.drafts[573292], undefined)
+    const live = await store.getPressing(573292)
+    assert.ok((live?.tracks.length ?? 0) > 0)
+  })
+
+  it('keeps Discogs facts and verifiedAt when MusicBrainz throws with no prior', async () => {
+    const store = createMemoryCrateStore()
+    const nowMs = Date.parse('2026-10-06T05:00:00.000Z')
+    const mb = createMusicBrainzClientForTests()
+    mb.lookupDiscogsReleaseUrl = async () => {
+      throw new Error('musicbrainz down')
+    }
+    mb.searchReleaseByBarcode = async () => {
+      throw new Error('musicbrainz down')
+    }
+    mb.searchReleaseByCatno = async () => {
+      throw new Error('musicbrainz down')
+    }
+    mb.searchReleaseByArtistTitle = async () => {
+      throw new Error('musicbrainz down')
+    }
+    const result = await enrichPressing(9107339, {
+      store,
+      now: () => nowMs,
+      fetchDiscogs: async () => lonelyDetail(),
+      mb,
+    })
+    assert.equal(result.facts.title, 'One Is A Lonesome Number')
+    assert.ok(result.tracks.length > 0)
+    assert.equal(result.provenance.verifiedAt, '2026-10-06T05:00:00.000Z')
+    assert.equal(result.provenance.lastError?.kind, 'unavailable')
+    const stored = await store.getPressing(9107339)
+    assert.equal(stored?.facts.title, 'One Is A Lonesome Number')
+    assert.equal(stored?.provenance.verifiedAt, '2026-10-06T05:00:00.000Z')
+    assert.ok((stored?.tracks.length ?? 0) > 0)
+    assert.equal(store.drafts[9107339], undefined)
+  })
+
   it('recovers a taken item after inflight expires without duplicating work', async () => {
     const store = createMemoryCrateStore({ queue: [573292] })
     const first = await store.takeDue(1, 1_000, 1)
@@ -1254,6 +1392,18 @@ describe('resumable backfill checkpoints', () => {
   })
 })
 
+describe('checked-no-match copy after a MusicBrainz check', () => {
+  it('uses the reason · checked line for Mtume, not nothing on file yet', () => {
+    const pressing = fixturePressing(567894)
+    assert.ok(pressing)
+    const line = pressingCheckedNoMatchLine(pressing)
+    assert.ok(line)
+    assert.match(line, /no musicbrainz release for this pressing/)
+    assert.match(line, /checked 2026-10-06/)
+    assert.doesNotMatch(line, /nothing on file yet/)
+  })
+})
+
 describe('readable discogs description', () => {
   it('rejects matrix dumps and company-address notes, then uses the fixture paraphrase', () => {
     const matrix =
@@ -1320,14 +1470,16 @@ describe('live-proof helpers', () => {
     assert.equal(keys.inflight(8), `${keys.inflightPrefix}8:v1`)
     assert.match(TAKE_LUA, /prefix \.\. id \.\. ':v1'/)
   })
-  it('recovers the same id after clearInflight', async () => {
+  it('recovers the same id after the inflight TTL lapses', async () => {
     const store = createMemoryCrateStore()
     const kill = await runCrateProof(store, 'kill')
     assert.deepEqual(kill.taken, [PROOF_KILL_ID])
     assert.equal(kill.sameIdNotRetaken, true)
+    assert.equal(kill.clearedKillInflight, false)
     const recover = await runCrateProof(store, 'recover')
     assert.deepEqual(recover.recovered, [PROOF_KILL_ID])
     assert.equal(recover.recoveredSameId, true)
+    assert.equal(recover.clearedInflightByHand, false)
   })
 
   it('does not retake the killed id from a crowded queue', async () => {
@@ -1373,7 +1525,141 @@ describe('live-proof helpers', () => {
 
   it('parses proof actions and rejects unknown ones', () => {
     assert.equal(parseProofAction('overlap'), 'overlap')
+    assert.equal(parseProofAction('cleanup'), 'cleanup')
     assert.equal(parseProofAction('nope'), null)
+  })
+
+  it('refuses crate proofs in production', async () => {
+    assert.equal(crateProofAllowed({ VERCEL_ENV: 'production' }), false)
+    assert.equal(crateProofAllowed({ VERCEL_ENV: 'preview' }), true)
+    const store = createMemoryCrateStore()
+    const refused = await runCrateProof(store, 'inspect', {
+      env: { VERCEL_ENV: 'production' },
+    })
+    assert.equal(refused.refused, true)
+  })
+})
+
+describe('visit enqueue is listed-only, throttled, and not front', () => {
+  it('does not enqueue an unlisted id', async () => {
+    const store = createMemoryCrateStore()
+    const result = await visitEnqueueIfListed(store, 1, false, true)
+    assert.deepEqual(result, { enqueued: false, throttled: false })
+    assert.deepEqual(await store.getQueue(), [])
+  })
+
+  it('enqueues a listed id at the back and throttles the next visit', async () => {
+    const store = createMemoryCrateStore({ now: () => 1_000 })
+    const first = await visitEnqueueIfListed(store, 573292, true, true)
+    assert.equal(first.enqueued, true)
+    assert.deepEqual(await store.getQueue(), [573292])
+    const row = store.queue.find((item) => item.id === 573292)
+    assert.ok(row && row.score !== 0)
+    const second = await visitEnqueueIfListed(store, 240128, true, true)
+    assert.deepEqual(second, { enqueued: false, throttled: true })
+    assert.deepEqual(await store.getQueue(), [573292])
+  })
+})
+
+describe('queue lua and fail-id gates', () => {
+  it('re-adds nacked ids to the queued set and never front-resets in ENQUEUE_LUA', () => {
+    assert.match(NACK_LUA, /SADD/)
+    assert.doesNotMatch(ENQUEUE_LUA, /front == '1'/)
+    assert.doesNotMatch(ENQUEUE_LUA, /ZADD', KEYS\[1\], 0/)
+    assert.match(ENQUEUE_LUA, /SISMEMBER', KEYS\[3\]/)
+  })
+
+  it('does not enqueue a dead id unless retry is explicit', async () => {
+    const store = createMemoryCrateStore()
+    await store.markDead({
+      releaseId: 9,
+      kind: 'exhausted',
+      message: 'gave up',
+      attempts: 5,
+      at: '2026-10-06T00:00:00.000Z',
+      stage: 'pressing',
+    })
+    assert.deepEqual(await store.enqueue([9], { nowMs: 1 }), [])
+    assert.deepEqual(await store.getQueue(), [])
+    assert.deepEqual(await store.enqueue([9], { nowMs: 1, retry: true }), [9])
+    assert.deepEqual(await store.getQueue(), [9])
+    assert.deepEqual(await store.getDead(), [])
+  })
+
+  it('ignores CRATE_ENRICH_FAIL_IDS in production, in tests, and for *', () => {
+    assert.equal(
+      failRefreshFromEnv(573292, { VERCEL_ENV: 'preview', CRATE_ENRICH_FAIL_IDS: '573292' }),
+      true
+    )
+    assert.equal(
+      failRefreshFromEnv(573292, { VERCEL_ENV: 'production', CRATE_ENRICH_FAIL_IDS: '573292' }),
+      false
+    )
+    assert.equal(
+      failRefreshFromEnv(573292, { VERCEL_ENV: 'preview', CRATE_ENRICH_FAIL_IDS: '*' }),
+      false
+    )
+    assert.equal(
+      failRefreshFromEnv(573292, {
+        VERCEL_ENV: 'preview',
+        NODE_TEST_CONTEXT: '1',
+        CRATE_ENRICH_FAIL_IDS: '573292',
+      }),
+      false
+    )
+  })
+})
+
+describe('collection crawl auth stops crate-enrich before enrichment', () => {
+  async function runAuthStop(status: 401 | 403) {
+    const store = createMemoryCrateStore({ queue: [573292] })
+    const durable = createMemoryDurableStore()
+    const lastGood = createMemoryLastGoodStore()
+    const collectionCalls: string[] = []
+    let releaseCalls = 0
+    const result = await runCrateEnrichCron({
+      store,
+      durable,
+      now: () => Date.parse('2026-10-06T05:00:00.000Z'),
+      deadlineMs: Date.parse('2026-10-06T05:00:45.000Z'),
+      discogs: {
+        lastGood,
+        durable,
+        fetchImpl: async (url) => {
+          collectionCalls.push(url)
+          return new Response('{"message":"invalid token"}', { status })
+        },
+      },
+      fetchDiscogs: async () => {
+        releaseCalls += 1
+        throw new Error('release fetch should not run')
+      },
+    })
+    return { store, durable, collectionCalls, releaseCalls, result }
+  }
+
+  it('maps collection 401 to auth, makes no further Discogs calls, and marks nothing failed or dead', async () => {
+    const { store, durable, collectionCalls, releaseCalls, result } = await runAuthStop(401)
+    assert.equal(result.stoppedOnAuth, true)
+    assert.deepEqual(result.processed, [])
+    assert.equal(collectionCalls.length, 1)
+    assert.equal(releaseCalls, 0)
+    assert.deepEqual(await store.getDead(), [])
+    assert.equal(await store.getPressing(573292), null)
+    assert.deepEqual(await store.getQueue(), [573292])
+    assert.equal(durable.meta?.lastError?.kind, 'auth')
+  })
+
+  it('maps collection 403 to auth, makes no further Discogs calls, and marks nothing failed or dead', async () => {
+    const { store, durable, collectionCalls, releaseCalls, result } = await runAuthStop(403)
+    assert.equal(result.stoppedOnAuth, true)
+    assert.deepEqual(result.processed, [])
+    assert.equal(collectionCalls.length, 1)
+    assert.equal(releaseCalls, 0)
+    assert.deepEqual(await store.getDead(), [])
+    assert.equal(await store.getPressing(573292), null)
+    assert.deepEqual(await store.getQueue(), [573292])
+    assert.equal(durable.meta?.lastError?.kind, 'auth')
   })
 })
 

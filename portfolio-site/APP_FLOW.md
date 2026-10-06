@@ -304,14 +304,14 @@ Land on /keeganmoody33
 1. Grid link saves scroll/focus in sessionStorage (`lf:collection:scroll`, `lf:collection:focus`) and routes to `/collection/{releaseId}` with `scroll={false}`.
 2. From the grid, the intercepting overlay (`@detail/(.)[releaseId]`) covers the crate. Direct visit or refresh renders the full page.
 3. Overview is the default tab: sourced description (omit if none), fact rows (label, catno, format, country, released — drop a missing field), a few stored sample/credit connections.
-4. Tracks tab lists the owned pressing in Discogs order (headings are labels, not buttons; mix titles stay distinct). A house-meta coverage line reports matched-track / credit / sample-relationship counts separately. Selecting a playable track shows stored credits, samples from, and sampled in.
-5. Back / Escape / collection link returns to the grid. Overlay uses `router.back()`; full page links to `/collection`. Focus returns to the cover.
+4. Tracks tab lists the owned pressing in Discogs order (headings are labels, not buttons; mix titles stay distinct). Both tab panels stay mounted; the inactive one is `hidden` with `tabIndex={0}` on each panel. A house-meta coverage line reports matched-track / credit / sample-relationship counts separately. Selecting a playable track paints that title ink (others muted) and expands stored credits, samples from, and sampled in (`aria-expanded` / `aria-controls` on the row). The extras block is headed by the track title as an `h2`, then `h3` section labels.
+5. Overlay keyboard: first Escape clears a selected track; the second Escape (or close / collection) calls `router.back()`. Overlay unmount restores focus to `#crate-cover-{id}` after dropping `inert` on the grid (id saved in `saveCollectionScroll`). Overlay autofocuses `collection`. Page mode (direct visit / refresh): do not autofocus `collection`; Escape (after clearing a selected track) and close always `router.push('/collection')` — never `history.back()`. Grid covers use `alt=""`; the detail cover keeps the meaningful alt. HouseShell has a visually hidden skip-to-content link (`#house-content`).
 
-**Success state:** Stored pressing facts, tracklist, and MusicBrainz credits/samples. Cover is the same thumbnail as the grid.
+**Success state:** Stored pressing facts, tracklist, and MusicBrainz credits/samples. Cover is the same thumbnail as the grid (150px thumb stretched is an open LF Direction question — leave as-is).
 
 **Error state:** Dim mono `couldn't reach discogs` plus a retry text link (orange on hover). Never red. Last-good stored data is preferred over this.
 
-**Empty states:** Missing field drops its row (never `N/A` / `Unknown` / `—`). Empty section: `nothing on file yet`. No track picked: `pick a track for credits and samples`. Checked, no match (third empty state): one dim mono lowercase line `{reason} · checked YYYY-MM-DD` (example: `no musicbrainz release for this pressing · checked 2026-10-05`). No guessing in the reason. Missing cover: `#242424` square with catno centered. Layout holds with hairlines; content fades in (`.house-fade`; instant under reduced motion). One dim `.house-source` `discogs` line after the fact rows (the pressing URL), then `Data provided by Discogs.` linking to discogs.com without `nofollow`. Source lines are lowercase 0.16em; section labels stay uppercase `.house-meta`. House footer carries the Discogs trademark disclaimer as a dim mono line.
+**Empty states:** Missing field drops its row (never `N/A` / `Unknown` / `—`). Empty section: `nothing on file yet`. No track picked: `pick a track for credits and samples`. Checked, no match (third empty state): **only** one dim mono lowercase line `{reason} · checked YYYY-MM-DD` (example: `no musicbrainz release for this pressing · checked 2026-10-05`) — no extra `nothing on file yet` under credits/samples or Overview connections. No guessing in the reason. Missing cover: `#242424` square with catno centered. Layout holds with hairlines; content fades in (`.house-fade`; instant under reduced motion). After the fact rows: lowercase `.house-source` `discogs` plus exact-case `.house-credit` `Data provided by Discogs.`, both linking the pressing URL (not discogs.com, no `nofollow`). `/collection` repeats the credit line to the lecturesfrom Discogs collection page. Source lines are lowercase 0.16em; the TOU credit is not lowercased; section labels stay uppercase `.house-meta`. House footer carries the Discogs trademark disclaimer as a dim mono line.
 
 **PostHog events:** `collection_record_open`, `collection_record_tab`, `collection_record_track`, `collection_record_close`
 
@@ -325,7 +325,7 @@ Land on /keeganmoody33
 | Navigation | Horizontal top bar | Same; items `whitespace-nowrap`, right group `gap-x-3 gap-y-2` |
 | BannerRotator | Full-bleed bar; `pr-16` on content only when dots show | Same |
 | Timeline | Full-width cards | Same layout (no responsive changes) |
-| Record detail | At 1280: cover left, rows right | At 375: full-width cover, then rows |
+| Record detail | At 1280: cover left, rows right | At 375/768: stacked cover capped at 480px, then rows |
 
 ---
 

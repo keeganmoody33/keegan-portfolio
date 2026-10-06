@@ -1,5 +1,4 @@
 import { after } from 'next/server.js'
-import { scheduleKeepPing } from './crate/keep-ping.ts'
 import {
   DISCOGS_REFRESH_LOCK_SECONDS,
   DISCOGS_SNAPSHOT_TTL_MS,
@@ -126,6 +125,7 @@ export const DISCOGS_RECENT_PER_PAGE = 5
 export const DISCOGS_DEFAULT_RETRY_AFTER = 60
 export const DISCOGS_RELEASE_URL_PREFIX = 'https://www.discogs.com/release/'
 export const DISCOGS_SITE_URL = 'https://www.discogs.com/'
+export const DISCOGS_COLLECTION_PAGE = `https://www.discogs.com/user/${DISCOGS_USER}/collection`
 
 const COLLECTION_URL = `https://api.discogs.com/users/${DISCOGS_USER}/collection/folders/0/releases`
 const RELEASE_URL_PATTERN = /^https:\/\/www\.discogs\.com\/release\/[1-9]\d*$/
@@ -370,7 +370,11 @@ function readRetryAfter(response: Response): number {
 }
 
 export function isCompleteCollection(collection: DiscogsCollection): boolean {
-  return collection.releases.length === collection.pagination.items
+  return (
+    collection.pagination.items > 0 &&
+    collection.releases.length > 0 &&
+    collection.releases.length === collection.pagination.items
+  )
 }
 
 function isDiscogsRelease(value: unknown): value is DiscogsRelease {
@@ -493,6 +497,7 @@ function resolveCacheMode(options: DiscogsClientOptions): DiscogsCacheMode {
 }
 
 function errorKind(error: unknown): DurableErrorKind {
+  if (isDiscogsAuthError(error)) return 'auth'
   if (isDiscogsRateLimitError(error)) return 'rate_limit'
   if (error instanceof DiscogsUnavailableError) return 'unavailable'
   return 'unavailable'
@@ -509,7 +514,6 @@ export function defaultScheduleRefresh(task: () => Promise<void>): void {
     void task()
     return
   }
-  if (scheduleKeepPing()) return
 
   try {
     after(() => task())
@@ -553,6 +557,10 @@ export async function crawlFullCollection(
 
     if (response.status === 429) {
       throw new DiscogsRateLimitError(readRetryAfter(response))
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      throw new DiscogsAuthError(response.status)
     }
 
     if (!response.ok) {
@@ -650,6 +658,7 @@ export async function refreshDurableCollection(
     } catch {
       // Keep the last-good copy even if error bookkeeping fails.
     }
+    if (isDiscogsAuthError(error)) throw error
   } finally {
     try {
       await durable.releaseLock()

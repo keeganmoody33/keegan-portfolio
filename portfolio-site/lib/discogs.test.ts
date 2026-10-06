@@ -8,19 +8,24 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  DiscogsAuthError,
   DiscogsRateLimitError,
   DiscogsUnavailableError,
   collectionRequestUrl,
+  crawlFullCollection,
   createMemoryLastGoodStore,
   discogsErrorHttp,
   discogsHeaders,
   discogsReleaseUrl,
+  DISCOGS_COLLECTION_PAGE,
   fetchFullCollection,
   fetchRecentReleases,
+  isCompleteCollection,
   mapRelease,
   parseDurableCollection,
   peekLastGoodCollection,
   readCachedCollection,
+  refreshDurableCollection,
   toRecentRelease,
   type DiscogsCollection,
   type DiscogsFetch,
@@ -29,8 +34,10 @@ import {
 import {
   REDIS_ISR_REVALIDATE_SECONDS,
   REDIS_READ_CACHE,
+  assertPrefixedRedisKey,
   createMemoryDurableStore,
   createRedisDurableStore,
+  discogsKeyPrefix,
   discogsRedisKeys,
   isEmptyUpstashReadResult,
   isSnapshotStale,
@@ -166,6 +173,7 @@ describe('mapRelease', () => {
   it('never emits /release/0 when id is missing or zero', () => {
     assert.equal(discogsReleaseUrl(0), 'https://www.discogs.com/')
     assert.equal(discogsReleaseUrl(undefined), 'https://www.discogs.com/')
+    assert.equal(DISCOGS_COLLECTION_PAGE, 'https://www.discogs.com/user/lecturesfrom/collection')
     const missing = mapRelease({
       basic_information: { title: 'No Id', artists: [{ name: 'A' }] },
     })
@@ -915,6 +923,75 @@ describe('durable last-good snapshot', () => {
     assert.ok(parsed)
     assert.equal(parsed.releases[0].discogsUrl, 'https://www.discogs.com/')
     assert.doesNotMatch(parsed.releases[0].discogsUrl, /\/release\/0$/)
+  })
+
+  it('does not treat an empty {releases:[], items:0} snapshot as last-good', () => {
+    const empty = {
+      releases: [] as DiscogsCollection['releases'],
+      pagination: { page: 1, pages: 1, items: 0, perPage: 100 },
+    }
+    assert.equal(isCompleteCollection(empty), false)
+    assert.equal(parseDurableCollection(empty), null)
+  })
+
+  it('throws DiscogsAuthError on collection 401 and 403 without further pages', async () => {
+    for (const status of [401, 403] as const) {
+      const { fetchImpl, calls } = mockFetch({
+        1: { status, body: { message: 'invalid token' } },
+        2: { releases: [sampleRelease(2, 'Should not fetch')], items: 2, pages: 2 },
+      })
+      await assert.rejects(
+        () => crawlFullCollection({ fetchImpl, lastGood: createMemoryLastGoodStore() }),
+        (error: unknown) => {
+          assert.ok(error instanceof DiscogsAuthError)
+          assert.equal(error.status, status)
+          return true
+        }
+      )
+      assert.equal(calls.length, 1)
+    }
+  })
+
+  it('records collection auth and rethrows so enrichment does not start', async () => {
+    const durable = createMemoryDurableStore()
+    const { fetchImpl, calls } = mockFetch({
+      1: { status: 401, body: { message: 'invalid token' } },
+    })
+    await assert.rejects(
+      () =>
+        refreshDurableCollection(
+          durable,
+          { fetchImpl, lastGood: createMemoryLastGoodStore(), durable },
+          () => NOW_MS
+        ),
+      DiscogsAuthError
+    )
+    assert.equal(calls.length, 1)
+    assert.equal(durable.setCalls, 0)
+    assert.equal(durable.errorCalls, 1)
+    assert.equal(durable.meta?.lastError?.kind, 'auth')
+  })
+})
+
+describe('preview redis prefix hard-guard', () => {
+  it('never writes unprefixed lf: keys on preview or a non-main production ref', () => {
+    withEnv({ VERCEL_ENV: 'preview' }, () => {
+      assert.equal(discogsKeyPrefix(), 'lf:preview:')
+      assert.throws(() => assertPrefixedRedisKey('lf:crate:queue:v1'))
+      assert.equal(
+        assertPrefixedRedisKey('lf:preview:crate:queue:v1'),
+        'lf:preview:crate:queue:v1'
+      )
+    })
+    withEnv(
+      { VERCEL_ENV: 'production', VERCEL_GIT_COMMIT_REF: 'cursor/collection-record-detail-7382' },
+      () => {
+        assert.equal(discogsKeyPrefix(), 'lf:preview:')
+      }
+    )
+    withEnv({ VERCEL_ENV: 'production', VERCEL_GIT_COMMIT_REF: 'main' }, () => {
+      assert.equal(discogsKeyPrefix(), 'lf:')
+    })
   })
 })
 
