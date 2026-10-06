@@ -18,14 +18,16 @@ import {
 import { keepPriorMatch, nextBackoffMs, preservePressingOnFailure, shouldRefreshPressing } from './preserve.ts'
 import { createMemoryCrateStore, INFLIGHT_TTL_SECONDS } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
-import { enrichPressing, processEnrichmentQueue, sentencesFrom } from './enrich.ts'
+import { enrichPressing, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom } from './enrich.ts'
 import type { MusicBrainzClient } from './musicbrainz.ts'
-import { CRATE_SCHEMA_VERSION, type StoredPressing } from './types.ts'
+import { CRATE_MAX_ATTEMPTS, CRATE_SCHEMA_VERSION, type StoredPressing } from './types.ts'
 import { mapRelease, parseDurableCollection } from '../discogs.ts'
-import { DiscogsNotFoundError } from '../discogs.ts'
+import { DiscogsAuthError, DiscogsNotFoundError } from '../discogs.ts'
 import { fixturePressing, parseReleaseParam, readStoredPressing } from './read.ts'
 import { factRows } from './view.ts'
 import { cronSecretEqual } from './cron-auth.ts'
+import { coverageOf, isPlayableOccurrence, shouldQueuePressing } from './lifecycle.ts'
+import { inspectCrate, runBackfill } from './backfill.ts'
 
 function pressingStub(overrides: Partial<StoredPressing> = {}): StoredPressing {
   return {
@@ -326,18 +328,30 @@ describe('failure preservation', () => {
     assert.equal(preserved.provenance.matchStatus, 'pending')
   })
 
-  it('refreshes when refreshAfter has passed', () => {
+  it('does not re-research a successful pressing just because refreshAfter passed', () => {
     const stale = pressingStub({
       provenance: {
         ...pressingStub().provenance,
         refreshAfter: '2026-01-01T00:00:00.000Z',
+        lastError: null,
       },
     })
-    assert.equal(shouldRefreshPressing(stale, Date.parse('2026-10-06T00:00:00.000Z')), true)
+    assert.equal(shouldRefreshPressing(stale, Date.parse('2026-10-06T00:00:00.000Z')), false)
     assert.equal(
       shouldRefreshPressing(pressingStub(), Date.parse('2026-10-06T00:00:00.000Z')),
       false
     )
+  })
+
+  it('re-queues a failure only after refreshAfter', () => {
+    const failed = preservePressingOnFailure(
+      pressingStub(),
+      Date.parse('2026-10-01T00:00:00.000Z'),
+      'unavailable',
+      'Failed to enrich pressing'
+    )
+    assert.equal(shouldQueuePressing(failed, Date.parse('2026-10-01T00:00:00.000Z')), false)
+    assert.equal(shouldQueuePressing(failed, Date.parse(failed.provenance.refreshAfter)), true)
   })
 })
 
@@ -442,26 +456,34 @@ describe('record detail helpers', () => {
 })
 
 function createMusicBrainzClientForTests(): MusicBrainzClient {
-  return {
+  const client = {
+    requestCount: 0,
     async lookupDiscogsReleaseUrl() {
+      client.requestCount += 1
       return []
     },
     async searchReleaseByBarcode() {
+      client.requestCount += 1
       return []
     },
     async searchReleaseByCatno() {
+      client.requestCount += 1
       return []
     },
     async searchReleaseByArtistTitle() {
+      client.requestCount += 1
       return []
     },
     async getRelease() {
+      client.requestCount += 1
       return null
     },
     async getRecording() {
+      client.requestCount += 1
       return null
     },
   }
+  return client
 }
 
 describe('never-enriched failures persist and back off (P1.2)', () => {
@@ -806,6 +828,381 @@ describe('musicbrainz rate limit stops the batch', () => {
     assert.equal(result.stoppedOnRateLimit, true)
     assert.deepEqual(result.processed, [1])
     assert.ok((await store.getQueue()).includes(2))
+  })
+})
+
+function bootsyDetail() {
+  return {
+    id: 573292,
+    title: 'Bootsy? Player Of The Year',
+    artist: "Bootsy's Rubber Band",
+    year: 1978,
+    released: '1978',
+    country: 'US',
+    thumb: '',
+    cover: '',
+    format: 'Vinyl, LP, Album',
+    label: 'Warner Bros. Records',
+    catno: 'BSK 3093',
+    barcode: '012345',
+    notes: null,
+    discogsUrl: 'https://www.discogs.com/release/573292',
+    tracklist: [
+      {
+        position: 'Side A',
+        title: 'The Player',
+        duration: '',
+        type_: 'heading',
+      },
+      {
+        position: 'A1',
+        title: "Bootsy? (What's The Name Of This Town)",
+        duration: '6:59',
+        type_: 'track',
+      },
+      {
+        position: 'A2',
+        title: 'Hollywood Squares',
+        duration: '6:15',
+        type_: 'track',
+      },
+    ],
+  }
+}
+
+function countingMb(overrides: Partial<MusicBrainzClient> = {}): MusicBrainzClient {
+  const base = createMusicBrainzClientForTests()
+  const client: MusicBrainzClient = {
+    ...base,
+    ...overrides,
+  }
+  return client
+}
+
+describe('independent lifecycles (direction change)', () => {
+  it('keeps headings as distinct non-playable occurrences', () => {
+    const tracks = occurrencesFromDetail(bootsyDetail())
+    assert.equal(tracks[0]?.type_, 'heading')
+    assert.equal(isPlayableOccurrence(tracks[0]!), false)
+    assert.equal(tracks[1]?.type_, 'track')
+    const coverage = coverageOf({ tracks, recordings: {} })
+    assert.equal(coverage.tracks, 2)
+    assert.equal(coverage.matched, 0)
+  })
+
+  it('makes zero MusicBrainz requests when revisiting an enriched pressing', async () => {
+    const store = createMemoryCrateStore()
+    const mb = countingMb({
+      async lookupDiscogsReleaseUrl() {
+        return ['mb-url']
+      },
+      async getRelease() {
+        return {
+          id: 'mb-url',
+          title: 'Bootsy? Player Of The Year',
+          date: '1978',
+          country: 'US',
+          tracks: [
+            {
+              index: 0,
+              number: 'A1',
+              title: "Bootsy? (What's The Name Of This Town)",
+              lengthMs: 419000,
+              recordingId: 'rec-a1',
+              recordingTitle: "Bootsy? (What's The Name Of This Town)",
+              disambiguation: '',
+            },
+            {
+              index: 1,
+              number: 'A2',
+              title: 'Hollywood Squares',
+              lengthMs: 375000,
+              recordingId: 'rec-hs',
+              recordingTitle: 'Hollywood Squares',
+              disambiguation: '',
+            },
+          ],
+        }
+      },
+      async getRecording(mbid: string) {
+        return {
+          mbid,
+          title: mbid === 'rec-hs' ? 'Hollywood Squares' : "Bootsy?",
+          artist: "Bootsy's Rubber Band",
+          credits: [],
+          samplesFrom: [],
+          sampledIn:
+            mbid === 'rec-hs'
+              ? [
+                  {
+                    title: "I'm a Player",
+                    artist: 'Too $hort',
+                    mbid: 'fb9a3b45-5559-44e4-8bcc-6476cce7a0ba',
+                    sourceUrl: 'https://musicbrainz.org/recording/fb9a3b45-5559-44e4-8bcc-6476cce7a0ba',
+                    source: 'musicbrainz' as const,
+                    providerId: 'fb9a3b45-5559-44e4-8bcc-6476cce7a0ba',
+                  },
+                ]
+              : [],
+        }
+      },
+    })
+    let requestCount = 0
+    let lookups = 0
+    let releases = 0
+    let recordings = 0
+    const mbCounted: MusicBrainzClient = {
+      get requestCount() {
+        return requestCount
+      },
+      async lookupDiscogsReleaseUrl(url) {
+        lookups += 1
+        requestCount += 1
+        return mb.lookupDiscogsReleaseUrl(url)
+      },
+      async searchReleaseByBarcode(barcode) {
+        requestCount += 1
+        return mb.searchReleaseByBarcode(barcode)
+      },
+      async searchReleaseByCatno(catno, artist) {
+        requestCount += 1
+        return mb.searchReleaseByCatno(catno, artist)
+      },
+      async searchReleaseByArtistTitle(input) {
+        requestCount += 1
+        return mb.searchReleaseByArtistTitle(input)
+      },
+      async getRelease(id) {
+        releases += 1
+        requestCount += 1
+        return mb.getRelease(id)
+      },
+      async getRecording(id) {
+        recordings += 1
+        requestCount += 1
+        return mb.getRecording(id)
+      },
+    }
+    await enrichPressing(573292, {
+      store,
+      mb: mbCounted,
+      fetchDiscogs: async () => bootsyDetail(),
+    })
+    assert.ok(lookups > 0)
+    assert.ok(releases > 0)
+    assert.ok(recordings > 0)
+    assert.ok(requestCount > 0)
+    requestCount = 0
+    lookups = 0
+    releases = 0
+    recordings = 0
+    await enrichPressing(573292, {
+      store,
+      mb: mbCounted,
+      fetchDiscogs: async () => bootsyDetail(),
+    })
+    assert.equal(requestCount, 0)
+    assert.equal(lookups, 0)
+    assert.equal(releases, 0)
+    assert.equal(recordings, 0)
+    const stored = await store.getPressing(573292)
+    assert.ok(stored)
+    assert.equal(stored.tracks.some((track) => track.type_ === 'heading'), true)
+    assert.equal(
+      stored.recordings['rec-hs']?.sampledIn.some((row) => row.artist.includes('Too')),
+      true
+    )
+  })
+
+  it('reuses research when a collection update re-syncs an unchanged pressing', async () => {
+    const previous = pressingStub()
+    const store = createMemoryCrateStore({ pressings: { 573292: previous }, seen: [573292] })
+    const collection = parseDurableCollection({
+      releases: [
+        mapRelease({
+          instance_id: 1,
+          basic_information: {
+            id: 573292,
+            title: 'Bootsy? Player Of The Year',
+            year: 1978,
+            artists: [{ name: "Bootsy's Rubber Band" }],
+            labels: [{ name: 'Warner Bros. Records', catno: 'BSK 3093' }],
+            formats: [{ name: 'Vinyl' }],
+          },
+        }),
+      ],
+      pagination: { page: 1, pages: 1, items: 1, perPage: 100 },
+    })
+    assert.ok(collection)
+    const result = await queueNewAndMissing(
+      store,
+      [573292],
+      collection,
+      Date.parse('2026-10-06T00:00:00Z')
+    )
+    assert.deepEqual(result.newIds, [])
+    assert.deepEqual(result.queued, [])
+  })
+
+  it('preserves original verifiedAt when a later source fetch fails', async () => {
+    const previous = pressingStub({
+      provenance: {
+        ...pressingStub().provenance,
+        verifiedAt: '2026-09-01T00:00:00.000Z',
+        lastAttemptAt: '2026-09-01T00:00:00.000Z',
+      },
+    })
+    const store = createMemoryCrateStore({ pressings: { 573292: previous } })
+    const result = await enrichPressing(573292, {
+      store,
+      now: () => Date.parse('2026-10-06T00:00:00.000Z'),
+      fetchDiscogs: async () => {
+        throw new Error('discogs down')
+      },
+      mb: createMusicBrainzClientForTests(),
+    })
+    assert.equal(result.provenance.verifiedAt, '2026-09-01T00:00:00.000Z')
+    assert.equal(result.provenance.lastAttemptAt, '2026-10-06T00:00:00.000Z')
+    assert.equal(result.tracks[0]?.recording.mbid, previous.tracks[0]?.recording.mbid)
+  })
+
+  it('recovers a taken item after inflight expires without duplicating work', async () => {
+    const store = createMemoryCrateStore({ queue: [573292] })
+    const first = await store.takeDue(1, 1_000, 1)
+    assert.deepEqual(first, [573292])
+    const overlapping = await store.takeDue(1, 1_000, 1)
+    assert.deepEqual(overlapping, [])
+    const recovered = await store.takeDue(1, 3_000, 1)
+    assert.deepEqual(recovered, [573292])
+    await store.ack(573292)
+    assert.deepEqual(await store.getQueue(), [])
+  })
+
+  it('lets only one worker hold the enrich lock', async () => {
+    const store = createMemoryCrateStore({ queue: [573292], now: () => 1_000 })
+    assert.equal(await store.acquireEnrichLock(60, 'owner'), true)
+    const second = await processEnrichmentQueue(
+      {
+        store,
+        now: () => 1_000,
+        lockToken: 'other',
+        takeFloorMs: 0,
+        fetchDiscogs: async () => bootsyDetail(),
+        mb: createMusicBrainzClientForTests(),
+      },
+      1
+    )
+    assert.equal(second.skipped, true)
+    assert.deepEqual(second.processed, [])
+    assert.equal(await store.releaseEnrichLock('owner'), true)
+  })
+
+  it('moves exhausted retries into the inspectable dead set', async () => {
+    const store = createMemoryCrateStore({ queue: [9] })
+    let t = 1_000
+    for (let attempt = 0; attempt < CRATE_MAX_ATTEMPTS; attempt += 1) {
+      await processEnrichmentQueue(
+        {
+          store,
+          now: () => t,
+          takeFloorMs: 0,
+          budgetMs: 45_000,
+          fetchDiscogs: async () => {
+            throw new Error('discogs down')
+          },
+          mb: createMusicBrainzClientForTests(),
+        },
+        1
+      )
+      const stored = await store.getPressing(9)
+      t = Date.parse(stored?.provenance.refreshAfter ?? '') || t + 86_400_000
+    }
+    const stored = await store.getPressing(9)
+    assert.equal(stored?.provenance.lastError?.kind, 'exhausted')
+    assert.deepEqual(await store.getDead(), [9])
+    assert.deepEqual(await store.getQueue(), [])
+    const snapshot = await inspectCrate(store)
+    assert.equal(snapshot.inspect.some((row) => row.releaseId === 9 && row.kind === 'exhausted'), true)
+  })
+
+  it('stops the run on auth failure without burning retries', async () => {
+    const store = createMemoryCrateStore({ queue: [1, 2] })
+    const result = await processEnrichmentQueue(
+      {
+        store,
+        now: () => 1_000,
+        takeFloorMs: 0,
+        budgetMs: 45_000,
+        fetchDiscogs: async () => {
+          throw new DiscogsAuthError(401)
+        },
+        mb: createMusicBrainzClientForTests(),
+      },
+      10
+    )
+    assert.equal(result.stoppedOnAuth, true)
+    assert.deepEqual(result.processed, [1])
+    const stored = await store.getPressing(1)
+    assert.equal(stored?.provenance.lastError?.kind, 'auth')
+    assert.equal(stored?.provenance.lastError?.attempts, 0)
+    assert.ok((await store.getUnresolved()).includes(1))
+    assert.ok((await store.getQueue()).includes(2))
+    assert.ok((await store.getQueue()).includes(1))
+  })
+})
+
+describe('hollywood squares sample relationship', () => {
+  it('keeps Too $hort I\'m a Player from MusicBrainz, not a hardcode', () => {
+    const pressing = fixturePressing(573292)
+    assert.ok(pressing)
+    const hollywood = Object.values(pressing.recordings).find(
+      (recording) => recording.title === 'Hollywood Squares'
+    )
+    assert.ok(hollywood)
+    const tooShort = hollywood.sampledIn.find(
+      (row) => /too/i.test(row.artist) && /player/i.test(row.title)
+    )
+    assert.ok(tooShort)
+    assert.equal(tooShort.source, 'musicbrainz')
+    assert.match(tooShort.sourceUrl, /musicbrainz\.org\/recording\//)
+  })
+})
+
+describe('resumable backfill checkpoints', () => {
+  it('walks remaining collection ids and records throughput', async () => {
+    const store = createMemoryCrateStore()
+    const collection = parseDurableCollection({
+      releases: [
+        mapRelease({
+          instance_id: 1,
+          basic_information: {
+            id: 573292,
+            title: 'Bootsy? Player Of The Year',
+            year: 1978,
+            artists: [{ name: "Bootsy's Rubber Band" }],
+            labels: [{ name: 'Warner Bros. Records', catno: 'BSK 3093' }],
+            formats: [{ name: 'Vinyl' }],
+          },
+        }),
+      ],
+      pagination: { page: 1, pages: 1, items: 1, perPage: 100 },
+    })
+    assert.ok(collection)
+    const result = await runBackfill(
+      {
+        store,
+        collection,
+        now: () => 60_000,
+        takeFloorMs: 0,
+        budgetMs: 45_000,
+        fetchDiscogs: async () => bootsyDetail(),
+        mb: createMusicBrainzClientForTests(),
+      },
+      { limit: 1 }
+    )
+    assert.equal(result.completed, 1)
+    assert.equal(result.backfill.cursor, 1)
+    assert.ok(result.releasesPerMin >= 0)
   })
 })
 

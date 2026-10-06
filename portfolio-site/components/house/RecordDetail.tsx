@@ -12,6 +12,7 @@ import {
   type StoredPressing,
 } from '@/lib/crate/types.ts'
 import { checkedDate, creditLine, factRows, overviewConnections } from '@/lib/crate/view.ts'
+import { coverageLine, isPlayableOccurrence } from '@/lib/crate/lifecycle.ts'
 
 const SCROLL_KEY = 'lf:collection:scroll'
 const FOCUS_KEY = 'lf:collection:focus'
@@ -336,8 +337,23 @@ export default function RecordDetail({
                   {CRATE_EMPTY_LINE}
                 </p>
               ) : (
-                <ul className="list-none p-0">
+                <>
+                  {pressing.coverage ? (
+                    <p className="house-meta mb-3">{coverageLine(pressing.coverage)}</p>
+                  ) : null}
+                  <ul className="list-none p-0">
                   {pressing.tracks.map((track, index) => {
+                    const heading = !isPlayableOccurrence(track)
+                    if (heading) {
+                      return (
+                        <li
+                          key={`${track.position}-${track.index}`}
+                          className="border-t border-[var(--house-line)] last:border-b"
+                        >
+                          <p className="house-meta py-3">{track.title}</p>
+                        </li>
+                      )
+                    }
                     const active = selected === index
                     return (
                       <li key={`${track.position}-${track.index}`} className="border-t border-[var(--house-line)] last:border-b">
@@ -373,7 +389,8 @@ export default function RecordDetail({
                       </li>
                     )
                   })}
-                </ul>
+                  </ul>
+                </>
               )}
 
               <section className="mt-10" aria-label="track details">
@@ -384,8 +401,11 @@ export default function RecordDetail({
                 ) : (
                   <TrackExtras
                     checked={checkedDate(
-                      selectedRecording?.provenance.checkedAt ??
-                        pressing.provenance.checkedAt
+                      selectedRecording?.provenance.verifiedAt ??
+                        selectedRecording?.provenance.checkedAt ??
+                        pressing.lifecycles?.match.verifiedAt ??
+                        pressing.provenance.verifiedAt ??
+                        (pressing.provenance.lastError ? null : pressing.provenance.checkedAt)
                     )}
                     status={selectedTrack.recording.matchStatus}
                     reason={selectedTrack.recording.reason}

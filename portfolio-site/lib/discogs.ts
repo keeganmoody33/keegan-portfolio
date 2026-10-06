@@ -158,13 +158,29 @@ export class DiscogsNotFoundError extends Error {
   }
 }
 
+export class DiscogsAuthError extends Error {
+  readonly kind = 'auth' as const
+  readonly status: 401 | 403
+
+  constructor(status: 401 | 403 = 401) {
+    super('Discogs authentication failed')
+    this.name = 'DiscogsAuthError'
+    this.status = status
+  }
+}
+
 export function isDiscogsNotFoundError(
   error: unknown
 ): error is DiscogsNotFoundError {
   return error instanceof DiscogsNotFoundError
 }
 
+export function isDiscogsAuthError(error: unknown): error is DiscogsAuthError {
+  return error instanceof DiscogsAuthError
+}
+
 export function isDiscogsTerminalClientError(error: unknown): boolean {
+  if (error instanceof DiscogsAuthError) return false
   if (error instanceof DiscogsNotFoundError) return true
   if (error instanceof DiscogsRateLimitError) return false
   if (
@@ -172,7 +188,9 @@ export function isDiscogsTerminalClientError(error: unknown): boolean {
     'status' in error &&
     typeof error.status === 'number'
   ) {
-    return error.status >= 400 && error.status < 500 && error.status !== 429
+    const status = error.status
+    if (status === 401 || status === 403 || status === 429) return false
+    return status >= 400 && status < 500
   }
   return false
 }

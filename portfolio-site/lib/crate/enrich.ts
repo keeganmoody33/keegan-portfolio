@@ -1,5 +1,6 @@
 import {
   DiscogsRateLimitError,
+  isDiscogsAuthError,
   isDiscogsRateLimitError,
   isDiscogsTerminalClientError,
   type DiscogsCollection,
@@ -7,9 +8,18 @@ import {
 } from '../discogs.ts'
 import {
   fetchDiscogsReleaseDetail,
-  isPlayableDiscogsTrack,
   type DiscogsReleaseDetail,
 } from './discogs-release.ts'
+import {
+  coverageOf,
+  defaultLifecycles,
+  hydratePressing,
+  identityChanged,
+  isPlayableOccurrence,
+  researchIsFresh,
+  trackIdentityKey,
+  touchVerified,
+} from './lifecycle.ts'
 import {
   classifyReleaseMatch,
   matchDiscogsTrackToMb,
@@ -18,6 +28,7 @@ import {
 } from './match.ts'
 import {
   createMusicBrainzClient,
+  isMusicBrainzAuthError,
   isMusicBrainzRateLimitError,
   musicbrainzRecordingUrl,
   musicbrainzReleaseUrl,
@@ -29,6 +40,7 @@ import {
   keepPriorMatch,
   preservePressingOnFailure,
   SUCCESS_REFRESH_MS,
+  TERMINAL_REFRESH_MS,
 } from './preserve.ts'
 import {
   INFLIGHT_TTL_SECONDS,
@@ -38,7 +50,9 @@ import {
 import { collectionReleaseId } from './sync.ts'
 import {
   CRATE_SCHEMA_VERSION,
+  type DeadLetter,
   type DurableErrorKind,
+  type LifecycleName,
   type PressingFacts,
   type SourcedText,
   type StoredPressing,
@@ -62,9 +76,11 @@ export type EnrichDeps = {
   takeFloorMs?: number
   lockToken?: string
   lockTtlSeconds?: number
+  forceRefresh?: boolean
 }
 
 function errorKind(error: unknown): DurableErrorKind {
+  if (isDiscogsAuthError(error) || isMusicBrainzAuthError(error)) return 'auth'
   if (isDiscogsTerminalClientError(error)) return 'not_found'
   if (isDiscogsRateLimitError(error) || isMusicBrainzRateLimitError(error)) {
     return 'rate_limit'
@@ -76,6 +92,9 @@ function errorKind(error: unknown): DurableErrorKind {
 }
 
 function errorMessage(error: unknown): string {
+  if (isDiscogsAuthError(error) || isMusicBrainzAuthError(error)) {
+    return 'authentication failed'
+  }
   if (isDiscogsTerminalClientError(error)) return 'Discogs release not found'
   if (isDiscogsRateLimitError(error) || isMusicBrainzRateLimitError(error)) {
     return 'Too many requests'
@@ -96,6 +115,16 @@ function retryAtMs(error: unknown, nowMs: number, refreshAfter: string): number 
   }
   const parsed = Date.parse(refreshAfter)
   return Number.isFinite(parsed) ? parsed : nowMs + 60 * 60 * 1000
+}
+
+function stageFromError(error: unknown, fallback: LifecycleName): LifecycleName {
+  if (isDiscogsAuthError(error) || isDiscogsRateLimitError(error) || isDiscogsTerminalClientError(error)) {
+    return 'pressing'
+  }
+  if (isMusicBrainzAuthError(error) || isMusicBrainzRateLimitError(error)) {
+    return fallback
+  }
+  return fallback
 }
 
 export function failRefreshFromEnv(
@@ -192,12 +221,187 @@ function instanceIdsFor(
   return ids
 }
 
+function emptyRecordingRef(reason: string): TrackOccurrence['recording'] {
+  return {
+    matchStatus: 'pending',
+    confidence: 0,
+    reason,
+    mbid: null,
+    recordingUrl: null,
+  }
+}
+
+export function occurrencesFromDetail(detail: DiscogsReleaseDetail): TrackOccurrence[] {
+  return detail.tracklist.map((track, index) => {
+    const durationMs = parseDurationToMs(track.duration)
+    const type_ = track.type_ || 'track'
+    const shell: TrackOccurrence = {
+      position: track.position,
+      title: track.title,
+      duration: track.duration.trim() ? track.duration.trim() : null,
+      durationMs,
+      index,
+      type_,
+      identityKey: trackIdentityKey({
+        position: track.position,
+        title: track.title,
+        durationMs,
+        type_,
+      }),
+      recording: emptyRecordingRef(isPlayableOccurrence({
+        position: track.position,
+        title: track.title,
+        duration: track.duration.trim() ? track.duration.trim() : null,
+        durationMs,
+        index,
+        type_,
+        recording: emptyRecordingRef(''),
+      })
+        ? 'no matched recording yet'
+        : ''),
+    }
+    return shell
+  })
+}
+
+function adoptPriorRecordings(
+  next: TrackOccurrence[],
+  previous: TrackOccurrence[] | undefined
+): TrackOccurrence[] {
+  if (!previous || previous.length === 0) return next
+  const byKey = new Map(
+    previous.map((track) => [track.identityKey ?? trackIdentityKey(track), track])
+  )
+  return next.map((track) => {
+    const prior = byKey.get(track.identityKey ?? trackIdentityKey(track))
+    if (!prior) return track
+    return { ...track, recording: prior.recording }
+  })
+}
+
+function letterFrom(pressing: StoredPressing, stage: DeadLetter['stage']): DeadLetter {
+  const error = pressing.provenance.lastError
+  return {
+    releaseId: pressing.releaseId,
+    kind: error?.kind ?? 'unavailable',
+    message: error?.message ?? pressing.provenance.reason,
+    attempts: error?.attempts ?? 0,
+    at: error?.at ?? pressing.provenance.lastAttemptAt ?? pressing.provenance.checkedAt,
+    stage,
+  }
+}
+
+async function matchRelease(
+  facts: PressingFacts,
+  playableCount: number,
+  mb: MusicBrainzClient
+) {
+  const candidates: ReleaseMatchCandidate[] = []
+  const urlIds = await mb.lookupDiscogsReleaseUrl(facts.discogsUrl)
+  for (const mbid of urlIds) {
+    candidates.push({ mbid, via: 'discogs_url' })
+  }
+  const uniqueUrl = urlIds.length === 1
+  if (!uniqueUrl) {
+    if (facts.barcode) {
+      candidates.push(...hitsToCandidates(await mb.searchReleaseByBarcode(facts.barcode), 'barcode'))
+    }
+    if (facts.catno) {
+      candidates.push(
+        ...hitsToCandidates(await mb.searchReleaseByCatno(facts.catno, facts.artist), 'catno')
+      )
+    }
+    if (urlIds.length === 0) {
+      candidates.push(
+        ...hitsToCandidates(
+          await mb.searchReleaseByArtistTitle({
+            artist: facts.artist,
+            title: facts.title,
+            year: facts.year,
+            label: facts.label,
+          }),
+          'artist_title'
+        )
+      )
+    }
+  }
+
+  const releaseMatch = classifyReleaseMatch(candidates, {
+    title: facts.title,
+    trackCount: playableCount,
+  })
+  const mbReleaseDoc =
+    releaseMatch.mbid && releaseMatch.matchStatus === 'matched'
+      ? await mb.getRelease(releaseMatch.mbid)
+      : null
+  return { releaseMatch, mbReleaseDoc }
+}
+
+function applyReleaseMatch(
+  tracks: TrackOccurrence[],
+  releaseMatch: ReturnType<typeof classifyReleaseMatch>,
+  mbReleaseDoc: Awaited<ReturnType<MusicBrainzClient['getRelease']>>
+): TrackOccurrence[] {
+  return tracks.map((track, index) => {
+    if (!isPlayableOccurrence(track)) return track
+    const discogs = {
+      position: track.position,
+      title: track.title,
+      durationMs: track.durationMs,
+      index,
+    }
+    if (!mbReleaseDoc || releaseMatch.matchStatus !== 'matched') {
+      const reason =
+        releaseMatch.matchStatus === 'ambiguous'
+          ? 'pressing match is ambiguous; tracks not auto-accepted'
+          : 'no matched recording yet'
+      return {
+        ...track,
+        recording: {
+          matchStatus: releaseMatch.matchStatus === 'unmatched' ? 'unmatched' : 'ambiguous',
+          confidence: 0,
+          reason,
+          mbid: null,
+          recordingUrl: null,
+        },
+      }
+    }
+    const matched = matchDiscogsTrackToMb({
+      discogs,
+      mbTracks: mbReleaseDoc.tracks,
+    })
+    return {
+      ...track,
+      recording: {
+        matchStatus: matched.matchStatus,
+        confidence: matched.confidence,
+        reason: matched.reason,
+        mbid: matched.recordingId,
+        recordingUrl: matched.recordingId ? musicbrainzRecordingUrl(matched.recordingId) : null,
+      },
+    }
+  })
+}
+
+function markVocalInstrumentalAmbiguous(tracks: TrackOccurrence[]): void {
+  for (const track of tracks) {
+    if (!isPlayableOccurrence(track)) continue
+    if (track.recording.matchStatus === 'unmatched') {
+      track.recording.matchStatus = 'ambiguous'
+      track.recording.reason =
+        'no musicbrainz release for this pressing; vocal/instrumental recordings share this title'
+    }
+  }
+}
+
 export async function enrichPressing(
   releaseId: number,
   deps: EnrichDeps
 ): Promise<StoredPressing> {
   const nowMs = (deps.now ?? Date.now)()
-  const previous = await deps.store.getPressing(releaseId)
+  const nowIso = isoFromMs(nowMs)
+  const previousRaw = await deps.store.getPressing(releaseId)
+  const previous = previousRaw ? hydratePressing(previousRaw) : null
   const mb = deps.mb ?? createMusicBrainzClient()
   const fetchDetail = deps.fetchDiscogs ?? ((id: number) => fetchDiscogsReleaseDetail(id))
   const shouldFail = deps.failRefresh ?? ((id: number) => failRefreshFromEnv(id))
@@ -205,6 +409,8 @@ export async function enrichPressing(
     instanceIdsFor(releaseId, deps.collection).length > 0
       ? instanceIdsFor(releaseId, deps.collection)
       : previous?.entryInstanceIds ?? []
+  const priorCycles = previous?.lifecycles ?? defaultLifecycles(previous?.provenance)
+  let stage: LifecycleName = 'pressing'
 
   try {
     if (shouldFail(releaseId)) {
@@ -212,123 +418,132 @@ export async function enrichPressing(
     }
     const detail = await fetchDetail(releaseId)
     const facts = factsFromDiscogsDetail(detail)
-    const playable = detail.tracklist.filter(isPlayableDiscogsTrack)
+    let tracks = occurrencesFromDetail(detail)
+    const playable = tracks.filter(isPlayableOccurrence)
+    const identityShifted = identityChanged(previous, tracks)
+    const skipMatch =
+      Boolean(previous) &&
+      !identityShifted &&
+      previous?.mbRelease.matchStatus !== 'pending' &&
+      !deps.forceRefresh
 
-    const candidates: ReleaseMatchCandidate[] = []
-    const urlIds = await mb.lookupDiscogsReleaseUrl(facts.discogsUrl)
-    for (const mbid of urlIds) {
-      candidates.push({ mbid, via: 'discogs_url' })
-    }
-    const uniqueUrl = urlIds.length === 1
-    if (!uniqueUrl) {
-      if (facts.barcode) {
-        candidates.push(...hitsToCandidates(await mb.searchReleaseByBarcode(facts.barcode), 'barcode'))
-      }
-      if (facts.catno) {
-        candidates.push(
-          ...hitsToCandidates(await mb.searchReleaseByCatno(facts.catno, facts.artist), 'catno')
-        )
-      }
-      if (urlIds.length === 0) {
-        candidates.push(
-          ...hitsToCandidates(
-            await mb.searchReleaseByArtistTitle({
-              artist: facts.artist,
-              title: facts.title,
-              year: facts.year,
-              label: facts.label,
-            }),
-            'artist_title'
-          )
-        )
-      }
-    }
-
-    const releaseMatch = classifyReleaseMatch(candidates, {
-      title: facts.title,
-      trackCount: playable.length,
-    })
-    const mbReleaseDoc =
-      releaseMatch.mbid && releaseMatch.matchStatus === 'matched'
-        ? await mb.getRelease(releaseMatch.mbid)
-        : null
-
-    const tracks: TrackOccurrence[] = playable.map((track, index) => {
-      const durationMs = parseDurationToMs(track.duration)
-      const discogs = {
-        position: track.position,
-        title: track.title,
-        durationMs,
-        index,
-      }
-      if (!mbReleaseDoc || releaseMatch.matchStatus !== 'matched') {
-        const reason =
-          releaseMatch.matchStatus === 'ambiguous'
-            ? 'pressing match is ambiguous; tracks not auto-accepted'
-            : 'no matched recording yet'
-        return {
-          position: track.position,
-          title: track.title,
-          duration: track.duration.trim() ? track.duration.trim() : null,
-          durationMs,
-          index,
-          recording: {
-            matchStatus: releaseMatch.matchStatus === 'unmatched' ? 'unmatched' : 'ambiguous',
-            confidence: 0,
-            reason,
+    const pressingDraft: StoredPressing = hydratePressing({
+      schemaVersion: CRATE_SCHEMA_VERSION,
+      releaseId,
+      entryInstanceIds,
+      facts,
+      factsSource: {
+        source: 'discogs',
+        sourceUrl: facts.discogsUrl,
+        providerId: String(releaseId),
+      },
+      description: sourcedDescription(detail.notes, facts.discogsUrl),
+      tracks: skipMatch ? adoptPriorRecordings(tracks, previous?.tracks) : tracks,
+      mbRelease: skipMatch && previous
+        ? previous.mbRelease
+        : {
             mbid: null,
-            recordingUrl: null,
+            url: null,
+            matchStatus: 'pending',
+            confidence: 0,
+            reason: 'queued for matching',
           },
-        }
-      }
-      const matched = matchDiscogsTrackToMb({
-        discogs,
-        mbTracks: mbReleaseDoc.tracks,
-      })
-      return {
-        position: track.position,
-        title: track.title,
-        duration: track.duration.trim() ? track.duration.trim() : null,
-        durationMs,
-        index,
-        recording: {
-          matchStatus: matched.matchStatus,
-          confidence: matched.confidence,
-          reason: matched.reason,
-          mbid: matched.recordingId,
-          recordingUrl: matched.recordingId
-            ? musicbrainzRecordingUrl(matched.recordingId)
-            : null,
-        },
-      }
+      recordings: skipMatch && previous ? { ...previous.recordings } : {},
+      provenance: {
+        sourceUrls: [facts.discogsUrl],
+        matchStatus: skipMatch && previous ? previous.provenance.matchStatus : 'pending',
+        confidence: skipMatch && previous ? previous.provenance.confidence : 0,
+        reason: skipMatch && previous ? previous.provenance.reason : 'queued for matching',
+        checkedAt: nowIso,
+        refreshAfter: isoFromMs(nowMs + SUCCESS_REFRESH_MS),
+        lastError: null,
+        verifiedAt: nowIso,
+        lastAttemptAt: nowIso,
+      },
+      lifecycles: {
+        pressing: touchVerified(priorCycles.pressing, nowIso),
+        match: priorCycles.match,
+        research: priorCycles.research,
+      },
+      coverage: { tracks: playable.length, matched: 0, withCredits: 0, withSamples: 0 },
+      checkpoint: { stage: skipMatch ? 'research' : 'match', researchCursor: previous?.checkpoint?.researchCursor ?? 0 },
     })
+    await deps.store.setPressing(pressingDraft)
 
-    if (
-      releaseMatch.matchStatus === 'unmatched' &&
-      playable.some((track) => /vocal|instrumental/i.test(track.title))
-    ) {
-      for (const track of tracks) {
-        if (track.recording.matchStatus === 'unmatched') {
-          track.recording.matchStatus = 'ambiguous'
-          track.recording.reason =
-            'no musicbrainz release for this pressing; vocal/instrumental recordings share this title'
-        }
+    tracks = pressingDraft.tracks
+    let mbRelease = pressingDraft.mbRelease
+    const recordings = { ...pressingDraft.recordings }
+    let matchCycle = priorCycles.match
+    let researchCycle = priorCycles.research
+    let researchCursor = pressingDraft.checkpoint?.researchCursor ?? 0
+
+    if (!skipMatch) {
+      stage = 'match'
+      const { releaseMatch, mbReleaseDoc } = await matchRelease(facts, playable.length, mb)
+      tracks = applyReleaseMatch(tracks, releaseMatch, mbReleaseDoc)
+      if (
+        releaseMatch.matchStatus === 'unmatched' &&
+        playable.some((track) => /vocal|instrumental/i.test(track.title))
+      ) {
+        markVocalInstrumentalAmbiguous(tracks)
       }
+      const mbUrl = releaseMatch.mbid ? musicbrainzReleaseUrl(releaseMatch.mbid) : null
+      mbRelease = {
+        mbid: releaseMatch.mbid,
+        url: mbUrl,
+        matchStatus: releaseMatch.matchStatus,
+        confidence: releaseMatch.confidence,
+        reason: releaseMatch.reason,
+      }
+      matchCycle = touchVerified(priorCycles.match, nowIso)
+      researchCursor = 0
+      await deps.store.setPressing(
+        hydratePressing({
+          ...pressingDraft,
+          tracks,
+          mbRelease,
+          provenance: {
+            ...pressingDraft.provenance,
+            sourceUrls: mbUrl ? [facts.discogsUrl, mbUrl] : [facts.discogsUrl],
+            matchStatus: releaseMatch.matchStatus,
+            confidence: releaseMatch.confidence,
+            reason: releaseMatch.reason,
+          },
+          lifecycles: {
+            pressing: touchVerified(priorCycles.pressing, nowIso),
+            match: matchCycle,
+            research: researchCycle,
+          },
+          checkpoint: { stage: 'research', researchCursor: 0 },
+        })
+      )
     }
 
-    const recordings: Record<string, StoredRecording> = {}
+    stage = 'research'
     const acceptedMbids = [
       ...new Set(
         tracks
+          .filter((track) => isPlayableOccurrence(track) && track.recording.matchStatus === 'matched')
           .map((track) => track.recording.mbid)
-          .filter((id): id is string => Boolean(id) && typeof id === 'string')
+          .filter((id): id is string => Boolean(id))
       ),
     ]
-    for (const mbid of acceptedMbids) {
-      const previousRecording = previous?.recordings[mbid] ?? (await deps.store.getRecording(mbid))
+    for (let index = 0; index < acceptedMbids.length; index++) {
+      if (index < researchCursor) continue
+      const mbid = acceptedMbids[index]
+      if (!mbid) continue
+      const previousRecording = recordings[mbid] ?? previous?.recordings[mbid] ?? (await deps.store.getRecording(mbid))
+      if (!deps.forceRefresh && researchIsFresh(previousRecording, nowMs)) {
+        if (previousRecording) recordings[mbid] = previousRecording
+        researchCursor = index + 1
+        continue
+      }
       try {
         const doc = await mb.getRecording(mbid)
-        if (!doc) continue
+        if (!doc) {
+          researchCursor = index + 1
+          continue
+        }
         const recording: StoredRecording = {
           mbid: doc.mbid,
           title: doc.title,
@@ -341,64 +556,112 @@ export async function enrichPressing(
             matchStatus: 'matched',
             confidence: 0.9,
             reason: 'musicbrainz recording lookup',
-            checkedAt: isoFromMs(nowMs),
+            checkedAt: nowIso,
             refreshAfter: isoFromMs(nowMs + SUCCESS_REFRESH_MS),
             lastError: null,
+            verifiedAt: nowIso,
+            lastAttemptAt: nowIso,
           },
         }
         recordings[mbid] = recording
         await deps.store.setRecording(recording)
+        researchCursor = index + 1
+        researchCycle = touchVerified(researchCycle, nowIso)
+        await deps.store.setPressing(
+          hydratePressing({
+            ...pressingDraft,
+            tracks,
+            mbRelease,
+            recordings,
+            lifecycles: {
+              pressing: touchVerified(priorCycles.pressing, nowIso),
+              match: matchCycle,
+              research: researchCycle,
+            },
+            checkpoint: { stage: 'research', researchCursor },
+          })
+        )
       } catch (error) {
-        if (isMusicBrainzRateLimitError(error)) throw error
-        if (previousRecording) recordings[mbid] = previousRecording
-        else throw error
+        if (isMusicBrainzRateLimitError(error) || isMusicBrainzAuthError(error)) throw error
+        if (previousRecording) {
+          recordings[mbid] = previousRecording
+          researchCursor = index + 1
+        } else {
+          throw error
+        }
       }
     }
 
-    const mbUrl = releaseMatch.mbid ? musicbrainzReleaseUrl(releaseMatch.mbid) : null
+    const mbUrl = mbRelease.url
     const sourceUrls = [facts.discogsUrl]
     if (mbUrl) sourceUrls.push(mbUrl)
-
-    const nextPressing: StoredPressing = {
+    const nextPressing: StoredPressing = hydratePressing({
       schemaVersion: CRATE_SCHEMA_VERSION,
       releaseId,
       entryInstanceIds,
       facts,
+      factsSource: {
+        source: 'discogs',
+        sourceUrl: facts.discogsUrl,
+        providerId: String(releaseId),
+      },
       description: sourcedDescription(detail.notes, facts.discogsUrl),
       tracks,
-      mbRelease: {
-        mbid: releaseMatch.mbid,
-        url: mbUrl,
-        matchStatus: releaseMatch.matchStatus,
-        confidence: releaseMatch.confidence,
-        reason: releaseMatch.reason,
-      },
+      mbRelease,
       recordings,
       provenance: {
         sourceUrls,
-        matchStatus: releaseMatch.matchStatus,
-        confidence: releaseMatch.confidence,
-        reason: releaseMatch.reason,
-        checkedAt: isoFromMs(nowMs),
+        matchStatus: mbRelease.matchStatus,
+        confidence: mbRelease.confidence,
+        reason: mbRelease.reason,
+        checkedAt: nowIso,
         refreshAfter: isoFromMs(nowMs + SUCCESS_REFRESH_MS),
         lastError: null,
+        verifiedAt: nowIso,
+        lastAttemptAt: nowIso,
       },
+      lifecycles: {
+        pressing: touchVerified(priorCycles.pressing, nowIso),
+        match: skipMatch ? priorCycles.match : matchCycle,
+        research: acceptedMbids.length === 0 ? priorCycles.research : touchVerified(researchCycle, nowIso),
+      },
+      coverage: coverageOf({ tracks, recordings }),
+      checkpoint: { stage: 'research', researchCursor: acceptedMbids.length },
+    })
+    const pressing = hydratePressing(keepPriorMatch(previous, nextPressing))
+    if (mbRelease.matchStatus === 'ambiguous' || mbRelease.matchStatus === 'unmatched') {
+      await deps.store.markUnresolved({
+        releaseId,
+        kind: mbRelease.matchStatus === 'ambiguous' ? 'ambiguous' : 'not_found',
+        message: mbRelease.reason,
+        attempts: 0,
+        at: nowIso,
+        stage: 'match',
+      })
     }
-    const pressing = keepPriorMatch(previous, nextPressing)
     await deps.store.setPressing(pressing)
     return pressing
   } catch (error) {
+    const kind = errorKind(error)
     const preserved = preservePressingOnFailure(
       previous,
       nowMs,
-      errorKind(error),
+      kind,
       errorMessage(error),
       {
         terminal: isDiscogsTerminalClientError(error),
         releaseId,
         entryInstanceIds,
+        countAttempt: kind !== 'auth',
+        stage: stageFromError(error, stage),
       }
     )
+    const letter = letterFrom(preserved, stageFromError(error, stage))
+    if (letter.kind === 'exhausted') {
+      await deps.store.markDead(letter)
+    } else if (letter.kind === 'auth' || letter.kind === 'not_found') {
+      await deps.store.markUnresolved(letter)
+    }
     await deps.store.setPressing(preserved)
     if (isMusicBrainzRateLimitError(error) || isDiscogsRateLimitError(error)) {
       const timed = {
@@ -419,6 +682,7 @@ export type EnrichQueueResult = {
   processed: number[]
   skipped: boolean
   stoppedOnRateLimit: boolean
+  stoppedOnAuth: boolean
 }
 
 export async function processEnrichmentQueue(
@@ -428,7 +692,7 @@ export async function processEnrichmentQueue(
   const token = deps.lockToken ?? randomLockToken()
   const lockTtl = deps.lockTtlSeconds ?? ENRICH_LOCK_SECONDS
   const locked = await deps.store.acquireEnrichLock(lockTtl, token)
-  if (!locked) return { processed: [], skipped: true, stoppedOnRateLimit: false }
+  if (!locked) return { processed: [], skipped: true, stoppedOnRateLimit: false, stoppedOnAuth: false }
 
   const now = deps.now ?? Date.now
   const started = now()
@@ -438,6 +702,7 @@ export async function processEnrichmentQueue(
   const mb = deps.mb ?? createMusicBrainzClient({ now: deps.now })
   const processed: number[] = []
   let stoppedOnRateLimit = false
+  let stoppedOnAuth = false
 
   try {
     while (processed.length < cap) {
@@ -448,7 +713,24 @@ export async function processEnrichmentQueue(
       try {
         const pressing = await enrichPressing(releaseId, { ...deps, mb })
         const kind = pressing.provenance.lastError?.kind
-        if (kind === 'not_found') {
+        if (kind === 'auth') {
+          console.error(
+            JSON.stringify({
+              event: 'crate-enrich-auth',
+              releaseId,
+              message: pressing.provenance.lastError?.message,
+              attempts: pressing.provenance.lastError?.attempts ?? 0,
+            })
+          )
+          await deps.store.nack(releaseId, now() + TERMINAL_REFRESH_MS)
+          processed.push(releaseId)
+          stoppedOnAuth = true
+          break
+        }
+        if (kind === 'exhausted') {
+          await deps.store.drop(releaseId)
+          processed.push(releaseId)
+        } else if (kind === 'not_found') {
           await deps.store.drop(releaseId)
           processed.push(releaseId)
         } else if (kind) {
@@ -470,6 +752,17 @@ export async function processEnrichmentQueue(
         const retryAt = now() + 60 * 60 * 1000
         await deps.store.nack(releaseId, retryAt)
         processed.push(releaseId)
+        if (isMusicBrainzAuthError(error) || isDiscogsAuthError(error)) {
+          stoppedOnAuth = true
+          console.error(
+            JSON.stringify({
+              event: 'crate-enrich-auth',
+              releaseId,
+              message: errorMessage(error),
+            })
+          )
+          break
+        }
         if (isMusicBrainzRateLimitError(error) || isDiscogsRateLimitError(error)) {
           stoppedOnRateLimit = true
           break
@@ -489,9 +782,10 @@ export async function processEnrichmentQueue(
       processed,
       skipped: false,
       stoppedOnRateLimit,
+      stoppedOnAuth,
     })
   )
-  return { processed, skipped: false, stoppedOnRateLimit }
+  return { processed, skipped: false, stoppedOnRateLimit, stoppedOnAuth }
 }
 
 export function releaseIdsFromCollection(collection: DiscogsCollection): number[] {

@@ -8,7 +8,7 @@ import {
   type RedisRestConfig,
   type UpstashFetch,
 } from '../discogs-store.ts'
-import type { CollectionEntry, StoredPressing, StoredRecording } from './types.ts'
+import type { BackfillState, CollectionEntry, DeadLetter, StoredPressing, StoredRecording } from './types.ts'
 
 export const VISIT_THROTTLE_SECONDS = 300
 export const INFLIGHT_TTL_SECONDS = 60
@@ -79,6 +79,10 @@ export type CrateRedisKeys = {
   pressing: (releaseId: number) => string
   recording: (mbid: string) => string
   inflight: (releaseId: number) => string
+  dead: string
+  unresolved: string
+  inspect: string
+  backfill: string
 }
 
 export function crateRedisKeys(env: Record<string, string | undefined> = process.env): CrateRedisKeys {
@@ -95,6 +99,10 @@ export function crateRedisKeys(env: Record<string, string | undefined> = process
     pressing: (releaseId: number) => `${prefix}crate:pressing:${releaseId}:v1`,
     recording: (mbid: string) => `${prefix}crate:recording:${mbid}:v1`,
     inflight: (releaseId: number) => `${prefix}crate:inflight:${releaseId}:v1`,
+    dead: `${prefix}crate:dead:v1`,
+    unresolved: `${prefix}crate:unresolved:v1`,
+    inspect: `${prefix}crate:inspect:v1`,
+    backfill: `${prefix}crate:backfill:v1`,
   }
 }
 
@@ -120,6 +128,13 @@ export type CrateStore = {
   acquireEnrichLock(ttlSeconds: number, token: string): Promise<boolean>
   releaseEnrichLock(token: string): Promise<boolean>
   acquireVisitThrottle(ttlSeconds: number): Promise<boolean>
+  markDead(letter: DeadLetter): Promise<void>
+  markUnresolved(letter: DeadLetter): Promise<void>
+  getDead(): Promise<number[]>
+  getUnresolved(): Promise<number[]>
+  getInspect(): Promise<DeadLetter[]>
+  getBackfill(): Promise<BackfillState | null>
+  setBackfill(state: BackfillState): Promise<void>
 }
 
 export function randomLockToken(): string {
@@ -157,6 +172,23 @@ function isStoredRecording(value: unknown): value is StoredRecording {
   if (!value || typeof value !== 'object') return false
   const record = value as StoredRecording
   return typeof record.mbid === 'string' && record.mbid.length > 0 && Array.isArray(record.credits)
+}
+
+function isDeadLetter(value: unknown): value is DeadLetter {
+  if (!value || typeof value !== 'object') return false
+  const record = value as DeadLetter
+  return (
+    typeof record.releaseId === 'number' &&
+    record.releaseId > 0 &&
+    typeof record.kind === 'string' &&
+    typeof record.message === 'string'
+  )
+}
+
+function isBackfillState(value: unknown): value is BackfillState {
+  if (!value || typeof value !== 'object') return false
+  const record = value as BackfillState
+  return typeof record.cursor === 'number' && typeof record.status === 'string'
 }
 
 function positiveIds(releaseIds: number[]): number[] {
@@ -302,6 +334,48 @@ class RedisCrateStore implements CrateStore {
     })
     return result === 'OK'
   }
+
+  async markDead(letter: DeadLetter): Promise<void> {
+    const pipeline = this.writeRedis.pipeline()
+    pipeline.sadd(this.keys.dead, String(letter.releaseId))
+    pipeline.srem(this.keys.unresolved, String(letter.releaseId))
+    pipeline.hset(this.keys.inspect, { [String(letter.releaseId)]: letter })
+    await pipeline.exec()
+  }
+
+  async markUnresolved(letter: DeadLetter): Promise<void> {
+    const pipeline = this.writeRedis.pipeline()
+    pipeline.sadd(this.keys.unresolved, String(letter.releaseId))
+    pipeline.hset(this.keys.inspect, { [String(letter.releaseId)]: letter })
+    await pipeline.exec()
+  }
+
+  async getDead(): Promise<number[]> {
+    if (process.env.NEXT_PHASE === 'phase-production-build') return []
+    return asNumberArray(await this.readRedis.smembers<string[]>(this.keys.dead))
+  }
+
+  async getUnresolved(): Promise<number[]> {
+    if (process.env.NEXT_PHASE === 'phase-production-build') return []
+    return asNumberArray(await this.readRedis.smembers<string[]>(this.keys.unresolved))
+  }
+
+  async getInspect(): Promise<DeadLetter[]> {
+    if (process.env.NEXT_PHASE === 'phase-production-build') return []
+    const raw = await this.readRedis.hgetall<Record<string, unknown>>(this.keys.inspect)
+    if (!raw || typeof raw !== 'object') return []
+    return Object.values(raw).filter(isDeadLetter)
+  }
+
+  async getBackfill(): Promise<BackfillState | null> {
+    if (process.env.NEXT_PHASE === 'phase-production-build') return null
+    const value = await this.readRedis.get<unknown>(this.keys.backfill)
+    return isBackfillState(value) ? value : null
+  }
+
+  async setBackfill(state: BackfillState): Promise<void> {
+    await this.writeRedis.set(this.keys.backfill, state)
+  }
 }
 
 export type MemoryCrateStore = CrateStore & {
@@ -314,6 +388,10 @@ export type MemoryCrateStore = CrateStore & {
   lockToken: string | null
   lockExpires: number
   visitUntil: number
+  dead: Set<number>
+  unresolved: Set<number>
+  inspect: Map<number, DeadLetter>
+  backfill: BackfillState | null
   now: () => number
 }
 
@@ -341,6 +419,10 @@ export function createMemoryCrateStore(
     lockToken: null,
     lockExpires: 0,
     visitUntil: 0,
+    dead: new Set<number>(),
+    unresolved: new Set<number>(),
+    inspect: new Map<number, DeadLetter>(),
+    backfill: null,
     now: initial.now ?? Date.now,
     async getPressing(releaseId: number) {
       return store.pressings[releaseId] ?? null
@@ -437,6 +519,30 @@ export function createMemoryCrateStore(
       if (store.visitUntil > nowMs) return false
       store.visitUntil = nowMs + ttlSeconds * 1000
       return true
+    },
+    async markDead(letter: DeadLetter) {
+      store.dead.add(letter.releaseId)
+      store.unresolved.delete(letter.releaseId)
+      store.inspect.set(letter.releaseId, letter)
+    },
+    async markUnresolved(letter: DeadLetter) {
+      store.unresolved.add(letter.releaseId)
+      store.inspect.set(letter.releaseId, letter)
+    },
+    async getDead() {
+      return [...store.dead]
+    },
+    async getUnresolved() {
+      return [...store.unresolved]
+    },
+    async getInspect() {
+      return [...store.inspect.values()]
+    },
+    async getBackfill() {
+      return store.backfill
+    },
+    async setBackfill(state: BackfillState) {
+      store.backfill = state
     },
   }
   return store

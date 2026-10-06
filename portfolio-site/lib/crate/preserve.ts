@@ -1,17 +1,20 @@
 import type {
   DurableErrorKind,
+  Lifecycles,
   PressingFacts,
   Provenance,
   StoredPressing,
   TrackOccurrence,
 } from './types.ts'
-import { CRATE_SCHEMA_VERSION } from './types.ts'
+import { CRATE_MAX_ATTEMPTS, CRATE_RESEARCH_REFRESH_MS, CRATE_SCHEMA_VERSION } from './types.ts'
 import { matchRank as rankOf } from './match-rank.ts'
 import { normalizePosition, normalizeTitle } from './match.ts'
+import { defaultLifecycles, emptyFetchState, shouldQueuePressing, touchAttempt } from './lifecycle.ts'
 
-export const DISCOGS_REFRESH_MS = 6 * 60 * 60 * 1000
-export const MB_REFRESH_MS = 30 * 24 * 60 * 60 * 1000
-export const SUCCESS_REFRESH_MS = DISCOGS_REFRESH_MS
+export const DISCOGS_COLLECTION_TTL_MS = 24 * 60 * 60 * 1000
+export const RESEARCH_REFRESH_MS = CRATE_RESEARCH_REFRESH_MS
+export const MB_REFRESH_MS = RESEARCH_REFRESH_MS
+export const SUCCESS_REFRESH_MS = RESEARCH_REFRESH_MS
 const BACKOFF_MS = [
   60 * 60 * 1000,
   6 * 60 * 60 * 1000,
@@ -19,6 +22,7 @@ const BACKOFF_MS = [
   7 * 24 * 60 * 60 * 1000,
 ] as const
 export const TERMINAL_REFRESH_MS = 30 * 24 * 60 * 60 * 1000
+export { CRATE_MAX_ATTEMPTS }
 
 export function isoFromMs(ms: number): string {
   return new Date(ms).toISOString()
@@ -62,9 +66,10 @@ export function errorPressingStub(
     terminal?: boolean
     facts?: PressingFacts
     entryInstanceIds?: number[]
+    countAttempt?: boolean
   } = {}
 ): StoredPressing {
-  const attempts = 1
+  const attempts = options.countAttempt === false || kind === 'auth' ? 0 : 1
   const backoff = options.terminal ? TERMINAL_REFRESH_MS : nextBackoffMs(attempts)
   const facts = options.facts ?? emptyPressingFacts(releaseId)
   const matchStatus = options.terminal ? 'unmatched' : 'pending'
@@ -96,6 +101,30 @@ export function errorPressingStub(
         message,
         attempts,
       },
+      verifiedAt: null,
+      lastAttemptAt: isoFromMs(nowMs),
+    },
+    lifecycles: {
+      pressing: {
+        verifiedAt: null,
+        lastAttemptAt: isoFromMs(nowMs),
+        lastError: {
+          at: isoFromMs(nowMs),
+          kind,
+          message,
+          attempts,
+        },
+        attempts,
+      },
+      match: emptyFetchState(),
+      research: emptyFetchState(),
+    },
+    coverage: { tracks: 0, matched: 0, withCredits: 0, withSamples: 0 },
+    checkpoint: { stage: 'pressing', researchCursor: 0 },
+    factsSource: {
+      source: 'discogs',
+      sourceUrl: facts.discogsUrl,
+      providerId: String(releaseId),
     },
   }
 }
@@ -110,29 +139,49 @@ export function preservePressingOnFailure(
     releaseId?: number
     facts?: PressingFacts
     entryInstanceIds?: number[]
+    countAttempt?: boolean
+    stage?: 'pressing' | 'match' | 'research'
   } = {}
 ): StoredPressing {
   if (!previous) {
     return errorPressingStub(options.releaseId ?? options.facts?.releaseId ?? 0, nowMs, kind, message, options)
   }
-  const attempts = (previous.provenance.lastError?.attempts ?? 0) + 1
-  const backoff = options.terminal ? TERMINAL_REFRESH_MS : nextBackoffMs(attempts)
+  const countAttempt = options.countAttempt !== false && kind !== 'auth'
+  const attempts = countAttempt
+    ? (previous.provenance.lastError?.attempts ?? 0) + 1
+    : (previous.provenance.lastError?.attempts ?? 0)
+  const exhausted = attempts >= CRATE_MAX_ATTEMPTS && kind !== 'auth' && kind !== 'not_found'
+  const errorKind = exhausted ? 'exhausted' : kind
+  const backoff =
+    options.terminal || exhausted || kind === 'auth' ? TERMINAL_REFRESH_MS : nextBackoffMs(Math.max(attempts, 1))
+  const nowIso = isoFromMs(nowMs)
+  const lastError = {
+    at: nowIso,
+    kind: errorKind,
+    message,
+    attempts,
+  }
   const provenance: Provenance = {
     ...previous.provenance,
-    checkedAt: isoFromMs(nowMs),
-    lastError: {
-      at: isoFromMs(nowMs),
-      kind,
-      message,
-      attempts,
-    },
+    checkedAt: nowIso,
+    lastAttemptAt: nowIso,
+    verifiedAt: previous.provenance.verifiedAt ?? (previous.provenance.lastError ? null : previous.provenance.checkedAt),
+    lastError,
     refreshAfter: isoFromMs(nowMs + backoff),
-    matchStatus: options.terminal ? 'unmatched' : previous.provenance.matchStatus,
+    matchStatus: options.terminal || exhausted ? 'unmatched' : previous.provenance.matchStatus,
+  }
+  const cycles = previous.lifecycles ?? defaultLifecycles(previous.provenance)
+  const stage = options.stage ?? 'pressing'
+  const nextCycles: Lifecycles = {
+    pressing: stage === 'pressing' ? touchAttempt(cycles.pressing, nowIso, lastError, { countAttempt }) : cycles.pressing,
+    match: stage === 'match' ? touchAttempt(cycles.match, nowIso, lastError, { countAttempt }) : cycles.match,
+    research: stage === 'research' ? touchAttempt(cycles.research, nowIso, lastError, { countAttempt }) : cycles.research,
   }
   return {
     ...previous,
     provenance,
-    mbRelease: options.terminal
+    lifecycles: nextCycles,
+    mbRelease: options.terminal || exhausted
       ? {
           ...previous.mbRelease,
           matchStatus: 'unmatched',
@@ -146,10 +195,7 @@ export function shouldRefreshPressing(
   pressing: StoredPressing | null,
   nowMs: number
 ): boolean {
-  if (!pressing) return true
-  const refreshAt = Date.parse(pressing.provenance.refreshAfter)
-  if (!Number.isFinite(refreshAt)) return true
-  return nowMs >= refreshAt
+  return shouldQueuePressing(pressing, nowMs)
 }
 
 export function matchRank(
@@ -174,11 +220,19 @@ export function keepPriorMatch(
   if (priorRank <= nextRank || counterEvidence) return next
 
   const attempts = (previous.provenance.lastError?.attempts ?? 0) + 1
+  const priorCycles = previous.lifecycles ?? defaultLifecycles(previous.provenance)
+  const nextCycles = next.lifecycles ?? defaultLifecycles(next.provenance)
   return {
     ...next,
     tracks: mergeTracksKeepRecordings(next.tracks, previous.tracks),
     mbRelease: previous.mbRelease,
     recordings: previous.recordings,
+    lifecycles: {
+      pressing: nextCycles.pressing,
+      match: priorCycles.match,
+      research: priorCycles.research,
+    },
+    coverage: previous.coverage ?? next.coverage,
     provenance: {
       ...next.provenance,
       matchStatus: previous.provenance.matchStatus,
@@ -199,11 +253,15 @@ function mergeTracksKeepRecordings(
   previousTracks: TrackOccurrence[]
 ): TrackOccurrence[] {
   return nextTracks.map((track) => {
-    const prior = previousTracks.find(
-      (row) =>
+    const prior = previousTracks.find((row) => {
+      if (row.identityKey && track.identityKey && row.identityKey === track.identityKey) {
+        return true
+      }
+      return (
         normalizePosition(row.position) === normalizePosition(track.position) &&
         normalizeTitle(row.title) === normalizeTitle(track.title)
-    )
+      )
+    })
     if (!prior) return track
     return { ...track, recording: prior.recording }
   })

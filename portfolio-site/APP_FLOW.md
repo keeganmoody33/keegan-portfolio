@@ -42,6 +42,8 @@
 | `/api/chat` | POST | `app/api/chat/route.ts` | Proxy to Supabase `chat` Edge Function |
 | `/api/discogs/collection` | GET | `app/api/discogs/collection/route.ts` | Full Discogs crate (`revalidate: 300`, Redis last-good when configured). Career `/api/discogs` was removed. |
 | `/api/cron/crate-enrich` | GET | `app/api/cron/crate-enrich/route.ts` | Daily ~45s drain of the crate enrichment queue. Bearer `CRON_SECRET` (`timingSafeEqual`). Missing secret → 404. |
+| `/api/cron/crate-backfill` | GET | `app/api/cron/crate-backfill/route.ts` | Resumable initial backfill, independent of visitors. Same auth. Preview Redis prefix `lf:preview:`. |
+| `/api/cron/crate-inspect` | GET | `app/api/cron/crate-inspect/route.ts` | Read-only queue / dead / unresolved / backfill snapshot. Same auth. |
 | `/api/github` | GET | `app/api/github/route.ts` | Proxy to GitHub public events API |
 | `/api/jd-analyzer` | POST | `app/api/jd-analyzer/route.ts` | Proxy to Supabase `jd-analyzer` Edge Function |
 
@@ -302,7 +304,7 @@ Land on /keeganmoody33
 1. Grid link saves scroll/focus in sessionStorage (`lf:collection:scroll`, `lf:collection:focus`) and routes to `/collection/{releaseId}` with `scroll={false}`.
 2. From the grid, the intercepting overlay (`@detail/(.)[releaseId]`) covers the crate. Direct visit or refresh renders the full page.
 3. Overview is the default tab: sourced description (omit if none), fact rows (label, catno, format, country, released — drop a missing field), a few stored sample/credit connections.
-4. Tracks tab lists the owned pressing in Discogs order. Selecting a track shows stored credits, samples from, and sampled in.
+4. Tracks tab lists the owned pressing in Discogs order (headings are labels, not buttons; mix titles stay distinct). A house-meta coverage line reports matched-track / credit / sample-relationship counts separately. Selecting a playable track shows stored credits, samples from, and sampled in.
 5. Back / Escape / collection link returns to the grid. Overlay uses `router.back()`; full page links to `/collection`. Focus returns to the cover.
 
 **Success state:** Stored pressing facts, tracklist, and MusicBrainz credits/samples. Cover is the same thumbnail as the grid.
@@ -346,11 +348,12 @@ Discogs API
             └── not used on `/keeganmoody33` (career `/api/discogs` / RecentDigs removed)
 
 MusicBrainz API (background only)
-            └── crate enrich (`after()` keeps the promise; budgeted daily cron + visit drain 1/5min)
-            └── Redis zset `lf:crate:queue:v1` + queued set; lock token compare-and-delete
+            └── crate enrich (`after()` keeps the promise; budgeted daily cron + visit drain 1/5min + explicit backfill)
+            └── Redis zset `lf:crate:queue:v1` + queued set; lock token compare-and-delete; dead/unresolved inspect sets
             └── visitor `/collection/[releaseId]` reads Redis, then fixtures, then a collection pending shell
             └── HTML `data-crate-source="redis|fixture|collection"` marks which one served
             └── never called on a visitor request. Detail routes are `force-dynamic`. A Redis miss `after()`-enqueues that id to the front and processes one.
+            └── successful research is reused; a later Discogs refresh does not rematch unchanged identities
 
 YouTube IFrame API (client-side, no proxy)
     └── youtube.com/iframe_api ──→ YouTubePlayer component

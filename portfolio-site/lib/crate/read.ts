@@ -9,6 +9,7 @@ import { collectionReleaseId } from './sync.ts'
 import { getDefaultCrateStore, type CrateStore } from './store.ts'
 import { CRATE_SCHEMA_VERSION, type StoredPressing, type TrackOccurrence } from './types.ts'
 import { isoFromMs } from './preserve.ts'
+import { hydratePressing } from './lifecycle.ts'
 import bootsy from './fixtures/573292.json' with { type: 'json' }
 import goodieMob from './fixtures/240128.json' with { type: 'json' }
 import mtume from './fixtures/567894.json' with { type: 'json' }
@@ -35,7 +36,8 @@ export const CRATE_FIXTURE_IDS = Object.freeze(
 )
 
 export function fixturePressing(releaseId: number): StoredPressing | null {
-  return FIXTURES[releaseId] ?? null
+  const pressing = FIXTURES[releaseId]
+  return pressing ? hydratePressing(pressing) : null
 }
 
 function scheduleMissedPressing(store: CrateStore, releaseId: number): void {
@@ -82,7 +84,7 @@ export function pendingPressingFromRelease(
   nowMs = Date.now()
 ): StoredPressing {
   const checkedAt = isoFromMs(nowMs)
-  return {
+  return hydratePressing({
     schemaVersion: CRATE_SCHEMA_VERSION,
     releaseId,
     entryInstanceIds: release.instanceId ? [release.instanceId] : [],
@@ -120,7 +122,7 @@ export function pendingPressingFromRelease(
       refreshAfter: checkedAt,
       lastError: null,
     },
-  }
+  })
 }
 
 export type RecordDetailRead =
@@ -161,7 +163,7 @@ export async function readStoredPressing(
       if (stored) {
         return {
           status: 'ok',
-          pressing: withCollectionArt(stored, listed),
+          pressing: withCollectionArt(hydratePressing(stored), listed),
           from: 'store',
         }
       }

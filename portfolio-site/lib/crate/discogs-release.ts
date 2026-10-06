@@ -1,4 +1,5 @@
 import {
+  DiscogsAuthError,
   DiscogsNotFoundError,
   DiscogsRateLimitError,
   DiscogsUnavailableError,
@@ -143,6 +144,9 @@ export async function fetchDiscogsReleaseDetail(
   })
   if (response.status === 429) {
     throw new DiscogsRateLimitError(readRetryAfter(response))
+  }
+  if (response.status === 401 || response.status === 403) {
+    throw new DiscogsAuthError(response.status)
   }
   if (response.status === 404 || (response.status >= 400 && response.status < 500)) {
     throw new DiscogsNotFoundError()

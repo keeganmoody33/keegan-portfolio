@@ -1,12 +1,15 @@
-COMPLETED (2026-10-06 — collection record detail, preview only):
+COMPLETED (2026-10-06 — collection record detail, preview prototype):
 - Cover click on `/collection` opens `/collection/[releaseId]` (intercepting overlay + full-page fallback). Back/Escape restores scroll and cover focus.
-- Stored pressing model in Upstash (`lf:crate:pressing:{id}:v1` etc.). Discogs = pressing identity and track order. MusicBrainz = recording match, credits, typed samples. Visitors read Redis → fixtures → collection pending. Never live Discogs/MB on the page request.
-- Sync hook: complete collection crawl queues new/missing ids (new ids to the front of a zset); `after()` awaits 1 enrich. Daily `/api/cron/crate-enrich` drains until ~45s. Visit drain 1/5min. Discogs snapshot + pressing facts refresh within 6h on visit. Hobby cron stays daily (`37 4 * * *`) — gap without traffic.
-- Queue is zset + dedupe + inflight; lock is owner token + compare-and-delete; never-enriched failures persist `lastError`/`refreshAfter`; 4xx is terminal. Weaker MB refresh keeps the prior match.
-- Discogs terms: User-Agent `lecturesfrom/1.0 +https://lecturesfrom.com`; `Data provided by Discogs.` on the record; footer trademark line.
-- Fixtures committed for Bootsy 573292, Goodie Mob 240128, Mtume 567894 (Mtume vocal/instrumental stays ambiguous).
+- Stored pressing model in Upstash (`lf:crate:pressing:{id}:v1`; preview `lf:preview:crate:…`). Discogs = pressing identity and track order (headings and mix titles kept). MusicBrainz = recording match, credits, typed samples. Visitors read Redis → fixtures → collection pending. Never live Discogs/MB on the page request.
+- Four independent lifecycles: collection listing, Discogs pressing facts, recording match, MusicBrainz research. Refreshing one does not cascade. Successful credits/samples are reused indefinitely (optional `CRATE_RESEARCH_REFRESH=1`, default six months). Rematch only when track identity (position/title/duration/mix) or the accepted MB release changes, or an explicit refresh is requested.
+- `verifiedAt` is last successful fetch; `lastAttemptAt` / `lastError` / `attempts` track failures so old facts never look newly verified.
+- Queue is zset + dedupe + inflight; lock is owner token + compare-and-delete; items leave only after a successful commit. Exhausted retries land in `lf:crate:dead:v1`; unresolved/auth/not-found in `lf:crate:unresolved:v1`. 401/403 stop the run as `auth` without burning retries. 5xx/429/timeout back off.
+- Sync hook: complete collection crawl queues new/missing ids; `after()` awaits 1 enrich. Daily `/api/cron/crate-enrich` drains until ~45s. Visit drain 1/5min. Collection listing TTL 24h. Explicit resumable backfill: `GET /api/cron/crate-backfill` + `npm run crate:backfill`. Inspect: `GET /api/cron/crate-inspect` + `npm run crate:inspect` (Bearer `CRON_SECRET`; missing secret → 404). Hobby cron stays daily (`37 4 * * *`). No paid plan change.
+- Discogs terms (attribution vs freshness are separate): User-Agent `lecturesfrom/1.0 +https://lecturesfrom.com`; `Data provided by Discogs.` on the record; footer trademark line. A Discogs refresh does not repeat MusicBrainz work when identity is unchanged. Research survives source failures.
+- Coverage line reports matched-track / credit / sample-relationship counts separately. Mtume vocal/instrumental stays unresolved. Hollywood Squares → Too $hort “I’m a Player” comes from MusicBrainz relationships (fixture + live lookup), not a hardcode.
+- Fixtures committed for Bootsy 573292, Goodie Mob 240128, Mtume 567894.
 - LF Direction brief: house tokens only, OVERVIEW/TRACKS tabs, hairline rows, sourced lines, empty copy (`nothing on file yet` / `pick a track for credits and samples` / `{reason} · checked YYYY-MM-DD`). `.house-fade` reuses `houseLockup`. Cover 1px `#242424` frame.
-- Preview only. Do not merge or deploy to production from this branch.
+- Preview only. Keep PR #50 in draft. Do not merge, promote the preview, or change paid plans.
 
 
 - Pivot is (−4, −3) viewBox units from the ring centre (`−4/248`, `−3/248`). Drawing ~−3.95, −3.07. Blue −32.339552° (ellipse ∩ inner-arc from the new pivot), horiz 0° ends on the arc, green 30.27366° (arc ∩ ring). Ellipse, hairline, line-only, transparent `--lf-mark-*`, favicon / og unchanged.

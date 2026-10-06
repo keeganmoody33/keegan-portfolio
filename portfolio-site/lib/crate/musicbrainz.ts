@@ -40,6 +40,21 @@ export function isMusicBrainzRateLimitError(
   return error instanceof MusicBrainzRateLimitError
 }
 
+export class MusicBrainzAuthError extends Error {
+  readonly kind = 'auth' as const
+  readonly status: 401 | 403
+
+  constructor(status: 401 | 403 = 401) {
+    super('MusicBrainz authentication failed')
+    this.name = 'MusicBrainzAuthError'
+    this.status = status
+  }
+}
+
+export function isMusicBrainzAuthError(error: unknown): error is MusicBrainzAuthError {
+  return error instanceof MusicBrainzAuthError
+}
+
 type MbRelation = {
   type?: string
   direction?: string
@@ -138,11 +153,13 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
   const sleep = options.sleep ?? defaultSleep
   const minInterval = options.minIntervalMs ?? MUSICBRAINZ_MIN_INTERVAL_MS
   let lastAt = 0
+  let requestCount = 0
 
   async function getJson<T>(url: string): Promise<T> {
     const wait = lastAt + minInterval - now()
     if (wait > 0) await sleep(wait)
     lastAt = now()
+    requestCount += 1
     const response = await fetchImpl(url, {
       headers: {
         'User-Agent': MUSICBRAINZ_USER_AGENT,
@@ -151,6 +168,9 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
     })
     if (response.status === 404) {
       return { error: 'Not Found' } as T
+    }
+    if (response.status === 401 || response.status === 403) {
+      throw new MusicBrainzAuthError(response.status)
     }
     if (response.status === 503 || response.status === 429) {
       throw new MusicBrainzRateLimitError(readRetryAfterMs(response))
@@ -164,6 +184,9 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
   }
 
   return {
+    get requestCount() {
+      return requestCount
+    },
     async lookupDiscogsReleaseUrl(discogsUrl: string): Promise<string[]> {
       const params = new URLSearchParams({
         resource: discogsUrl,
@@ -338,6 +361,7 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
             level: 'recording',
             source: 'musicbrainz',
             sourceUrl,
+            providerId: rel.artist.id,
           })
         }
         if (type === 'samples material' || type.includes('sample')) {
@@ -349,6 +373,7 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
             mbid: recording.id,
             sourceUrl: musicbrainzRecordingUrl(recording.id),
             source: 'musicbrainz',
+            providerId: recording.id,
           }
           const incoming = (rel.direction ?? '').toLowerCase() === 'backward'
           if (incoming) sampledIn.push(link)

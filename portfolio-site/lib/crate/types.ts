@@ -4,19 +4,61 @@ export const CRATE_UNAVAILABLE_LINE = "couldn't reach discogs"
 export const CRATE_NO_RECORDING = 'no matched recording yet'
 export const MUSICBRAINZ_USER_AGENT = 'lecturesfrom/1.0 ( 33@lecturesfrom.com )'
 export const MUSICBRAINZ_MIN_INTERVAL_MS = 1100
-export const CRATE_SCHEMA_VERSION = 1
+export const CRATE_SCHEMA_VERSION = 2
+export const CRATE_MAX_ATTEMPTS = 5
+export const CRATE_RESEARCH_REFRESH_MS = 180 * 24 * 60 * 60 * 1000
 
 export type MatchStatus = 'matched' | 'ambiguous' | 'unmatched' | 'pending'
 
 export type SourceName = 'discogs' | 'musicbrainz'
 
-export type DurableErrorKind = 'rate_limit' | 'unavailable' | 'partial' | 'not_found'
+export type DurableErrorKind =
+  | 'rate_limit'
+  | 'unavailable'
+  | 'partial'
+  | 'not_found'
+  | 'auth'
+  | 'ambiguous'
+  | 'exhausted'
+
+export type LifecycleName = 'pressing' | 'match' | 'research'
 
 export type ProvenanceError = {
   at: string
   kind: DurableErrorKind
   message: string
   attempts: number
+}
+
+export type FetchState = {
+  verifiedAt: string | null
+  lastAttemptAt: string | null
+  lastError: ProvenanceError | null
+  attempts: number
+}
+
+export type Lifecycles = {
+  pressing: FetchState
+  match: FetchState
+  research: FetchState
+}
+
+export type Coverage = {
+  tracks: number
+  matched: number
+  withCredits: number
+  withSamples: number
+}
+
+export type CrateCheckpoint = {
+  stage: LifecycleName
+  researchCursor: number
+}
+
+export type SourcedRef = {
+  source: SourceName
+  sourceUrl: string
+  providerId: string
 }
 
 export type Provenance = {
@@ -27,6 +69,29 @@ export type Provenance = {
   checkedAt: string
   refreshAfter: string
   lastError: ProvenanceError | null
+  verifiedAt?: string | null
+  lastAttemptAt?: string | null
+}
+
+export type DeadLetter = {
+  releaseId: number
+  kind: DurableErrorKind
+  message: string
+  attempts: number
+  at: string
+  stage: LifecycleName | 'queue'
+}
+
+export type BackfillState = {
+  cursor: number
+  startedAt: string
+  updatedAt: string
+  completed: number
+  unresolved: number
+  failed: number
+  discogsRequests: number
+  mbRequests: number
+  status: 'running' | 'idle' | 'auth_stop' | 'rate_limit'
 }
 
 export type CollectionEntry = {
@@ -70,6 +135,8 @@ export type TrackOccurrence = {
   duration: string | null
   durationMs: number | null
   index: number
+  type_?: string
+  identityKey?: string
   recording: TrackRecordingRef
 }
 
@@ -80,6 +147,7 @@ export type Credit = {
   level: 'recording' | 'release' | 'work'
   source: 'musicbrainz'
   sourceUrl: string
+  providerId?: string
 }
 
 export type SampleLink = {
@@ -88,6 +156,7 @@ export type SampleLink = {
   mbid: string
   sourceUrl: string
   source: 'musicbrainz'
+  providerId?: string
 }
 
 export type StoredRecording = {
@@ -113,11 +182,15 @@ export type StoredPressing = {
   releaseId: number
   entryInstanceIds: number[]
   facts: PressingFacts
+  factsSource?: SourcedRef
   description: SourcedText | null
   tracks: TrackOccurrence[]
   mbRelease: MbReleaseMatch
   recordings: Record<string, StoredRecording>
   provenance: Provenance
+  lifecycles?: Lifecycles
+  coverage?: Coverage
+  checkpoint?: CrateCheckpoint | null
 }
 
 export type DiscogsTracklistItem = {
