@@ -22,7 +22,7 @@ local taken = {}
 local ids = redis.call('ZRANGEBYSCORE', KEYS[1], '-inf', now, 'LIMIT', 0, 100)
 for _, id in ipairs(ids) do
   if #taken >= count then break end
-  local ok = redis.call('SET', prefix .. id, '1', 'NX', 'EX', ttl)
+  local ok = redis.call('SET', prefix .. id .. ':v1', '1', 'NX', 'EX', ttl)
   if ok then
     table.insert(taken, id)
   end

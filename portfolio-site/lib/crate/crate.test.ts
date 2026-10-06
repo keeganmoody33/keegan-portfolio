@@ -16,7 +16,7 @@ import {
   parseDurationToMs,
 } from './match.ts'
 import { keepPriorMatch, nextBackoffMs, preservePressingOnFailure, shouldRefreshPressing } from './preserve.ts'
-import { createMemoryCrateStore, INFLIGHT_TTL_SECONDS } from './store.ts'
+import { createMemoryCrateStore, crateRedisKeys, INFLIGHT_TTL_SECONDS, TAKE_LUA } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
 import { enrichPressing, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom } from './enrich.ts'
 import { isUnusableDiscogsNotes, resolveDescription, withReadableDescription } from './description.ts'
@@ -1315,6 +1315,11 @@ describe('isr-safe collection keep ping', () => {
 })
 
 describe('live-proof helpers', () => {
+  it('uses the same inflight key in TAKE_LUA and clearInflight', () => {
+    const keys = crateRedisKeys({ VERCEL_ENV: 'preview' })
+    assert.equal(keys.inflight(8), `${keys.inflightPrefix}8:v1`)
+    assert.match(TAKE_LUA, /prefix \.\. id \.\. ':v1'/)
+  })
   it('recovers the same id after clearInflight', async () => {
     const store = createMemoryCrateStore()
     const kill = await runCrateProof(store, 'kill')
