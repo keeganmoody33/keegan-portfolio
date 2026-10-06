@@ -195,7 +195,7 @@
 
 - **Goal:** Full vinyl collection browsing via Discogs API
 - **Output:** house `/collection` grid (`CollectionGrid`) via `/api/discogs/collection`; record detail at `/collection/[releaseId]` (`RecordDetail`). Career-only `/api/discogs` (recent-5) has been removed — do not revive it.
-- **Validation:** Grid shows collection. Cover click opens the record-detail overlay/page (not Discogs). Overview / Tracks, empty copy per LF Direction brief. Bootsy 573292, Goodie Mob 240128, Mtume 567894 fixtures cover the first working set.
+- **Validation:** Grid shows collection. Cover click opens the record-detail overlay/page (not Discogs). Overview / Tracks, empty copy per LF Direction brief (including `{reason} · checked YYYY-MM-DD`). Preview HTML `data-crate-source` shows redis vs fixture. Discogs attribution on the record and trademark line in the house footer. Bootsy 573292, Goodie Mob 240128, Mtume 567894 fixtures remain last-resort fallback.
 
 ---
 

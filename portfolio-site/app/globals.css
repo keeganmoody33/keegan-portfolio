@@ -252,6 +252,14 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   color: var(--house-muted);
 }
 
+.house-source {
+  font-family: var(--house-font-mono), 'Roboto Mono', monospace;
+  letter-spacing: 0.16em;
+  text-transform: lowercase;
+  font-size: 0.625rem;
+  color: var(--house-dim);
+}
+
 .house-rail {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);

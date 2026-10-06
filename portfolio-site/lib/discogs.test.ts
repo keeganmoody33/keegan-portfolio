@@ -201,7 +201,7 @@ describe('fetchRecentReleases', () => {
     assert.match(calls[0].url, /per_page=5/)
     assert.match(calls[0].url, /sort=added/)
     assert.equal(calls[0].init?.next?.revalidate, 300)
-    assert.equal(calls[0].init?.headers && (calls[0].init.headers as Record<string, string>)['User-Agent'], 'lecturesfrom/1.0')
+    assert.equal(calls[0].init?.headers && (calls[0].init.headers as Record<string, string>)['User-Agent'], 'lecturesfrom/1.0 +https://lecturesfrom.com')
     assert.equal(
       calls[0].init?.headers &&
         (calls[0].init.headers as Record<string, string>).Authorization,
@@ -382,7 +382,7 @@ describe('discogsErrorHttp', () => {
 describe('headers and recent shape', () => {
   it('omits Authorization when no token is present', () => {
     const headers = discogsHeaders()
-    assert.equal(headers['User-Agent'], 'lecturesfrom/1.0')
+    assert.equal(headers['User-Agent'], 'lecturesfrom/1.0 +https://lecturesfrom.com')
     assert.equal(headers.Authorization, undefined)
     assert.ok(collectionRequestUrl(1, 5).includes('per_page=5'))
   })

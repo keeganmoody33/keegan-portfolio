@@ -17,6 +17,7 @@ const VERSION_TOKENS = [
 
 export const DURATION_CLOSE_MS = 5000
 export const DURATION_FAR_MS = 15000
+export const UNIQUE_SEARCH_SCORE = 95
 
 export function parseDurationToMs(value: string | null | undefined): number | null {
   if (value == null) return null
@@ -64,7 +65,15 @@ export function coreTitle(value: string): string {
 }
 
 export function normalizePosition(value: string): string {
-  return value.toLowerCase().replace(/[\s./_-]/g, '')
+  const compact = value.toLowerCase().replace(/[\s./_]/g, '')
+  return compact.replace(/([^0-9])-+|-+(?=[^0-9])/g, '$1')
+}
+
+export function titlesSimilar(a: string, b: string): boolean {
+  if (titleEquals(a, b)) return true
+  const left = coreTitle(a)
+  const right = coreTitle(b)
+  return Boolean(left && right && left === right)
 }
 
 function titleEquals(a: string, b: string): boolean {
@@ -74,13 +83,6 @@ function titleEquals(a: string, b: string): boolean {
   return left === right
 }
 
-function titleClose(a: string, b: string): boolean {
-  if (titleEquals(a, b)) return true
-  const left = coreTitle(a)
-  const right = coreTitle(b)
-  return Boolean(left && right && left === right)
-}
-
 function durationDeltaMs(a: number | null, b: number | null): number | null {
   if (a == null || b == null) return null
   return Math.abs(a - b)
@@ -88,11 +90,11 @@ function durationDeltaMs(a: number | null, b: number | null): number | null {
 
 function versionTokens(value: string): Set<string> {
   const haystack = normalizeTitle(value)
+  const words = haystack.split(/\s+/).filter(Boolean)
   const found = new Set<string>()
   for (const token of VERSION_TOKENS) {
-    if (haystack.includes(token)) found.add(token)
+    if (words.includes(token)) found.add(token)
   }
-  if (haystack.includes('fruity')) found.add('instrumental')
   return found
 }
 
@@ -148,7 +150,7 @@ export function matchDiscogsTrackToMb(input: TrackMatchInput): TrackMatchResult 
       normalizePosition(track.number) === normalizePosition(discogs.position)
   )
   const byIndex = mbTracks.filter((track) => track.index === discogs.index)
-  const byTitle = mbTracks.filter((track) => titleClose(discogs.title, track.title))
+  const byTitle = mbTracks.filter((track) => titlesSimilar(discogs.title, track.title))
 
   const ranked = new Map<string, { track: TrackMatchInput['mbTracks'][number]; score: number }>()
   function bump(track: TrackMatchInput['mbTracks'][number], amount: number) {
@@ -207,7 +209,7 @@ export function matchDiscogsTrackToMb(input: TrackMatchInput): TrackMatchResult 
     }
   }
 
-  const titleOk = titleClose(discogs.title, best.track.title)
+  const titleOk = titlesSimilar(discogs.title, best.track.title)
   const positionOk =
     (discogs.position.length > 0 &&
       normalizePosition(best.track.number) === normalizePosition(discogs.position)) ||
@@ -277,19 +279,106 @@ export function detectNewInstanceIds(
   return detectNewReleaseIds(previousIds, nextIds)
 }
 
+export type ReleaseMatchVia = 'discogs_url' | 'barcode' | 'catno' | 'artist_title'
+
 export type ReleaseMatchCandidate = {
   mbid: string
-  via: 'discogs_url' | 'barcode' | 'catno'
+  via: ReleaseMatchVia
+  score?: number
+  title?: string
+  trackCount?: number | null
+}
+
+export type ReleaseMatchContext = {
+  title: string
+  trackCount: number
+}
+
+export type ReleaseMatchResult = {
+  matchStatus: MatchStatus
+  confidence: number
+  reason: string
+  mbid: string | null
+}
+
+function uniqueAcceptable(
+  hits: ReleaseMatchCandidate[],
+  context: ReleaseMatchContext | undefined,
+  via: ReleaseMatchVia
+): ReleaseMatchResult | null {
+  const unique = uniqueByMbid(hits)
+  if (unique.length === 0) return null
+  if (unique.length > 1) {
+    if (via === 'artist_title') {
+      return {
+        matchStatus: 'unmatched',
+        confidence: 0,
+        reason:
+          'artist + title search matched album editions, not this pressing',
+        mbid: null,
+      }
+    }
+    return {
+      matchStatus: 'ambiguous',
+      confidence: 0.4,
+      reason:
+        via === 'barcode'
+          ? 'multiple musicbrainz releases share this barcode'
+          : 'multiple musicbrainz releases share this catalog number',
+      mbid: null,
+    }
+  }
+  const hit = unique[0]
+  if (!hit) return null
+  if (!context || !searchHitAcceptable(hit, context)) {
+    return {
+      matchStatus: 'ambiguous',
+      confidence: 0.35,
+      reason:
+        via === 'barcode'
+          ? 'barcode hit lacked a unique title or track-count confirmation'
+          : via === 'catno'
+            ? 'catalog number hit lacked a unique title or track-count confirmation'
+            : 'artist + title hit lacked a unique title or track-count confirmation',
+      mbid: null,
+    }
+  }
+  return {
+    matchStatus: 'matched',
+    confidence: via === 'barcode' ? 0.85 : via === 'catno' ? 0.7 : 0.65,
+    reason:
+      via === 'barcode'
+        ? 'musicbrainz release matched by barcode'
+        : via === 'catno'
+          ? 'musicbrainz release matched by catalog number'
+          : 'musicbrainz release matched by artist and title',
+    mbid: hit.mbid,
+  }
+}
+
+export function searchHitAcceptable(
+  hit: ReleaseMatchCandidate,
+  context: ReleaseMatchContext
+): boolean {
+  if ((hit.score ?? 0) < UNIQUE_SEARCH_SCORE) return false
+  const titleOk = Boolean(hit.title) && titlesSimilar(context.title, hit.title ?? '')
+  const tracksOk =
+    hit.trackCount != null &&
+    context.trackCount > 0 &&
+    hit.trackCount === context.trackCount
+  return titleOk || tracksOk
 }
 
 export function classifyReleaseMatch(
-  candidates: ReleaseMatchCandidate[]
-): { matchStatus: MatchStatus; confidence: number; reason: string; mbid: string | null } {
+  candidates: ReleaseMatchCandidate[],
+  context?: ReleaseMatchContext
+): ReleaseMatchResult {
   if (candidates.length === 0) {
     return {
       matchStatus: 'unmatched',
       confidence: 0,
-      reason: 'no musicbrainz release matched this pressing via discogs url, barcode, or catalog number',
+      reason:
+        'no musicbrainz release for this pressing after discogs url, barcode, catalog number, and artist + title search',
       mbid: null,
     }
   }
@@ -312,52 +401,45 @@ export function classifyReleaseMatch(
     }
   }
 
-  const barcodeHits = uniqueMbids(candidates.filter((row) => row.via === 'barcode'))
-  if (barcodeHits.length === 1 && barcodeHits[0]) {
-    return {
-      matchStatus: 'matched',
-      confidence: 0.85,
-      reason: 'musicbrainz release matched by barcode',
-      mbid: barcodeHits[0],
-    }
-  }
-  if (barcodeHits.length > 1) {
-    return {
-      matchStatus: 'ambiguous',
-      confidence: 0.4,
-      reason: 'multiple musicbrainz releases share this barcode',
-      mbid: null,
-    }
-  }
+  const barcode = uniqueAcceptable(
+    candidates.filter((row) => row.via === 'barcode'),
+    context,
+    'barcode'
+  )
+  if (barcode) return barcode
 
-  const catnoHits = uniqueMbids(candidates.filter((row) => row.via === 'catno'))
-  if (catnoHits.length === 1 && catnoHits[0]) {
-    return {
-      matchStatus: 'matched',
-      confidence: 0.7,
-      reason: 'musicbrainz release matched by catalog number',
-      mbid: catnoHits[0],
-    }
-  }
-  if (catnoHits.length > 1) {
-    return {
-      matchStatus: 'ambiguous',
-      confidence: 0.35,
-      reason: 'multiple musicbrainz releases share this catalog number',
-      mbid: null,
-    }
-  }
+  const catno = uniqueAcceptable(
+    candidates.filter((row) => row.via === 'catno'),
+    context,
+    'catno'
+  )
+  if (catno) return catno
+
+  const artistTitle = uniqueAcceptable(
+    candidates.filter((row) => row.via === 'artist_title'),
+    context,
+    'artist_title'
+  )
+  if (artistTitle) return artistTitle
 
   return {
     matchStatus: 'unmatched',
     confidence: 0,
-    reason: 'no musicbrainz release matched this pressing via discogs url, barcode, or catalog number',
+    reason:
+      'no musicbrainz release for this pressing after discogs url, barcode, catalog number, and artist + title search',
     mbid: null,
   }
 }
 
-function uniqueMbids(rows: ReleaseMatchCandidate[]): string[] {
-  return [...new Set(rows.map((row) => row.mbid))]
+function uniqueByMbid(rows: ReleaseMatchCandidate[]): ReleaseMatchCandidate[] {
+  const seen = new Set<string>()
+  const unique: ReleaseMatchCandidate[] = []
+  for (const row of rows) {
+    if (seen.has(row.mbid)) continue
+    seen.add(row.mbid)
+    unique.push(row)
+  }
+  return unique
 }
 
 export function isWeakRecordingSearch(status: MatchStatus): boolean {

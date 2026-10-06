@@ -33,25 +33,22 @@ export async function queueNewAndMissing(
 ): Promise<{ newIds: number[]; queued: number[] }> {
   const nextIds = collectionReleaseIds(nextCollection)
   const newIds = detectNewReleaseIds(previousIds, nextIds)
-  const queued: number[] = []
-  const seenQueued = new Set<number>()
-
-  async function add(id: number) {
-    if (id <= 0 || seenQueued.has(id)) return
-    queued.push(id)
-    seenQueued.add(id)
-  }
-
-  for (const id of newIds) await add(id)
+  const newSet = new Set(newIds)
+  const pressings = await store.getPressings(nextIds)
+  const staleIds: number[] = []
 
   for (const id of nextIds) {
-    if (seenQueued.has(id)) continue
-    const pressing = await store.getPressing(id)
-    if (shouldRefreshPressing(pressing, nowMs)) await add(id)
+    if (newSet.has(id)) continue
+    const pressing = pressings.get(id) ?? null
+    if (shouldRefreshPressing(pressing, nowMs)) staleIds.push(id)
   }
 
-  if (queued.length > 0) {
-    await store.enqueue(queued)
+  const queued: number[] = []
+  if (newIds.length > 0) {
+    queued.push(...(await store.enqueue(newIds, { front: true, nowMs })))
+  }
+  if (staleIds.length > 0) {
+    queued.push(...(await store.enqueue(staleIds, { front: false, nowMs })))
   }
   await store.setSeen(nextIds)
   return { newIds, queued }

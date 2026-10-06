@@ -57,7 +57,7 @@
     "url": null,
     "matchStatus": "unmatched",
     "confidence": 0,
-    "reason": "no musicbrainz release matched this pressing via discogs url, barcode, or catalog number"
+    "reason": "no musicbrainz release for this pressing after discogs url, barcode, catalog number, and artist + title search"
   },
   "recordings": {},
   "provenance": {
@@ -66,7 +66,7 @@
     ],
     "matchStatus": "unmatched",
     "confidence": 0,
-    "reason": "no musicbrainz release matched this pressing via discogs url, barcode, or catalog number",
+    "reason": "no musicbrainz release for this pressing after discogs url, barcode, catalog number, and artist + title search",
     "checkedAt": "2026-10-06T01:22:26.660Z",
     "refreshAfter": "2026-11-05T01:22:26.660Z",
     "lastError": null

@@ -51,10 +51,12 @@ export default function RecordDetail({
   pressing,
   mode,
   unavailable = false,
+  crateSource,
 }: {
   pressing: StoredPressing
   mode: 'page' | 'overlay'
   unavailable?: boolean
+  crateSource?: 'redis' | 'fixture' | 'collection'
 }) {
   const router = useRouter()
   const titleId = useId()
@@ -145,7 +147,11 @@ export default function RecordDetail({
   }
 
   const shell = (
-    <article className="house-fade px-6 py-12 sm:px-10" aria-labelledby={titleId}>
+    <article
+      className="house-fade px-6 py-12 sm:px-10"
+      aria-labelledby={titleId}
+      data-crate-source={crateSource}
+    >
       <p className="house-meta mb-8">
         {mode === 'overlay' ? (
           <button
@@ -274,7 +280,17 @@ export default function RecordDetail({
                 ))}
               </dl>
               {facts.discogsUrl && (
-                <SourceLine source="discogs" href={facts.discogsUrl} />
+                <div className="mt-2">
+                  <SourceLine source="discogs" href={facts.discogsUrl} />
+                  <p className="house-source mt-2">
+                    <a
+                      href="https://www.discogs.com/"
+                      className={`hover:text-[var(--house-orange)] ${focusRing}`}
+                    >
+                      Data provided by Discogs.
+                    </a>
+                  </p>
+                </div>
               )}
 
               <section className="mt-10" aria-label="connections">
@@ -418,12 +434,12 @@ function RecordCover({
       <img
         src={src}
         alt={`${artist} — ${title}`}
-        className="aspect-square w-full object-cover"
+        className="aspect-square w-full border border-[var(--house-line)] object-cover"
       />
     )
   }
   return (
-    <div className="flex aspect-square w-full items-center justify-center bg-[var(--house-line)]">
+    <div className="flex aspect-square w-full items-center justify-center border border-[var(--house-line)] bg-[var(--house-line)]">
       {catno ? (
         <p className="font-mono text-sm text-[var(--house-dim)]">{catno}</p>
       ) : null}
@@ -433,7 +449,7 @@ function RecordCover({
 
 function SourceLine({ source, href }: { source: string; href: string }) {
   return (
-    <p className="mt-2 font-mono text-[11px] tracking-[0.16em] text-[var(--house-dim)]">
+    <p className="house-source mt-2">
       <a href={href} className={`hover:text-[var(--house-orange)] ${focusRing}`} rel="noopener noreferrer" target="_blank">
         {source}
       </a>
@@ -466,7 +482,7 @@ function TrackExtras({
   return (
     <div>
       {unmatched && (
-        <p className="font-mono text-sm text-[var(--house-dim)]">
+        <p className="house-source">
           {statusLine}
           {checked ? ` · checked ${checked}` : null}
         </p>

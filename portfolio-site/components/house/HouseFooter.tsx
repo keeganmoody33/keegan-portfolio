@@ -29,6 +29,9 @@ export default function HouseFooter() {
           legal
         </Link>
       </nav>
+      <p className="mt-4 font-mono text-[11px] leading-relaxed tracking-[0.16em] text-[var(--house-dim)]">
+        This application uses Discogs’ API but is not affiliated with, sponsored or endorsed by Discogs. ‘Discogs’ is a trademark of Zink Media, LLC.
+      </p>
     </footer>
   )
 }

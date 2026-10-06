@@ -10,12 +10,13 @@ export type MatchStatus = 'matched' | 'ambiguous' | 'unmatched' | 'pending'
 
 export type SourceName = 'discogs' | 'musicbrainz'
 
-export type DurableErrorKind = 'rate_limit' | 'unavailable' | 'partial'
+export type DurableErrorKind = 'rate_limit' | 'unavailable' | 'partial' | 'not_found'
 
 export type ProvenanceError = {
   at: string
   kind: DurableErrorKind
   message: string
+  attempts: number
 }
 
 export type Provenance = {

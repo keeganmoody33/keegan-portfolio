@@ -16,6 +16,30 @@ export type MbClientOptions = {
   minIntervalMs?: number
 }
 
+export type MbSearchHit = {
+  mbid: string
+  score: number
+  title: string
+  trackCount: number | null
+}
+
+export class MusicBrainzRateLimitError extends Error {
+  readonly kind = 'rate_limit' as const
+  readonly retryAfterMs: number
+
+  constructor(retryAfterMs = 60_000) {
+    super('MusicBrainz rate limited')
+    this.name = 'MusicBrainzRateLimitError'
+    this.retryAfterMs = retryAfterMs
+  }
+}
+
+export function isMusicBrainzRateLimitError(
+  error: unknown
+): error is MusicBrainzRateLimitError {
+  return error instanceof MusicBrainzRateLimitError
+}
+
 type MbRelation = {
   type?: string
   direction?: string
@@ -36,7 +60,12 @@ type MbUrlLookup = {
 }
 
 type MbReleaseSearch = {
-  releases?: Array<{ id?: string; title?: string }>
+  releases?: Array<{
+    id?: string
+    title?: string
+    score?: number
+    'track-count'?: number
+  }>
 }
 
 type MbRecordingDoc = {
@@ -69,6 +98,40 @@ export function musicbrainzReleaseUrl(mbid: string): string {
   return `https://musicbrainz.org/release/${mbid}`
 }
 
+export function escapeLucene(value: string): string {
+  return value.replace(/[+\-!(){}[\]^"~*?:\\/]/g, '\\$&')
+}
+
+export function stripDiscogsArtistSuffix(name: string): string {
+  return name.replace(/\s+\(\d+\)$/u, '').trim()
+}
+
+export function readRetryAfterMs(response: Response, fallbackMs = 60_000): number {
+  const raw = response.headers.get('Retry-After')
+  if (!raw) return fallbackMs
+  const seconds = Number.parseInt(raw, 10)
+  if (Number.isFinite(seconds) && seconds >= 0) return seconds * 1000
+  const date = Date.parse(raw)
+  if (Number.isFinite(date)) return Math.max(0, date - Date.now())
+  return fallbackMs
+}
+
+function hitsFromSearch(data: MbReleaseSearch): MbSearchHit[] {
+  const hits: MbSearchHit[] = []
+  const seen = new Set<string>()
+  for (const release of data.releases ?? []) {
+    if (!release.id || seen.has(release.id)) continue
+    seen.add(release.id)
+    hits.push({
+      mbid: release.id,
+      score: typeof release.score === 'number' ? release.score : 0,
+      title: release.title ?? '',
+      trackCount: typeof release['track-count'] === 'number' ? release['track-count'] : null,
+    })
+  }
+  return hits
+}
+
 export function createMusicBrainzClient(options: MbClientOptions = {}) {
   const fetchImpl = options.fetchImpl ?? fetch
   const now = options.now ?? Date.now
@@ -90,9 +153,7 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
       return { error: 'Not Found' } as T
     }
     if (response.status === 503 || response.status === 429) {
-      const error = new Error('MusicBrainz rate limited')
-      ;(error as Error & { kind: 'rate_limit' }).kind = 'rate_limit'
-      throw error
+      throw new MusicBrainzRateLimitError(readRetryAfterMs(response))
     }
     if (!response.ok) {
       const error = new Error('MusicBrainz unavailable')
@@ -121,32 +182,52 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
       return [...new Set(ids)]
     },
 
-    async searchReleaseByBarcode(barcode: string): Promise<string[]> {
+    async searchReleaseByBarcode(barcode: string): Promise<MbSearchHit[]> {
       const cleaned = barcode.replace(/\s+/g, '')
       if (!cleaned) return []
       const params = new URLSearchParams({
-        query: `barcode:${cleaned}`,
+        query: `barcode:${escapeLucene(cleaned)}`,
         fmt: 'json',
       })
       const data = await getJson<MbReleaseSearch>(`${MUSICBRAINZ_API}/release?${params.toString()}`)
-      return uniqueIds(data.releases)
+      return hitsFromSearch(data)
     },
 
-    async searchReleaseByCatno(catno: string, artist: string): Promise<string[]> {
+    async searchReleaseByCatno(catno: string, artist: string): Promise<MbSearchHit[]> {
       const trimmed = catno.trim()
       if (!trimmed) return []
-      const query = artist.trim()
-        ? `catno:"${trimmed}" AND artist:"${artist.trim()}"`
-        : `catno:"${trimmed}"`
+      const artistQuery = stripDiscogsArtistSuffix(artist)
+      const query = artistQuery
+        ? `catno:"${escapeLucene(trimmed)}" AND artist:"${escapeLucene(artistQuery)}"`
+        : `catno:"${escapeLucene(trimmed)}"`
       const params = new URLSearchParams({ query, fmt: 'json' })
       const data = await getJson<MbReleaseSearch>(`${MUSICBRAINZ_API}/release?${params.toString()}`)
-      return uniqueIds(data.releases)
+      return hitsFromSearch(data)
+    },
+
+    async searchReleaseByArtistTitle(input: {
+      artist: string
+      title: string
+      year?: number | null
+      label?: string | null
+    }): Promise<MbSearchHit[]> {
+      const artist = stripDiscogsArtistSuffix(input.artist)
+      const title = input.title.trim()
+      if (!artist || !title) return []
+      const parts = [
+        `artist:"${escapeLucene(artist)}"`,
+        `release:"${escapeLucene(title)}"`,
+      ]
+      if (input.year && input.year > 0) parts.push(`date:${input.year}`)
+      if (input.label?.trim()) parts.push(`label:"${escapeLucene(input.label.trim())}"`)
+      const params = new URLSearchParams({ query: parts.join(' AND '), fmt: 'json' })
+      const data = await getJson<MbReleaseSearch>(`${MUSICBRAINZ_API}/release?${params.toString()}`)
+      return hitsFromSearch(data)
     },
 
     async getRelease(mbid: string): Promise<{
       id: string
       title: string
-      annotation: string | null
       date: string | null
       country: string | null
       tracks: Array<{
@@ -160,17 +241,17 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
       }>
     } | null> {
       const params = new URLSearchParams({
-        inc: 'recordings+artist-credits+labels+url-rels+annotation',
+        inc: 'recordings+artist-credits+labels+url-rels',
         fmt: 'json',
       })
       const data = await getJson<{
         error?: string
         id?: string
         title?: string
-        annotation?: string
         date?: string
         country?: string
         media?: Array<{
+          position?: number
           tracks?: Array<{
             id?: string
             number?: string
@@ -197,12 +278,16 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
       }> = []
       let index = 0
       for (const medium of data.media ?? []) {
+        const disc = medium.position && medium.position > 1 ? String(medium.position) : ''
         for (const track of medium.tracks ?? []) {
           const recordingId = track.recording?.id
           if (!recordingId) continue
+          const rawNumber = track.number ?? ''
+          const number =
+            disc && /^\d+$/.test(rawNumber) ? `${disc}-${rawNumber}` : rawNumber
           tracks.push({
             index,
-            number: track.number ?? '',
+            number,
             title: track.title ?? track.recording?.title ?? '',
             lengthMs: track.length ?? track.recording?.length ?? null,
             recordingId,
@@ -215,7 +300,6 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
       return {
         id: data.id,
         title: data.title ?? '',
-        annotation: data.annotation?.trim() ? data.annotation.trim() : null,
         date: data.date ?? null,
         country: data.country ?? null,
         tracks,
@@ -282,18 +366,6 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
       }
     },
   }
-}
-
-function uniqueIds(releases: Array<{ id?: string }> | undefined): string[] {
-  const ids: string[] = []
-  const seen = new Set<string>()
-  for (const release of releases ?? []) {
-    if (release.id && !seen.has(release.id)) {
-      ids.push(release.id)
-      seen.add(release.id)
-    }
-  }
-  return ids
 }
 
 export type MusicBrainzClient = ReturnType<typeof createMusicBrainzClient>

@@ -52,5 +52,5 @@ export default async function RecordDetailRoute({
     )
   }
 
-  return <RecordDetail pressing={read.pressing} mode={mode} />
+  return <RecordDetail pressing={read.pressing} mode={mode} crateSource={read.from === 'store' ? 'redis' : read.from} />
 }

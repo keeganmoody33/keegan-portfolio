@@ -1,8 +1,11 @@
+import { cache } from 'react'
 import {
   isCompleteCollection,
   readCachedCollection,
   type DiscogsRelease,
 } from '../discogs.ts'
+
+const readCollectionOnce = cache(async () => readCachedCollection())
 import { collectionReleaseId } from './sync.ts'
 import { getDefaultCrateStore, type CrateStore } from './store.ts'
 import { CRATE_SCHEMA_VERSION, type StoredPressing, type TrackOccurrence } from './types.ts'
@@ -120,7 +123,7 @@ export async function readStoredPressing(
   let collectionComplete = options.collection !== undefined
   if (collectionReleases === undefined) {
     try {
-      const collection = await readCachedCollection()
+      const collection = await readCollectionOnce()
       if (collection) {
         collectionReleases = collection.releases
         collectionComplete = isCompleteCollection(collection)
@@ -208,7 +211,7 @@ export async function findCollectionRelease(
   releaseId: number
 ): Promise<DiscogsRelease | null> {
   try {
-    const collection = await readCachedCollection()
+    const collection = await readCollectionOnce()
     if (!collection) return null
     return (
       collection.releases.find((release) => collectionReleaseId(release) === releaseId) ??

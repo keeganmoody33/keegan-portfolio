@@ -259,21 +259,21 @@ Full paginated Discogs crate for `/collection`. Paginates `per_page=100` until `
 
 **Auth:** `DISCOGS_TOKEN` if present. Missing token does not 500.
 
-**Cache:** `next: { revalidate: 300 }` and route `revalidate = 300`. Last-good is a complete crawl only (`releases.length === pagination.items`). When Upstash Redis env is present, that copy is stored at `lf:discogs:collection:v1` (production) or `lf:preview:discogs:collection:v1` (preview/dev) plus `…:meta:v1` and `…:lock:v1`. Reads serve Redis first so a cold instance never 429s if a snapshot exists. Refresh is at most ~once a day via `after()`, guarded by `SET NX EX` (120s). Partial/failed/429 refreshes keep the old copy and record a generic error kind on meta. Redis reads use `cache: 'no-store'` so an empty/missing MGET is never kept in Next's Data Cache; skip Redis reads and writes entirely during `next build` (`NEXT_PHASE === 'phase-production-build'`) so `/collection` SSG stays ISR (`○` 5m) via Discogs `next.revalidate: 300`. Writes and the lock use `cache: 'no-store'` only inside `after()`. Missing Redis env = in-memory last-good + Discogs crawl as before. On Discogs 429 with empty Redis and empty memory: HTTP 429 + Retry-After. No webhook; 5-minute ISR is the HTML contract. Each `discogsUrl` is `https://www.discogs.com/release/<id>` with no `/release/0`.
+**Cache:** `next: { revalidate: 300 }` and route `revalidate = 300`. Last-good is a complete crawl only (`releases.length === pagination.items`). When Upstash Redis env is present, that copy is stored at `lf:discogs:collection:v1` (production) or `lf:preview:discogs:collection:v1` (preview/dev) plus `…:meta:v1` and `…:lock:v1`. Reads serve Redis first so a cold instance never 429s if a snapshot exists. Refresh is at most every 6h via `after()` when a visit finds the snapshot stale, guarded by `SET NX EX` (120s). Partial/failed/429 refreshes keep the old copy and record a generic error kind on meta. Redis reads use `cache: 'no-store'` so an empty/missing MGET is never kept in Next's Data Cache; skip Redis reads and writes entirely during `next build` (`NEXT_PHASE === 'phase-production-build'`) so `/collection` SSG stays ISR (`○` 5m) via Discogs `next.revalidate: 300`. Writes and the lock use `cache: 'no-store'` only inside `after()`. Missing Redis env = in-memory last-good + Discogs crawl as before. On Discogs 429 with empty Redis and empty memory: HTTP 429 + Retry-After. No webhook; 5-minute ISR is the HTML contract. Each `discogsUrl` is `https://www.discogs.com/release/<id>` with no `/release/0`.
 
 **PostHog events:** `api_discogs_collection_request`, `api_discogs_error`, `api_rate_limited`
 
-A complete collection crawl also queues new and stale release ids for crate enrichment (`queueNewAndMissing`). `after()` then processes **1** pressing. Enrichment never runs on a visitor record-detail request.
+A complete collection crawl also queues new and stale release ids for crate enrichment (`queueNewAndMissing`, new ids to the front of a Redis zset). `after()` **awaits** `processEnrichmentQueue` for 1 pressing (the platform keeps the promise). A later `/collection` visit against a fresh snapshot may drain 1 more item behind `SET NX EX 300`. Enrichment never runs on a visitor record-detail request.
 
 ---
 
 ### GET /api/cron/crate-enrich
 
-Daily drain of the crate enrichment queue. Vercel cron `0 8 * * *`.
+Daily budgeted drain of the crate enrichment queue. Vercel Hobby cron `37 4 * * *` (daily; this project’s plan does not allow a cron more often than daily). Discogs-sourced snapshots/pressings are also refreshable on visit when older than 6h.
 
-**Auth:** `Authorization: Bearer $CRON_SECRET`. Missing `CRON_SECRET` → HTTP 404 (route is not public). Wrong bearer → 401.
+**Auth:** `Authorization: Bearer $CRON_SECRET` compared with `timingSafeEqual`. Missing `CRON_SECRET` → HTTP 404 (route is not public). Wrong bearer → 401.
 
-**Behavior:** Read last-good collection, enqueue new/missing ids, `processEnrichmentQueue` limit 2. MusicBrainz ~1.1s. Discogs release detail uses `lecturesfrom/1.0`. Failed refresh preserves the last successful pressing.
+**Behavior:** Read last-good collection, enqueue new/missing ids, `processEnrichmentQueue` until ~45s remain. MusicBrainz ~1.1s, one client per run. Discogs release detail uses `lecturesfrom/1.0 +https://lecturesfrom.com`. Failed refresh preserves the last successful pressing and writes `lastError` + `refreshAfter` (4xx is terminal). Lock TTL is 60s with an owner token.
 
 **Response:** `{ processed: number[], skipped: boolean }` or `{ processed: [], skipped: true, reason: 'no store' }` when Redis env is absent.
 
@@ -281,13 +281,18 @@ Daily drain of the crate enrichment queue. Vercel cron `0 8 * * *`.
 
 ### Crate stored pressing (Upstash)
 
-Visitor `/collection/[releaseId]` reads stored results only (`lib/crate/read.ts`): Redis → committed fixtures (`573292`, `240128`, `567894`) → collection pending shell. Never live Discogs release or MusicBrainz on that path.
+Visitor `/collection/[releaseId]` reads stored results only (`lib/crate/read.ts`): Redis → committed fixtures (`573292`, `240128`, `567894`) → collection pending shell. Never live Discogs release or MusicBrainz on that path. The article sets `data-crate-source="redis|fixture|collection"` so a preview can prove which layer served. A Redis miss may `after()`-enqueue that id (still not on the request path). Detail routes are dynamic so a just-written Redis pressing is not stuck behind fixture ISR.
+
+MusicBrainz match order: unique Discogs URL relationship (then skip barcode/catno), else barcode/catno with score ≥95 plus similar title or track count, then artist + title + year/label. No unique pressing → `unmatched` with reason `no musicbrainz release for this pressing after discogs url, barcode, catalog number, and artist + title search`. Vocal/instrumental siblings stay `ambiguous`. `CRATE_ENRICH_FAIL_IDS` (comma ids or `*`) plus `deps.failRefresh` simulate a Discogs/MusicBrainz failure so a stored good pressing keeps its tracks and records `lastError` + backoff. A weaker MusicBrainz refresh keeps the prior match unless a unique Discogs URL is counter-evidence. Descriptions paraphrase Discogs notes only.
 
 | Key | Purpose |
 |-----|---------|
-| `lf:crate:queue:v1` | Release ids waiting for enrich (preview prefix `lf:preview:` when `VERCEL_ENV !== 'production'`) |
-| `lf:crate:seen:v1` | Ids observed in the last complete collection crawl |
-| `lf:crate:enrich:lock:v1` | `SET NX EX` ~50s |
+| `lf:crate:queue:v1` | Zset of release ids (score 0 = front/new; retry score = `refreshAfter`) |
+| `lf:crate:queued:v1` | Dedupe set; ids leave only on ack/drop |
+| `lf:crate:seen:v1` | Redis SET of ids observed in the last complete collection crawl |
+| `lf:crate:enrich:lock:v1` | `SET token NX EX 60` + compare-and-delete Lua |
+| `lf:crate:inflight:{id}:v1` | Taken-but-not-acked id (`SET NX EX 60`) |
+| `lf:crate:visit:v1` | Visit drain throttle `SET NX EX 300` |
 | `lf:crate:pressing:{id}:v1` | Stored pressing: facts, sourced description, Discogs track occurrences, MB release match, recordings map, provenance |
 | `lf:crate:recording:{mbid}:v1` | Credits + sample relationships at recording level |
 
@@ -442,6 +447,7 @@ Both deployed via `supabase functions deploy <name>`. Source in `supabase/functi
 | `UPSTASH_REDIS_REST_URL` | Server-only | No | Fallback if KV_* pair is missing. |
 | `UPSTASH_REDIS_REST_TOKEN` | Server-only | No | Fallback if KV_* pair is missing. |
 | `CRON_SECRET` | Server-only | No | Bearer for `/api/cron/crate-enrich`. Missing → 404. |
+| `CRATE_ENRICH_FAIL_IDS` | Server-only | No | Test hook. Comma-separated Discogs ids or `*` to fail the next enrich and preserve last-good. |
 
 ### Supabase Secrets (set via `supabase secrets set`)
 
@@ -484,7 +490,7 @@ All API routes follow the same pattern:
 
 - `achievements` table is populated but not queried by any Edge Function
 - In-memory rate limiting is per-instance (stopgap for Vercel)
-- Discogs collection uses 5-minute ISR plus a durable Redis last-good snapshot when Upstash env is set; no Discogs webhook. Crate enrichment is `after()` (1 item) plus daily `/api/cron/crate-enrich` when `CRON_SECRET` is set.
+- Discogs collection uses 5-minute ISR plus a durable Redis last-good snapshot when Upstash env is set; no Discogs webhook. Crate enrichment is `after()` (await 1 item) plus a budgeted daily `/api/cron/crate-enrich` when `CRON_SECRET` is set, plus a visit drain of 1 item / 5 min.
 - Supabase client in `lib/supabase.ts` uses non-null assertion -- will throw if env vars missing at module load
 - Deno std lib in Edge Functions pinned to `0.168.0` (~45 versions behind)
 

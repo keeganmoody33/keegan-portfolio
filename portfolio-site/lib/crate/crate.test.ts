@@ -15,15 +15,17 @@ import {
   normalizeTitle,
   parseDurationToMs,
 } from './match.ts'
-import { preservePressingOnFailure, shouldRefreshPressing } from './preserve.ts'
-import { createMemoryCrateStore } from './store.ts'
+import { keepPriorMatch, nextBackoffMs, preservePressingOnFailure, shouldRefreshPressing } from './preserve.ts'
+import { createMemoryCrateStore, INFLIGHT_TTL_SECONDS } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
-import { enrichPressing, sentencesFrom } from './enrich.ts'
+import { enrichPressing, processEnrichmentQueue, sentencesFrom } from './enrich.ts'
 import type { MusicBrainzClient } from './musicbrainz.ts'
 import { CRATE_SCHEMA_VERSION, type StoredPressing } from './types.ts'
 import { mapRelease, parseDurableCollection } from '../discogs.ts'
+import { DiscogsNotFoundError } from '../discogs.ts'
 import { fixturePressing, parseReleaseParam, readStoredPressing } from './read.ts'
 import { factRows } from './view.ts'
+import { cronSecretEqual } from './cron-auth.ts'
 
 function pressingStub(overrides: Partial<StoredPressing> = {}): StoredPressing {
   return {
@@ -98,6 +100,8 @@ describe('duration and title helpers', () => {
     )
     assert.equal(normalizePosition('A-1'), 'a1')
     assert.equal(normalizePosition('A+1'), 'a+1')
+    assert.equal(normalizePosition('1-1'), '1-1')
+    assert.equal(normalizePosition('11'), '11')
   })
 })
 
@@ -307,14 +311,19 @@ describe('failure preservation', () => {
     assert.equal(stored?.tracks[0]?.recording.mbid, previous.tracks[0]?.recording.mbid)
   })
 
-  it('leaves a missing pressing missing instead of inventing one', () => {
+  it('writes an error record with backoff when nothing was stored yet', () => {
     const preserved = preservePressingOnFailure(
       null,
       Date.parse('2026-10-06T00:00:00.000Z'),
       'rate_limit',
-      'Too many requests'
+      'Too many requests',
+      { releaseId: 567894 }
     )
-    assert.equal(preserved, null)
+    assert.equal(preserved.releaseId, 567894)
+    assert.equal(preserved.provenance.lastError?.kind, 'rate_limit')
+    assert.equal(preserved.provenance.lastError?.attempts, 1)
+    assert.ok(preserved.provenance.refreshAfter > preserved.provenance.checkedAt)
+    assert.equal(preserved.provenance.matchStatus, 'pending')
   })
 
   it('refreshes when refreshAfter has passed', () => {
@@ -443,6 +452,9 @@ function createMusicBrainzClientForTests(): MusicBrainzClient {
     async searchReleaseByCatno() {
       return []
     },
+    async searchReleaseByArtistTitle() {
+      return []
+    },
     async getRelease() {
       return null
     },
@@ -451,3 +463,349 @@ function createMusicBrainzClientForTests(): MusicBrainzClient {
     },
   }
 }
+
+describe('never-enriched failures persist and back off (P1.2)', () => {
+  it('stores an error pressing instead of re-queuing immediately', async () => {
+    const store = createMemoryCrateStore({ queue: [567894] })
+    const result = await processEnrichmentQueue(
+      {
+        store,
+        now: () => Date.parse('2026-10-06T00:00:00.000Z'),
+        fetchDiscogs: async () => {
+          throw new Error('discogs down')
+        },
+        mb: createMusicBrainzClientForTests(),
+        budgetMs: 45_000,
+        takeFloorMs: 0,
+      },
+      1
+    )
+    assert.deepEqual(result.processed, [567894])
+    const stored = await store.getPressing(567894)
+    assert.ok(stored)
+    assert.equal(stored.provenance.lastError?.kind, 'unavailable')
+    assert.equal(stored.provenance.lastError?.attempts, 1)
+    assert.ok(stored.provenance.refreshAfter > stored.provenance.checkedAt)
+    const queue = await store.getQueue()
+    assert.ok(queue.includes(567894))
+    const due = await store.takeDue(1, Date.parse('2026-10-06T00:00:00.000Z'), INFLIGHT_TTL_SECONDS)
+    assert.deepEqual(due, [])
+  })
+
+  it('treats Discogs 4xx as terminal unmatched and drops the id', async () => {
+    const store = createMemoryCrateStore({ queue: [1] })
+    await processEnrichmentQueue(
+      {
+        store,
+        now: () => Date.parse('2026-10-06T00:00:00.000Z'),
+        fetchDiscogs: async () => {
+          throw new DiscogsNotFoundError()
+        },
+        mb: createMusicBrainzClientForTests(),
+        takeFloorMs: 0,
+      },
+      1
+    )
+    const stored = await store.getPressing(1)
+    assert.equal(stored?.provenance.matchStatus, 'unmatched')
+    assert.equal(stored?.provenance.lastError?.kind, 'not_found')
+    assert.deepEqual(await store.getQueue(), [])
+  })
+
+  it('uses attempt count for backoff', () => {
+    assert.equal(nextBackoffMs(1), 60 * 60 * 1000)
+    assert.equal(nextBackoffMs(2), 6 * 60 * 60 * 1000)
+    assert.equal(nextBackoffMs(3), 24 * 60 * 60 * 1000)
+    assert.equal(nextBackoffMs(8), 7 * 24 * 60 * 60 * 1000)
+  })
+})
+
+describe('overlap-safe queue (P1.3)', () => {
+  it('keeps the id in the queue until ack, so a second take cannot steal it', async () => {
+    const store = createMemoryCrateStore({ queue: [573292, 240128] })
+    const first = await store.takeDue(1, 1, 60)
+    assert.deepEqual(first, [573292])
+    assert.ok((await store.getQueue()).includes(573292))
+    const second = await store.takeDue(2, 1, 60)
+    assert.deepEqual(second, [240128])
+    await store.nack(573292, 1)
+    const again = await store.takeDue(1, 1, 60)
+    assert.deepEqual(again, [573292])
+    await store.ack(573292)
+    assert.equal((await store.getQueue()).includes(573292), false)
+  })
+
+  it('dedupes enqueue and sends new ids to the front', async () => {
+    const store = createMemoryCrateStore()
+    await store.enqueue([240128], { front: false, nowMs: 50 })
+    await store.enqueue([573292], { front: true, nowMs: 90 })
+    assert.deepEqual(await store.getQueue(), [573292, 240128])
+    await store.enqueue([573292], { front: true, nowMs: 90 })
+    assert.deepEqual(await store.getQueue(), [573292, 240128])
+  })
+})
+
+describe('enrich lock token (P1.4)', () => {
+  it('compare-and-deletes only with the owner token', async () => {
+    const store = createMemoryCrateStore({ now: () => 1_000 })
+    assert.equal(await store.acquireEnrichLock(60, 'owner'), true)
+    assert.equal(await store.acquireEnrichLock(60, 'other'), false)
+    assert.equal(await store.releaseEnrichLock('other'), false)
+    assert.equal(await store.acquireEnrichLock(60, 'other'), false)
+    assert.equal(await store.releaseEnrichLock('owner'), true)
+    assert.equal(await store.acquireEnrichLock(60, 'other'), true)
+  })
+
+  it('stops taking items when the time budget is short', async () => {
+    const now = 0
+    const store = createMemoryCrateStore({ queue: [1, 2, 3], now: () => now })
+    const result = await processEnrichmentQueue(
+      {
+        store,
+        now: () => now,
+        budgetMs: 100,
+        takeFloorMs: 100,
+        lockTtlSeconds: 60,
+        fetchDiscogs: async () => {
+          throw new Error('nope')
+        },
+        mb: createMusicBrainzClientForTests(),
+      },
+      10
+    )
+    assert.deepEqual(result.processed, [])
+    assert.equal(result.skipped, false)
+    assert.deepEqual(await store.getQueue(), [1, 2, 3])
+  })
+})
+
+describe('weaker refresh keeps a stronger match (P2.11)', () => {
+  it('keeps the prior matched release and records lastError', () => {
+    const previous = pressingStub()
+    const weaker = pressingStub({
+      mbRelease: {
+        mbid: null,
+        url: null,
+        matchStatus: 'unmatched',
+        confidence: 0,
+        reason: 'no musicbrainz release for this pressing after discogs url, barcode, catalog number, and artist + title search',
+      },
+      provenance: {
+        ...pressingStub().provenance,
+        matchStatus: 'unmatched',
+        confidence: 0,
+        reason: 'no musicbrainz release for this pressing after discogs url, barcode, catalog number, and artist + title search',
+        lastError: null,
+      },
+      tracks: pressingStub().tracks.map((track) => ({
+        ...track,
+        recording: {
+          matchStatus: 'unmatched',
+          confidence: 0,
+          reason: 'no matched recording yet',
+          mbid: null,
+          recordingUrl: null,
+        },
+      })),
+    })
+    const kept = keepPriorMatch(previous, weaker)
+    assert.equal(kept.mbRelease.matchStatus, 'matched')
+    assert.equal(kept.mbRelease.mbid, previous.mbRelease.mbid)
+    assert.equal(kept.tracks[0]?.recording.mbid, previous.tracks[0]?.recording.mbid)
+    assert.equal(kept.provenance.lastError?.kind, 'partial')
+  })
+
+  it('replaces a prior match when a unique discogs url is counter-evidence', () => {
+    const previous = pressingStub()
+    const urlHit = pressingStub({
+      mbRelease: {
+        mbid: 'new-mbid',
+        url: 'https://musicbrainz.org/release/new-mbid',
+        matchStatus: 'matched',
+        confidence: 0.95,
+        reason: 'musicbrainz release linked by discogs url relationship',
+      },
+    })
+    const kept = keepPriorMatch(previous, urlHit)
+    assert.equal(kept.mbRelease.mbid, 'new-mbid')
+  })
+})
+
+describe('version tokens and positions (P2.13)', () => {
+  it('does not treat inst inside instinct or edit inside credit as version tokens', () => {
+    const result = matchDiscogsTrackToMb({
+      discogs: {
+        position: 'A1',
+        title: 'Radiohead Instinct Credit',
+        durationMs: 180000,
+        index: 0,
+      },
+      mbTracks: [
+        {
+          index: 0,
+          number: 'A1',
+          title: 'Radiohead Instinct Credit',
+          lengthMs: 180000,
+          recordingId: 'rec-ok',
+          recordingTitle: 'Radiohead Instinct Credit',
+          disambiguation: '',
+        },
+      ],
+    })
+    assert.equal(result.matchStatus, 'matched')
+    assert.equal(result.recordingId, 'rec-ok')
+  })
+
+  it('does not map fruity onto instrumental', () => {
+    const result = matchDiscogsTrackToMb({
+      discogs: {
+        position: 'B',
+        title: 'Juicy Fruit ("Fruity" Mix)',
+        durationMs: 424000,
+        index: 1,
+      },
+      mbTracks: [
+        {
+          index: 0,
+          number: 'A',
+          title: 'Juicy Fruit (Vocal)',
+          lengthMs: 355000,
+          recordingId: 'rec-vocal',
+          recordingTitle: 'Juicy Fruit (Vocal)',
+          disambiguation: '',
+        },
+        {
+          index: 1,
+          number: 'B',
+          title: 'Juicy Fruit (Instrumental)',
+          lengthMs: 424000,
+          recordingId: 'rec-inst',
+          recordingTitle: 'Juicy Fruit (Instrumental)',
+          disambiguation: '',
+        },
+      ],
+    })
+    assert.equal(result.matchStatus, 'ambiguous')
+    assert.equal(result.recordingId, null)
+  })
+
+  it('keeps disc numbers distinct for 1-1 vs 11', () => {
+    assert.notEqual(normalizePosition('1-1'), normalizePosition('11'))
+  })
+})
+
+describe('barcode and catno unique hits need confirmation', () => {
+  it('marks a single barcode hit ambiguous without score and title', () => {
+    const result = classifyReleaseMatch([{ mbid: 'mb-1', via: 'barcode', score: 40, title: 'Other' }], {
+      title: 'Juicy Fruit',
+      trackCount: 2,
+    })
+    assert.equal(result.matchStatus, 'ambiguous')
+    assert.equal(result.mbid, null)
+  })
+
+  it('accepts a barcode hit at score 95 with a similar title', () => {
+    const result = classifyReleaseMatch(
+      [{ mbid: 'mb-1', via: 'barcode', score: 100, title: 'Juicy Fruit', trackCount: 2 }],
+      { title: 'Juicy Fruit', trackCount: 2 }
+    )
+    assert.equal(result.matchStatus, 'matched')
+    assert.equal(result.mbid, 'mb-1')
+  })
+})
+
+describe('unique discogs url stops further searches', () => {
+  it('does not search barcode or catno after a unique url hit', async () => {
+    const store = createMemoryCrateStore()
+    let barcodeCalls = 0
+    let catnoCalls = 0
+    const mb: MusicBrainzClient = {
+      ...createMusicBrainzClientForTests(),
+      async lookupDiscogsReleaseUrl() {
+        return ['mb-url']
+      },
+      async searchReleaseByBarcode() {
+        barcodeCalls += 1
+        return []
+      },
+      async searchReleaseByCatno() {
+        catnoCalls += 1
+        return []
+      },
+      async getRelease() {
+        return {
+          id: 'mb-url',
+          title: 'Bootsy? Player Of The Year',
+          date: '1978',
+          country: 'US',
+          tracks: [
+            {
+              index: 0,
+              number: 'A1',
+              title: "Bootsy? (What's The Name Of This Town)",
+              lengthMs: 419000,
+              recordingId: 'rec-a1',
+              recordingTitle: "Bootsy? (What's The Name Of This Town)",
+              disambiguation: '',
+            },
+          ],
+        }
+      },
+    }
+    const result = await enrichPressing(573292, {
+      store,
+      mb,
+      fetchDiscogs: async () => ({
+        id: 573292,
+        title: 'Bootsy? Player Of The Year',
+        artist: "Bootsy's Rubber Band",
+        year: 1978,
+        released: '1978',
+        country: 'US',
+        thumb: '',
+        cover: '',
+        format: 'Vinyl, LP, Album',
+        label: 'Warner Bros. Records',
+        catno: 'BSK 3093',
+        barcode: '012345',
+        notes: null,
+        discogsUrl: 'https://www.discogs.com/release/573292',
+        tracklist: [
+          {
+            position: 'A1',
+            title: "Bootsy? (What's The Name Of This Town)",
+            duration: '6:59',
+            type_: 'track',
+          },
+        ],
+      }),
+    })
+    assert.equal(barcodeCalls, 0)
+    assert.equal(catnoCalls, 0)
+    assert.equal(result.mbRelease.mbid, 'mb-url')
+  })
+})
+
+describe('musicbrainz rate limit stops the batch', () => {
+  it('nacks the current id and does not take the next', async () => {
+    const { MusicBrainzRateLimitError } = await import('./musicbrainz.ts')
+    const store = createMemoryCrateStore({ queue: [1, 2] })
+    const result = await processEnrichmentQueue(
+      {
+        store,
+        now: () => 1,
+        takeFloorMs: 0,
+        budgetMs: 45_000,
+        fetchDiscogs: async () => {
+          throw new MusicBrainzRateLimitError(30_000)
+        },
+        mb: createMusicBrainzClientForTests(),
+      },
+      10
+    )
+    assert.equal(result.stoppedOnRateLimit, true)
+    assert.deepEqual(result.processed, [1])
+    assert.ok((await store.getQueue()).includes(2))
+  })
+})
+

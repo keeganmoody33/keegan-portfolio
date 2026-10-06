@@ -118,7 +118,7 @@ type DiscogsGlobal = typeof globalThis & {
 }
 
 export const DISCOGS_USER = 'lecturesfrom'
-export const DISCOGS_USER_AGENT = 'lecturesfrom/1.0'
+export const DISCOGS_USER_AGENT = 'lecturesfrom/1.0 +https://lecturesfrom.com'
 export const DISCOGS_REVALIDATE_SECONDS = 300
 export const DISCOGS_COLLECTION_PER_PAGE = 100
 export const DISCOGS_RECENT_PER_PAGE = 5
@@ -147,6 +147,34 @@ export class DiscogsUnavailableError extends Error {
     super('Failed to fetch from Discogs')
     this.name = 'DiscogsUnavailableError'
   }
+}
+
+export class DiscogsNotFoundError extends Error {
+  readonly status = 404 as const
+
+  constructor() {
+    super('Discogs release not found')
+    this.name = 'DiscogsNotFoundError'
+  }
+}
+
+export function isDiscogsNotFoundError(
+  error: unknown
+): error is DiscogsNotFoundError {
+  return error instanceof DiscogsNotFoundError
+}
+
+export function isDiscogsTerminalClientError(error: unknown): boolean {
+  if (error instanceof DiscogsNotFoundError) return true
+  if (error instanceof DiscogsRateLimitError) return false
+  if (
+    error instanceof Error &&
+    'status' in error &&
+    typeof error.status === 'number'
+  ) {
+    return error.status >= 400 && error.status < 500 && error.status !== 429
+  }
+  return false
 }
 
 export function isDiscogsRateLimitError(
@@ -464,12 +492,23 @@ export function defaultScheduleRefresh(task: () => Promise<void>): void {
   }
 
   try {
-    after(() => {
-      void task()
-    })
+    after(() => task())
   } catch {
     void task()
   }
+}
+
+function maybeScheduleVisitEnrich(schedule: ScheduleRefresh): void {
+  if (process.env.NODE_TEST_CONTEXT) return
+  if (process.env.NEXT_PHASE === 'phase-production-build') return
+  schedule(async () => {
+    const { getDefaultCrateStore, VISIT_THROTTLE_SECONDS } = await import('./crate/store.ts')
+    const { processEnrichmentQueue } = await import('./crate/enrich.ts')
+    const store = getDefaultCrateStore()
+    if (!store) return
+    if (!(await store.acquireVisitThrottle(VISIT_THROTTLE_SECONDS))) return
+    await processEnrichmentQueue({ store }, 1)
+  })
 }
 
 function defaultDurableStore(
@@ -560,10 +599,7 @@ async function notifyCollectionComplete(
       .map((release) => release.releaseId || extractReleaseIdFromUrl(release.discogsUrl) || 0)
       .filter((id) => id > 0)
     await queueNewAndMissing(store, previousIds, next)
-    const schedule = options.scheduleRefresh ?? defaultScheduleRefresh
-    schedule(async () => {
-      await processEnrichmentQueue({ store }, 1)
-    })
+    await processEnrichmentQueue({ store, collection: next }, 1)
   } catch {
     // Enrichment is best-effort. Last-good collection still stands.
   }
@@ -706,6 +742,8 @@ export async function fetchFullCollection(
       const fetchedAt = snapshot?.meta?.fetchedAt ?? null
       if (!isBuild && isSnapshotStale(fetchedAt, now(), DISCOGS_SNAPSHOT_TTL_MS)) {
         schedule(() => refreshDurableCollection(durable, options, now))
+      } else if (!isBuild) {
+        maybeScheduleVisitEnrich(schedule)
       }
       return parsed
     }

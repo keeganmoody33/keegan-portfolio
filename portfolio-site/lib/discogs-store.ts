@@ -2,7 +2,7 @@ import { Redis } from '@upstash/redis'
 import type { Requester, UpstashRequest, UpstashResponse } from '@upstash/redis'
 import type { DiscogsCollection } from './discogs.ts'
 
-export const DISCOGS_SNAPSHOT_TTL_MS = 24 * 60 * 60 * 1000
+export const DISCOGS_SNAPSHOT_TTL_MS = 6 * 60 * 60 * 1000
 export const DISCOGS_REFRESH_LOCK_SECONDS = 120
 export const REDIS_READ_CACHE: RequestCache = 'no-store'
 

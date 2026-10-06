@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { cronSecretEqual } from '@/lib/crate/cron-auth'
 import { processEnrichmentQueue } from '@/lib/crate/enrich'
 import { getDefaultCrateStore } from '@/lib/crate/store'
 import { queueNewAndMissing } from '@/lib/crate/sync'
@@ -7,18 +8,12 @@ import { readCachedCollection } from '@/lib/discogs'
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
-function cronAuthorized(request: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET
-  if (!secret) return false
-  const header = request.headers.get('authorization')
-  return header === `Bearer ${secret}`
-}
-
 export async function GET(request: NextRequest) {
-  if (!process.env.CRON_SECRET) {
+  const secret = process.env.CRON_SECRET
+  if (!secret) {
     return new NextResponse(null, { status: 404 })
   }
-  if (!cronAuthorized(request)) {
+  if (!cronSecretEqual(request.headers.get('authorization'), secret)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
@@ -32,7 +27,7 @@ export async function GET(request: NextRequest) {
     if (collection) {
       await queueNewAndMissing(store, await store.getSeen(), collection)
     }
-    const result = await processEnrichmentQueue({ store }, 2)
+    const result = await processEnrichmentQueue({ store, collection })
     return NextResponse.json(result)
   } catch {
     return NextResponse.json(

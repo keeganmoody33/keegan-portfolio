@@ -14,7 +14,7 @@
   "crons": [
     {
       "path": "/api/cron/crate-enrich",
-      "schedule": "0 8 * * *"
+      "schedule": "37 4 * * *"
     }
   ]
 }

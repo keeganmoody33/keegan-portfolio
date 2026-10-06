@@ -41,7 +41,7 @@
 |-------|--------|------|---------|
 | `/api/chat` | POST | `app/api/chat/route.ts` | Proxy to Supabase `chat` Edge Function |
 | `/api/discogs/collection` | GET | `app/api/discogs/collection/route.ts` | Full Discogs crate (`revalidate: 300`, Redis last-good when configured). Career `/api/discogs` was removed. |
-| `/api/cron/crate-enrich` | GET | `app/api/cron/crate-enrich/route.ts` | Daily drain of the crate enrichment queue. Bearer `CRON_SECRET`. Missing secret → 404. |
+| `/api/cron/crate-enrich` | GET | `app/api/cron/crate-enrich/route.ts` | Daily ~45s drain of the crate enrichment queue. Bearer `CRON_SECRET` (`timingSafeEqual`). Missing secret → 404. |
 | `/api/github` | GET | `app/api/github/route.ts` | Proxy to GitHub public events API |
 | `/api/jd-analyzer` | POST | `app/api/jd-analyzer/route.ts` | Proxy to Supabase `jd-analyzer` Edge Function |
 
@@ -309,7 +309,7 @@ Land on /keeganmoody33
 
 **Error state:** Dim mono `couldn't reach discogs` plus a retry text link (orange on hover). Never red. Last-good stored data is preferred over this.
 
-**Empty states:** Missing field drops its row (never `N/A` / `Unknown` / `—`). Empty section: `nothing on file yet`. No track picked: `pick a track for credits and samples`. Missing cover: `#242424` square with catno centered. Layout holds with hairlines; content fades in (`.house-fade`; instant under reduced motion).
+**Empty states:** Missing field drops its row (never `N/A` / `Unknown` / `—`). Empty section: `nothing on file yet`. No track picked: `pick a track for credits and samples`. Checked, no match (third empty state): one dim mono lowercase line `{reason} · checked YYYY-MM-DD` (example: `no musicbrainz release for this pressing · checked 2026-10-05`). No guessing in the reason. Missing cover: `#242424` square with catno centered. Layout holds with hairlines; content fades in (`.house-fade`; instant under reduced motion). One dim `.house-source` `discogs` line after the fact rows (the pressing URL), then `Data provided by Discogs.` linking to discogs.com without `nofollow`. Source lines are lowercase 0.16em; section labels stay uppercase `.house-meta`. House footer carries the Discogs trademark disclaimer as a dim mono line.
 
 **PostHog events:** `collection_record_open`, `collection_record_tab`, `collection_record_track`, `collection_record_close`
 
@@ -346,10 +346,11 @@ Discogs API
             └── not used on `/keeganmoody33` (career `/api/discogs` / RecentDigs removed)
 
 MusicBrainz API (background only)
-    └── crate enrich (`after()` 1 item + daily `/api/cron/crate-enrich`)
-            └── Redis `lf:crate:pressing:{id}:v1` + `lf:crate:recording:{mbid}:v1`
-            └── visitor `/collection/[releaseId]` reads stored results or committed fixtures
-            └── never called on a visitor request
+            └── crate enrich (`after()` keeps the promise; budgeted daily cron + visit drain 1/5min)
+            └── Redis zset `lf:crate:queue:v1` + queued set; lock token compare-and-delete
+            └── visitor `/collection/[releaseId]` reads Redis, then fixtures, then a collection pending shell
+            └── HTML `data-crate-source="redis|fixture|collection"` marks which one served
+            └── never called on a visitor request. A Redis miss may `after()`-enqueue that id.
 
 YouTube IFrame API (client-side, no proxy)
     └── youtube.com/iframe_api ──→ YouTubePlayer component

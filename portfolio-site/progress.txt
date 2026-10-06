@@ -1,9 +1,11 @@
 COMPLETED (2026-10-06 — collection record detail, preview only):
 - Cover click on `/collection` opens `/collection/[releaseId]` (intercepting overlay + full-page fallback). Back/Escape restores scroll and cover focus.
 - Stored pressing model in Upstash (`lf:crate:pressing:{id}:v1` etc.). Discogs = pressing identity and track order. MusicBrainz = recording match, credits, typed samples. Visitors read Redis → fixtures → collection pending. Never live Discogs/MB on the page request.
-- Sync hook: complete collection crawl queues new/missing ids; `after()` enriches 1 item. Daily `/api/cron/crate-enrich` drains 2 when `CRON_SECRET` is set.
+- Sync hook: complete collection crawl queues new/missing ids (new ids to the front of a zset); `after()` awaits 1 enrich. Daily `/api/cron/crate-enrich` drains until ~45s. Visit drain 1/5min. Discogs snapshot + pressing facts refresh within 6h on visit. Hobby cron stays daily (`37 4 * * *`) — gap without traffic.
+- Queue is zset + dedupe + inflight; lock is owner token + compare-and-delete; never-enriched failures persist `lastError`/`refreshAfter`; 4xx is terminal. Weaker MB refresh keeps the prior match.
+- Discogs terms: User-Agent `lecturesfrom/1.0 +https://lecturesfrom.com`; `Data provided by Discogs.` on the record; footer trademark line.
 - Fixtures committed for Bootsy 573292, Goodie Mob 240128, Mtume 567894 (Mtume vocal/instrumental stays ambiguous).
-- LF Direction brief: house tokens only, OVERVIEW/TRACKS tabs, hairline rows, sourced lines, empty copy (`nothing on file yet` / `pick a track for credits and samples` / `couldn't reach discogs`). `.house-fade` reuses `houseLockup`.
+- LF Direction brief: house tokens only, OVERVIEW/TRACKS tabs, hairline rows, sourced lines, empty copy (`nothing on file yet` / `pick a track for credits and samples` / `{reason} · checked YYYY-MM-DD`). `.house-fade` reuses `houseLockup`. Cover 1px `#242424` frame.
 - Preview only. Do not merge or deploy to production from this branch.
 
 

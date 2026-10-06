@@ -5,11 +5,14 @@ Updated: 2026-10-06
 ## Collection record detail (2026-10-06)
 
 - **Visitor path never calls Discogs or MusicBrainz.** Read Redis last-good, then committed fixtures, then a pending shell from the collection snapshot. Enrichment is `after()` + cron. A failed refresh must not overwrite a successful pressing.
-- **Discogs is the pressing; MusicBrainz is the recording.** Match the MB release via Discogs URL / barcode / catno, then position+title+duration. Vocal/instrumental siblings without a unique version token stay `ambiguous`. Do not auto-accept weak matches. No WhoSampled, no scraping.
-- **LF Direction empty copy is the whole empty language.** Missing field drops the row. Empty section: `nothing on file yet`. No track: `pick a track for credits and samples`. Store down: `couldn't reach discogs` plus retry. Never `N/A`, `Unknown`, a dash, or a red error. No spinners or shimmer — hold the hairlines and fade (`.house-fade` = `houseLockup`).
-- **Orange is hover only** on this surface. Active tab is ink + 1px ink underline. Cover is flat 1:1, same thumbnail as the grid. Title keeps Discogs casing.
-- **No 1px frame on sourced cover art.** The brief allows a line border only when the edge melts into `#0a0a0a`. Missing cover is the `#242424` square with catno, not a framed image. Pending / unmatched copy on this surface is `nothing on file yet`, not `no matched recording yet`.
-- **Hobby cron is daily.** `after()` handles 1 new item on sync. Fixtures keep the three proof records working on a preview without Redis.
+- **Discogs is the pressing; MusicBrainz is the recording.** Match the MB release via Discogs URL / barcode / catno, then artist + title + year/label (unique catno or a single remaining hit). Then position+title+duration. Vocal/instrumental siblings without a unique version token stay `ambiguous`. Do not auto-accept weak matches. No WhoSampled, no scraping.
+- **LF Direction empty copy is the whole empty language.** Missing field drops the row. Empty section: `nothing on file yet`. No track: `pick a track for credits and samples`. Checked, no match: `{reason} · checked YYYY-MM-DD` (lowercase, no hedging). Store down: `couldn't reach discogs` plus retry. Never `N/A`, `Unknown`, a dash, or a red error. No spinners or shimmer — hold the hairlines and fade (`.house-fade` = `houseLockup`).
+- **Orange is hover only** on this surface. Active tab is ink + 1px ink underline. Cover is flat 1:1, same thumbnail as the grid, **1px `#242424` frame** (LF Direction overruled the no-frame pass). Title keeps Discogs casing.
+- **Source lines are `.house-source`.** Lowercase, 0.16em, dim. Section labels stay uppercase `.house-meta`. Exactly one `discogs` source after the fact rows. Discogs notes become a 2–4 sentence paraphrase, never a matrix/runout dump.
+- **Pending / unmatched after a check is not `nothing on file yet`.** Pending (not yet enriched) still uses `nothing on file yet`. After MusicBrainz ran: the checked-no-match line.
+- **Hobby cron is daily** (`37 4 * * *`). `after()` keeps the promise (`after(() => task())`) and awaits one enrich on collection sync. A `/collection` visit may drain 1 more item behind `SET NX EX 300`. Discogs snapshot/pressing facts aim for 6h freshness on visit; without traffic they wait for the daily cron (the gap on this Hobby plan — no paid cron change). Fixtures keep the three proof records working on a preview without Redis.
+- **Queue is a Redis zset + dedupe set.** Take sets inflight; ack/drop removes; nack rescores with backoff. Lock is a random token with compare-and-delete Lua, TTL 60s.
+- **User-Agent** for Discogs is `lecturesfrom/1.0 +https://lecturesfrom.com`. Record detail and house footer carry the required Discogs attribution / trademark lines.
 - **A missing collection snapshot is unavailable, not a 404.** `readCachedCollection()` returning null must not collapse to `[]` — Next will cache that miss and grid links 404. Only a complete populated snapshot may 404 an id it does not contain.
 
 ## Brand / nameplate wordmark (assets only)
@@ -36,7 +39,7 @@ Updated: 2026-10-06
 - **Never Data-Cache an empty Redis MGET.** `force-cache` + `revalidate: 300` stored the empty build-time read, so a cold `next start` never hit Redis and treated a real snapshot as missing. Redis reads use `cache: 'no-store'`. Skip Redis entirely when `NEXT_PHASE === 'phase-production-build'` so SSG of `/collection` only uses Discogs `next.revalidate: 300` and stays ISR (`○` 5m). Writes and the lock stay `no-store` inside `after()`.
 - **Never cache a failed or partial Discogs crawl as last-good.** Last-good is only a complete crawl whose `releases.length` equals Discogs `pagination.items`. 429 / exhausted `X-Discogs-Ratelimit-Remaining` mid-paginate: serve last-good, or HTTP 429 + `Retry-After`. Put `Cache-Control: no-store` on error responses — route `revalidate = 300` will otherwise ISR-cache a 429 for five minutes.
 - **Never leak Discogs bodies** to the client, rendered page errors, or PostHog `error_message`. Map to generic `Too many requests` / `Failed to fetch from Discogs`.
-- **`DISCOGS_TOKEN` is optional** for the public `lecturesfrom` collection. Requiring it 500s `/collection` in previews that lack the env. User-Agent must be `lecturesfrom/1.0` on every Discogs request.
+- **`DISCOGS_TOKEN` is optional** for the public `lecturesfrom` collection. Requiring it 500s `/collection` in previews that lack the env. User-Agent must be `lecturesfrom/1.0 +https://lecturesfrom.com` on every Discogs request.
 - **House crate is `/api/discogs/collection` + `/collection`.** Career `/api/discogs` and RecentDigs were removed (#24). Do not put Discogs back on `/keeganmoody33`.
 - **Route `export const revalidate` must be a numeric literal.** `export const revalidate = DISCOGS_REVALIDATE_SECONDS` fails Next 16 with "Invalid segment configuration export". Use `export const revalidate = 300`.
 
@@ -128,7 +131,7 @@ Updated: 2026-10-06
 
 - Env var names must match exactly between .env.local and code. DISCOGS_API_TOKEN in .env.local vs DISCOGS_TOKEN in code caused a silent failure -- the API call got `undefined` with no error.
 - **Discogs is a house surface.** `/api/discogs/collection` paginates the full crate for `/collection`. Do not re-add Recent Digs or `/api/discogs` (recent-5) to `/keeganmoody33`. Do not collapse the full-crate API into a recent-5 list.
-- **`DISCOGS_TOKEN` is optional** for the public `lecturesfrom` collection. Requiring it 500s `/collection` in previews that lack the env. User-Agent must be `lecturesfrom/1.0` on every Discogs request.
+- **`DISCOGS_TOKEN` is optional** for the public `lecturesfrom` collection. Requiring it 500s `/collection` in previews that lack the env. User-Agent must be `lecturesfrom/1.0 +https://lecturesfrom.com` on every Discogs request.
 
 ## Database Content Management
 
