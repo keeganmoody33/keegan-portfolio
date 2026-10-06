@@ -1,6 +1,6 @@
 # Run #7 receipts — PR #50
 
-Produced on head SHA `b838a33f757c925d4ca3d90cf3f37b6b776b17ca`.
+Produced for code SHA `b838a33f757c925d4ca3d90cf3f37b6b776b17ca` (LIVE preview below). This receipts file is committed on the same branch after those proofs.
 Preview `dpl_6HtLeLv8AEhBzAyYCTfxHVp3u5yi` READY, `githubCommitSha` matches.
 Host: `https://keegan-portfolio-content-9ci8a7nbl-groundskeep.vercel.app`
 Share: `https://keegan-portfolio-content-9ci8a7nbl-groundskeep.vercel.app/?_vercel_share=l8skJYmus8xewEZUsSSu8xXrcZL95A9j` (expires 2026-10-07 08:31:47 UTC)
