@@ -118,8 +118,27 @@ Walkthrough: `run7_footer_legal_notice.mp4` — collection bottom (credit + foot
 
 ---
 
+## Keegan ask — shuffle / pull one on `/collection`
+
+Two house text buttons under the `{n} releases` line. `.house-text-button`: Roboto Mono uppercase, muted `#8a8a8a` (`rgb(138, 138, 138)`), ink on `:focus-visible`, orange `#e23d00` (`rgb(226, 61, 0)`) on hover only. `min-height` 24px (WCAG 2.5.8). No new colors. Page stays ISR (`revalidate = 300`). Shuffle is client Fisher-Yates from the ISR listing (reload restores order). Pull one uses the existing overlay/route.
+
+LIVE SHA `acf86f3b88a228ee110a48c6d4c52a0bb4ae38a9`. Preview `dpl_DVnqU39a88bQpb2uS513sAxotgS1` READY.
+Host: `https://keegan-portfolio-content-kmjqz2p63-groundskeep.vercel.app`
+Share: `https://keegan-portfolio-content-kmjqz2p63-groundskeep.vercel.app/?_vercel_share=tbVQyUsxHmq2iPUPWwufNvFRuASzQCOp` (expires 2026-10-07 10:20:34 UTC)
+
+| Proof | Kind | Result | Does not prove |
+| --- | --- | --- | --- |
+| Fisher-Yates is a permutation: no lost or duplicated ids | UNIT | `lib/shuffle.test.ts` — 9 pass / 0 fail. Duplicate listed ids kept; input not mutated; empty/single copies. | Does not prove a particular live rng sequence. |
+| JS-off: shuffle hidden; pull one is a link | LIVE HTML | SSR `/collection` has `<button … hidden="" class="house-text-button">shuffle</button>` and `<a id="crate-pull-one" class="house-text-button" href="/collection/1031336">pull one</a>`. | Does not prove a no-JS browser session (HTML contract only). |
+| Shuffle reorders the grid; polite `shuffled`; focus stays; 24px target | LIVE | 375 and 1280: button 24×53.22, muted `#8a8a8a` at rest. After pointer click, aria-live `shuffled`, focus stays on shuffle. First tiles 375 Joe Williams / Olivia Newton-John → Dianne Davidson / The Stylistics. 1280 same ISR start → Method Man & Redman / The Temptations. Count stays `279 releases`. Keyboard-only: Tab/focus is ink `#ececec` (`rgb(236, 236, 236)`); Enter reshuffles (Joe Williams → War) with live `shuffled` and focus still on the button. | Does not prove reduced-motion users see a different path (there is no reflow animation either way). |
+| Pull one overlay Escape restores `#crate-pull-one` | LIVE | Click pull one opens the overlay (`collection` close control present). Escape returns `pathname /collection` with `activeId: crate-pull-one`. | Does not photograph the overlay itself in these crops. |
+
+Shots (true 375×812 / 1280×800 viewports, clipped to the count line + controls + first row): `run7-crate-controls-375-before.png`, `run7-crate-controls-375-after.png`, `run7-crate-controls-1280-before.png`, `run7-crate-controls-1280-after.png`. After-click crops still show shuffle in orange because the pointer is hovering (`hover` only, not the rest/focus color).
+
+---
+
 ## Artifact files
 
 - `run7-backfill-tick.json`, `run7-inspect-before.json`, `run7-inspect-after.json`, `run7-inspect-after-cleanup.json`, `run7-cleanup.json`
-- Screenshots: `collection-1280.png`, `collection-375.png`, `bootsy-tracks-hollywood-1280.png`, `bootsy-tracks-hollywood-375.png`, `mtume-tracks-1280.png`, `mtume-tracks-375.png` (plus `run7-*-top/hero/crop` viewport crops); Keegan ask: `run7-footer-375.png`, `run7-footer-1280.png`, `run7-legal-375.png`, `run7-legal-1280.png` (true 375×812 / 1280×800)
-- Video: `run7_preview_collection_detail.mp4` — 13s static hold of Mtume TRACKS on the earlier preview; `run7_footer_legal_notice.mp4` — collection footer then /legal Data sources on `dedfe2e`
+- Screenshots: `collection-1280.png`, `collection-375.png`, `bootsy-tracks-hollywood-1280.png`, `bootsy-tracks-hollywood-375.png`, `mtume-tracks-1280.png`, `mtume-tracks-375.png` (plus `run7-*-top/hero/crop` viewport crops); Keegan ask: `run7-footer-375.png`, `run7-footer-1280.png`, `run7-legal-375.png`, `run7-legal-1280.png`; crate controls: `run7-crate-controls-375-before.png`, `run7-crate-controls-375-after.png`, `run7-crate-controls-1280-before.png`, `run7-crate-controls-1280-after.png` (true 375×812 / 1280×800)
+- Video: `run7_preview_collection_detail.mp4` — 13s static hold of Mtume TRACKS on the earlier preview; `run7_footer_legal_notice.mp4` — collection footer then /legal Data sources on `dedfe2e`; `run7_crate_shuffle_pull_one.mp4` — shuffle then pull one on `acf86f3`
