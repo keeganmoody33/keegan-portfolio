@@ -128,6 +128,7 @@ export type EnqueueOptions = {
 
 export type CrateStore = {
   getPressing(releaseId: number): Promise<StoredPressing | null>
+  getPressingCached?(releaseId: number): Promise<StoredPressing | null>
   getPressings(releaseIds: number[]): Promise<Map<number, StoredPressing>>
   setPressing(pressing: StoredPressing): Promise<void>
   setDraftPressing(pressing: StoredPressing): Promise<void>
@@ -236,6 +237,12 @@ class RedisCrateStore implements CrateStore {
 
   async getPressing(releaseId: number): Promise<StoredPressing | null> {
     if (process.env.NEXT_PHASE === 'phase-production-build') return null
+    const value = await this.writeRedis.get<unknown>(this.keys.pressing(releaseId))
+    return isStoredPressing(value) ? value : null
+  }
+
+  async getPressingCached(releaseId: number): Promise<StoredPressing | null> {
+    if (process.env.NEXT_PHASE === 'phase-production-build') return null
     const value = await this.pressingReadRedis.get<unknown>(this.keys.pressing(releaseId))
     return isStoredPressing(value) ? value : null
   }
@@ -249,7 +256,7 @@ class RedisCrateStore implements CrateStore {
     for (let i = 0; i < ids.length; i += chunkSize) {
       const chunk = ids.slice(i, i + chunkSize)
       const keys = chunk.map((id) => this.keys.pressing(id))
-      const values = await this.pressingReadRedis.mget<(unknown | null)[]>(...keys)
+      const values = await this.writeRedis.mget<(unknown | null)[]>(...keys)
       const rows = Array.isArray(values) ? values : []
       chunk.forEach((id, index) => {
         const value = rows[index]
@@ -494,6 +501,9 @@ export function createMemoryCrateStore(
     now: initial.now ?? Date.now,
     async getPressing(releaseId: number) {
       return store.pressings[releaseId] ?? null
+    },
+    async getPressingCached(releaseId: number) {
+      return store.getPressing(releaseId)
     },
     async getPressings(releaseIds: number[]) {
       const result = new Map<number, StoredPressing>()

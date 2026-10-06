@@ -198,7 +198,7 @@ export async function readStoredPressing(
   const store = options.store === undefined ? getDefaultCrateStore() : options.store
   if (store) {
     try {
-      const stored = await store.getPressing(releaseId)
+      const stored = await (store.getPressingCached?.(releaseId) ?? store.getPressing(releaseId))
       if (stored && storedPressingHasVisitorFacts(stored)) {
         return {
           status: 'ok',
