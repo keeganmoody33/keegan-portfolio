@@ -7,6 +7,8 @@ Updated: 2026-10-06
 - **Discogs API Terms forbid storing copies.** Do not put Discogs images on Vercel Blob or keep them as a long-lived object store. Hotlink `images[0].uri` / primary. Manifests may record the Discogs URL plus width/height. Cover Art Archive may be copied at our own risk; images stay copyrighted. No extra CAA notice on the page — keep existing Discogs credits.
 - **Missing `BLOB_READ_WRITE_TOKEN` must no-op.** Discovery still runs. CAA-best manifests get `url: ''` and `stored: false`; `displayCoverUrl` falls back to the Discogs listing/cover. Do not throw from the visitor path.
 - **`covers:sync` refuses prod Redis** unless `--prod`. Preview keys stay `lf:preview:crate:cover:{id}:v1`. Never write production `lf:` from this script by accident.
+- **`lecturesfrom-covers` auto-link set Production.** The store was already connected to Preview, Development, and Production. Do not add a second Production token. Connecting a Blob store injects `BLOB_READ_WRITE_TOKEN` on every selected environment.
+- **Unauthenticated Discogs is 25/min.** Cover sync without `DISCOGS_TOKEN` must use 2.5s, not 1.1s, or a full-collection run 429s. Authenticated stays 1.1s.
 - **Client components cannot import `cover.ts`.** It pulls `node:crypto` and Discogs fetch. Import types and `displayCoverUrl` from `cover-display.ts`. Discogs `next/image` URLs stay `unoptimized` so the optimizer does not 403 the CDN.
 
 ## Collection research: manual-only, fallbacks, hardening (2026-10-06)
