@@ -415,9 +415,9 @@ Both deployed via `supabase functions deploy <name>`. Source in `supabase/functi
 | `NEXT_PUBLIC_SUPABASE_URL` | Public (client + server) | Yes | `/api/chat`, `/api/jd-analyzer`, `lib/supabase.ts` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public (client + server) | Yes | `/api/chat`, `/api/jd-analyzer`, `lib/supabase.ts` |
 | `NEXT_PUBLIC_POSTHOG_KEY` | Public (client + server) | No | `providers.tsx`, `lib/posthog-server.ts` |
-| `NEXT_PUBLIC_POSTHOG_HOST` | Public (client only) | No | Browser ingest host (`lib/posthog-client.ts`). Defaults to `https://us.i.posthog.com`; set to `https://flow.lecturesfrom.com` once the managed proxy is live. Server analytics (`lib/posthog-server.ts`) always send to `https://us.i.posthog.com`. |
+| `NEXT_PUBLIC_POSTHOG_HOST` | Public (client only) | No | Browser ingest host (`lib/posthog-client.ts`). Defaults to `https://us.i.posthog.com`; production uses the managed proxy `https://flow.lecturesfrom.com`. Server analytics (`lib/posthog-server.ts`) always send to `https://us.i.posthog.com`. |
 | `DISCOGS_TOKEN` | Server-only | No | `/api/discogs/collection` (sent when present; public collection works without it) |
-| `KV_REST_API_URL` | Server-only | No | Durable Discogs snapshot (Vercel Marketplace Upstash for Redis). Preferred over UPSTASH_*. |
+| `KV_REST_API_URL` | Server-only | No | Durable Discogs snapshot and the footer request tally (`lib/tally-store.ts`, `/api/tally`). Vercel Marketplace Upstash for Redis. Preferred over UPSTASH_*. |
 | `KV_REST_API_TOKEN` | Server-only | No | Pair with `KV_REST_API_URL`. Read-write token; do not use `KV_REST_API_READ_ONLY_TOKEN`. |
 | `UPSTASH_REDIS_REST_URL` | Server-only | No | Fallback if KV_* pair is missing. |
 | `UPSTASH_REDIS_REST_TOKEN` | Server-only | No | Fallback if KV_* pair is missing. |

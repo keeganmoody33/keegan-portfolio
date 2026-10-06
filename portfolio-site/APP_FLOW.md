@@ -42,6 +42,7 @@
 | `/api/discogs/collection` | GET | `app/api/discogs/collection/route.ts` | Full Discogs crate (`revalidate: 300`, Redis last-good when configured). Career `/api/discogs` was removed. |
 | `/api/github` | GET | `app/api/github/route.ts` | Proxy to GitHub public events API |
 | `/api/jd-analyzer` | POST | `app/api/jd-analyzer/route.ts` | Proxy to Supabase `jd-analyzer` Edge Function |
+| `/api/tally` | GET | `app/api/tally/route.ts` | Running totals for the house footer tally (Upstash Redis, `s-maxage=60`). Hits are recorded in `proxy.ts`. |
 
 ---
 

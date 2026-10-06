@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useId, useState } from 'react'
+import posthog from 'posthog-js'
 import {
   TALLY_CATEGORIES,
   TALLY_DEFINITIONS,
@@ -81,22 +82,25 @@ export default function RequestTally() {
         <span className="tracking-[0.02em]">tally · page requests {sinceLabel(data?.since ?? null)}</span>
         <span className="flex flex-wrap items-center gap-4">
           <span role="group" aria-label="Count to show" className="flex gap-3.5">
-            <button type="button" aria-pressed={human} onClick={() => { setHuman(true); setPicked(null) }} className={toggle(human)}>
+            <button type="button" aria-pressed={human} onClick={() => { setHuman(true); setPicked(null); posthog.capture('tally_mode_changed', { mode: 'human' }) }} className={toggle(human)}>
               humans
             </button>
-            <button type="button" aria-pressed={!human} onClick={() => { setHuman(false); setPicked(null) }} className={toggle(!human)}>
+            <button type="button" aria-pressed={!human} onClick={() => { setHuman(false); setPicked(null); posthog.capture('tally_mode_changed', { mode: 'automated' }) }} className={toggle(!human)}>
               not humans
             </button>
           </span>
           <button
             type="button"
-            onClick={() => setOpen((o) => !o)}
+            onClick={() => {
+              posthog.capture('tally_breakdown_toggled', { open: !open })
+              setOpen(!open)
+            }}
             aria-expanded={open}
             aria-controls={panelId}
-            aria-label={`${line}. Breakdown`}
             disabled={!data}
             className="flex min-h-11 items-center gap-3 text-[var(--house-ink)] hover:text-[var(--house-orange)] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[var(--house-orange)] disabled:cursor-default sm:min-h-8"
           >
+            <span className="sr-only">{human ? 'presumed human requests' : 'automated requests'}</span>
             <span className="rounded-[2px] bg-[var(--house-lcd)] px-1.5 py-0.5 font-[family-name:var(--house-font-lcd)] text-[13px] font-extrabold leading-none tracking-[0.04em] text-[var(--house-lcd-ink)] tabular-nums">
               {value === null ? '·······' : fmt(value)}
             </span>
@@ -116,7 +120,7 @@ export default function RequestTally() {
                   <button
                     type="button"
                     aria-pressed={on}
-                    onClick={() => setPicked(c)}
+                    onClick={() => { setPicked(c); posthog.capture('tally_category_selected', { category: c }) }}
                     onFocus={() => setPicked(c)}
                     onMouseEnter={() => setPicked(c)}
                     className={`grid min-h-11 w-full grid-cols-[22px_minmax(0,1fr)_40px_64px] items-center gap-2.5 text-left hover:text-[var(--house-orange)] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[var(--house-orange)] sm:min-h-[26px] sm:grid-cols-[22px_minmax(0,1fr)_110px_64px] ${
