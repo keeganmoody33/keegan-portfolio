@@ -8,7 +8,9 @@ import {
   type StoredRecording,
   type TrackOccurrence,
 } from './types.ts'
-import { creditsFromFacts, factsForTrack, sampledByFacts, samplesFromFacts } from './research.ts'
+import { creditLine, creditsFromFacts, factsForTrack, sampledByFacts, samplesFromFacts } from './research.ts'
+
+export { creditLine }
 
 export type Connection = {
   label: string
@@ -133,12 +135,6 @@ export function overviewConnections(pressing: StoredPressing, limit = 3): Connec
   }
 
   return rows
-}
-
-export function creditLine(credit: Credit): string {
-  const attrs = credit.attributes.filter(Boolean).join(' ')
-  if (attrs) return `${attrs} ${credit.role}`
-  return credit.role
 }
 
 function notableCredit(credit: Credit): boolean {

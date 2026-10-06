@@ -69,6 +69,12 @@ function creditIdentityKey(fact: ResearchFact): string {
   return [normalizeCreditRole(fact.role), normalizeFactText(fact.person)].join('\u001f')
 }
 
+export function creditLine(credit: Credit): string {
+  const attrs = credit.attributes.filter(Boolean).join(' ')
+  if (attrs) return `${attrs} ${credit.role}`
+  return credit.role
+}
+
 export function mergeResearchFacts(...groups: ResearchFact[][]): ResearchFact[] {
   const ranked = groups
     .flat()
@@ -125,7 +131,7 @@ function creditFact(
     kind: 'credit',
     trackKey: track?.identityKey ?? '',
     track: track ? { position: track.position, title: track.title } : null,
-    role: credit.role,
+    role: creditLine(credit),
     person: credit.name,
     relatedTitle: '',
     relatedArtist: '',

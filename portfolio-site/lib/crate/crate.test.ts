@@ -34,7 +34,7 @@ import { factRows, pressingCheckedNoMatchLine } from './view.ts'
 import { cronSecretEqual } from './cron-auth.ts'
 import { coverageOf, hydratePressing, isPlayableOccurrence, shouldQueuePressing } from './lifecycle.ts'
 import { errorForDiscogsStatus, mapDiscogsReleaseDetail, probeDiscogsIdentity } from './discogs-release.ts'
-import { mergeResearchFacts, normalizeCreditRole, researchFactsFromDiscogs } from './research.ts'
+import { creditLine, factsFromRecordings, mergeResearchFacts, normalizeCreditRole, researchFactsFromDiscogs } from './research.ts'
 import {
   createWikidataClient,
   getSharedWikidataClient,
@@ -2668,6 +2668,93 @@ describe('research facts: fallbacks, schema, and coverage', () => {
     )
     assert.equal(merged.length, 1)
     assert.equal(merged[0]?.source, 'musicbrainz')
+  })
+
+  it('persists attributed credits as creditLine so assistant engineer is not collapsed to engineer', () => {
+    const credit = {
+      name: 'Mike Iacopelli',
+      role: 'engineer',
+      attributes: ['assistant'],
+      level: 'recording' as const,
+      source: 'discogs' as const,
+      sourceUrl: 'https://www.discogs.com/release/573292',
+      providerId: 'mike',
+    }
+    assert.equal(creditLine(credit), 'assistant engineer')
+    const facts = factsFromRecordings({
+      tracks: [
+        {
+          position: 'A2',
+          title: 'Hollywood Squares',
+          duration: '6:15',
+          durationMs: 375000,
+          index: 1,
+          identityKey: 'a2-hollywood-squares',
+          recording: {
+            matchStatus: 'matched',
+            confidence: 0.99,
+            reason: 'matched',
+            mbid: 'rec-hs',
+            recordingUrl: 'https://musicbrainz.org/recording/rec-hs',
+          },
+        },
+      ],
+      recordings: {
+        'rec-hs': {
+          mbid: 'rec-hs',
+          title: 'Hollywood Squares',
+          artist: "Bootsy's Rubber Band",
+          credits: [
+            credit,
+            {
+              name: 'Jim Vitti',
+              role: 'engineer',
+              attributes: [],
+              level: 'recording',
+              source: 'discogs',
+              sourceUrl: 'https://www.discogs.com/release/573292',
+              providerId: 'jim',
+            },
+          ],
+          samplesFrom: [],
+          sampledIn: [],
+          provenance: {
+            sourceUrls: ['https://www.discogs.com/release/573292'],
+            matchStatus: 'matched',
+            confidence: 0.99,
+            reason: 'matched',
+            checkedAt: '2026-10-06T00:00:00.000Z',
+            refreshAfter: '2027-04-04T00:00:00.000Z',
+            lastError: null,
+          },
+        },
+      },
+    })
+    const assistant = facts.find((fact) => fact.person === 'Mike Iacopelli')
+    const engineer = facts.find((fact) => fact.person === 'Jim Vitti')
+    assert.equal(assistant?.role, 'assistant engineer')
+    assert.equal(engineer?.role, 'engineer')
+    const samePersonBothRoles = mergeResearchFacts(facts, [
+      {
+        kind: 'credit',
+        trackKey: 'a2-hollywood-squares',
+        track: { position: 'A2', title: 'Hollywood Squares' },
+        role: 'engineer',
+        person: 'Mike Iacopelli',
+        relatedTitle: '',
+        relatedArtist: '',
+        source: 'discogs',
+        sourceId: 'mike-engineer',
+        sourceUrl: 'https://www.discogs.com/release/573292',
+        fetchedAt: '2026-10-06T00:00:00.000Z',
+      },
+    ])
+    const mike = samePersonBothRoles.filter((fact) => fact.person === 'Mike Iacopelli')
+    assert.equal(mike.length, 2)
+    assert.deepEqual(
+      mike.map((fact) => fact.role).sort(),
+      ['assistant engineer', 'engineer']
+    )
   })
 
   it('reads Discogs extraartists from the mapped release payload', () => {
