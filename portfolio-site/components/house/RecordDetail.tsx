@@ -91,13 +91,16 @@ export default function RecordDetail({
       return
     }
     router.push('/collection')
+    requestAnimationFrame(() => {
+      document.getElementById('house-content')?.focus({ preventScroll: true })
+    })
   }, [mode, pressing.releaseId, router])
 
   useEffect(() => {
     if (mode !== 'overlay') return undefined
     closeRef.current?.focus({ preventScroll: true })
     const nodes = document.querySelectorAll(
-      '[data-collection-root], .house header, .house footer'
+      '[data-collection-root], .house header, .house footer, .house-skip'
     )
     nodes.forEach((node) => {
       if (node instanceof HTMLElement) {
@@ -166,6 +169,10 @@ export default function RecordDetail({
       className="house-fade px-6 py-12 sm:px-10"
       aria-labelledby={titleId}
       data-crate-source={crateSource}
+      onAnimationEnd={(event) => {
+        if (event.target !== event.currentTarget) return
+        event.currentTarget.style.opacity = '1'
+      }}
     >
       <p className="house-meta mb-8">
         {mode === 'overlay' ? (
@@ -363,7 +370,6 @@ export default function RecordDetail({
                       <li key={`${track.position}-${track.index}`} className="border-t border-[var(--house-line)] last:border-b">
                         <button
                           type="button"
-                          aria-pressed={active}
                           aria-expanded={active}
                           aria-controls={extrasId}
                           className={`grid w-full grid-cols-[2.5rem_minmax(0,1fr)_auto] items-baseline gap-4 py-3 text-left ${focusRing} ${
@@ -441,7 +447,7 @@ export default function RecordDetail({
   if (mode === 'overlay') {
     return (
       <div
-        className="fixed inset-0 z-30 overflow-auto bg-[var(--house-bg)]"
+        className="fixed inset-0 z-30 overflow-auto bg-[var(--house-bg)] opacity-100"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

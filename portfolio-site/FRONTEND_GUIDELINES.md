@@ -449,7 +449,7 @@ Person-page components render the same layout across breakpoints.
 - Disabled states on buttons during loading
 - Theme toggle buttons have `title` attributes
 - Lazy loading on images (`loading="lazy"`)
-- HouseShell skip-to-content (`.house-skip`) is visually hidden until focused, then jumps to `#house-content`. Collection overlay: first Escape clears a selected track, second closes (`router.back()`) and restores `#crate-cover-{id}`. Page mode Escape and close always `router.push('/collection')` (never `history.back()`), after the same track-first Escape. Overlay-only autofocus on `collection`. Both OVERVIEW/TRACKS panels stay mounted (`hidden` + `tabIndex={0}` on the inactive). Track rows expose `aria-expanded` / `aria-controls`. Selected title is an `h2` over the extras.
+- HouseShell skip-to-content (`.house-skip`) is visually hidden until focused, then jumps to `#house-content` (`tabIndex={-1}` so the skip target and page-mode Escape can take focus). Collection overlay: first Escape clears a selected track, second closes (`router.back()`) and restores `#crate-cover-{id}`. While the overlay is open, `[data-collection-root]`, `.house header`, `.house footer`, and `.house-skip` are `inert`. Page mode Escape and close always `router.push('/collection')` (never `history.back()`), after the same track-first Escape, then focus `main#house-content`. Overlay-only autofocus on `collection`. Both OVERVIEW/TRACKS panels stay mounted (`hidden` + `tabIndex={0}` on the inactive). Track rows expose `aria-expanded` / `aria-controls` (no `aria-pressed`). Selected title is an `h2` over the extras. `.house-fade` rests at `opacity: 1` so dim text stays `#7a7a7a` (4.61:1) after the dialog fade.
 
 ### What's Missing (Improvement Areas)
 
