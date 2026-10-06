@@ -216,7 +216,13 @@ function matchTracksByPositions(
   const positionOf = (track: TrackOccurrence) => track.position.trim().toLowerCase()
   const matches = (token: string, track: TrackOccurrence) => {
     const position = positionOf(track)
-    return token === position || position.startsWith(token)
+    if (token === position) return true
+    if (!position.startsWith(token)) return false
+    // Prefix selects a side or subtrack ("A" → "A1", "3" → "3a" / "3.1"),
+    // never a longer number: "1" must not match "10" or "20" → "2" etc.
+    const last = token.charAt(token.length - 1)
+    const next = position.charAt(token.length)
+    return !(/\d/.test(last) && /\d/.test(next))
   }
   const picked = new Set<TrackOccurrence>()
   for (const token of tokens) {

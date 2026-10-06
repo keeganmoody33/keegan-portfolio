@@ -933,8 +933,13 @@ export async function enrichPressing(
         confidence: mbRelease.confidence,
         reason: mbRelease.reason,
         checkedAt: nowIso,
-        refreshAfter: isoFromMs(nowMs + SUCCESS_REFRESH_MS),
-        lastError: null,
+        // A budget-skipped Wikidata step is retryable, not done: surface it on
+        // provenance (which drives isBackfillSettled) with a near-term retry so
+        // the backfill nacks the release instead of settling it.
+        refreshAfter: isoFromMs(
+          nowMs + (wikiBudgetSkipped ? DEADLINE_BACKOFF_MS : SUCCESS_REFRESH_MS)
+        ),
+        lastError: wikiBudgetSkipped && wikiError ? { ...wikiError, attempts: 0 } : null,
         verifiedAt: skipMatch ? previous?.provenance.verifiedAt ?? null : nowIso,
         lastAttemptAt: nowIso,
       },

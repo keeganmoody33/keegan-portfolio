@@ -3118,6 +3118,59 @@ describe('research facts: fallbacks, schema, and coverage', () => {
     assert.deepEqual(byPerson('Release Wide').map((fact) => fact.track), [null])
   })
 
+  it('does not let numeric range endpoints prefix-match longer track numbers', () => {
+    const base = mtumeDetail()
+    const tracklist = Array.from({ length: 20 }, (_, i) => ({
+      position: String(i + 1),
+      title: `Track ${i + 1}`,
+      duration: '3:00',
+      type_: 'track',
+      extraartists: [],
+    }))
+    const detail = {
+      ...base,
+      extraartists: [
+        { name: 'Range Person', role: 'Bass', id: 1, tracks: '1 to 2' },
+        { name: 'Single Person', role: 'Drums', id: 2, tracks: '2' },
+      ],
+      tracklist,
+    }
+    const tracks = occurrencesFromDetail(detail)
+    const facts = researchFactsFromDiscogs(detail, tracks, '2026-10-06T06:00:00.000Z')
+    const positions = (person: string) =>
+      facts.filter((fact) => fact.person === person).map((fact) => fact.track?.position)
+    assert.deepEqual(positions('Range Person'), ['1', '2'])
+    assert.deepEqual(positions('Single Person'), ['2'])
+  })
+
+  it('keeps a release unsettled and retryable when Wikidata is skipped for budget', async () => {
+    const store = createMemoryCrateStore()
+    let clock = Date.parse('2026-10-06T06:00:00.000Z')
+    const deadlineMs = clock + ENRICH_TAKE_FLOOR_MS + 1_000
+    let wikidataCalls = 0
+    const result = await enrichPressing(567894, {
+      store,
+      now: () => clock,
+      deadlineMs,
+      fetchDiscogs: async () => {
+        // Discogs eats the budget: still inside the deadline, below the floor.
+        clock += 5_000
+        return mtumeDetail()
+      },
+      fetchWikidata: async () => {
+        wikidataCalls += 1
+        return []
+      },
+      mb: createMusicBrainzClientForTests(),
+    })
+    assert.equal(wikidataCalls, 0)
+    assert.equal(result.provenance.lastError?.kind, 'unavailable')
+    assert.equal(isBackfillSettled(result), false)
+    assert.ok(Date.parse(result.provenance.refreshAfter) - clock <= 60_000)
+    assert.equal(result.lifecycles?.research.lastError?.kind, 'unavailable')
+    assert.equal(result.lifecycles?.research.attempts, 0)
+  })
+
   it('shares one Wikidata client so the 1.1s interval is enforced and honors Retry-After', async () => {
     const sleeps: number[] = []
     let clock = 10_000
