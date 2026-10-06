@@ -3069,6 +3069,55 @@ describe('research facts: fallbacks, schema, and coverage', () => {
     assert.equal(result.lifecycles?.research.lastError?.kind, 'rate_limit')
   })
 
+  it('does not wait out a Retry-After longer than the request timeout', async () => {
+    const sleeps: number[] = []
+    let clock = 10_000
+    let calls = 0
+    const client = createWikidataClient({
+      minIntervalMs: 0,
+      now: () => clock,
+      sleep: async (ms) => {
+        sleeps.push(ms)
+        clock += ms
+      },
+      timeoutMs: 5_000,
+      fetchImpl: async () => {
+        calls += 1
+        return new Response('', { status: 429, headers: { 'Retry-After': '30' } })
+      },
+    })
+    const result = await client.lookupRelease(
+      { discogsReleaseId: 567894, masterId: 284145 },
+      '2026-10-06T06:00:00.000Z'
+    )
+    assert.equal(result.status, 'temporary')
+    assert.ok(result.status === 'temporary' && result.error instanceof WikidataTemporaryError)
+    assert.equal(calls, 1)
+    assert.ok(sleeps.every((ms) => ms < 5_000))
+  })
+
+  it('keeps unresolvable track-scoped Discogs credits off the release, and expands ranges', () => {
+    const base = mtumeDetail()
+    const detail = {
+      ...base,
+      extraartists: [
+        { name: 'Range Person', role: 'Bass', id: 1, tracks: 'A to B' },
+        { name: 'Unknown Position', role: 'Drums', id: 2, tracks: 'C3' },
+        { name: 'Release Wide', role: 'Producer', id: 3, tracks: null },
+      ],
+      tracklist: base.tracklist.map((track) => ({ ...track, extraartists: [] })),
+    }
+    const tracks = occurrencesFromDetail(detail)
+    const facts = researchFactsFromDiscogs(detail, tracks, '2026-10-06T06:00:00.000Z')
+    const byPerson = (person: string) => facts.filter((fact) => fact.person === person)
+    assert.deepEqual(
+      byPerson('Range Person').map((fact) => fact.track?.position),
+      ['A', 'B']
+    )
+    assert.equal(byPerson('Unknown Position').length, 0)
+    assert.deepEqual(byPerson('Release Wide').map((fact) => fact.track), [null])
+  })
+
   it('shares one Wikidata client so the 1.1s interval is enforced and honors Retry-After', async () => {
     const sleeps: number[] = []
     let clock = 10_000
@@ -3258,6 +3307,11 @@ describe('backfill cursor migration and targeted retry', () => {
     assert.deepEqual(parseIdList('567894,573292,567894'), [567894, 573292])
     assert.deepEqual(parseIdList(''), [])
     assert.deepEqual(parseIdList(null), [])
+  })
+
+  it('rejects malformed ids instead of truncating them', () => {
+    assert.deepEqual(parseIdList('567894oops,567894.5,1e3,-4,0,07'), [])
+    assert.deepEqual(parseIdList(' 567894 , 573292x, 573292'), [567894, 573292])
   })
 
   it('retries only dead and too_slow ids when retry has no ids', async () => {

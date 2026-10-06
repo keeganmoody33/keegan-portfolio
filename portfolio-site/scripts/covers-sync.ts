@@ -14,8 +14,10 @@ import { fetchFullCollection } from '../lib/discogs.ts'
 const args = parseCoverSyncArgs(process.argv.slice(2))
 assertCoverSyncAllowed({ prod: args.prod })
 
+// Full collection only when --ids is omitted. An explicit but empty or invalid
+// --ids parses to [] and must fail below, never fan out to every release.
 let ids = args.ids ?? []
-if (ids.length === 0) {
+if (args.ids === undefined) {
   const collection = await fetchFullCollection()
   ids = collection.releases
     .map((release) => release.releaseId)

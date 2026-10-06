@@ -67,6 +67,15 @@ function readUInt16LE(bytes: Uint8Array, offset: number): number {
   return (bytes[offset] ?? 0) | ((bytes[offset + 1] ?? 0) << 8)
 }
 
+function readUInt32LE(bytes: Uint8Array, offset: number): number {
+  return (
+    (bytes[offset] ?? 0) +
+    (bytes[offset + 1] ?? 0) * 0x100 +
+    (bytes[offset + 2] ?? 0) * 0x10000 +
+    (bytes[offset + 3] ?? 0) * 0x1000000
+  )
+}
+
 function readUInt32BE(bytes: Uint8Array, offset: number): number {
   return (
     ((bytes[offset] ?? 0) << 24) |
@@ -115,9 +124,10 @@ export function parseImageSize(
       if (width > 0 && height > 0) return { width, height }
     }
     if (tag === 'VP8L' && bytes.length >= 25) {
-      const bits = readUInt32BE(bytes, 21)
+      // VP8L packs 14-bit width-1 / height-1 little-endian after the 0x2f signature.
+      const bits = readUInt32LE(bytes, 21)
       const width = (bits & 0x3fff) + 1
-      const height = ((bits >> 14) & 0x3fff) + 1
+      const height = ((bits >>> 14) & 0x3fff) + 1
       if (width > 0 && height > 0) return { width, height }
     }
   }
@@ -207,9 +217,11 @@ function caaFrontUrl(index: CaaIndex): string | null {
   const images = index.images ?? []
   const front =
     images.find((image) => image.front === true) ??
-    images.find((image) => (image.types ?? []).some((type) => type.toLowerCase() === 'front')) ??
-    images[0]
-  return front?.image || front?.thumbnails?.['1200'] || front?.thumbnails?.['500'] || null
+    images.find((image) => (image.types ?? []).some((type) => type.toLowerCase() === 'front'))
+  // No front marker: back, booklet or disc art only. Return nothing so the
+  // release group or Discogs can supply the front instead.
+  if (!front) return null
+  return front.image || front.thumbnails?.['1200'] || front.thumbnails?.['500'] || null
 }
 
 async function readJson<T>(response: Response): Promise<T | null> {
@@ -291,6 +303,15 @@ export function discogsCoverCandidate(
   }
 }
 
+/** Optional lookups: a network or body error counts as "no candidate". */
+async function optional<T>(run: () => Promise<T | null>): Promise<T | null> {
+  try {
+    return await run()
+  } catch {
+    return null
+  }
+}
+
 export async function discoverCover(
   input: CoverDiscoverInput,
   options: { pacer?: CoverPacer } = {}
@@ -302,13 +323,18 @@ export async function discoverCover(
 
   const releaseMbid = input.mbReleaseMbid?.trim() || null
   if (releaseMbid) {
-    const fromRelease = await caaCandidate(pacer, `/release/${releaseMbid}`)
+    const fromRelease = await optional(() => caaCandidate(pacer, `/release/${releaseMbid}`))
     if (fromRelease) candidates.push(fromRelease)
     let groupMbid = input.mbReleaseGroupMbid?.trim() || null
     if (!fromRelease || coverLongerEdge(fromRelease) < COVER_PREFERRED_MIN_PX) {
-      if (!groupMbid) groupMbid = await musicbrainzReleaseGroupId(pacer, releaseMbid)
+      if (!groupMbid) {
+        groupMbid = await optional(() => musicbrainzReleaseGroupId(pacer, releaseMbid))
+      }
       if (groupMbid) {
-        const fromGroup = await caaCandidate(pacer, `/release-group/${groupMbid}`)
+        const fromGroupMbid = groupMbid
+        const fromGroup = await optional(() =>
+          caaCandidate(pacer, `/release-group/${fromGroupMbid}`)
+        )
         if (fromGroup) candidates.push(fromGroup)
       }
     }

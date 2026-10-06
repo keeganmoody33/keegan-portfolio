@@ -34,7 +34,11 @@ export default function CollectionGrid({
     >
       {releases.map((release, index) => {
         const releaseId = release.releaseId
-        const stored = covers[String(releaseId)]
+        // Only a self-hosted (stored) manifest overrides the grid. A Discogs
+        // manifest carries the sync-time full-size URL; the grid keeps the
+        // live listing `thumbnail || cover` rule instead.
+        const manifest = covers[String(releaseId)]
+        const stored = manifest?.stored && manifest.url ? manifest : undefined
         const fallback = discogsGridHotlink(release.thumbnail, release.cover)
         const src = displayCoverUrl(stored, fallback)
         const dims = stored

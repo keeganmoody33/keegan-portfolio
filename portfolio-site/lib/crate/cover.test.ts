@@ -5,6 +5,8 @@ import {
   coverBlobPath,
   coverContentHash,
   coverLongerEdge,
+  createCoverPacer,
+  discoverCover,
   displayCoverUrl,
   discogsGridHotlink,
   isCoverManifest,
@@ -60,7 +62,26 @@ function jpegSof(width: number, height: number): Uint8Array {
   ])
 }
 
+function vp8lHeader(width: number, height: number): Uint8Array {
+  const bytes = new Uint8Array(30)
+  bytes.set([0x52, 0x49, 0x46, 0x46], 0)
+  bytes.set([0x57, 0x45, 0x42, 0x50], 8)
+  bytes.set([0x56, 0x50, 0x38, 0x4c], 12)
+  bytes[20] = 0x2f
+  const bits = (width - 1) | ((height - 1) << 14)
+  bytes[21] = bits & 0xff
+  bytes[22] = (bits >>> 8) & 0xff
+  bytes[23] = (bits >>> 16) & 0xff
+  bytes[24] = (bits >>> 24) & 0xff
+  return bytes
+}
+
 describe('cover image size parsers', () => {
+  it('reads lossless WebP (VP8L) dimensions little-endian', () => {
+    assert.deepEqual(parseImageSize(vp8lHeader(1400, 1398)), { width: 1400, height: 1398 })
+    assert.deepEqual(parseImageSize(vp8lHeader(1, 16384)), { width: 1, height: 16384 })
+  })
+
   it('reads PNG IHDR and JPEG SOF dimensions', () => {
     assert.deepEqual(parseImageSize(pngHeader(1200, 800)), { width: 1200, height: 800 })
     assert.deepEqual(parseImageSize(jpegSof(600, 597)), { width: 600, height: 597 })
@@ -277,8 +298,122 @@ describe('cover sync guards', () => {
     assert.equal(rows[0]?.blob, 'skipped-no-token')
     assert.equal(rows[0]?.best?.stored, false)
     assert.equal(rows[0]?.best?.url, '')
+    // No URL to show: nothing is committed, so a later sync retries it.
     const stored = await store.get(573292)
-    assert.equal(stored?.source, 'caa')
+    assert.equal(stored, null)
     assert.equal(displayCoverUrl(stored, 'https://i.discogs.com/fallback.jpg'), 'https://i.discogs.com/fallback.jpg')
+  })
+
+  it('keeps an existing Blob manifest when a forced CAA upload fails', async () => {
+    const good = {
+      releaseId: 573292,
+      url: 'https://x.public.blob.vercel-storage.com/covers/abc.jpg',
+      width: 1400,
+      height: 1400,
+      source: 'caa' as const,
+      originalUrl: 'https://coverartarchive.org/release/x/front.jpg',
+      stored: true,
+      hash: 'abc',
+    }
+    const store = createMemoryCoverStore({ 573292: good })
+    const rows = await syncCovers({
+      ids: [573292],
+      force: true,
+      coverStore: store,
+      // Token present but no bytes on the candidate: the upload yields nothing.
+      env: { BLOB_READ_WRITE_TOKEN: 'vercel_blob_rw_test' },
+      lookup: async (releaseId) => ({ releaseId }),
+      discover: async (input) => ({
+        releaseId: input.releaseId,
+        best: {
+          source: 'caa',
+          originalUrl: 'https://coverartarchive.org/release/x/front.jpg',
+          width: 1400,
+          height: 1400,
+        },
+        candidates: [],
+        discogsPx: null,
+      }),
+    })
+    assert.equal(rows[0]?.blob, 'failed')
+    assert.deepEqual(await store.get(573292), good)
+  })
+
+  it('retries an empty-URL manifest instead of skipping it as stored', async () => {
+    const store = createMemoryCoverStore({
+      567894: {
+        releaseId: 567894,
+        url: '',
+        width: 1400,
+        height: 1400,
+        source: 'caa',
+        originalUrl: 'https://coverartarchive.org/release/x/front.jpg',
+        stored: false,
+      },
+    })
+    let looked = 0
+    const rows = await syncCovers({
+      ids: [567894],
+      coverStore: store,
+      env: {},
+      lookup: async (releaseId) => {
+        looked += 1
+        return { releaseId }
+      },
+      discover: async (input) => ({ releaseId: input.releaseId, best: null, candidates: [], discogsPx: null }),
+    })
+    assert.equal(looked, 1)
+    assert.equal(rows[0]?.reason, 'no cover found')
+  })
+
+  it('records a failed lookup and keeps syncing the rest', async () => {
+    const rows = await syncCovers({
+      ids: [1, 2],
+      coverStore: createMemoryCoverStore(),
+      env: {},
+      lookup: async (releaseId) => {
+        if (releaseId === 1) throw new Error('socket hang up')
+        return { releaseId }
+      },
+      discover: async (input) => ({ releaseId: input.releaseId, best: null, candidates: [], discogsPx: null }),
+    })
+    assert.equal(rows.length, 2)
+    assert.match(rows[0]?.reason ?? '', /lookup failed/)
+    assert.equal(rows[1]?.reason, 'no cover found')
+  })
+
+  it('rejects malformed --ids tokens instead of truncating them', () => {
+    assert.deepEqual(parseCoverSyncArgs(['--ids=567894oops,1e3,567894.5']).ids, [])
+    assert.deepEqual(parseCoverSyncArgs(['--ids=']).ids, [])
+    assert.equal(parseCoverSyncArgs([]).ids, undefined)
+  })
+})
+
+describe('cover discovery fallbacks', () => {
+  it('ignores CAA listings with no front image and survives lookup errors', async () => {
+    const discogsUrl = 'https://i.discogs.com/x/h:600/w:600/a.jpeg'
+    const fetchImpl = async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/release-group/')) throw new Error('network down')
+      if (url.includes('musicbrainz.org')) {
+        return new Response(JSON.stringify({ 'release-group': { id: 'rg-1' } }), { status: 200 })
+      }
+      return new Response(
+        JSON.stringify({ images: [{ front: false, types: ['Back'], image: 'https://caa/back.jpg' }] }),
+        { status: 200 }
+      )
+    }
+    const pacer = createCoverPacer({ fetchImpl: fetchImpl as typeof fetch, minIntervalMs: 0 })
+    const result = await discoverCover(
+      {
+        releaseId: 9,
+        mbReleaseMbid: 'mb-1',
+        discogsImage: { uri: discogsUrl, uri150: discogsUrl, width: 600, height: 600, type: 'primary' },
+        discogsCoverUrl: discogsUrl,
+      },
+      { pacer }
+    )
+    assert.equal(result.best?.source, 'discogs')
+    assert.equal(result.best?.originalUrl, discogsUrl)
   })
 })

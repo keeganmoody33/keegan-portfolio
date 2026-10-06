@@ -839,6 +839,7 @@ export async function enrichPressing(
     let wikiFacts: ResearchFact[] = priorWiki
     let wikiError: ProvenanceError | null = null
     let wikiTemporary = false
+    let wikiBudgetSkipped = false
     const wikiRemaining =
       deps.deadlineMs == null
         ? Number.POSITIVE_INFINITY
@@ -869,6 +870,18 @@ export async function enrichPressing(
       } else {
         wikiFacts = outcome.facts
       }
+    } else {
+      // Budget below the floor: the Wikidata fallback was never attempted.
+      // Keep research retryable instead of verifying (and settling) without it.
+      wikiTemporary = true
+      wikiBudgetSkipped = true
+      wikiFacts = priorWiki
+      wikiError = {
+        at: nowIso,
+        kind: 'unavailable',
+        message: 'wikidata skipped: worker budget below floor',
+        attempts: 0,
+      }
     }
     const researchFacts = mergeResearchFacts(
       factsFromRecordings({ tracks, recordings }),
@@ -884,7 +897,9 @@ export async function enrichPressing(
       researched = touchAttempt(
         { ...researchCycle, verifiedAt: priorCycles.research.verifiedAt },
         nowIso,
-        wikiError
+        wikiError,
+        // A budget skip is not a source failure; don't burn an attempt on it.
+        { countAttempt: !wikiBudgetSkipped }
       )
     } else if (acceptedMbids.length > 0 || researchFacts.length > 0) {
       researched = touchVerified(researchCycle, nowIso)

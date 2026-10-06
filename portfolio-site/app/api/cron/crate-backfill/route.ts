@@ -23,7 +23,15 @@ export async function GET(request: NextRequest) {
   }
 
   const retry = request.nextUrl.searchParams.get('retry') === '1'
-  const ids = parseIdList(request.nextUrl.searchParams.get('ids'))
+  const idsRaw = request.nextUrl.searchParams.get('ids')
+  const ids = parseIdList(idsRaw)
+  // An explicit but invalid ids= must not fall through to a full backfill.
+  if (idsRaw !== null && ids.length === 0) {
+    return NextResponse.json(
+      { error: 'invalid ids' },
+      { status: 400, headers: { 'Cache-Control': 'no-store' } }
+    )
+  }
   const limitRaw = request.nextUrl.searchParams.get('limit')
   const limitParsed = limitRaw ? Number.parseInt(limitRaw, 10) : NaN
   const limit = Number.isInteger(limitParsed) && limitParsed > 0 ? limitParsed : undefined
