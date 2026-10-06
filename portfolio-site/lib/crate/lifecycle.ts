@@ -5,11 +5,13 @@ import type {
   Lifecycles,
   Provenance,
   ProvenanceError,
+  ResearchFact,
   StoredPressing,
   StoredRecording,
   TrackOccurrence,
 } from './types.ts'
 import { CRATE_MAX_ATTEMPTS, CRATE_RESEARCH_REFRESH_MS } from './types.ts'
+import { factsFromRecordings, mergeResearchFacts } from './research.ts'
 
 export function emptyFetchState(): FetchState {
   return {
@@ -62,30 +64,55 @@ export function identityChanged(previous: StoredPressing | null, nextTracks: Tra
   return pressingIdentity(previous.tracks) !== pressingIdentity(nextTracks)
 }
 
-export function coverageOf(pressing: Pick<StoredPressing, 'tracks' | 'recordings'>): Coverage {
+export function coverageOf(
+  pressing: Pick<StoredPressing, 'tracks' | 'recordings'> & { researchFacts?: ResearchFact[] }
+): Coverage {
   const playable = pressing.tracks.filter((track) => isPlayableOccurrence(track))
+  const facts = pressing.researchFacts ?? []
+  const withReleaseCredits = facts.some((fact) => fact.kind === 'credit' && !fact.trackKey)
+  const withReleaseSamples = facts.some(
+    (fact) => (fact.kind === 'sample_of' || fact.kind === 'sampled_by') && !fact.trackKey
+  )
   let matched = 0
   let withCredits = 0
   let withSamples = 0
   for (const track of playable) {
-    if (track.recording.matchStatus !== 'matched' || !track.recording.mbid) continue
-    matched += 1
-    const recording = pressing.recordings[track.recording.mbid]
-    if (recording && recording.credits.length > 0) withCredits += 1
-    if (recording && (recording.samplesFrom.length > 0 || recording.sampledIn.length > 0)) {
-      withSamples += 1
+    if (track.recording.matchStatus === 'matched' && track.recording.mbid) {
+      matched += 1
     }
+    const key = track.identityKey ?? trackIdentityKey(track)
+    const recording = track.recording.mbid ? pressing.recordings[track.recording.mbid] : undefined
+    const trackFacts = facts.filter((fact) => fact.trackKey === key)
+    const credit =
+      trackFacts.some((fact) => fact.kind === 'credit') ||
+      Boolean(recording && recording.credits.length > 0)
+    const sample =
+      trackFacts.some((fact) => fact.kind === 'sample_of' || fact.kind === 'sampled_by') ||
+      Boolean(
+        recording && (recording.samplesFrom.length > 0 || recording.sampledIn.length > 0)
+      )
+    if (credit) withCredits += 1
+    if (sample) withSamples += 1
   }
   return {
     tracks: playable.length,
     matched,
     withCredits,
     withSamples,
+    withReleaseCredits,
+    withReleaseSamples,
   }
 }
 
 export function coverageLine(coverage: Coverage): string {
-  return `matched ${coverage.matched}/${coverage.tracks} · credits ${coverage.withCredits} · samples ${coverage.withSamples}`
+  const parts = [
+    `matched ${coverage.matched}/${coverage.tracks}`,
+    `credits ${coverage.withCredits}`,
+    `samples ${coverage.withSamples}`,
+  ]
+  if (coverage.withReleaseCredits) parts.push('album credits')
+  if (coverage.withReleaseSamples) parts.push('album samples')
+  return parts.join(' · ')
 }
 
 export function isPlayableOccurrence(track: TrackOccurrence): boolean {
@@ -218,7 +245,12 @@ export function hydratePressing(pressing: StoredPressing): StoredPressing {
     index: track.index ?? index,
   }))
   const lifecycles = pressing.lifecycles ?? defaultLifecycles(pressing.provenance)
-  const coverage = pressing.coverage ?? coverageOf({ tracks, recordings: pressing.recordings })
+  const withTracks = { ...pressing, tracks }
+  const researchFacts = mergeResearchFacts(
+    factsFromRecordings(withTracks),
+    pressing.researchFacts ?? []
+  )
+  const coverage = coverageOf({ tracks, recordings: pressing.recordings, researchFacts })
   const provenance: Provenance = {
     ...pressing.provenance,
     verifiedAt:
@@ -230,6 +262,7 @@ export function hydratePressing(pressing: StoredPressing): StoredPressing {
   return {
     ...pressing,
     tracks,
+    researchFacts,
     lifecycles,
     coverage,
     provenance,

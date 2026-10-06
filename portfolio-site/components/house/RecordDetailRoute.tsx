@@ -5,6 +5,7 @@ import {
   readStoredPressingOnce,
   unavailablePressing,
 } from '@/lib/crate/read'
+import { getDefaultCoverStore } from '@/lib/crate/cover-store'
 import { houseMetadata } from '@/lib/metadata'
 import type { Metadata } from 'next'
 
@@ -42,15 +43,24 @@ export default async function RecordDetailRoute({
 
   const read = await readStoredPressingOnce(releaseId)
   if (read.status === 'not_found') notFound()
+  const cover = (await getDefaultCoverStore()?.get(releaseId)) ?? null
   if (read.status === 'unavailable') {
     return (
       <RecordDetail
         pressing={unavailablePressing(releaseId, read.listed)}
         mode={mode}
         unavailable
+        cover={cover}
       />
     )
   }
 
-  return <RecordDetail pressing={read.pressing} mode={mode} crateSource={read.from === 'store' ? 'redis' : read.from} />
+  return (
+    <RecordDetail
+      pressing={read.pressing}
+      mode={mode}
+      crateSource={read.from === 'store' ? 'redis' : read.from}
+      cover={cover}
+    />
+  )
 }

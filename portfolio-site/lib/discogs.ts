@@ -1,9 +1,6 @@
-import { after } from 'next/server.js'
 import {
   DISCOGS_REFRESH_LOCK_SECONDS,
-  DISCOGS_SNAPSHOT_TTL_MS,
   getDefaultRedisDurableStore,
-  isSnapshotStale,
   type DurableErrorKind,
   type DurableStore,
 } from './discogs-store.ts'
@@ -508,29 +505,6 @@ function isProductionBuildPhase(options: DiscogsClientOptions): boolean {
   return process.env.NEXT_PHASE === 'phase-production-build'
 }
 
-export function defaultScheduleRefresh(task: () => Promise<void>): void {
-  if (process.env.NEXT_PHASE === 'phase-production-build') return
-  if (process.env.NODE_TEST_CONTEXT) {
-    void task()
-    return
-  }
-
-  try {
-    after(() => task())
-  } catch {
-    void task()
-  }
-}
-
-function maybeScheduleVisitEnrich(schedule: ScheduleRefresh): void {
-  if (process.env.NODE_TEST_CONTEXT) return
-  if (process.env.NEXT_PHASE === 'phase-production-build') return
-  schedule(async () => {
-    const { keepCollectionFresh } = await import('./crate/keep.ts')
-    await keepCollectionFresh()
-  })
-}
-
 function defaultDurableStore(
   options: DiscogsClientOptions
 ): DurableStore | null {
@@ -740,8 +714,6 @@ export async function fetchFullCollection(
 ): Promise<DiscogsCollection> {
   const lastGood = options.lastGood ?? defaultLastGoodStore()
   const durable = defaultDurableStore(options)
-  const now = options.now ?? Date.now
-  const schedule = options.scheduleRefresh ?? defaultScheduleRefresh
   const isBuild = isProductionBuildPhase(options)
 
   if (!durable) {
@@ -764,12 +736,6 @@ export async function fetchFullCollection(
     parsed = parseDurableCollection(snapshot?.collection)
     if (parsed) {
       saveLastGood(lastGood, parsed)
-      const fetchedAt = snapshot?.meta?.fetchedAt ?? null
-      if (!isBuild && isSnapshotStale(fetchedAt, now(), DISCOGS_SNAPSHOT_TTL_MS)) {
-        schedule(() => refreshDurableCollection(durable, options, now))
-      } else if (!isBuild) {
-        maybeScheduleVisitEnrich(schedule)
-      }
       return parsed
     }
   } catch {
@@ -778,9 +744,6 @@ export async function fetchFullCollection(
 
   const memory = lastGood.get()
   if (memory && isCompleteCollection(memory)) {
-    if (!isBuild) {
-      schedule(() => refreshDurableCollection(durable, options, now))
-    }
     return memory
   }
 
@@ -791,18 +754,6 @@ export async function fetchFullCollection(
       cacheMode: 'isr',
     })
     saveLastGood(lastGood, collection)
-    if (!isBuild) {
-      schedule(async () => {
-        const locked = await durable.acquireLock(DISCOGS_REFRESH_LOCK_SECONDS)
-        if (!locked) return
-        try {
-          await durable.setComplete(collection, now())
-          await notifyCollectionComplete(options, null, collection)
-        } finally {
-          await durable.releaseLock()
-        }
-      })
-    }
     return collection
   } catch (error) {
     if (isDiscogsRateLimitError(error)) {

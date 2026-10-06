@@ -15,7 +15,7 @@
 | `/`              | `app/(house)/page.tsx`               | House title card + crate (Server Component). The last `o` in the wordmark `from` is a static `LogoMark` (owner line-only PNG geometry; `variant="line"` — ink strokes, no fills; house palette fills on hold; no `LogoGlobe`, no spin) at Chakra Petch x-height on the alphabetic baseline; there is no standalone coin above the wordmark. Wordmark (`HouseWordmark`, Chakra Petch) entrance is a 700ms opacity fade. HouseFooter does not render the Motion switch while the o is static; `MotionSwitch.tsx`, head bootstrap, and pause CSS stay in the repo. Nameplate and Hathaway SVGs are not mounted. No page turntable. No return-visit redirect. |
 | `/catalog`       | `app/(house)/catalog/page.tsx`       | Crate permalink (same spines as `/`)                            |
 | `/catalog/[slug]`| `app/(house)/catalog/[slug]/page.tsx`| Sleeve (cover, liner, tracks). Unknown slugs 404.               |
-| `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate (ISR 300s; durable last-good in Redis when configured). Cover click opens `/collection/[releaseId]`. Under the `{n} releases` line: **shuffle** (client Fisher-Yates of the whole grid; reload restores ISR order; no server cost) and **pull one** (random listed id → existing overlay/route). |
+| `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate (ISR 300s; durable last-good in Redis when configured). Cover click opens `/collection/[releaseId]`. Under the `{n} releases` line: **shuffle** (client Fisher-Yates of the whole grid; reload restores ISR order; no server cost) and **pull one** (random listed id → existing overlay/route). Grid `next/image` uses a stored CAA Blob URL when the cover manifest has one; otherwise the current Discogs hotlink. |
 | `/collection/[releaseId]` | `app/(house)/collection/[releaseId]/page.tsx` | Record detail (overview / tracks). Intercepting overlay at `@detail/(.)[releaseId]` when opened from the grid; full page on direct visit / refresh. |
 | `/legal`         | `app/(house)/legal/page.tsx`         | Entity + long about + Data sources (Discogs API non-affiliation). Markdown twin `/legal.md`. Organization JSON-LD is not a /legal twin. |
 | `/icon.svg`      | `app/icon.svg`                       | Site icon; `prefers-color-scheme` stroke. Older line-mark — left untouched this pass (follow-up). Applies to house and person. |
@@ -41,8 +41,9 @@
 |-------|--------|------|---------|
 | `/api/chat` | POST | `app/api/chat/route.ts` | Proxy to Supabase `chat` Edge Function |
 | `/api/discogs/collection` | GET | `app/api/discogs/collection/route.ts` | Full Discogs crate (`revalidate: 300`, Redis last-good when configured). Career `/api/discogs` was removed. |
-| `/api/cron/crate-enrich` | GET | `app/api/cron/crate-enrich/route.ts` | Daily ~45s drain of the crate enrichment queue. Bearer `CRON_SECRET` (`timingSafeEqual`). Missing secret → 404. |
-| `/api/cron/crate-backfill` | GET | `app/api/cron/crate-backfill/route.ts` | Resumable initial backfill from collection cursor (not queue head). `remaining` is exact. Same auth. Preview Redis prefix `lf:preview:`. |
+| `/api/cron/crate-enrich` | GET | `app/api/cron/crate-enrich/route.ts` | Manual (CRON_SECRET) ~45s drain of the crate enrichment queue. No Vercel schedule. Missing secret → 404. |
+| `/api/cron/crate-backfill` | GET | `app/api/cron/crate-backfill/route.ts` | Manual research run. `?ids=` and `?retry=1` and `?limit=`. `remaining` is exact. Same auth. Preview Redis prefix `lf:preview:`. |
+| `/api/cron/collection-keep` | GET | `app/api/cron/collection-keep/route.ts` | Manual listing refresh + optional 1-item drain. Same auth. Visitors never ping this. |
 | `/api/cron/crate-inspect` | GET | `app/api/cron/crate-inspect/route.ts` | Read-only queue / dead / unresolved / backfill snapshot. Same auth. |
 | `/api/github` | GET | `app/api/github/route.ts` | Proxy to GitHub public events API |
 | `/api/jd-analyzer` | POST | `app/api/jd-analyzer/route.ts` | Proxy to Supabase `jd-analyzer` Edge Function |
@@ -308,11 +309,11 @@ Land on /keeganmoody33
 4. Tracks tab lists the owned pressing in Discogs order (headings are labels, not buttons; mix titles stay distinct). Both tab panels stay mounted; the inactive one is `hidden` with `tabIndex={0}` on each panel and the house 2px ink focus outline (not Chrome’s default rounded ring). A house-meta coverage line reports matched-track / credit / sample-relationship counts separately. Selecting a playable track paints that title ink (others muted) and expands stored credits, samples from, and sampled in (`aria-expanded` / `aria-controls` on the row). The extras block is headed by the track title as an `h2`, then `h3` section labels.
 5. Overlay keyboard: first Escape clears a selected track; the second Escape (or close / collection) calls `router.back()`. Overlay unmount restores focus to the saved element (`#crate-cover-{id}` from a cover, `#crate-pull-one` from pull one) after dropping `inert` on the grid. While the overlay is open, the skip link, header, footer, and `[data-collection-root]` are `inert` so Tab cannot leave the dialog through `.house-skip`. Overlay autofocuses `collection`. Page mode (direct visit / refresh): do not autofocus `collection`; Escape (after clearing a selected track) and close always `router.push('/collection')` — never `history.back()` — then focus `main#house-content` (`tabIndex={-1}`; `#house-content:focus-visible { outline: none }`). Grid covers use `alt=""`; the detail cover keeps the meaningful alt. HouseShell has a visually hidden skip-to-content link (`#house-content`). Track rows use `aria-expanded` / `aria-controls` only (no `aria-pressed`).
 
-**Success state:** Stored pressing facts, tracklist, and MusicBrainz credits/samples. Cover is the same thumbnail as the grid (150px thumb stretched is an open LF Direction question — leave as-is).
+**Success state:** Stored pressing facts, tracklist, and MusicBrainz credits/samples. Cover is `CrateCover` (`next/image`) with stored width/height when a cover manifest exists. Detail uses the listing thumb as a blurred placeholder, then the full-res source; `sizes` keeps phones off a 2000px file. Missing stored cover falls back to the current Discogs URL. Alt text unchanged (`""` on the grid; `${artist} — ${title}` on detail).
 
 **Error state:** Dim mono `couldn't reach discogs` plus a retry text link (orange on hover). Never red. Last-good stored data is preferred over this. When there is no last-good (no Redis / store down), fill the h1 from catno or id, put that catno in the `#242424` square, and render **only** that line plus retry — no tabs, no `nothing on file yet`.
 
-**Empty states:** Missing field drops its row (never `N/A` / `Unknown` / `—`). Empty section: `nothing on file yet`. No track picked: `pick a track for credits and samples`. Checked, no match (third empty state): **only** one dim mono lowercase line `{reason} · checked YYYY-MM-DD` (example: `no musicbrainz release for this pressing · checked 2026-10-05`) — no extra `nothing on file yet` under credits/samples or Overview connections. No guessing in the reason. Missing cover: `#242424` square with catno centered in house ink `#ececec` (13.1:1 on that square, not dim `#7a7a7a`). Title, artist, fact values, and placeholder catno use `overflow-wrap: anywhere`. Layout holds with hairlines; content fades in (`.house-fade`; instant under reduced motion). After the fact rows: lowercase `.house-source` `discogs` plus exact-case `.house-credit` `Data provided by Discogs.`, both linking the pressing URL (not discogs.com, no `nofollow`). `/collection` repeats the credit on the `{n} releases` line and again at the bottom of the grid, both to the lecturesfrom Discogs collection page. Source lines are lowercase 0.16em; the TOU credit is not lowercased; section labels stay uppercase `.house-meta`. The Discogs API non-affiliation / Zink Media trademark sentence lives on `/legal` Data sources (`/legal.md` twin), not in HouseFooter. Tab panels use the house 2px ink focus outline.
+**Empty states:** Missing field drops its row (never `N/A` / `Unknown` / `—`). Empty section: `nothing on file yet`. No track picked: `pick a track for credits and samples`. Checked, no MusicBrainz pressing match: dim mono lowercase `{reason} · checked YYYY-MM-DD` (example: `no musicbrainz release for this pressing · checked 2026-10-05`). Unmatched may still show Discogs and Wikidata credit and sample facts with `.house-source` labels under that line — do not gate facts until matched (Mtume extraartists fallback). If there are no such facts, do not add `nothing on file yet` under credits/samples or Overview connections. No guessing in the reason. Missing cover: `#242424` square with catno centered in house ink `#ececec` (13.1:1 on that square, not dim `#7a7a7a`). Title, artist, fact values, and placeholder catno use `overflow-wrap: anywhere`. Layout holds with hairlines; content fades in (`.house-fade`; instant under reduced motion). After the fact rows: lowercase `.house-source` `discogs` plus exact-case `.house-credit` `Data provided by Discogs.`, both linking the pressing URL (not discogs.com, no `nofollow`). `/collection` repeats the credit on the `{n} releases` line and again at the bottom of the grid, both to the lecturesfrom Discogs collection page. Source lines are lowercase 0.16em; the TOU credit is not lowercased; section labels stay uppercase `.house-meta`. The Discogs API non-affiliation / Zink Media trademark sentence lives on `/legal` Data sources (`/legal.md` twin), not in HouseFooter. Tab panels use the house 2px ink focus outline.
 
 **PostHog events:** `collection_record_open`, `collection_record_tab`, `collection_record_track`, `collection_record_close`
 
@@ -362,17 +363,21 @@ Supabase DB
 Discogs API
     └── fetchFullCollection() ──→ house `/collection`, `/api/discogs/collection`, `/collection.md`
             └── Upstash Redis last-good (`lf:discogs:collection:v1`) when env is set
-            └── on complete crawl: queue new/missing ids (`lf:crate:queue:v1`)
+            └── visitors read Redis or crawl in-memory; a visit never writes Redis
             └── not used on `/keeganmoody33` (career `/api/discogs` / RecentDigs removed)
 
-MusicBrainz API (background only)
-            └── crate enrich (ISR keep-route ping; budgeted daily cron + explicit backfill)
+MusicBrainz / Discogs extraartists / Wikidata SPARQL (manual research only)
+            └── crate enrich via CRON_SECRET routes and `npm run crate:backfill` (`--ids` `--retry` `--limit`)
+            └── `--retry` without `--ids` retries only dead / too_slow ids
+            └── Wikidata: P1954 (master) then P436 (MB release group) then P2206/P5813; P5707 samples; shared client
             └── Redis zset `lf:crate:queue:v1` + queued set; lock token compare-and-delete; dead/unresolved inspect sets
             └── visitor `/collection/[releaseId]` reads Redis, then fixtures, then a collection pending shell
             └── HTML `data-crate-source="redis|fixture|collection"` marks which one served
-            └── never called on a visitor request. Detail routes are `force-dynamic`. A Redis miss `after()`-enqueues that id to the front and processes one.
-            └── successful research is reused; a later Discogs refresh does not rematch unchanged identities
-            └── prototype gap: Discogs 6h freshness clause is not implemented (24h listing TTL)
+            └── never called on a visitor request. Detail routes are `force-dynamic`. A visit does not enqueue or process.
+            └── successful research is reused (`CRATE_RESEARCH_REFRESH_MS`, six months); a later Discogs refresh does not rematch unchanged identities
+            └── prototype gap: Discogs 6h freshness clause is not implemented
+            └── listing last-good is Redis; gated `/api/cron/collection-keep` refreshes when older than `DISCOGS_SNAPSHOT_TTL_MS` (24h); ISR `revalidate = 300`
+            └── research is manual-only; a visit never writes Redis; no Vercel cron; too_slow recovery is a manual `--retry`
 
 YouTube IFrame API (client-side, no proxy)
     └── youtube.com/iframe_api ──→ YouTubePlayer component

@@ -10,6 +10,14 @@ import {
   type DiscogsFetch,
 } from '../discogs.ts'
 
+export type DiscogsCoverImage = {
+  uri: string
+  uri150: string
+  width: number
+  height: number
+  type: string
+}
+
 export type DiscogsReleaseDetail = {
   id: number
   title: string
@@ -25,24 +33,47 @@ export type DiscogsReleaseDetail = {
   barcode: string | null
   notes: string | null
   discogsUrl: string
+  primaryImage?: DiscogsCoverImage | null
+  masterId: number | null
+  extraartists?: Array<{
+    name: string
+    role: string
+    id: number | null
+    tracks: string | null
+  }>
   tracklist: Array<{
     position: string
     title: string
     duration: string
     type_: string
+    extraartists?: Array<{
+      name: string
+      role: string
+      id: number | null
+      tracks: string | null
+    }>
+    artists?: Array<{ name: string; id: number | null }>
   }>
 }
 
-type DiscogsArtist = { name?: string; join?: string }
+type DiscogsArtist = { name?: string; join?: string; role?: string; id?: number; tracks?: string }
 type DiscogsLabel = { name?: string; catno?: string }
 type DiscogsFormat = { name?: string; descriptions?: string[]; text?: string }
 type DiscogsIdentifier = { type?: string; value?: string }
-type DiscogsImage = { type?: string; uri?: string; uri150?: string }
+type DiscogsImage = {
+  type?: string
+  uri?: string
+  uri150?: string
+  width?: number
+  height?: number
+}
 type DiscogsTrack = {
   position?: string
   title?: string
   duration?: string
   type_?: string
+  extraartists?: DiscogsArtist[]
+  artists?: DiscogsArtist[]
 }
 
 function formatLine(formats: DiscogsFormat[] | undefined): string | null {
@@ -62,6 +93,25 @@ function artistLine(artists: DiscogsArtist[] | undefined): string {
     .join(', ')
 }
 
+function positiveInt(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 0
+}
+
+export function primaryDiscogsImage(
+  images: DiscogsImage[] | undefined
+): DiscogsCoverImage | null {
+  const primary = (images ?? []).find((image) => image.type === 'primary') ?? images?.[0]
+  const uri = primary?.uri?.trim() ?? ''
+  if (!primary || !uri) return null
+  return {
+    uri,
+    uri150: primary.uri150?.trim() || '',
+    width: positiveInt(primary.width),
+    height: positiveInt(primary.height),
+    type: primary.type ?? 'primary',
+  }
+}
+
 function barcodeOf(identifiers: DiscogsIdentifier[] | undefined): string | null {
   for (const item of identifiers ?? []) {
     if ((item.type ?? '').toLowerCase() === 'barcode' && item.value) {
@@ -69,6 +119,22 @@ function barcodeOf(identifiers: DiscogsIdentifier[] | undefined): string | null 
     }
   }
   return null
+}
+
+function mapCreditArtist(artist: DiscogsArtist): {
+  name: string
+  role: string
+  id: number | null
+  tracks: string | null
+} | null {
+  const name = artist.name?.trim()
+  if (!name) return null
+  return {
+    name,
+    role: artist.role?.trim() ?? '',
+    id: typeof artist.id === 'number' && artist.id > 0 ? artist.id : null,
+    tracks: artist.tracks?.trim() ? artist.tracks.trim() : null,
+  }
 }
 
 export function mapDiscogsReleaseDetail(raw: {
@@ -86,11 +152,12 @@ export function mapDiscogsReleaseDetail(raw: {
   images?: DiscogsImage[]
   extraartists?: DiscogsArtist[]
   tracklist?: DiscogsTrack[]
+  master_id?: number
 }): DiscogsReleaseDetail | null {
   if (typeof raw.id !== 'number' || !Number.isInteger(raw.id) || raw.id <= 0) {
     return null
   }
-  const primary = (raw.images ?? []).find((image) => image.type === 'primary') ?? raw.images?.[0]
+  const primary = primaryDiscogsImage(raw.images)
   const cover = primary?.uri || raw.thumb || ''
   const label = raw.labels?.[0]
   return {
@@ -108,11 +175,28 @@ export function mapDiscogsReleaseDetail(raw: {
     barcode: barcodeOf(raw.identifiers),
     notes: raw.notes?.trim() ? raw.notes.trim() : null,
     discogsUrl: discogsReleaseUrl(raw.id),
+    primaryImage: primary,
+    masterId:
+      typeof raw.master_id === 'number' && Number.isInteger(raw.master_id) && raw.master_id > 0
+        ? raw.master_id
+        : null,
+    extraartists: (raw.extraartists ?? [])
+      .map(mapCreditArtist)
+      .filter((artist): artist is NonNullable<typeof artist> => artist != null),
     tracklist: (raw.tracklist ?? []).map((track) => ({
       position: track.position ?? '',
       title: track.title ?? '',
       duration: track.duration ?? '',
       type_: track.type_ ?? 'track',
+      extraartists: (track.extraartists ?? [])
+        .map(mapCreditArtist)
+        .filter((artist): artist is NonNullable<typeof artist> => artist != null),
+      artists: (track.artists ?? [])
+        .map((artist) => ({
+          name: artist.name?.trim() ?? '',
+          id: typeof artist.id === 'number' && artist.id > 0 ? artist.id : null,
+        }))
+        .filter((artist) => artist.name),
     })),
   }
 }

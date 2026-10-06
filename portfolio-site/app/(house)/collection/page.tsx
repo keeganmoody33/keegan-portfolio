@@ -1,6 +1,7 @@
 import CollectionCrate from '@/components/house/CollectionCrate'
 import DiscogsCredit from '@/components/house/DiscogsCredit'
 import { getSleeveBySlug } from '@/lib/catalog'
+import { getDefaultCoverStore } from '@/lib/crate/cover-store'
 import { DISCOGS_COLLECTION_PAGE, fetchFullCollection } from '@/lib/discogs'
 import { pickListedId } from '@/lib/shuffle'
 import type { Metadata } from 'next'
@@ -41,6 +42,13 @@ export default async function CollectionPage() {
   }
 
   const pullOneId = pickListedId(releases)
+  const coverStore = getDefaultCoverStore()
+  const coverMap = coverStore
+    ? await coverStore.getMany(releases.map((release) => release.releaseId))
+    : new Map()
+  const covers = Object.fromEntries(
+    [...coverMap.entries()].map(([id, cover]) => [String(id), cover])
+  )
 
   return (
     <div className="px-6 py-12 sm:px-10">
@@ -65,6 +73,7 @@ export default async function CollectionPage() {
       <CollectionCrate
         releases={releases}
         pullOneHref={pullOneId == null ? null : `/collection/${pullOneId}`}
+        covers={covers}
       />
       <div className="mt-8">
         <DiscogsCredit href={DISCOGS_COLLECTION_PAGE} />

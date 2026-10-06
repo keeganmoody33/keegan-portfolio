@@ -170,7 +170,7 @@ Only surface when directly asked. Frame constructively.
 
 - `/collection/[releaseId]` + intercepting overlay. Covers use the grid thumbnail. OVERVIEW / TRACKS per LF Direction brief.
 - Stored crate model in Redis; fixtures for Bootsy 573292, Goodie Mob 240128, Mtume 567894. Visitors never hit live Discogs/MB.
-- Enrichment: complete crawl queues new ids; `after()` processes 1; daily `/api/cron/crate-enrich` (needs `CRON_SECRET`).
+- Enrichment is manual-only. Visitors never write Redis. No visit `after()` enqueue. Research runs via `GET /api/cron/crate-backfill` / `npm run crate:backfill` (Bearer `CRON_SECRET`; missing → 404). `CRON_SECRET` is not in production.
 - Do not merge or promote this branch.
 
 

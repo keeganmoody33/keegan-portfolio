@@ -7,6 +7,8 @@
 
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import {
   classifyReleaseMatch,
   detectNewReleaseIds,
@@ -16,23 +18,34 @@ import {
   parseDurationToMs,
 } from './match.ts'
 import { AUTH_RETRY_MS, isoFromMs, keepPriorMatch, nextBackoffMs, preservePressingOnFailure, shouldRefreshPressing } from './preserve.ts'
-import { createMemoryCrateStore, crateRedisKeys, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA, type CrateStore } from './store.ts'
+import { createMemoryCrateStore, crateRedisKeys, DRAFT_TTL_SECONDS, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA, type CrateStore } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
-import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, WorkerDeadlineError, isBackfillSettled, deadlineBackoffMs, DEADLINE_STOP_LIMIT, ENRICH_TAKE_FLOOR_MS } from './enrich.ts'
+import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, WorkerDeadlineError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS } from './enrich.ts'
 import { isUnusableDiscogsNotes, resolveDescription, withReadableDescription } from './description.ts'
 import { COLLECTION_KEEP_PATH, scheduleKeepPing } from './keep-ping.ts'
 import { runCrateEnrichCron } from './keep.ts'
 import { crateProofAllowed, parseProofAction, PROOF_KILL_ID, runCrateProof } from './proof.ts'
 import type { MusicBrainzClient } from './musicbrainz.ts'
-import { CRATE_MAX_ATTEMPTS, CRATE_SCHEMA_VERSION, type StoredPressing } from './types.ts'
+import { CRATE_MAX_ATTEMPTS, CRATE_SCHEMA_VERSION, type ResearchFact, type StoredPressing } from './types.ts'
 import { mapRelease, parseDurableCollection, DiscogsAuthError, DiscogsNotFoundError, createMemoryLastGoodStore } from '../discogs.ts'
 import { createMemoryDurableStore } from '../discogs-store.ts'
-import { fixturePressing, parseReleaseParam, readStoredPressing, unavailableHeading, unavailablePressing, visitEnqueueIfListed } from './read.ts'
+import { fixturePressing, parseReleaseParam, readStoredPressing, unavailableHeading, unavailablePressing } from './read.ts'
 import { factRows, pressingCheckedNoMatchLine } from './view.ts'
 import { cronSecretEqual } from './cron-auth.ts'
-import { coverageOf, isPlayableOccurrence, shouldQueuePressing } from './lifecycle.ts'
-import { errorForDiscogsStatus, probeDiscogsIdentity } from './discogs-release.ts'
-import { inspectCrate, remainingBackfillIds, runBackfill } from './backfill.ts'
+import { coverageOf, hydratePressing, isPlayableOccurrence, shouldQueuePressing } from './lifecycle.ts'
+import { errorForDiscogsStatus, mapDiscogsReleaseDetail, probeDiscogsIdentity } from './discogs-release.ts'
+import { creditLine, factsFromRecordings, mergeResearchFacts, normalizeCreditRole, researchFactsFromDiscogs } from './research.ts'
+import {
+  createWikidataClient,
+  getSharedWikidataClient,
+  lookupWikidataReleaseFacts,
+  pickWikidataIdentity,
+  researchFactsFromWikidataBindings,
+  resetSharedWikidataClient,
+  WikidataTemporaryError,
+  wikidataReleaseQuery,
+} from './wikidata.ts'
+import { inspectCrate, migrateSettledIds, parseIdList, remainingBackfillIds, retryBackfillTargets, runBackfill } from './backfill.ts'
 
 function pressingStub(overrides: Partial<StoredPressing> = {}): StoredPressing {
   return {
@@ -701,7 +714,7 @@ describe('enrich lock token (P1.4)', () => {
       {
         store,
         now: () => now,
-        budgetMs: 100,
+        budgetMs: 99,
         takeFloorMs: 100,
         lockTtlSeconds: 60,
         fetchDiscogs: async () => {
@@ -714,6 +727,28 @@ describe('enrich lock token (P1.4)', () => {
     assert.deepEqual(result.processed, [])
     assert.equal(result.skipped, false)
     assert.deepEqual(await store.getQueue(), [1, 2, 3])
+  })
+
+  it('still takes when remaining equals the take floor', async () => {
+    const now = 0
+    const store = createMemoryCrateStore({ queue: [1, 2, 3], now: () => now })
+    const result = await processEnrichmentQueue(
+      {
+        store,
+        now: () => now,
+        budgetMs: 100,
+        takeFloorMs: 100,
+        lockTtlSeconds: 60,
+        fetchDiscogs: async () => {
+          throw new Error('nope')
+        },
+        mb: createMusicBrainzClientForTests(),
+      },
+      10
+    )
+    assert.deepEqual(result.processed, [1])
+    assert.deepEqual(result.failed, [1])
+    assert.equal(remainingBelowTakeFloor(100, 100), false)
   })
 })
 
@@ -752,6 +787,40 @@ describe('weaker refresh keeps a stronger match (P2.11)', () => {
     assert.equal(kept.tracks[0]?.recording.mbid, previous.tracks[0]?.recording.mbid)
     assert.equal(kept.provenance.lastError?.kind, 'partial')
     assert.equal(classifyQueueOutcome(kept), 'completed')
+  })
+
+  it('keeps a Wikidata research lastError when the prior MusicBrainz match wins', () => {
+    const previous = hydratePressing(pressingStub())
+    const weaker = hydratePressing(
+      pressingStub({
+        mbRelease: {
+          mbid: null,
+          url: null,
+          matchStatus: 'unmatched',
+          confidence: 0,
+          reason: 'no musicbrainz release',
+        },
+        lifecycles: {
+          pressing: previous.lifecycles!.pressing,
+          match: previous.lifecycles!.match,
+          research: {
+            verifiedAt: '2026-01-01T00:00:00.000Z',
+            lastAttemptAt: '2026-10-06T06:00:00.000Z',
+            lastError: {
+              at: '2026-10-06T06:00:00.000Z',
+              kind: 'rate_limit',
+              message: 'Wikidata rate limited',
+              attempts: 0,
+            },
+            attempts: 0,
+          },
+        },
+      })
+    )
+    const kept = keepPriorMatch(previous, weaker)
+    assert.equal(kept.mbRelease.matchStatus, 'matched')
+    assert.equal(kept.lifecycles?.research.verifiedAt, previous.lifecycles?.research.verifiedAt)
+    assert.equal(kept.lifecycles?.research.lastError?.kind, 'rate_limit')
   })
 
   it('replaces a prior match when a unique discogs url is counter-evidence', () => {
@@ -901,6 +970,7 @@ describe('unique discogs url stops further searches', () => {
           title: 'Bootsy? Player Of The Year',
           date: '1978',
           country: 'US',
+          releaseGroupId: null,
           tracks: [
             {
               index: 0,
@@ -933,6 +1003,7 @@ describe('unique discogs url stops further searches', () => {
         barcode: '012345',
         notes: null,
         discogsUrl: 'https://www.discogs.com/release/573292',
+        masterId: 14594,
         tracklist: [
           {
             position: 'A1',
@@ -988,6 +1059,7 @@ function bootsyDetail() {
     barcode: '012345',
     notes: null,
     discogsUrl: 'https://www.discogs.com/release/573292',
+    masterId: 14594,
     tracklist: [
       {
         position: 'Side A',
@@ -1027,6 +1099,7 @@ function lonelyDetail() {
     barcode: null,
     notes: null,
     discogsUrl: 'https://www.discogs.com/release/9107339',
+    masterId: null,
     tracklist: [
       {
         position: 'A1',
@@ -1054,18 +1127,34 @@ function mtumeDetail() {
     barcode: null,
     notes: null,
     discogsUrl: 'https://www.discogs.com/release/567894',
+    masterId: 284145,
+    extraartists: [
+      { name: 'Larkin Arnold', role: 'Executive-Producer', id: 255778, tracks: null },
+      { name: 'Herb Powers Jr.', role: 'Mastered By', id: 264125, tracks: null },
+      { name: 'James Mtume', role: 'Producer, Written-By', id: 36715, tracks: null },
+    ],
     tracklist: [
       {
         position: 'A',
         title: 'Juicy Fruit (Vocal)',
         duration: '5:55',
         type_: 'track',
+        extraartists: [
+          { name: 'James Mtume', role: 'Remix', id: 36715, tracks: null },
+          { name: 'Reggie Thompson', role: 'Remix', id: 264480, tracks: null },
+          { name: 'Scott Folks', role: 'Remix', id: 264481, tracks: null },
+        ],
       },
       {
         position: 'B',
         title: 'Juicy Fruit ("Fruity" Instrumental Mix)',
         duration: '7:04',
         type_: 'track',
+        extraartists: [
+          { name: 'Reggie Thompson', role: 'Remix', id: 264480, tracks: null },
+          { name: 'Scott Folks', role: 'Remix', id: 264481, tracks: null },
+          { name: 'Tony Humphries', role: 'Remix', id: 3873, tracks: null },
+        ],
       },
     ],
   }
@@ -1151,6 +1240,7 @@ describe('independent lifecycles (direction change)', () => {
           title: 'Bootsy? Player Of The Year',
           date: '1978',
           country: 'US',
+          releaseGroupId: null,
           tracks: [
             {
               index: 0,
@@ -1488,18 +1578,24 @@ describe('independent lifecycles (direction change)', () => {
     const store = createMemoryCrateStore({ queue: [9107339] })
     let clock = Date.parse('2026-10-06T05:00:00.000Z')
     let discogsCalls = 0
+    const burn = () => {
+      clock += ENRICH_TAKE_FLOOR_MS + 5_000
+    }
     const mb = createMusicBrainzClientForTests()
-    mb.lookupDiscogsReleaseUrl = async () => []
+    mb.lookupDiscogsReleaseUrl = async () => {
+      burn()
+      return []
+    }
     for (let i = 0; i < DEADLINE_STOP_LIMIT; i += 1) {
       const result = await processEnrichmentQueue(
         {
           store,
           now: () => clock,
-          deadlineMs: i === 0 ? clock + ENRICH_TAKE_FLOOR_MS + 1 : clock + 100,
+          deadlineMs: clock + ENRICH_TAKE_FLOOR_MS + 1,
           takeFloorMs: 0,
           fetchDiscogs: async () => {
             discogsCalls += 1
-            clock += ENRICH_TAKE_FLOOR_MS + 5_000
+            burn()
             return lonelyDetail()
           },
           mb,
@@ -1531,22 +1627,29 @@ describe('independent lifecycles (direction change)', () => {
       true
     )
     assert.equal((await store.getQueue()).includes(9107339), false)
+    assert.equal(await store.getDraftPressing(9107339), null)
   })
 
   it('resets deadlineStops on a non-deadline failure so the next stop is not too_slow', async () => {
     const store = createMemoryCrateStore({ queue: [9107339] })
     let clock = Date.parse('2026-10-06T05:00:00.000Z')
+    const burn = () => {
+      clock += ENRICH_TAKE_FLOOR_MS + 5_000
+    }
     const mb = createMusicBrainzClientForTests()
-    mb.lookupDiscogsReleaseUrl = async () => []
+    mb.lookupDiscogsReleaseUrl = async () => {
+      burn()
+      return []
+    }
     for (let i = 0; i < 2; i += 1) {
       const result = await processEnrichmentQueue(
         {
           store,
           now: () => clock,
-          deadlineMs: i === 0 ? clock + ENRICH_TAKE_FLOOR_MS + 1 : clock + 100,
+          deadlineMs: clock + ENRICH_TAKE_FLOOR_MS + 1,
           takeFloorMs: 0,
           fetchDiscogs: async () => {
-            clock += ENRICH_TAKE_FLOOR_MS + 5_000
+            burn()
             return lonelyDetail()
           },
           mb,
@@ -1570,9 +1673,12 @@ describe('independent lifecycles (direction change)', () => {
       {
         store,
         now: () => clock,
-        deadlineMs: clock + 100,
+        deadlineMs: clock + ENRICH_TAKE_FLOOR_MS + 1,
         takeFloorMs: 0,
-        fetchDiscogs: async () => lonelyDetail(),
+        fetchDiscogs: async () => {
+          burn()
+          return lonelyDetail()
+        },
         mb,
       },
       1
@@ -1598,7 +1704,6 @@ describe('independent lifecycles (direction change)', () => {
         store,
         now: () => clock,
         deadlineMs: clock + 100,
-        takeFloorMs: 0,
         fetchDiscogs: async () => {
           discogsCalls += 1
           return lonelyDetail()
@@ -1610,7 +1715,13 @@ describe('independent lifecycles (direction change)', () => {
     assert.equal(discogsCalls, 0)
     assert.deepEqual(result.processed, [])
     const queued = store.queue.find((row) => row.id === 9107339)
-    assert.equal(queued?.score, clock + deadlineBackoffMs(1))
+    assert.ok(queued)
+    assert.equal(queued.score, 0)
+    assert.deepEqual(await store.getQueue(), [9107339])
+    assert.equal(remainingBelowTakeFloor(100, ENRICH_TAKE_FLOOR_MS), true)
+    assert.equal(remainingBelowTakeFloor(ENRICH_TAKE_FLOOR_MS, ENRICH_TAKE_FLOOR_MS), false)
+    assert.equal(remainingBelowTakeFloor(0, 0), true)
+    assert.equal(remainingBelowTakeFloor(ENRICH_BUDGET_MS, ENRICH_TAKE_FLOOR_MS), false)
   })
 
   it('reuses the Discogs draft on a later tick instead of fetching again', async () => {
@@ -1896,6 +2007,14 @@ describe('hollywood squares sample relationship', () => {
     assert.ok(tooShort)
     assert.equal(tooShort.source, 'musicbrainz')
     assert.match(tooShort.sourceUrl, /musicbrainz\.org\/recording\//)
+    const sampled = (pressing.researchFacts ?? []).find(
+      (fact) =>
+        fact.kind === 'sampled_by' &&
+        /too/i.test(fact.relatedArtist) &&
+        /player/i.test(fact.relatedTitle)
+    )
+    assert.ok(sampled)
+    assert.equal(sampled.source, 'musicbrainz')
   })
 })
 
@@ -2428,6 +2547,13 @@ describe('live-proof helpers', () => {
     assert.equal(parseProofAction('nope'), null)
   })
 
+  it('uses the enrich budget, not the take floor, on proof drains', () => {
+    const src = readFileSync(fileURLToPath(new URL('./proof.ts', import.meta.url)), 'utf8')
+    assert.match(src, /budgetMs: ENRICH_BUDGET_MS/)
+    assert.doesNotMatch(src, /budgetMs: 8_000/)
+    assert.ok(ENRICH_BUDGET_MS > ENRICH_TAKE_FLOOR_MS)
+  })
+
   it('refuses crate proofs in production', async () => {
     assert.equal(crateProofAllowed({ VERCEL_ENV: 'production' }), false)
     assert.equal(crateProofAllowed({ VERCEL_ENV: 'preview' }), true)
@@ -2439,24 +2565,809 @@ describe('live-proof helpers', () => {
   })
 })
 
-describe('visit enqueue is listed-only, throttled, and not front', () => {
-  it('does not enqueue an unlisted id', async () => {
+describe('visit reads never write redis', () => {
+  it('does not enqueue when a visitor reads a listed miss or fixture', async () => {
     const store = createMemoryCrateStore()
-    const result = await visitEnqueueIfListed(store, 1, false, true)
-    assert.deepEqual(result, { enqueued: false, throttled: false })
+    const listed = await readStoredPressing(573292, {
+      store,
+      collection: [
+        mapRelease({
+          instance_id: 1,
+          basic_information: {
+            id: 573292,
+            title: 'Bootsy? Player Of The Year',
+            year: 1978,
+            artists: [{ name: "Bootsy's Rubber Band" }],
+            labels: [{ name: 'Warner Bros. Records', catno: 'BSK 3093' }],
+            formats: [{ name: 'Vinyl' }],
+          },
+        }),
+      ],
+    })
+    assert.equal(listed.status, 'ok')
+    assert.deepEqual(await store.getQueue(), [])
+    const pending = await readStoredPressing(9107339, {
+      store,
+      collection: [
+        mapRelease({
+          instance_id: 2,
+          basic_information: {
+            id: 9107339,
+            title: 'One',
+            year: 1977,
+            artists: [{ name: 'Lecturer' }],
+            labels: [{ name: 'lf', catno: 'lf-1' }],
+            formats: [{ name: 'Vinyl' }],
+          },
+        }),
+      ],
+    })
+    assert.equal(pending.status, 'ok')
+    if (pending.status === 'ok') assert.equal(pending.from, 'collection')
     assert.deepEqual(await store.getQueue(), [])
   })
 
-  it('enqueues a listed id at the back and throttles the next visit', async () => {
-    const store = createMemoryCrateStore({ now: () => 1_000 })
-    const first = await visitEnqueueIfListed(store, 573292, true, true)
-    assert.equal(first.enqueued, true)
-    assert.deepEqual(await store.getQueue(), [573292])
-    const row = store.queue.find((item) => item.id === 573292)
-    assert.ok(row && row.score !== 0)
-    const second = await visitEnqueueIfListed(store, 240128, true, true)
-    assert.deepEqual(second, { enqueued: false, throttled: true })
-    assert.deepEqual(await store.getQueue(), [573292])
+  it('does not re-queue a too_slow pressing on visit', async () => {
+    const store = createMemoryCrateStore()
+    await store.markUnresolved({
+      releaseId: 9107339,
+      kind: 'too_slow',
+      message: 'too slow',
+      attempts: 0,
+      at: '2026-10-06T00:00:00.000Z',
+      stage: 'queue',
+    })
+    const pending = await readStoredPressing(9107339, {
+      store,
+      collection: [
+        mapRelease({
+          instance_id: 2,
+          basic_information: {
+            id: 9107339,
+            title: 'One',
+            year: 1977,
+            artists: [{ name: 'Lecturer' }],
+            labels: [{ name: 'lf', catno: 'lf-1' }],
+            formats: [{ name: 'Vinyl' }],
+          },
+        }),
+      ],
+    })
+    assert.equal(pending.status, 'ok')
+    assert.deepEqual(await store.getQueue(), [])
+    assert.equal(store.drafts[9107339], undefined)
+  })
+})
+
+describe('research facts: fallbacks, schema, and coverage', () => {
+  function creditFact(
+    source: ResearchFact['source'],
+    person: string,
+    fetchedAt = '2026-10-06T00:00:00.000Z'
+  ): ResearchFact {
+    return {
+      kind: 'credit',
+      trackKey: '',
+      track: null,
+      role: 'producer',
+      person,
+      relatedTitle: '',
+      relatedArtist: '',
+      source,
+      sourceId: person,
+      sourceUrl: `https://example.test/${source}`,
+      fetchedAt,
+    }
+  }
+
+  it('keeps MusicBrainz over Discogs over Wikidata when the fact is the same', () => {
+    const merged = mergeResearchFacts(
+      [creditFact('wikidata', 'James Mtume')],
+      [creditFact('discogs', 'James Mtume')],
+      [creditFact('musicbrainz', 'James Mtume')]
+    )
+    assert.equal(merged.length, 1)
+    assert.equal(merged[0]?.source, 'musicbrainz')
+  })
+
+  it('persists attributed credits as creditLine so assistant engineer is not collapsed to engineer', () => {
+    const credit = {
+      name: 'Mike Iacopelli',
+      role: 'engineer',
+      attributes: ['assistant'],
+      level: 'recording' as const,
+      source: 'discogs' as const,
+      sourceUrl: 'https://www.discogs.com/release/573292',
+      providerId: 'mike',
+    }
+    assert.equal(creditLine(credit), 'assistant engineer')
+    const facts = factsFromRecordings({
+      tracks: [
+        {
+          position: 'A2',
+          title: 'Hollywood Squares',
+          duration: '6:15',
+          durationMs: 375000,
+          index: 1,
+          identityKey: 'a2-hollywood-squares',
+          recording: {
+            matchStatus: 'matched',
+            confidence: 0.99,
+            reason: 'matched',
+            mbid: 'rec-hs',
+            recordingUrl: 'https://musicbrainz.org/recording/rec-hs',
+          },
+        },
+      ],
+      recordings: {
+        'rec-hs': {
+          mbid: 'rec-hs',
+          title: 'Hollywood Squares',
+          artist: "Bootsy's Rubber Band",
+          credits: [
+            credit,
+            {
+              name: 'Jim Vitti',
+              role: 'engineer',
+              attributes: [],
+              level: 'recording',
+              source: 'discogs',
+              sourceUrl: 'https://www.discogs.com/release/573292',
+              providerId: 'jim',
+            },
+          ],
+          samplesFrom: [],
+          sampledIn: [],
+          provenance: {
+            sourceUrls: ['https://www.discogs.com/release/573292'],
+            matchStatus: 'matched',
+            confidence: 0.99,
+            reason: 'matched',
+            checkedAt: '2026-10-06T00:00:00.000Z',
+            refreshAfter: '2027-04-04T00:00:00.000Z',
+            lastError: null,
+          },
+        },
+      },
+    })
+    const assistant = facts.find((fact) => fact.person === 'Mike Iacopelli')
+    const engineer = facts.find((fact) => fact.person === 'Jim Vitti')
+    assert.equal(assistant?.role, 'assistant engineer')
+    assert.equal(engineer?.role, 'engineer')
+    const samePersonBothRoles = mergeResearchFacts(facts, [
+      {
+        kind: 'credit',
+        trackKey: 'a2-hollywood-squares',
+        track: { position: 'A2', title: 'Hollywood Squares' },
+        role: 'engineer',
+        person: 'Mike Iacopelli',
+        relatedTitle: '',
+        relatedArtist: '',
+        source: 'discogs',
+        sourceId: 'mike-engineer',
+        sourceUrl: 'https://www.discogs.com/release/573292',
+        fetchedAt: '2026-10-06T00:00:00.000Z',
+      },
+    ])
+    const mike = samePersonBothRoles.filter((fact) => fact.person === 'Mike Iacopelli')
+    assert.equal(mike.length, 2)
+    assert.deepEqual(
+      mike.map((fact) => fact.role).sort(),
+      ['assistant engineer', 'engineer']
+    )
+  })
+
+  it('reads Discogs extraartists from the mapped release payload', () => {
+    const mapped = mapDiscogsReleaseDetail({
+      id: 567894,
+      title: 'Juicy Fruit',
+      artists: [{ name: 'Mtume' }],
+      extraartists: [
+        { name: 'Larkin Arnold', role: 'Executive-Producer', id: 255778 },
+      ],
+      tracklist: [
+        {
+          position: 'A',
+          title: 'Juicy Fruit (Vocal)',
+          extraartists: [{ name: 'James Mtume', role: 'Remix', id: 36715 }],
+        },
+      ],
+    })
+    assert.ok(mapped)
+    assert.equal(mapped.extraartists?.[0]?.name, 'Larkin Arnold')
+    assert.equal(mapped.tracklist[0]?.extraartists?.[0]?.name, 'James Mtume')
+  })
+
+  it('recovers Discogs credits for Mtume 567894 and looks up Wikidata by master P1954', async () => {
+    const store = createMemoryCrateStore()
+    const nowIso = '2026-10-06T06:00:00.000Z'
+    const tracks = occurrencesFromDetail(mtumeDetail())
+    const discogs = researchFactsFromDiscogs(mtumeDetail(), tracks, nowIso)
+    const people = [...new Set(discogs.filter((fact) => fact.kind === 'credit').map((fact) => fact.person))]
+    assert.ok(people.includes('Larkin Arnold'))
+    assert.ok(people.includes('Herb Powers Jr.'))
+    assert.ok(people.includes('James Mtume'))
+    assert.ok(people.includes('Reggie Thompson'))
+    assert.ok(people.includes('Scott Folks'))
+    assert.ok(people.includes('Tony Humphries'))
+    assert.ok(discogs.every((fact) => fact.source === 'discogs'))
+    const query = wikidataReleaseQuery({ discogsReleaseId: 567894, masterId: 284145 })
+    assert.match(query, /P1954/)
+    assert.match(query, /P2206/)
+    assert.match(query, /P5707/)
+    assert.doesNotMatch(query, /P736/)
+    assert.doesNotMatch(query, /P144/)
+    assert.doesNotMatch(query, /P4969/)
+    const wiki = researchFactsFromWikidataBindings([], 567894, nowIso)
+    assert.deepEqual(wiki, [])
+    const result = await enrichPressing(567894, {
+      store,
+      now: () => Date.parse(nowIso),
+      fetchDiscogs: async () => mtumeDetail(),
+      fetchWikidata: async () => wiki,
+      mb: createMusicBrainzClientForTests(),
+    })
+    assert.equal(result.mbRelease.matchStatus, 'unmatched')
+    const sources = new Set((result.researchFacts ?? []).map((fact) => fact.source))
+    assert.equal(sources.has('discogs'), true)
+    assert.equal(sources.has('wikidata'), false)
+    assert.equal(result.coverage?.matched, 0)
+    assert.equal(result.coverage?.withReleaseCredits, true)
+    assert.ok((result.coverage?.withCredits ?? 0) >= 2)
+    assert.notEqual(result.coverage?.matched, result.coverage?.withCredits)
+  })
+
+  it('does not count release-level credits as every-track coverage', () => {
+    const tracks = occurrencesFromDetail(mtumeDetail())
+    const nowIso = '2026-10-06T06:00:00.000Z'
+    const releaseOnly: ResearchFact = {
+      kind: 'credit',
+      trackKey: '',
+      track: null,
+      role: 'producer',
+      person: 'James Mtume',
+      relatedTitle: '',
+      relatedArtist: '',
+      source: 'wikidata',
+      sourceId: 'Q1',
+      sourceUrl: 'https://www.wikidata.org/wiki/Q6305224',
+      fetchedAt: nowIso,
+    }
+    const coverage = coverageOf({ tracks, recordings: {}, researchFacts: [releaseOnly] })
+    assert.equal(coverage.withCredits, 0)
+    assert.equal(coverage.withReleaseCredits, true)
+    assert.equal(coverage.withSamples, 0)
+    assert.equal(coverage.withReleaseSamples, false)
+  })
+
+  it('maps Wikidata SPARQL credits to the claim-bearing item and P5707 samples', () => {
+    const fetchedAt = '2026-10-06T06:00:00.000Z'
+    const facts = researchFactsFromWikidataBindings(
+      [
+        {
+          item: { value: 'http://www.wikidata.org/entity/Q6305224' },
+          itemLabel: { value: 'Juicy Fruit' },
+          matchProp: { value: 'http://www.wikidata.org/entity/P1954' },
+          prop: { value: 'http://www.wikidata.org/entity/P162' },
+          value: { value: 'http://www.wikidata.org/entity/Q2' },
+          valueLabel: { value: 'Example Producer' },
+          direction: { value: 'out' },
+        },
+        {
+          item: { value: 'http://www.wikidata.org/entity/Q6305224' },
+          itemLabel: { value: 'Juicy Fruit' },
+          matchProp: { value: 'http://www.wikidata.org/entity/P1954' },
+          prop: { value: 'http://www.wikidata.org/entity/P5707' },
+          value: { value: 'http://www.wikidata.org/entity/Q9' },
+          valueLabel: { value: 'Sampled Work' },
+          direction: { value: 'out' },
+        },
+        {
+          item: { value: 'http://www.wikidata.org/entity/Q6305224' },
+          itemLabel: { value: 'Juicy Fruit' },
+          matchProp: { value: 'http://www.wikidata.org/entity/P1954' },
+          prop: { value: 'http://www.wikidata.org/entity/P5707' },
+          value: { value: 'http://www.wikidata.org/entity/Q8' },
+          valueLabel: { value: 'Later Record' },
+          direction: { value: 'in' },
+        },
+      ],
+      567894,
+      fetchedAt
+    )
+    assert.equal(facts.length, 3)
+    const producer = facts.find((fact) => fact.kind === 'credit')
+    assert.equal(producer?.source, 'wikidata')
+    assert.equal(producer?.role, 'producer')
+    assert.equal(producer?.person, 'Example Producer')
+    assert.equal(producer?.sourceUrl, 'https://www.wikidata.org/wiki/Q6305224')
+    const sampleOf = facts.find((fact) => fact.kind === 'sample_of')
+    assert.equal(sampleOf?.relatedTitle, 'Sampled Work')
+    assert.equal(sampleOf?.sourceUrl, 'https://www.wikidata.org/wiki/Q6305224')
+    const sampledBy = facts.find((fact) => fact.kind === 'sampled_by')
+    assert.equal(sampledBy?.relatedTitle, 'Later Record')
+    assert.equal(sampledBy?.sourceUrl, 'https://www.wikidata.org/wiki/Q8')
+  })
+
+  it('classifies more than one Wikidata item as ambiguous and does not merge', () => {
+    const identity = pickWikidataIdentity([
+      {
+        item: { value: 'http://www.wikidata.org/entity/Q1' },
+        matchProp: { value: 'http://www.wikidata.org/entity/P1954' },
+      },
+      {
+        item: { value: 'http://www.wikidata.org/entity/Q2' },
+        matchProp: { value: 'http://www.wikidata.org/entity/P1954' },
+      },
+    ])
+    assert.equal(identity.status, 'ambiguous')
+    const facts = researchFactsFromWikidataBindings(
+      [
+        {
+          item: { value: 'http://www.wikidata.org/entity/Q1' },
+          matchProp: { value: 'http://www.wikidata.org/entity/P1954' },
+          prop: { value: 'http://www.wikidata.org/entity/P162' },
+          valueLabel: { value: 'One' },
+        },
+        {
+          item: { value: 'http://www.wikidata.org/entity/Q2' },
+          matchProp: { value: 'http://www.wikidata.org/entity/P1954' },
+          prop: { value: 'http://www.wikidata.org/entity/P162' },
+          valueLabel: { value: 'Two' },
+        },
+      ],
+      1,
+      '2026-10-06T06:00:00.000Z'
+    )
+    assert.deepEqual(facts, [])
+  })
+
+  it('prefers P1954 over P436 over P2206/P5813', () => {
+    const identity = pickWikidataIdentity([
+      {
+        item: { value: 'http://www.wikidata.org/entity/Q7617150' },
+        matchProp: { value: 'http://www.wikidata.org/entity/P436' },
+      },
+      {
+        item: { value: 'http://www.wikidata.org/entity/Q4944093' },
+        matchProp: { value: 'http://www.wikidata.org/entity/P1954' },
+      },
+    ])
+    assert.equal(identity.status, 'ok')
+    assert.equal(identity.itemQid, 'Q4944093')
+    assert.equal(identity.matchProp, 'P1954')
+  })
+
+  it('normalizes role synonyms and drops a release-level duplicate of a track credit', () => {
+    assert.equal(normalizeCreditRole('Executive-Producer'), 'executive producer')
+    const trackKey = 'a\u001fjuicy fruit\u001f\u001f\u001ftrack'
+    const merged = mergeResearchFacts(
+      [
+        {
+          kind: 'credit',
+          trackKey: '',
+          track: null,
+          role: 'Producer',
+          person: 'James Mtume',
+          relatedTitle: '',
+          relatedArtist: '',
+          source: 'discogs',
+          sourceId: '36715',
+          sourceUrl: 'https://www.discogs.com/release/567894',
+          fetchedAt: '2026-10-06T06:00:00.000Z',
+        },
+        {
+          kind: 'credit',
+          trackKey,
+          track: { position: 'A', title: 'Juicy Fruit (Vocal)' },
+          role: 'produced by',
+          person: 'James Mtume',
+          relatedTitle: '',
+          relatedArtist: '',
+          source: 'discogs',
+          sourceId: '36715',
+          sourceUrl: 'https://www.discogs.com/release/567894',
+          fetchedAt: '2026-10-06T06:00:00.000Z',
+        },
+      ]
+    )
+    assert.equal(merged.length, 1)
+    assert.equal(merged[0]?.trackKey, trackKey)
+  })
+
+  it('keeps prior Wikidata facts when SPARQL is temporarily unavailable', async () => {
+    const nowIso = '2026-10-06T06:00:00.000Z'
+    const wikiFact: ResearchFact = {
+      kind: 'credit',
+      trackKey: '',
+      track: null,
+      role: 'producer',
+      person: 'Wikidata Only',
+      relatedTitle: '',
+      relatedArtist: '',
+      source: 'wikidata',
+      sourceId: 'Q2',
+      sourceUrl: 'https://www.wikidata.org/wiki/Q6305224',
+      fetchedAt: '2026-01-01T00:00:00.000Z',
+    }
+    const previous = hydratePressing(
+      pressingStub({
+        releaseId: 567894,
+        facts: {
+          releaseId: 567894,
+          title: 'Juicy Fruit',
+          artist: 'Mtume',
+          label: 'Epic',
+          catno: '49-03834',
+          format: 'Vinyl, 12", 45 RPM, Stereo',
+          country: 'US',
+          released: '1983',
+          year: 1983,
+          cover: '',
+          thumbnail: '',
+          discogsUrl: 'https://www.discogs.com/release/567894',
+          barcode: null,
+          masterId: 284145,
+        },
+        tracks: occurrencesFromDetail(mtumeDetail()),
+        mbRelease: {
+          mbid: null,
+          url: null,
+          matchStatus: 'unmatched',
+          confidence: 0,
+          reason: 'no musicbrainz release',
+          releaseGroupMbid: null,
+        },
+        researchFacts: [wikiFact],
+        provenance: {
+          sourceUrls: ['https://www.discogs.com/release/567894'],
+          matchStatus: 'unmatched',
+          confidence: 0,
+          reason: 'no musicbrainz release',
+          checkedAt: nowIso,
+          refreshAfter: '2026-11-01T00:00:00.000Z',
+          lastError: null,
+          verifiedAt: '2026-01-01T00:00:00.000Z',
+        },
+        lifecycles: {
+          pressing: {
+            verifiedAt: nowIso,
+            lastAttemptAt: nowIso,
+            lastError: null,
+            attempts: 0,
+          },
+          match: {
+            verifiedAt: nowIso,
+            lastAttemptAt: nowIso,
+            lastError: null,
+            attempts: 0,
+          },
+          research: {
+            verifiedAt: '2026-01-01T00:00:00.000Z',
+            lastAttemptAt: '2026-01-01T00:00:00.000Z',
+            lastError: null,
+            attempts: 0,
+          },
+        },
+      })
+    )
+    const store = createMemoryCrateStore({ pressings: { 567894: previous } })
+    const result = await enrichPressing(567894, {
+      store,
+      now: () => Date.parse(nowIso),
+      fetchDiscogs: async () => mtumeDetail(),
+      fetchWikidata: async () => {
+        throw new WikidataTemporaryError(429, 1200)
+      },
+      mb: createMusicBrainzClientForTests(),
+      forceRefresh: true,
+    })
+    const kept = (result.researchFacts ?? []).filter((fact) => fact.source === 'wikidata')
+    assert.equal(kept.length, 1)
+    assert.equal(kept[0]?.person, 'Wikidata Only')
+    assert.equal(result.lifecycles?.research.verifiedAt, '2026-01-01T00:00:00.000Z')
+    assert.equal(result.lifecycles?.research.lastError?.kind, 'rate_limit')
+  })
+
+  it('shares one Wikidata client so the 1.1s interval is enforced and honors Retry-After', async () => {
+    const sleeps: number[] = []
+    let clock = 10_000
+    let calls = 0
+    const client = createWikidataClient({
+      minIntervalMs: 1100,
+      now: () => clock,
+      sleep: async (ms) => {
+        sleeps.push(ms)
+        clock += ms
+      },
+      timeoutMs: 5_000,
+      fetchImpl: async (_input, init) => {
+        calls += 1
+        if (calls === 1) {
+          return new Response('', {
+            status: 429,
+            headers: { 'Retry-After': '2' },
+          })
+        }
+        assert.equal(init?.method, 'POST')
+        return Response.json({
+          results: {
+            bindings: [
+              {
+                item: { value: 'http://www.wikidata.org/entity/Q6305224' },
+                matchProp: { value: 'http://www.wikidata.org/entity/P1954' },
+              },
+            ],
+          },
+        })
+      },
+    })
+    const first = await client.lookupRelease(
+      { discogsReleaseId: 567894, masterId: 284145 },
+      '2026-10-06T06:00:00.000Z'
+    )
+    const second = await client.lookupRelease(
+      { discogsReleaseId: 573292, masterId: 14594 },
+      '2026-10-06T06:00:00.000Z'
+    )
+    assert.equal(first.status, 'ok')
+    assert.equal(second.status, 'ok')
+    assert.ok(sleeps.includes(2000))
+    assert.ok(sleeps.some((ms) => ms >= 1000))
+    assert.equal(client.requestCount, 3)
+  })
+
+  it('lookupWikidataReleaseFacts reuses one client and sleeps ≥1100ms between SPARQL requests', async () => {
+    const sleeps: number[] = []
+    const sparqlAt: number[] = []
+    let clock = 10_000
+    const fetchedAt = '2026-10-06T06:00:00.000Z'
+    const options = {
+      now: () => clock,
+      sleep: async (ms: number) => {
+        sleeps.push(ms)
+        clock += ms
+      },
+      fetchImpl: async () => {
+        sparqlAt.push(clock)
+        return Response.json({
+          results: {
+            bindings: [
+              {
+                item: { value: 'http://www.wikidata.org/entity/Q6305224' },
+                matchProp: { value: 'http://www.wikidata.org/entity/P1954' },
+              },
+            ],
+          },
+        })
+      },
+    }
+    resetSharedWikidataClient()
+    try {
+      const first = await lookupWikidataReleaseFacts(
+        { discogsReleaseId: 567894, masterId: 284145 },
+        fetchedAt,
+        options
+      )
+      const second = await lookupWikidataReleaseFacts(
+        { discogsReleaseId: 573292, masterId: 14594 },
+        fetchedAt,
+        options
+      )
+      assert.equal(first.status, 'ok')
+      assert.equal(second.status, 'ok')
+      assert.equal(sparqlAt.length, 2)
+      assert.ok(
+        (sparqlAt[1] ?? 0) - (sparqlAt[0] ?? 0) >= 1100,
+        `expected ≥1100ms between SPARQL requests, got ${JSON.stringify(sparqlAt)} sleeps=${JSON.stringify(sleeps)}`
+      )
+      assert.ok(
+        sleeps.some((ms) => ms >= 1100),
+        `expected a sleep of ≥1100ms, got ${JSON.stringify(sleeps)}`
+      )
+      assert.equal(getSharedWikidataClient().requestCount, 2)
+    } finally {
+      resetSharedWikidataClient()
+    }
+  })
+
+  it('lookupWikidataReleaseFacts does not build a new client per call', () => {
+    const src = readFileSync(fileURLToPath(new URL('./wikidata.ts', import.meta.url)), 'utf8')
+    const start = src.indexOf('export async function lookupWikidataReleaseFacts')
+    const nextExport = src.indexOf('\nexport ', start + 1)
+    const body = src.slice(start, nextExport === -1 ? undefined : nextExport)
+    assert.match(body, /sharedWikidataClient/)
+    assert.doesNotMatch(body, /wikidataClientFor/)
+  })
+})
+
+describe('draft reuse, TTL, and cycle guard', () => {
+  it('expires memory drafts after DRAFT_TTL_SECONDS', async () => {
+    let nowMs = Date.parse('2026-10-06T05:00:00.000Z')
+    const store = createMemoryCrateStore({ now: () => nowMs })
+    const draft = hydratePressing(pressingStub())
+    await store.setDraftPressing(draft)
+    assert.ok(await store.getDraftPressing(573292))
+    nowMs += DRAFT_TTL_SECONDS * 1000 + 1
+    assert.equal(await store.getDraftPressing(573292), null)
+  })
+
+  it('sets Redis draft keys with EX equal to DRAFT_TTL_SECONDS', () => {
+    const src = readFileSync(fileURLToPath(new URL('./store.ts', import.meta.url)), 'utf8')
+    assert.match(src, /ex: DRAFT_TTL_SECONDS/)
+    assert.equal(DRAFT_TTL_SECONDS, 900)
+  })
+
+  it('reuses a current-cycle draft and rejects stale or committed-over drafts', () => {
+    const nowMs = Date.parse('2026-10-06T06:00:00.000Z')
+    const draft = hydratePressing(
+      pressingStub({
+        provenance: {
+          ...pressingStub().provenance,
+          lastAttemptAt: '2026-10-06T05:59:00.000Z',
+          checkedAt: '2026-10-06T05:59:00.000Z',
+        },
+      })
+    )
+    const committed = hydratePressing(
+      pressingStub({
+        provenance: {
+          ...pressingStub().provenance,
+          lastAttemptAt: '2026-10-06T06:00:00.000Z',
+          checkedAt: '2026-10-06T06:00:00.000Z',
+        },
+      })
+    )
+    assert.equal(shouldReuseDraft(draft, null, nowMs), true)
+    assert.equal(shouldReuseDraft(draft, committed, nowMs), false)
+    assert.equal(shouldReuseDraft(draft, null, nowMs, true), false)
+    const stale = hydratePressing(
+      pressingStub({
+        provenance: {
+          ...pressingStub().provenance,
+          lastAttemptAt: '2026-10-06T04:00:00.000Z',
+          checkedAt: '2026-10-06T04:00:00.000Z',
+        },
+      })
+    )
+    assert.equal(shouldReuseDraft(stale, null, nowMs), false)
+  })
+})
+
+describe('backfill cursor migration and targeted retry', () => {
+  it('does not treat a numeric cursor as an index into the current id list', () => {
+    const previous = {
+      cursor: 2,
+      startedAt: '2026-10-06T00:00:00.000Z',
+      updatedAt: '2026-10-06T00:00:00.000Z',
+      completed: 2,
+      unresolved: 0,
+      failed: 0,
+      discogsRequests: 0,
+      mbRequests: 0,
+      status: 'running' as const,
+    }
+    assert.deepEqual(migrateSettledIds(previous, [9107339, 573292, 240128]), [])
+    assert.deepEqual(
+      migrateSettledIds({ ...previous, settled: [573292, 573292, 0] }, [9107339, 573292]),
+      [573292]
+    )
+  })
+
+  it('parses id lists for the manual trigger', () => {
+    assert.deepEqual(parseIdList('567894,573292,567894'), [567894, 573292])
+    assert.deepEqual(parseIdList(''), [])
+    assert.deepEqual(parseIdList(null), [])
+  })
+
+  it('retries only dead and too_slow ids when retry has no ids', async () => {
+    assert.deepEqual(
+      remainingBackfillIds([567894, 573292, 240128], [567894, 573292], [240128], true, [240128]),
+      [240128]
+    )
+    assert.deepEqual(
+      remainingBackfillIds([567894, 573292], [567894, 573292], [567894], true, [567894]),
+      [567894]
+    )
+    assert.deepEqual(
+      remainingBackfillIds([567894, 573292], [567894], [], true),
+      [567894, 573292]
+    )
+    const store = createMemoryCrateStore()
+    await store.markDead({
+      releaseId: 567894,
+      kind: 'exhausted',
+      message: 'gave up',
+      attempts: 5,
+      at: '2026-10-06T00:00:00.000Z',
+      stage: 'pressing',
+    })
+    await store.markUnresolved({
+      releaseId: 240128,
+      kind: 'too_slow',
+      message: 'too slow',
+      attempts: 0,
+      at: '2026-10-06T00:00:00.000Z',
+      stage: 'match',
+    })
+    const targets = await retryBackfillTargets(store)
+    assert.deepEqual([...targets].sort((left, right) => left - right), [240128, 567894])
+    await store.setBackfill({
+      cursor: 0,
+      settled: [567894, 573292, 240128],
+      startedAt: '2026-10-06T00:00:00.000Z',
+      updatedAt: '2026-10-06T00:00:00.000Z',
+      completed: 3,
+      unresolved: 1,
+      failed: 1,
+      discogsRequests: 0,
+      mbRequests: 0,
+      status: 'idle',
+    })
+    const fetches: number[] = []
+    await runBackfill(
+      {
+        store,
+        collection: collectionOf([
+          {
+            id: 567894,
+            title: 'Juicy Fruit',
+            year: 1983,
+            artist: 'Mtume',
+            label: 'Epic',
+            catno: '49-03834',
+          },
+          BOOTSY_ROW,
+          GOODIE_ROW,
+        ]),
+        now: () => Date.parse('2026-10-06T07:00:00.000Z'),
+        takeFloorMs: 0,
+        budgetMs: 45_000,
+        fetchDiscogs: async (id) => {
+          fetches.push(id)
+          return id === 567894 ? mtumeDetail() : bootsyDetail()
+        },
+        mb: createMusicBrainzClientForTests(),
+      },
+      { retry: true }
+    )
+    assert.deepEqual([...fetches].sort((left, right) => left - right), [240128, 567894])
+  })
+
+  it('runs specific ids with retry and forceRefresh', async () => {
+    const previous = fixturePressing(567894)
+    assert.ok(previous)
+    const store = createMemoryCrateStore({ pressings: { 567894: previous } })
+    let mbCalled = 0
+    const mb = createMusicBrainzClientForTests()
+    mb.lookupDiscogsReleaseUrl = async () => {
+      mbCalled += 1
+      return []
+    }
+    const result = await runBackfill(
+      {
+        store,
+        collection: collectionOf([
+          {
+            id: 567894,
+            title: 'Juicy Fruit',
+            year: 1983,
+            artist: 'Mtume',
+            label: 'Epic',
+            catno: '49-03834',
+          },
+        ]),
+        now: () => Date.parse('2026-10-06T07:00:00.000Z'),
+        takeFloorMs: 0,
+        budgetMs: 45_000,
+        forceRefresh: true,
+        fetchDiscogs: async () => mtumeDetail(),
+        mb,
+      },
+      { retry: true, ids: [567894], limit: 1 }
+    )
+    assert.deepEqual(result.processed, [567894])
+    assert.ok(mbCalled > 0)
   })
 })
 

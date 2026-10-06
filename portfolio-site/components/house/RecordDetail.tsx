@@ -4,22 +4,25 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { posthog } from '@/lib/posthog-client'
-import {
-  CRATE_EMPTY_LINE,
-  CRATE_PICK_TRACK,
-  CRATE_UNAVAILABLE_LINE,
-  type StoredPressing,
-} from '@/lib/crate/types.ts'
+import { CRATE_EMPTY_LINE, CRATE_PICK_TRACK, CRATE_UNAVAILABLE_LINE, type ResearchFact, type StoredPressing } from '@/lib/crate/types.ts'
 import {
   checkedDate,
   checkedNoMatchLine,
-  creditLine,
   factRows,
   overviewConnections,
   pressingCheckedNoMatchLine,
+  trackCreditFacts,
+  trackSampleFacts,
+  trackSampledByFacts,
 } from '@/lib/crate/view.ts'
 import DiscogsCredit from '@/components/house/DiscogsCredit'
+import CrateCover from '@/components/house/CrateCover'
 import { coverageLine, isPlayableOccurrence } from '@/lib/crate/lifecycle.ts'
+import {
+  displayCoverUrl,
+  parseDiscogsImageDimensions,
+  type CoverManifest,
+} from '@/lib/crate/cover-display.ts'
 
 const SCROLL_KEY = 'lf:collection:scroll'
 const FOCUS_KEY = 'lf:collection:focus'
@@ -61,11 +64,13 @@ export default function RecordDetail({
   mode,
   unavailable = false,
   crateSource,
+  cover = null,
 }: {
   pressing: StoredPressing
   mode: 'page' | 'overlay'
   unavailable?: boolean
   crateSource?: 'redis' | 'fixture' | 'collection'
+  cover?: CoverManifest | null
 }) {
   const router = useRouter()
   const titleId = useId()
@@ -227,6 +232,8 @@ export default function RecordDetail({
           artist=""
           title={heading}
           catno={placeholderCatno}
+          thumbSrc=""
+          cover={null}
         />
         <div>
           <h1
@@ -240,10 +247,12 @@ export default function RecordDetail({
       ) : (
       <div className="grid gap-10 min-[1280px]:grid-cols-2 min-[1280px]:items-start">
         <RecordCover
-          src={facts.thumbnail || facts.cover}
+          src={displayCoverUrl(cover, facts.cover || facts.thumbnail)}
           artist={facts.artist}
           title={facts.title}
           catno={placeholderCatno}
+          thumbSrc={facts.thumbnail || facts.cover}
+          cover={cover}
         />
         <div>
           <h1
@@ -459,6 +468,9 @@ export default function RecordDetail({
                       reason={selectedTrack.recording.reason}
                       recording={selectedRecording}
                       recordingUrl={selectedTrack.recording.recordingUrl}
+                      credits={trackCreditFacts(pressing, selectedTrack)}
+                      samplesFrom={trackSampleFacts(pressing, selectedTrack)}
+                      sampledIn={trackSampledByFacts(pressing, selectedTrack)}
                     />
                   </>
                 )}
@@ -491,33 +503,31 @@ function RecordCover({
   artist,
   title,
   catno,
+  thumbSrc,
+  cover,
 }: {
   src: string
   artist: string
   title: string
   catno: string | null
+  thumbSrc: string
+  cover: CoverManifest | null
 }) {
-  if (src) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={src}
-        alt={`${artist} — ${title}`}
-        loading="eager"
-        fetchPriority="high"
-        decoding="async"
-        className="aspect-square w-full max-w-[480px] border border-[var(--house-line)] object-cover min-[1280px]:max-w-none"
-      />
-    )
-  }
+  const dims = cover
+    ? { width: cover.width, height: cover.height }
+    : parseDiscogsImageDimensions(src)
   return (
-    <div className="flex aspect-square w-full max-w-[480px] items-center justify-center border border-[var(--house-line)] bg-[var(--house-line)] min-[1280px]:max-w-none">
-      {catno ? (
-        <p className="px-4 text-center font-mono text-sm text-[var(--house-ink)] [overflow-wrap:anywhere]">
-          {catno}
-        </p>
-      ) : null}
-    </div>
+    <CrateCover
+      kind="detail"
+      src={src}
+      thumbSrc={thumbSrc}
+      width={dims?.width}
+      height={dims?.height}
+      alt={`${artist} — ${title}`}
+      catno={catno}
+      eager
+      priority
+    />
   )
 }
 
@@ -530,6 +540,7 @@ function SourceLine({ source, href }: { source: string; href: string }) {
         rel="noopener noreferrer"
         target="_blank"
       >
+        <span className="sr-only">source </span>
         {source}
       </a>
     </p>
@@ -542,20 +553,24 @@ function TrackExtras({
   reason,
   recording,
   recordingUrl,
+  credits,
+  samplesFrom,
+  sampledIn,
 }: {
   checked: string | null
   status: string
   reason: string
   recording: StoredPressing['recordings'][string] | undefined
   recordingUrl: string | null
+  credits: ResearchFact[]
+  samplesFrom: ResearchFact[]
+  sampledIn: ResearchFact[]
 }) {
-  const credits = recording?.credits ?? []
-  const samplesFrom = recording?.samplesFrom ?? []
-  const sampledIn = recording?.sampledIn ?? []
   const unmatched = status !== 'matched' || !recording
   const afterCheck = checkedNoMatchLine(status, reason, checked)
+  const hasFacts = credits.length > 0 || samplesFrom.length > 0 || sampledIn.length > 0
 
-  if (unmatched) {
+  if (unmatched && !hasFacts) {
     return (
       <p className="house-source">
         {afterCheck ?? CRATE_EMPTY_LINE}
@@ -565,14 +580,17 @@ function TrackExtras({
 
   return (
     <div>
+      {unmatched && afterCheck ? (
+        <p className="house-source">{afterCheck}</p>
+      ) : null}
       {recordingUrl && (
         <SourceLine source="musicbrainz" href={recordingUrl} />
       )}
-      {checked && (
+      {checked && !unmatched ? (
         <p className="mt-2 font-mono text-[11px] text-[var(--house-dim)]">
           checked {checked}
         </p>
-      )}
+      ) : null}
 
       <h3 className="house-meta mt-8">credits</h3>
       {credits.length === 0 ? (
@@ -581,12 +599,12 @@ function TrackExtras({
         <ul className="mt-2 list-none p-0">
           {credits.map((credit, index) => (
             <li
-              key={`${credit.role}-${credit.name}-${index}`}
+              key={`${credit.role}-${credit.person}-${index}`}
               className="border-t border-[var(--house-line)] py-3 last:border-b"
             >
               <p className="text-sm">
-                {credit.name}
-                <span className="text-[var(--house-muted)]"> · {creditLine(credit)}</span>
+                {credit.person}
+                <span className="text-[var(--house-muted)]"> · {credit.role}</span>
               </p>
               <SourceLine source={credit.source} href={credit.sourceUrl} />
             </li>
@@ -595,33 +613,29 @@ function TrackExtras({
       )}
 
       <h3 className="house-meta mt-8">samples from</h3>
-      <SampleList items={samplesFrom} />
+      <FactSampleList items={samplesFrom} />
 
       <h3 className="house-meta mt-8">sampled in</h3>
-      <SampleList items={sampledIn} />
+      <FactSampleList items={sampledIn} />
     </div>
   )
 }
 
-function SampleList({
-  items,
-}: {
-  items: Array<{ title: string; artist: string; sourceUrl: string; source: string }>
-}) {
+function FactSampleList({ items }: { items: ResearchFact[] }) {
   if (items.length === 0) {
     return <p className="mt-2 font-mono text-sm text-[var(--house-dim)]">{CRATE_EMPTY_LINE}</p>
   }
   return (
     <ul className="mt-2 list-none p-0">
       {items.map((item) => (
-        <li key={item.sourceUrl} className="border-t border-[var(--house-line)] py-3 last:border-b">
+        <li key={`${item.sourceId}-${item.sourceUrl}`} className="border-t border-[var(--house-line)] py-3 last:border-b">
           <a
             href={item.sourceUrl}
-            className={`text-sm hover:text-[var(--house-orange)] ${focusRing}`}
+            className={`inline-flex min-h-6 items-center text-sm hover:text-[var(--house-orange)] ${focusRing}`}
             rel="noopener noreferrer"
             target="_blank"
           >
-            {item.artist ? `${item.artist} — ${item.title}` : item.title}
+            {item.relatedArtist ? `${item.relatedArtist} — ${item.relatedTitle}` : item.relatedTitle}
           </a>
           <SourceLine source={item.source} href={item.sourceUrl} />
         </li>

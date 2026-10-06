@@ -9,6 +9,8 @@ import {
   enrichPressing,
   isBackfillSettled,
   isWorkerDeadlineError,
+  remainingBelowTakeFloor,
+  remainingBudgetMs,
   type EnrichDeps,
 } from './enrich.ts'
 import { createMusicBrainzClient } from './musicbrainz.ts'
@@ -16,6 +18,7 @@ import { crateRedisKeys, randomLockToken, type CrateStore } from './store.ts'
 import { AUTH_RETRY_MS, isoFromMs, storedPressingHasVisitorFacts } from './preserve.ts'
 import type { BackfillState, DeadLetter, StoredPressing } from './types.ts'
 import type { DiscogsCollection } from '../discogs.ts'
+import { wikidataClientFor } from './wikidata.ts'
 
 export const INSPECT_PRESSING_IDS = [573292, 240128, 567894] as const
 
@@ -143,18 +146,48 @@ export function migrateSettledIds(previous: BackfillState, ids: number[]): numbe
     }
     return settled
   }
-  return ids.slice(0, Math.max(0, previous.cursor))
+  void ids
+  return []
+}
+
+export function parseIdList(raw: string | null | undefined): number[] {
+  if (!raw?.trim()) return []
+  const ids: number[] = []
+  const seen = new Set<number>()
+  for (const part of raw.split(',')) {
+    const n = Number.parseInt(part.trim(), 10)
+    if (Number.isInteger(n) && n > 0 && !seen.has(n)) {
+      ids.push(n)
+      seen.add(n)
+    }
+  }
+  return ids
 }
 
 export function remainingBackfillIds(
   ids: number[],
   settled: Iterable<number>,
   dead: Iterable<number>,
-  retry = false
+  retry = false,
+  retryOnly?: Iterable<number> | null
 ): number[] {
+  if (retry && retryOnly) {
+    const allow = new Set(retryOnly)
+    return ids.filter((id) => allow.has(id))
+  }
+  if (retry) return [...ids]
   const settledSet = new Set(settled)
-  const deadSet = retry ? new Set<number>() : new Set(dead)
+  const deadSet = new Set(dead)
   return ids.filter((id) => !settledSet.has(id) && !deadSet.has(id))
+}
+
+export async function retryBackfillTargets(store: CrateStore): Promise<number[]> {
+  const dead = await store.getDead()
+  const inspect = await store.getInspect()
+  const tooSlow = inspect
+    .filter((row) => row.kind === 'too_slow')
+    .map((row) => row.releaseId)
+  return [...new Set([...dead, ...tooSlow])]
 }
 
 function refreshAfterMs(pressing: StoredPressing | null): number {
@@ -164,14 +197,18 @@ function refreshAfterMs(pressing: StoredPressing | null): number {
 
 export async function runBackfill(
   deps: EnrichDeps & { collection: DiscogsCollection },
-  options: { limit?: number; retry?: boolean } = {}
+  options: { limit?: number; retry?: boolean; ids?: number[] } = {}
 ): Promise<BackfillResult> {
   const store = deps.store
   const now = deps.now ?? Date.now
   const started = now()
-  const ids = collectionReleaseIds(deps.collection)
+  const collectionIds = collectionReleaseIds(deps.collection)
+  const ids = options.ids && options.ids.length > 0 ? options.ids : collectionIds
+  const targeted = Boolean(options.ids && options.ids.length > 0)
+  const retryOnly =
+    options.retry && !targeted ? await retryBackfillTargets(store) : null
   const previous = (await store.getBackfill()) ?? emptyBackfillPrevious(started)
-  const settled = new Set(migrateSettledIds(previous, ids))
+  const settled = new Set(migrateSettledIds(previous, collectionIds))
   const prefix = crateRedisKeys().prefix
 
   const snapshotCounts = async (
@@ -186,7 +223,7 @@ export async function runBackfill(
     const unresolvedSet = await store.getUnresolved()
     const elapsedMs = Math.max(1, now() - started)
     const minutes = elapsedMs / 60_000
-    const remainingList = remainingBackfillIds(ids, settled, dead, options.retry)
+    const remainingList = remainingBackfillIds(ids, settled, dead, options.retry, retryOnly)
     const remaining = remainingList.length
     const completedThis = extra.completedThis
     const completed = previous.completed + completedThis
@@ -248,7 +285,13 @@ export async function runBackfill(
     stoppedOnRateLimit: false,
   }
 
-  const remainingNow = remainingBackfillIds(ids, settled, await store.getDead(), options.retry)
+  const remainingNow = remainingBackfillIds(
+    ids,
+    settled,
+    await store.getDead(),
+    options.retry,
+    retryOnly
+  )
   if (remainingNow.length === 0) {
     return snapshotCounts(emptyExtra, 0, 0)
   }
@@ -258,7 +301,7 @@ export async function runBackfill(
   const locked = await store.acquireEnrichLock(lockTtl, token)
   if (!locked) {
     const dead = await store.getDead()
-    const remaining = remainingBackfillIds(ids, settled, dead, options.retry).length
+    const remaining = remainingBackfillIds(ids, settled, dead, options.retry, retryOnly).length
     const elapsedMs = Math.max(1, now() - started)
     return {
       prefix,
@@ -286,6 +329,7 @@ export async function runBackfill(
   }
 
   const mb = deps.mb ?? createMusicBrainzClient({ now: deps.now })
+  const wikidataClient = deps.wikidataClient ?? wikidataClientFor(deps.wikidata)
   const baseFetch = deps.fetchDiscogs ?? ((releaseId: number) => fetchDiscogsReleaseDetail(releaseId))
   let discogsThis = 0
   const wrappedFetch = async (releaseId: number) => {
@@ -304,16 +348,25 @@ export async function runBackfill(
   let stoppedOnRateLimit = false
   const deadAtStart = new Set(await store.getDead())
 
+  const retryOnlySet = retryOnly ? new Set(retryOnly) : null
+
   try {
     for (const releaseId of ids) {
       if (processed.length >= cap) break
-      if (now() + takeFloorMs >= deadlineMs) break
-      if (settled.has(releaseId)) continue
-      if (!options.retry && deadAtStart.has(releaseId)) continue
+      if (remainingBelowTakeFloor(remainingBudgetMs(deadlineMs, now()), takeFloorMs)) break
+      if (retryOnlySet) {
+        if (!retryOnlySet.has(releaseId)) continue
+        settled.delete(releaseId)
+      } else {
+        if (settled.has(releaseId) && !options.retry) continue
+        if (options.retry) settled.delete(releaseId)
+        if (!options.retry && deadAtStart.has(releaseId)) continue
+      }
 
       const stored = await store.getPressing(releaseId)
       const retryAt = refreshAfterMs(stored)
       if (
+        !options.retry &&
         stored?.provenance.lastError &&
         Number.isFinite(retryAt) &&
         retryAt > now()
@@ -325,8 +378,10 @@ export async function runBackfill(
         const pressing = await enrichPressing(releaseId, {
           ...deps,
           mb,
+          wikidataClient,
           fetchDiscogs: wrappedFetch,
           deadlineMs,
+          forceRefresh: Boolean(options.retry || deps.forceRefresh),
         })
         processed.push(releaseId)
         const kind = pressing.provenance.lastError?.kind

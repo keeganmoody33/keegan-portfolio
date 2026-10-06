@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useRef, useState, useSyncExternalStore, type MouseEvent } from 'react'
 import CollectionGrid from '@/components/house/CollectionGrid'
 import { saveCollectionScroll } from '@/components/house/RecordDetail'
+import type { CoverManifest } from '@/lib/crate/cover-display'
 import type { DiscogsRelease } from '@/lib/discogs'
 import { posthog } from '@/lib/posthog-client'
 import { CRATE_PULL_ONE_ID, pickListedId, shuffledCopy } from '@/lib/shuffle'
@@ -20,9 +21,11 @@ function useHasJavaScript(): boolean {
 export default function CollectionCrate({
   releases,
   pullOneHref,
+  covers = {},
 }: {
   releases: DiscogsRelease[]
   pullOneHref: string | null
+  covers?: Record<string, CoverManifest>
 }) {
   const router = useRouter()
   const shuffleRef = useRef<HTMLButtonElement>(null)
@@ -79,7 +82,7 @@ export default function CollectionCrate({
           {announcement}
         </p>
       </div>
-      <CollectionGrid releases={order} />
+      <CollectionGrid releases={order} covers={covers} />
     </>
   )
 }

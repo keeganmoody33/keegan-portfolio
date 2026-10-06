@@ -2,12 +2,37 @@
  * Resumable crate backfill against preview Redis keys (lf:preview:...) unless
  * VERCEL_ENV=production. Stop and re-run; cursor lives in Redis.
  *
- *   node --experimental-strip-types scripts/crate-backfill.ts
  *   npm run crate:backfill
+ *   npm run crate:backfill -- --retry
+ *   npm run crate:backfill -- --ids=567894,573292 --retry
+ *
+ * `--retry` without `--ids` retries only dead and too_slow ids.
+ *
+ * Gated HTTP (preview only unless CRON_SECRET is set):
+ *   GET /api/cron/crate-backfill?ids=567894&retry=1
+ *   Authorization: Bearer $CRON_SECRET
+ *
+ * CRON_SECRET is not in production. Do not add it without Keegan's yes.
+ * Missing secret → 404. Visitor traffic never writes Redis.
  */
-import { runBackfill } from '../lib/crate/backfill.ts'
+import { parseIdList, runBackfill } from '../lib/crate/backfill.ts'
 import { getDefaultCrateStore } from '../lib/crate/store.ts'
 import { readCachedCollection } from '../lib/discogs.ts'
+
+function parseArgs(argv: string[]): { retry: boolean; ids: number[]; limit?: number } {
+  let retry = false
+  let ids: number[] = []
+  let limit: number | undefined
+  for (const arg of argv) {
+    if (arg === '--retry' || arg === 'retry=1' || arg === '--retry=1') retry = true
+    else if (arg.startsWith('--ids=')) ids = parseIdList(arg.slice('--ids='.length))
+    else if (arg.startsWith('--limit=')) {
+      const parsed = Number.parseInt(arg.slice('--limit='.length), 10)
+      if (Number.isInteger(parsed) && parsed > 0) limit = parsed
+    }
+  }
+  return { retry, ids, limit }
+}
 
 const store = getDefaultCrateStore()
 if (!store) {
@@ -21,5 +46,9 @@ if (!collection) {
   process.exit(1)
 }
 
-const result = await runBackfill({ store, collection })
+const { retry, ids, limit } = parseArgs(process.argv.slice(2))
+const result = await runBackfill(
+  { store, collection, forceRefresh: Boolean(retry) },
+  { retry, ids: ids.length > 0 ? ids : undefined, limit }
+)
 console.log(JSON.stringify(result, null, 2))

@@ -65,6 +65,7 @@ export function emptyPressingFacts(releaseId: number): PressingFacts {
     thumbnail: '',
     discogsUrl: releaseId > 0 ? `https://www.discogs.com/release/${releaseId}` : '',
     barcode: null,
+    masterId: null,
   }
 }
 
@@ -135,7 +136,14 @@ export function errorPressingStub(
       match: emptyFetchState(),
       research: emptyFetchState(),
     },
-    coverage: { tracks: 0, matched: 0, withCredits: 0, withSamples: 0 },
+    coverage: {
+      tracks: 0,
+      matched: 0,
+      withCredits: 0,
+      withSamples: 0,
+      withReleaseCredits: false,
+      withReleaseSamples: false,
+    },
     checkpoint: { stage: 'pressing', researchCursor: 0 },
     factsSource: {
       source: 'discogs',
@@ -264,6 +272,13 @@ export function keepPriorMatch(
   const attempts = (previous.provenance.lastError?.attempts ?? 0) + 1
   const priorCycles = previous.lifecycles ?? defaultLifecycles(previous.provenance)
   const nextCycles = next.lifecycles ?? defaultLifecycles(next.provenance)
+  const research = nextCycles.research.lastError
+    ? {
+        ...priorCycles.research,
+        lastAttemptAt: nextCycles.research.lastAttemptAt,
+        lastError: nextCycles.research.lastError,
+      }
+    : priorCycles.research
   return {
     ...next,
     tracks: mergeTracksKeepRecordings(next.tracks, previous.tracks),
@@ -272,7 +287,7 @@ export function keepPriorMatch(
     lifecycles: {
       pressing: nextCycles.pressing,
       match: priorCycles.match,
-      research: priorCycles.research,
+      research,
     },
     coverage: previous.coverage ?? next.coverage,
     provenance: {

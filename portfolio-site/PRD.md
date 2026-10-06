@@ -52,7 +52,8 @@ Everything that serves the core purpose: help visitors understand who Keegan is,
 | Hero wordmark o = static lecturesfrom mark | `HouseWordmark.tsx` — last `o` in `from` is the static `LogoMark` (owner line-only PNG geometry / stroke width / layer order; `variant="line"` — ink strokes, no fills). Named fill regions stay (`--lf-mark-*`, default `transparent`) for a later token map. Favicon / og stay the older line-mark (untouched this pass). No standalone coin above the wordmark. | **Shipped on the house title card** |
 | Sleeves | `/catalog`, `/catalog/[slug]` | **Shipped (this PR)** |
 | Full Discogs crate | `/collection`, `/api/discogs/collection` | **Shipped** — durable Redis last-good when Upstash env is set; shuffle / pull one on the crate |
-| Collection record detail | `/collection/[releaseId]`, intercepting overlay `@detail/(.)[releaseId]` | **In progress (this PR)** — stored Discogs pressing + MusicBrainz credits/samples; visitors never hit live Discogs/MB |
+| Collection record detail | `/collection/[releaseId]`, intercepting overlay `@detail/(.)[releaseId]` | **In progress (this PR)** — stored Discogs pressing + MusicBrainz/Discogs/Wikidata research facts; visitors never hit live research or write Redis |
+| Collection covers | `CrateCover`, `npm run covers:sync`, Vercel Blob | **In progress (preview)** — `lecturesfrom-covers` linked. Preview sync: 17 CAA on Blob, 258 Discogs hotlinks. Production token exists from auto-link; do not merge. |
 
 | SignalCut | `components/SignalCut.tsx` | **Shipped (this PR)** — house ↔ person only |
 | lecturesfrom nameplate wordmark (assets) | `brand/lecturesfrom-wordmark.svg`, `scripts/generate-wordmark.py` | **Assets only.** Not wired into header or pages. Hathaway vectors in `public/brand/` are a separate unused direction. |
@@ -141,7 +142,7 @@ These are explicitly **not** what this site is:
 
 ## Prototype gaps (collection record detail)
 
-- **Discogs 6h freshness clause** is not implemented. Collection listing TTL is 24h; successful MusicBrainz research is reused indefinitely. Attribution is implemented. See Discogs [API Terms of Use](https://support.discogs.com/hc/en-us/articles/360009334593-API-Terms-of-Use). This PR stays a draft preview prototype.
+- **Discogs 6h freshness clause** is not implemented. Listing last-good is Redis; gated `/api/cron/collection-keep` refreshes when older than `DISCOGS_SNAPSHOT_TTL_MS` (24h); ISR `revalidate = 300`. Successful research is reused indefinitely (`CRATE_RESEARCH_REFRESH_MS`). Attribution is implemented. See Discogs [API Terms of Use](https://support.discogs.com/hc/en-us/articles/360009334593-API-Terms-of-Use). **Research is manual-only** (gated `/api/cron/crate-backfill` + `npm run crate:backfill`). No Vercel cron. `CRON_SECRET` is not in production and must not be added without Keegan's yes. Wikidata identity is Discogs master `P1954`, then MusicBrainz release group `P436`, then Discogs release `P2206` / catalog `P5813`.
 
 ---
 

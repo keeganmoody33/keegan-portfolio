@@ -92,7 +92,7 @@ export function resolveRedisRestConfig(
 const PRODUCTION_REDIS_PREFIX = 'lf:'
 const PREVIEW_REDIS_PREFIX = 'lf:preview:'
 
-function isProductionRedisNamespace(env: EnvMap): boolean {
+export function isProductionRedisNamespace(env: EnvMap = process.env): boolean {
   if (env.VERCEL_ENV !== 'production') return false
   const ref = env.VERCEL_GIT_COMMIT_REF
   if (ref && ref !== 'main') return false
