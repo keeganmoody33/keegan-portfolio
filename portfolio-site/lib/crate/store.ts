@@ -155,6 +155,7 @@ export type CrateStore = {
   markDead(letter: DeadLetter): Promise<void>
   unmarkDead(releaseId: number): Promise<void>
   markUnresolved(letter: DeadLetter): Promise<void>
+  unmarkUnresolved(releaseId: number): Promise<void>
   getDead(): Promise<number[]>
   getUnresolved(): Promise<number[]>
   getInspect(): Promise<DeadLetter[]>
@@ -417,6 +418,13 @@ class RedisCrateStore implements CrateStore {
     await pipeline.exec()
   }
 
+  async unmarkUnresolved(releaseId: number): Promise<void> {
+    const pipeline = this.writeRedis.pipeline()
+    pipeline.srem(this.keys.unresolved, String(releaseId))
+    pipeline.hdel(this.keys.inspect, String(releaseId))
+    await pipeline.exec()
+  }
+
   async getDead(): Promise<number[]> {
     if (process.env.NEXT_PHASE === 'phase-production-build') return []
     return asNumberArray(await this.readRedis.smembers<string[]>(this.keys.dead))
@@ -639,6 +647,10 @@ export function createMemoryCrateStore(
     async markUnresolved(letter: DeadLetter) {
       store.unresolved.add(letter.releaseId)
       store.inspect.set(letter.releaseId, letter)
+    },
+    async unmarkUnresolved(releaseId: number) {
+      store.unresolved.delete(releaseId)
+      store.inspect.delete(releaseId)
     },
     async getDead() {
       return [...store.dead]

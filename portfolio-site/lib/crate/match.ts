@@ -64,6 +64,53 @@ export function coreTitle(value: string): string {
   return normalized || normalizeTitle(value)
 }
 
+const VERSION_TOKEN_SET = new Set<string>(VERSION_TOKENS)
+
+export function songTitle(value: string): string {
+  const core = coreTitle(value)
+  const words = core.split(/\s+/).filter((word) => word && !VERSION_TOKEN_SET.has(word))
+  return words.join(' ').trim() || core
+}
+
+export function artistsMatch(left: string, right: string): boolean {
+  const a = normalizeTitle(left.replace(/\s+\(\d+\)$/u, ''))
+  const b = normalizeTitle(right.replace(/\s+\(\d+\)$/u, ''))
+  if (!a || !b) return false
+  if (a === b) return true
+  return a.replace(/^the /, '') === b.replace(/^the /, '')
+}
+
+export type TrackLevelRecordingHit = {
+  mbid: string
+  title: string
+  artist: string
+  lengthMs: number | null
+  score?: number
+}
+
+export function pickTrackLevelRecordings(
+  hits: TrackLevelRecordingHit[],
+  discogs: { artist: string; title: string; durationMs: number | null }
+): TrackLevelRecordingHit[] {
+  const discogsSong = songTitle(discogs.title)
+  const matched = hits.filter((hit) => {
+    if (!artistsMatch(discogs.artist, hit.artist)) return false
+    if (titlesSimilar(discogs.title, hit.title)) return true
+    const hitSong = songTitle(hit.title)
+    return Boolean(discogsSong && hitSong && discogsSong === hitSong)
+  })
+  return matched.sort((left, right) => {
+    const leftDelta = durationDeltaMs(discogs.durationMs, left.lengthMs)
+    const rightDelta = durationDeltaMs(discogs.durationMs, right.lengthMs)
+    if (leftDelta != null && rightDelta != null && leftDelta !== rightDelta) {
+      return leftDelta - rightDelta
+    }
+    if (leftDelta != null && rightDelta == null) return -1
+    if (leftDelta == null && rightDelta != null) return 1
+    return (right.score ?? 0) - (left.score ?? 0)
+  })
+}
+
 export function normalizePosition(value: string): string {
   const compact = value.toLowerCase().replace(/[\s./_]/g, '')
   const discOne = compact.replace(/^1-(?=\d)/, '')

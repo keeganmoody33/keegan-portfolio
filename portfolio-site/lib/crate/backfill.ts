@@ -171,10 +171,13 @@ export function remainingBackfillIds(
 export async function retryBackfillTargets(store: CrateStore): Promise<number[]> {
   const dead = await store.getDead()
   const inspect = await store.getInspect()
-  const tooSlow = inspect
-    .filter((row) => row.kind === 'too_slow')
+  const retryInspect = inspect
+    .filter(
+      (row) =>
+        row.kind === 'too_slow' || row.kind === 'rate_limit' || row.kind === 'unavailable'
+    )
     .map((row) => row.releaseId)
-  return [...new Set([...dead, ...tooSlow])]
+  return [...new Set([...dead, ...retryInspect])]
 }
 
 function refreshAfterMs(pressing: StoredPressing | null): number {
@@ -351,6 +354,7 @@ export async function runBackfill(
       }
 
       const stored = await store.getPressing(releaseId)
+      if (remainingBelowTakeFloor(remainingBudgetMs(deadlineMs, now()), takeFloorMs)) break
       const retryAt = refreshAfterMs(stored)
       if (
         !options.retry &&

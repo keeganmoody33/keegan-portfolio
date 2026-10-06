@@ -78,6 +78,7 @@ export type CrateCheckpoint = {
   stage: LifecycleName
   researchCursor: number
   deadlineStops?: number
+  trackSampleCursor?: number
 }
 
 export type SourcedRef = {

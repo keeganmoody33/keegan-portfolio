@@ -55,6 +55,14 @@ export function isMusicBrainzAuthError(error: unknown): error is MusicBrainzAuth
   return error instanceof MusicBrainzAuthError
 }
 
+export type MbRecordingSearchHit = {
+  mbid: string
+  title: string
+  artist: string
+  lengthMs: number | null
+  score: number
+}
+
 type MbRelation = {
   type?: string
   direction?: string
@@ -64,7 +72,12 @@ type MbRelation = {
   recording?: {
     id?: string
     title?: string
-    'artist-credit'?: Array<{ name?: string; artist?: { name?: string } }>
+    'artist-credit'?: Array<{ name?: string; artist?: { name?: string }; joinphrase?: string }>
+  }
+  work?: {
+    id?: string
+    title?: string
+    'artist-credit'?: Array<{ name?: string; artist?: { name?: string }; joinphrase?: string }>
   }
   release?: { id?: string; title?: string }
 }
@@ -111,6 +124,39 @@ export function musicbrainzRecordingUrl(mbid: string): string {
 
 export function musicbrainzReleaseUrl(mbid: string): string {
   return `https://musicbrainz.org/release/${mbid}`
+}
+
+export function musicbrainzWorkUrl(mbid: string): string {
+  return `https://musicbrainz.org/work/${mbid}`
+}
+
+function isSampleRelationType(type: string): boolean {
+  const normalized = type.toLowerCase()
+  return normalized === 'samples material' || normalized.includes('sample')
+}
+
+function sampleLinkFromRelation(rel: MbRelation): SampleLink | null {
+  if (rel.recording?.id) {
+    return {
+      title: rel.recording.title ?? '',
+      artist: artistCreditName(rel.recording['artist-credit']),
+      mbid: rel.recording.id,
+      sourceUrl: musicbrainzRecordingUrl(rel.recording.id),
+      source: 'musicbrainz',
+      providerId: rel.recording.id,
+    }
+  }
+  if (rel.work?.id) {
+    return {
+      title: rel.work.title ?? '',
+      artist: artistCreditName(rel.work['artist-credit']),
+      mbid: rel.work.id,
+      sourceUrl: musicbrainzWorkUrl(rel.work.id),
+      source: 'musicbrainz',
+      providerId: rel.work.id,
+    }
+  }
+  return null
 }
 
 export function escapeLucene(value: string): string {
@@ -248,6 +294,48 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
       return hitsFromSearch(data)
     },
 
+    async searchRecordingsByArtistTitle(input: {
+      artist: string
+      title: string
+    }): Promise<MbRecordingSearchHit[]> {
+      const artist = stripDiscogsArtistSuffix(input.artist)
+      const title = input.title.trim()
+      if (!artist || !title) return []
+      const query = `artist:"${escapeLucene(artist)}" AND recording:"${escapeLucene(title)}"`
+      const params = new URLSearchParams({
+        query,
+        fmt: 'json',
+        limit: '25',
+      })
+      const data = await getJson<{
+        recordings?: Array<{
+          id?: string
+          title?: string
+          score?: number
+          length?: number
+          'artist-credit'?: Array<{
+            name?: string
+            artist?: { name?: string }
+            joinphrase?: string
+          }>
+        }>
+      }>(`${MUSICBRAINZ_API}/recording?${params.toString()}`)
+      const hits: MbRecordingSearchHit[] = []
+      const seen = new Set<string>()
+      for (const recording of data.recordings ?? []) {
+        if (!recording.id || seen.has(recording.id)) continue
+        seen.add(recording.id)
+        hits.push({
+          mbid: recording.id,
+          title: recording.title ?? '',
+          artist: artistCreditName(recording['artist-credit']),
+          lengthMs: typeof recording.length === 'number' ? recording.length : null,
+          score: typeof recording.score === 'number' ? recording.score : 0,
+        })
+      }
+      return hits
+    },
+
     async getRelease(mbid: string): Promise<{
       id: string
       title: string
@@ -352,6 +440,7 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
       const credits: Credit[] = []
       const samplesFrom: SampleLink[] = []
       const sampledIn: SampleLink[] = []
+      const workIds: string[] = []
 
       for (const rel of data.relations ?? []) {
         const type = (rel.type ?? '').toLowerCase()
@@ -367,17 +456,36 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
             providerId: rel.artist.id,
           })
         }
-        if (type === 'samples material' || type.includes('sample')) {
-          const recording = rel.recording
-          if (!recording?.id) continue
-          const link: SampleLink = {
-            title: recording.title ?? '',
-            artist: artistCreditName(recording['artist-credit']),
-            mbid: recording.id,
-            sourceUrl: musicbrainzRecordingUrl(recording.id),
-            source: 'musicbrainz',
-            providerId: recording.id,
+        if (isSampleRelationType(type)) {
+          const link = sampleLinkFromRelation(rel)
+          if (link) {
+            const incoming = (rel.direction ?? '').toLowerCase() === 'backward'
+            if (incoming) sampledIn.push(link)
+            else samplesFrom.push(link)
           }
+        }
+        if (rel['target-type'] === 'work' && rel.work?.id) {
+          workIds.push(rel.work.id)
+        }
+      }
+
+      const uniqueWorks = [...new Set(workIds)].slice(0, 4)
+      for (const workId of uniqueWorks) {
+        const workParams = new URLSearchParams({
+          inc: 'work-rels+artist-credits',
+          fmt: 'json',
+        })
+        const work = await getJson<{
+          id?: string
+          error?: string
+          relations?: MbRelation[]
+        }>(`${MUSICBRAINZ_API}/work/${workId}?${workParams.toString()}`)
+        if (work.error || !work.id) continue
+        for (const rel of work.relations ?? []) {
+          const type = (rel.type ?? '').toLowerCase()
+          if (!isSampleRelationType(type) && type !== 'based on') continue
+          const link = sampleLinkFromRelation(rel)
+          if (!link || link.mbid === workId) continue
           const incoming = (rel.direction ?? '').toLowerCase() === 'backward'
           if (incoming) sampledIn.push(link)
           else samplesFrom.push(link)

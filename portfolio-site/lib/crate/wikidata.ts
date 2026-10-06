@@ -21,8 +21,12 @@ export type WikidataClientOptions = {
 export type WikidataLookupInput = {
   discogsReleaseId: number
   masterId?: number | null
-  catalogId?: string | null
+  mbReleaseId?: string | null
   mbReleaseGroupId?: string | null
+}
+
+export type WikidataLookupOptions = {
+  deadlineMs?: number
 }
 
 export type WikidataMatchProp = 'P1954' | 'P436' | 'P2206' | 'P5813'
@@ -155,8 +159,8 @@ export function wikidataReleaseQuery(input: WikidataLookupInput | number): strin
     pairs.push(`(wd:P436 "${sparqlEscape(lookup.mbReleaseGroupId.trim())}")`)
   }
   pairs.push(`(wd:P2206 "${sparqlEscape(String(lookup.discogsReleaseId))}")`)
-  if (lookup.catalogId?.trim()) {
-    pairs.push(`(wd:P5813 "${sparqlEscape(lookup.catalogId.trim())}")`)
+  if (lookup.mbReleaseId?.trim()) {
+    pairs.push(`(wd:P5813 "${sparqlEscape(lookup.mbReleaseId.trim())}")`)
   }
   return `SELECT ?item ?itemLabel ?matchProp ?prop ?value ?valueLabel ?direction WHERE {
   VALUES (?matchKey ?matchValue) { ${pairs.join(' ')} }
@@ -343,43 +347,69 @@ export function createWikidataClient(options: WikidataClientOptions = {}) {
     },
     async lookupRelease(
       input: WikidataLookupInput,
-      fetchedAt: string
+      fetchedAt: string,
+      lookupOptions: WikidataLookupOptions = {}
     ): Promise<WikidataLookupResult> {
       const query = wikidataReleaseQuery(input)
-      const controller = new AbortController()
-      const startedAt = now()
-      const timer = setTimeout(() => controller.abort(), timeoutMs)
-      try {
-        let response: Response
+      const remainingMs = (): number =>
+        lookupOptions.deadlineMs == null
+          ? Number.POSITIVE_INFINITY
+          : Math.max(0, lookupOptions.deadlineMs - now())
+
+      const sparqlOnce = async (): Promise<Response> => {
+        const controller = new AbortController()
+        const timer = setTimeout(() => controller.abort(), timeoutMs)
         try {
-          response = await postSparql(query, controller.signal)
+          return await postSparql(query, controller.signal)
         } catch (error) {
           if (isAbortError(error) || controller.signal.aborted) {
             throw new WikidataTemporaryError('timeout')
           }
           throw new WikidataTemporaryError(503)
+        } finally {
+          clearTimeout(timer)
         }
+      }
+
+      try {
+        const startedAt = now()
+        let response = await sparqlOnce()
         if (response.status === 429) {
           const retryAfterMs = Math.min(
             readRetryAfterMs(response),
             WIKIDATA_RETRY_AFTER_CAP_MS
           )
-          // The retry must fit inside this request's timeout. A Retry-After
-          // longer than what's left surfaces as a temporary 429 right away
-          // instead of holding the worker past its budget.
-          const remainingMs = timeoutMs - (now() - startedAt)
-          if (retryAfterMs > 0 && retryAfterMs < remainingMs && !controller.signal.aborted) {
-            await abortableSleep(sleep, retryAfterMs, controller.signal)
-            if (controller.signal.aborted) {
-              throw new WikidataTemporaryError('timeout', retryAfterMs)
-            }
+          if (retryAfterMs > remainingMs()) {
+            throw new WikidataTemporaryError(429, retryAfterMs)
+          }
+          // Sleep sits outside the SPARQL timer. A Retry-After longer than
+          // what's left of this request's timeout still surfaces as a
+          // temporary 429 right away instead of holding the worker.
+          const requestRemainingMs = timeoutMs - (now() - startedAt)
+          if (retryAfterMs >= requestRemainingMs) {
+            throw new WikidataTemporaryError(429, retryAfterMs)
+          }
+          if (retryAfterMs > 0) {
+            const retryController = new AbortController()
+            const retryTimer = setTimeout(() => retryController.abort(), requestRemainingMs)
             try {
-              response = await postSparql(query, controller.signal)
-            } catch (error) {
-              if (isAbortError(error) || controller.signal.aborted) {
+              await abortableSleep(sleep, retryAfterMs, retryController.signal)
+              if (retryController.signal.aborted) {
                 throw new WikidataTemporaryError('timeout', retryAfterMs)
               }
-              throw new WikidataTemporaryError(503, retryAfterMs)
+            } finally {
+              clearTimeout(retryTimer)
+            }
+            try {
+              response = await sparqlOnce()
+            } catch (error) {
+              if (isAbortError(error)) {
+                throw new WikidataTemporaryError('timeout', retryAfterMs)
+              }
+              if (isWikidataTemporaryError(error) && (error.status === 'timeout' || error.status === 503)) {
+                throw new WikidataTemporaryError(error.status, retryAfterMs)
+              }
+              throw error
             }
           }
           if (response.status === 429) {
@@ -418,8 +448,6 @@ export function createWikidataClient(options: WikidataClientOptions = {}) {
           return { status: 'temporary', error: new WikidataTemporaryError('timeout') }
         }
         throw error
-      } finally {
-        clearTimeout(timer)
       }
     },
     async lookupDiscogsRelease(
@@ -463,12 +491,9 @@ export function wikidataClientFor(options?: WikidataClientOptions): WikidataClie
 export async function lookupWikidataReleaseFacts(
   input: WikidataLookupInput | number,
   fetchedAt: string,
-  options: WikidataClientOptions = {}
+  options: WikidataLookupOptions = {}
 ): Promise<WikidataLookupResult> {
   const lookup: WikidataLookupInput =
     typeof input === 'number' ? { discogsReleaseId: input } : input
-  if (!sharedWikidataClient) {
-    sharedWikidataClient = createWikidataClient(options)
-  }
-  return sharedWikidataClient.lookupRelease(lookup, fetchedAt)
+  return getSharedWikidataClient().lookupRelease(lookup, fetchedAt, options)
 }

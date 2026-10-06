@@ -16,11 +16,13 @@ import {
   normalizePosition,
   normalizeTitle,
   parseDurationToMs,
+  pickTrackLevelRecordings,
+  songTitle,
 } from './match.ts'
 import { AUTH_RETRY_MS, isoFromMs, keepPriorMatch, nextBackoffMs, preservePressingOnFailure, shouldRefreshPressing } from './preserve.ts'
 import { createMemoryCrateStore, crateRedisKeys, DRAFT_TTL_SECONDS, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA, type CrateStore } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
-import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, WorkerDeadlineError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS } from './enrich.ts'
+import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, WorkerDeadlineError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, TRACK_LEVEL_REASON } from './enrich.ts'
 import { isUnusableDiscogsNotes, resolveDescription, withReadableDescription } from './description.ts'
 import { COLLECTION_KEEP_PATH, scheduleKeepPing } from './keep-ping.ts'
 import { runCrateEnrichCron } from './keep.ts'
@@ -124,6 +126,25 @@ describe('duration and title helpers', () => {
     assert.equal(normalizePosition('1-3'), '3')
     assert.equal(normalizePosition('2-1'), '2-1')
     assert.equal(normalizePosition('11'), '11')
+  })
+
+  it('strips mix suffixes for song-title matching and refuses a different artist', () => {
+    assert.equal(songTitle('Juicy Fruit (Vocal)'), 'juicy fruit')
+    assert.equal(songTitle('Juicy Fruit ("Fruity" Instrumental Mix)'), 'juicy fruit')
+    const hits = [
+      { mbid: 'wrong-artist', title: 'Juicy Fruit', artist: 'Someone Else', lengthMs: 355000, score: 99 },
+      { mbid: 'far', title: 'Juicy Fruit', artist: 'Mtume', lengthMs: 500000, score: 80 },
+      { mbid: 'close', title: 'Juicy Fruit (Album Version)', artist: 'Mtume', lengthMs: 356000, score: 70 },
+    ]
+    const picked = pickTrackLevelRecordings(hits, {
+      artist: 'Mtume',
+      title: 'Juicy Fruit (Vocal)',
+      durationMs: 355000,
+    })
+    assert.deepEqual(
+      picked.map((hit) => hit.mbid),
+      ['close', 'far']
+    )
   })
 })
 
@@ -580,6 +601,10 @@ function createMusicBrainzClientForTests(): MusicBrainzClient {
       client.requestCount += 1
       return []
     },
+    async searchRecordingsByArtistTitle() {
+      client.requestCount += 1
+      return []
+    },
     async getRelease() {
       client.requestCount += 1
       return null
@@ -602,6 +627,7 @@ function throwingMb(message = 'musicbrainz down'): MusicBrainzClient {
     searchReleaseByBarcode: boom,
     searchReleaseByCatno: boom,
     searchReleaseByArtistTitle: boom,
+    searchRecordingsByArtistTitle: boom,
     getRelease: boom,
     getRecording: boom,
   }
@@ -1310,6 +1336,10 @@ describe('independent lifecycles (direction change)', () => {
       async searchReleaseByArtistTitle(input) {
         requestCount += 1
         return mb.searchReleaseByArtistTitle(input)
+      },
+      async searchRecordingsByArtistTitle(input) {
+        requestCount += 1
+        return mb.searchRecordingsByArtistTitle(input)
       },
       async getRelease(id) {
         releases += 1
@@ -2940,6 +2970,9 @@ describe('research facts: fallbacks, schema, and coverage', () => {
 
   it('normalizes role synonyms and drops a release-level duplicate of a track credit', () => {
     assert.equal(normalizeCreditRole('Executive-Producer'), 'executive producer')
+    assert.equal(normalizeCreditRole('Composer'), 'written by')
+    assert.equal(normalizeCreditRole('Composed By'), 'written by')
+    assert.equal(normalizeCreditRole('Written-By'), 'written by')
     const trackKey = 'a\u001fjuicy fruit\u001f\u001f\u001ftrack'
     const merged = mergeResearchFacts(
       [
@@ -3244,17 +3277,15 @@ describe('research facts: fallbacks, schema, and coverage', () => {
         })
       },
     }
-    resetSharedWikidataClient()
+    resetSharedWikidataClient(options)
     try {
       const first = await lookupWikidataReleaseFacts(
         { discogsReleaseId: 567894, masterId: 284145 },
-        fetchedAt,
-        options
+        fetchedAt
       )
       const second = await lookupWikidataReleaseFacts(
         { discogsReleaseId: 573292, masterId: 14594 },
-        fetchedAt,
-        options
+        fetchedAt
       )
       assert.equal(first.status, 'ok')
       assert.equal(second.status, 'ok')
@@ -3280,6 +3311,114 @@ describe('research facts: fallbacks, schema, and coverage', () => {
     const body = src.slice(start, nextExport === -1 ? undefined : nextExport)
     assert.match(body, /sharedWikidataClient/)
     assert.doesNotMatch(body, /wikidataClientFor/)
+    assert.doesNotMatch(body, /createWikidataClient/)
+  })
+
+  it('binds P5813 to the MusicBrainz release id, not catalog number', () => {
+    const query = wikidataReleaseQuery({
+      discogsReleaseId: 567894,
+      masterId: 284145,
+      mbReleaseId: '72089134-a550-446e-b26d-8d3b523b05d6',
+      mbReleaseGroupId: 'rg-1',
+    })
+    assert.match(query, /P5813 "72089134-a550-446e-b26d-8d3b523b05d6"/)
+    assert.doesNotMatch(query, /49-03834/)
+    assert.doesNotMatch(wikidataReleaseQuery({ discogsReleaseId: 567894 }), /P5813/)
+  })
+
+  it('does not sleep a Retry-After that exceeds the remaining deadline', async () => {
+    const sleeps: number[] = []
+    let clock = 10_000
+    const client = createWikidataClient({
+      minIntervalMs: 0,
+      now: () => clock,
+      sleep: async (ms) => {
+        sleeps.push(ms)
+        clock += ms
+      },
+      timeoutMs: 5_000,
+      fetchImpl: async () =>
+        new Response('', {
+          status: 429,
+          headers: { 'Retry-After': '5' },
+        }),
+    })
+    const result = await client.lookupRelease(
+      { discogsReleaseId: 567894, masterId: 284145 },
+      '2026-10-06T06:00:00.000Z',
+      { deadlineMs: 10_100 }
+    )
+    assert.equal(result.status, 'temporary')
+    if (result.status === 'temporary') {
+      assert.equal(result.error.kind, 'rate_limit')
+    }
+    assert.equal(
+      sleeps.some((ms) => ms >= 5000),
+      false,
+      `Retry-After must not sleep past the deadline, got ${JSON.stringify(sleeps)}`
+    )
+  })
+
+  it('uses an injected Wikidata client even when NODE_TEST_CONTEXT is set', async () => {
+    assert.ok(process.env.NODE_TEST_CONTEXT)
+    const client = createWikidataClient({
+      minIntervalMs: 0,
+      fetchImpl: async () =>
+        Response.json({
+          results: {
+            bindings: [
+              {
+                item: { value: 'http://www.wikidata.org/entity/Q6305224' },
+                matchProp: { value: 'http://www.wikidata.org/entity/P1954' },
+                prop: { value: 'http://www.wikidata.org/entity/P162' },
+                valueLabel: { value: 'Injected Wiki' },
+              },
+            ],
+          },
+        }),
+    })
+    const store = createMemoryCrateStore()
+    const result = await enrichPressing(567894, {
+      store,
+      now: () => Date.parse('2026-10-06T06:00:00.000Z'),
+      fetchDiscogs: async () => mtumeDetail(),
+      mb: createMusicBrainzClientForTests(),
+      wikidataClient: client,
+    })
+    const wiki = (result.researchFacts ?? []).filter((fact) => fact.source === 'wikidata')
+    assert.ok(wiki.some((fact) => fact.person === 'Injected Wiki'))
+  })
+
+  it('passes the MusicBrainz release mbid as P5813, not catno', async () => {
+    let captured: { mbReleaseId?: string | null; discogsReleaseId?: number } | null = null
+    const store = createMemoryCrateStore()
+    await enrichPressing(573292, {
+      store,
+      now: () => Date.parse('2026-10-06T06:00:00.000Z'),
+      fetchDiscogs: async () => bootsyDetail(),
+      mb: {
+        ...createMusicBrainzClientForTests(),
+        async lookupDiscogsReleaseUrl() {
+          return [{ mbid: '72089134-a550-446e-b26d-8d3b523b05d6', score: 100, title: 'Bootsy? Player Of The Year', trackCount: 9 }]
+        },
+        async getRelease() {
+          return {
+            id: '72089134-a550-446e-b26d-8d3b523b05d6',
+            title: 'Bootsy? Player Of The Year',
+            date: '1978',
+            country: 'US',
+            releaseGroupId: 'rg-bootsy',
+            tracks: [],
+          }
+        },
+      },
+      fetchWikidata: async (input) => {
+        captured = input
+        return []
+      },
+    })
+    assert.equal(captured?.mbReleaseId, '72089134-a550-446e-b26d-8d3b523b05d6')
+    assert.notEqual(captured?.mbReleaseId, 'BSK 3093')
   })
 })
 
@@ -3441,6 +3580,62 @@ describe('backfill cursor migration and targeted retry', () => {
     assert.deepEqual([...fetches].sort((left, right) => left - right), [240128, 567894])
   })
 
+  it('retries dead plus too_slow, rate_limit, and unavailable inspect ids', async () => {
+    const store = createMemoryCrateStore()
+    await store.markDead({
+      releaseId: 1,
+      kind: 'exhausted',
+      message: 'gave up',
+      attempts: 5,
+      at: '2026-10-06T00:00:00.000Z',
+      stage: 'pressing',
+    })
+    await store.markUnresolved({
+      releaseId: 2,
+      kind: 'too_slow',
+      message: 'too slow',
+      attempts: 0,
+      at: '2026-10-06T00:00:00.000Z',
+      stage: 'match',
+    })
+    await store.markUnresolved({
+      releaseId: 3,
+      kind: 'rate_limit',
+      message: 'Wikidata rate limited',
+      attempts: 0,
+      at: '2026-10-06T00:00:00.000Z',
+      stage: 'research',
+    })
+    await store.markUnresolved({
+      releaseId: 4,
+      kind: 'unavailable',
+      message: 'Wikidata timed out',
+      attempts: 0,
+      at: '2026-10-06T00:00:00.000Z',
+      stage: 'research',
+    })
+    await store.markUnresolved({
+      releaseId: 5,
+      kind: 'ambiguous',
+      message: 'leave me',
+      attempts: 0,
+      at: '2026-10-06T00:00:00.000Z',
+      stage: 'match',
+    })
+    const targets = await retryBackfillTargets(store)
+    assert.deepEqual([...targets].sort((left, right) => left - right), [1, 2, 3, 4])
+  })
+
+  it('re-checks the take floor after reading a stored pressing', () => {
+    const src = readFileSync(fileURLToPath(new URL('./backfill.ts', import.meta.url)), 'utf8')
+    const start = src.indexOf('export async function runBackfill')
+    const body = src.slice(start)
+    const readAt = body.indexOf('const stored = await store.getPressing')
+    const recheckAt = body.indexOf('remainingBelowTakeFloor', readAt)
+    assert.ok(readAt >= 0)
+    assert.ok(recheckAt > readAt)
+  })
+
   it('runs specific ids with retry and forceRefresh', async () => {
     const previous = fixturePressing(567894)
     assert.ok(previous)
@@ -3475,6 +3670,226 @@ describe('backfill cursor migration and targeted retry', () => {
     )
     assert.deepEqual(result.processed, [567894])
     assert.ok(mbCalled > 0)
+  })
+})
+
+describe('release-group backfill, unresolved clear, and track-level samples', () => {
+  function stubDetail() {
+    return {
+      id: 573292,
+      title: 'Bootsy? Player Of The Year',
+      artist: "Bootsy's Rubber Band",
+      year: 1978,
+      released: '1978',
+      country: 'US',
+      thumb: '',
+      cover: '',
+      format: 'Vinyl, LP, Album',
+      label: 'Warner Bros. Records',
+      catno: 'BSK 3093',
+      barcode: '012345',
+      notes: null,
+      discogsUrl: 'https://www.discogs.com/release/573292',
+      masterId: 14594,
+      extraartists: [],
+      tracklist: [
+        {
+          position: 'A1',
+          title: "Bootsy? (What's The Name Of This Town)",
+          duration: '6:59',
+          type_: 'track',
+        },
+      ],
+    }
+  }
+
+  it('backfills a missing MusicBrainz release group without rematching', async () => {
+    const previous = hydratePressing(
+      pressingStub({
+        checkpoint: { stage: 'research', researchCursor: 1, trackSampleCursor: 1 },
+      })
+    )
+    assert.equal(previous.mbRelease.releaseGroupMbid, undefined)
+    const store = createMemoryCrateStore({ pressings: { 573292: previous } })
+    let urlLookups = 0
+    let releaseLookups = 0
+    let recordingSearches = 0
+    const mb = createMusicBrainzClientForTests()
+    mb.lookupDiscogsReleaseUrl = async () => {
+      urlLookups += 1
+      return []
+    }
+    mb.getRelease = async (id) => {
+      releaseLookups += 1
+      return {
+        id,
+        title: 'Bootsy? Player Of The Year',
+        date: '1978',
+        country: 'US',
+        releaseGroupId: 'rg-backfill',
+        tracks: [],
+      }
+    }
+    mb.searchRecordingsByArtistTitle = async () => {
+      recordingSearches += 1
+      return []
+    }
+    const result = await enrichPressing(573292, {
+      store,
+      now: () => Date.parse('2026-10-06T08:00:00.000Z'),
+      fetchDiscogs: async () => stubDetail(),
+      mb,
+    })
+    assert.equal(urlLookups, 0)
+    assert.equal(releaseLookups, 1)
+    assert.equal(recordingSearches, 0)
+    assert.equal(result.mbRelease.releaseGroupMbid, 'rg-backfill')
+  })
+
+  it('does not rematch or refetch a release group that was already looked up as null', async () => {
+    const previous = hydratePressing(
+      pressingStub({
+        mbRelease: {
+          ...pressingStub().mbRelease,
+          releaseGroupMbid: null,
+        },
+        checkpoint: { stage: 'research', researchCursor: 1, trackSampleCursor: 1 },
+      })
+    )
+    const store = createMemoryCrateStore({ pressings: { 573292: previous } })
+    let urlLookups = 0
+    let releaseLookups = 0
+    const mb = createMusicBrainzClientForTests()
+    mb.lookupDiscogsReleaseUrl = async () => {
+      urlLookups += 1
+      return []
+    }
+    mb.getRelease = async () => {
+      releaseLookups += 1
+      return null
+    }
+    await enrichPressing(573292, {
+      store,
+      now: () => Date.parse('2026-10-06T08:00:00.000Z'),
+      fetchDiscogs: async () => stubDetail(),
+      mb,
+    })
+    assert.equal(urlLookups, 0)
+    assert.equal(releaseLookups, 0)
+  })
+
+  it('clears too_slow inspect after a later success', async () => {
+    const store = createMemoryCrateStore()
+    await store.markUnresolved({
+      releaseId: 573292,
+      kind: 'too_slow',
+      message: 'too slow',
+      attempts: 0,
+      at: '2026-10-06T00:00:00.000Z',
+      stage: 'match',
+    })
+    const mb = createMusicBrainzClientForTests()
+    mb.lookupDiscogsReleaseUrl = async () => [
+      {
+        mbid: '72089134-a550-446e-b26d-8d3b523b05d6',
+        score: 100,
+        title: 'Bootsy? Player Of The Year',
+        trackCount: 2,
+      },
+    ]
+    mb.getRelease = async () => ({
+      id: '72089134-a550-446e-b26d-8d3b523b05d6',
+      title: 'Bootsy? Player Of The Year',
+      date: '1978',
+      country: 'US',
+      releaseGroupId: 'rg-bootsy',
+      tracks: [
+        {
+          index: 0,
+          number: 'A1',
+          title: "Bootsy? (What's The Name Of This Town)",
+          lengthMs: 419000,
+          recordingId: 'rec-a1',
+          recordingTitle: "Bootsy? (What's The Name Of This Town)",
+          disambiguation: '',
+        },
+        {
+          index: 1,
+          number: 'A2',
+          title: 'Hollywood Squares',
+          lengthMs: 375000,
+          recordingId: 'rec-hs',
+          recordingTitle: 'Hollywood Squares',
+          disambiguation: '',
+        },
+      ],
+    })
+    const result = await enrichPressing(573292, {
+      store,
+      now: () => Date.parse('2026-10-06T08:00:00.000Z'),
+      fetchDiscogs: async () => bootsyDetail(),
+      mb,
+    })
+    assert.equal(result.mbRelease.matchStatus, 'matched')
+    assert.deepEqual(await store.getUnresolved(), [])
+    assert.equal((await store.getInspect()).length, 0)
+  })
+
+  it('attaches Mtume Juicy Fruit sampled-in Biggie Juicy from a recording-level match', async () => {
+    const juicyMbid = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+    const biggieMbid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+    const mb = createMusicBrainzClientForTests()
+    mb.searchRecordingsByArtistTitle = async (input) => {
+      if (!/mtume/i.test(input.artist) || !/juicy fruit/i.test(input.title)) return []
+      return [
+        {
+          mbid: juicyMbid,
+          title: 'Juicy Fruit',
+          artist: 'Mtume',
+          lengthMs: 355000,
+          score: 100,
+        },
+      ]
+    }
+    mb.getRecording = async (id) => {
+      if (id !== juicyMbid) return null
+      return {
+        mbid: juicyMbid,
+        title: 'Juicy Fruit',
+        artist: 'Mtume',
+        credits: [],
+        samplesFrom: [],
+        sampledIn: [
+          {
+            title: 'Juicy',
+            artist: 'The Notorious B.I.G.',
+            mbid: biggieMbid,
+            sourceUrl: `https://musicbrainz.org/recording/${biggieMbid}`,
+            source: 'musicbrainz',
+            providerId: biggieMbid,
+          },
+        ],
+      }
+    }
+    const store = createMemoryCrateStore()
+    const result = await enrichPressing(567894, {
+      store,
+      now: () => Date.parse('2026-10-06T08:00:00.000Z'),
+      fetchDiscogs: async () => mtumeDetail(),
+      mb,
+    })
+    const juicy = (result.researchFacts ?? []).find(
+      (fact) =>
+        fact.kind === 'sampled_by' &&
+        /juicy/i.test(fact.relatedTitle) &&
+        /notorious/i.test(fact.relatedArtist)
+    )
+    assert.ok(juicy)
+    assert.equal(juicy?.source, 'musicbrainz')
+    assert.equal(juicy?.relatedTitle, 'Juicy')
+    assert.ok(result.tracks.some((track) => track.recording.mbid === juicyMbid))
+    assert.ok(result.tracks.some((track) => track.recording.reason === TRACK_LEVEL_REASON))
+    assert.equal(result.recordings[juicyMbid]?.sampledIn[0]?.artist, 'The Notorious B.I.G.')
   })
 })
 

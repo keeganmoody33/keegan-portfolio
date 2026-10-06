@@ -24,7 +24,8 @@ const ROLE_SYNONYMS: Record<string, string> = {
   'written-by': 'written by',
   'written by': 'written by',
   writer: 'written by',
-  composer: 'composer',
+  composer: 'written by',
+  'composed by': 'written by',
   lyricist: 'lyricist',
   'lyrics by': 'lyricist',
   'lyrics': 'lyricist',
@@ -73,6 +74,24 @@ export function creditLine(credit: Credit): string {
   const attrs = credit.attributes.filter(Boolean).join(' ')
   if (attrs) return `${attrs} ${credit.role}`
   return credit.role
+}
+
+export function mergeSampleLinks(...groups: SampleLink[][]): SampleLink[] {
+  const seen = new Set<string>()
+  const merged: SampleLink[] = []
+  for (const group of groups) {
+    for (const link of group) {
+      const key = [
+        link.mbid,
+        normalizeFactText(link.title),
+        normalizeFactText(link.artist),
+      ].join('\u001f')
+      if (seen.has(key)) continue
+      seen.add(key)
+      merged.push(link)
+    }
+  }
+  return merged
 }
 
 export function mergeResearchFacts(...groups: ResearchFact[][]): ResearchFact[] {
