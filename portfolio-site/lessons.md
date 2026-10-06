@@ -10,6 +10,7 @@ Updated: 2026-10-06
 - **`lecturesfrom-covers` auto-link set Production.** The store was already connected to Preview, Development, and Production. Do not add a second Production token. Connecting a Blob store injects `BLOB_READ_WRITE_TOKEN` on every selected environment.
 - **Unauthenticated Discogs is 25/min.** Cover sync without `DISCOGS_TOKEN` must use 2.5s, not 1.1s, or a full-collection run 429s. Authenticated stays 1.1s.
 - **Client components cannot import `cover.ts`.** It pulls `node:crypto` and Discogs fetch. Import types and `displayCoverUrl` from `cover-display.ts`. Discogs `next/image` URLs stay `unoptimized` so the optimizer does not 403 the CDN.
+- **Grid hotlink is `thumbnail` then `cover`.** `discogsGridHotlink` prefers the listing thumb unless a stored CAA Blob URL exists. `next/image` always gets `sizes`. SampleList title links keep `#53` `inline-flex min-h-6 items-center`. Detail blur placeholder uses `motion-reduce:blur-none`. A broken image falls back to the empty square / `NoArtTile`.
 
 ## Collection research: manual-only, fallbacks, hardening (2026-10-06)
 

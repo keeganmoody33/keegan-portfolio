@@ -80,6 +80,11 @@ export function displayCoverUrl(
   return fallback
 }
 
+/** Grid Discogs hotlink: listing thumb first, then full cover. Blob `cover.url` still wins in `displayCoverUrl`. */
+export function discogsGridHotlink(thumbnail: string, cover: string): string {
+  return thumbnail || cover
+}
+
 export function isSelfHostedCoverUrl(url: string): boolean {
   try {
     const host = new URL(url).hostname

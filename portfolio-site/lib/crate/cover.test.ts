@@ -6,6 +6,7 @@ import {
   coverContentHash,
   coverLongerEdge,
   displayCoverUrl,
+  discogsGridHotlink,
   isCoverManifest,
   isSelfHostedCoverUrl,
   manifestFromDiscovery,
@@ -69,6 +70,29 @@ describe('cover image size parsers', () => {
     const url =
       'https://i.discogs.com/x/rs:fit/g:sm/q:90/h:597/w:600/czM6Ly9kaXNjb2dz/example.jpeg'
     assert.deepEqual(parseDiscogsImageDimensions(url), { width: 600, height: 597 })
+  })
+})
+
+describe('discogsGridHotlink', () => {
+  it('prefers thumbnail then cover; stored Blob url still wins', () => {
+    assert.equal(
+      discogsGridHotlink('https://i.discogs.com/t.jpg', 'https://i.discogs.com/c.jpg'),
+      'https://i.discogs.com/t.jpg'
+    )
+    assert.equal(discogsGridHotlink('', 'https://i.discogs.com/c.jpg'), 'https://i.discogs.com/c.jpg')
+    const stored = {
+      releaseId: 573292,
+      url: 'https://store.public.blob.vercel-storage.com/covers/x.jpg',
+      width: 1400,
+      height: 1400,
+      source: 'caa' as const,
+      originalUrl: 'https://coverartarchive.org/front.jpg',
+      stored: true,
+    }
+    assert.equal(
+      displayCoverUrl(stored, discogsGridHotlink('https://i.discogs.com/t.jpg', 'https://i.discogs.com/c.jpg')),
+      stored.url
+    )
   })
 })
 

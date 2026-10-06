@@ -18,6 +18,7 @@ export {
   coverLongerEdge,
   crateCoverSizes,
   displayCoverUrl,
+  discogsGridHotlink,
   isCoverManifest,
   isSelfHostedCoverUrl,
   parseDiscogsImageDimensions,

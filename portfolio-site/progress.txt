@@ -1,3 +1,7 @@
+COMPLETED (2026-10-06 — rebase covers onto main 65de54e / #53):
+- Rebased `cursor/collection-covers-blob-5ece` onto `65de54e`. Merge-base is `65de54e`, not `41416d1`. Kept CAA Blob + Discogs hotlink and #53 research (`extraartists`, `research.ts`/`wikidata`, SourceLine sr-only `source `, SampleList `inline-flex min-h-6 items-center`).
+- Docs keep unmatched Discogs/Wikidata facts language. Grid hotlink is `thumbnail||cover` unless Blob stored. No visit `after()` enqueue. `vercel.json` has no crons. PR #55 stays draft. Do not merge.
+
 COMPLETED (2026-10-06 — collection covers, preview Blob sync):
 - Blob store `lecturesfrom-covers` (`store_xWsLYWPqUSIpxUrB`) was already linked to `keegan-portfolio-content`. `BLOB_READ_WRITE_TOKEN` is on Preview, Development, **and Production** from auto-link. Did not add or change Production.
 - Full preview sync (no `--prod`): 276 unique ids, 784s. **17 CAA stored** on Blob, **258 Discogs hotlinks**, **1 error** (26098312 no cover). Preview Redis `lf:preview:crate:cover:{id}:v1` = 275 manifests. Production cover keys = 0. Blob count 17 / 11.6 MB.

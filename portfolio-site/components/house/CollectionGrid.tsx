@@ -6,6 +6,7 @@ import CrateCover from '@/components/house/CrateCover'
 import { restoreCollectionScroll, saveCollectionScroll } from '@/components/house/RecordDetail'
 import {
   displayCoverUrl,
+  discogsGridHotlink,
   parseDiscogsImageDimensions,
   type CoverManifest,
 } from '@/lib/crate/cover-display'
@@ -34,7 +35,7 @@ export default function CollectionGrid({
       {releases.map((release, index) => {
         const releaseId = release.releaseId
         const stored = covers[String(releaseId)]
-        const fallback = release.cover || release.thumbnail
+        const fallback = discogsGridHotlink(release.thumbnail, release.cover)
         const src = displayCoverUrl(stored, fallback)
         const dims = stored
           ? { width: stored.width, height: stored.height }
