@@ -12,8 +12,16 @@ export function tallyKeys(env: Record<string, string | undefined> = process.env)
   return { counts: `${prefix}tally:v1`, since: `${prefix}tally:v1:since` }
 }
 
-/** The two Redis calls the tally needs; a narrow type so tests can pass a fake. */
-export type TallyRedis = Pick<Redis, 'hincrby' | 'setnx' | 'hgetall' | 'get'>
+type TallyPipeline = {
+  hincrby(key: string, field: string, increment: number): TallyPipeline
+  setnx(key: string, value: string): TallyPipeline
+  exec(): Promise<unknown>
+}
+
+/** The Redis surface the tally needs; a narrow type so tests can pass a fake. */
+export type TallyRedis = Pick<Redis, 'hgetall' | 'get'> & {
+  pipeline(): TallyPipeline
+}
 
 let client: Redis | null | undefined
 
@@ -24,7 +32,11 @@ function redis(): Redis | null {
   return client
 }
 
-/** Adds one page request to the running total. Never throws: counting must not break a page. */
+/**
+ * Adds one page request to the running total in a single Redis round trip
+ * (pipeline hincrby + setnx). Never throws: counting must not break a page,
+ * delay a response, or slow a crawler. Callers fire-and-forget via waitUntil.
+ */
 export async function recordHit(
   category: TallyCategory,
   db: TallyRedis | null = redis(),
@@ -33,8 +45,10 @@ export async function recordHit(
   if (!db) return
   const k = tallyKeys(env)
   try {
-    await db.hincrby(k.counts, category, 1)
-    await db.setnx(k.since, new Date().toISOString())
+    const pipeline = db.pipeline()
+    pipeline.hincrby(k.counts, category, 1)
+    pipeline.setnx(k.since, new Date().toISOString())
+    await pipeline.exec()
   } catch {
     // Dropped hits are acceptable; a failed page is not.
   }

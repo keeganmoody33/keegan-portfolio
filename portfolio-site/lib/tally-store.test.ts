@@ -12,18 +12,50 @@ import { readTally, recordHit, tallyKeys, type TallyRedis } from './tally-store.
 function fakeRedis(fail = false) {
   const hashes = new Map<string, Record<string, number>>()
   const strings = new Map<string, string>()
-  const db = {
-    async hincrby(key: string, field: string, by: number) {
-      if (fail) throw new Error('down')
+  let execCalls = 0
+  let directMutations = 0
+
+  const ops = {
+    hincrby(key: string, field: string, by: number) {
       const h = hashes.get(key) ?? {}
       h[field] = (h[field] ?? 0) + by
       hashes.set(key, h)
       return h[field]
     },
-    async setnx(key: string, value: string) {
+    setnx(key: string, value: string) {
       if (strings.has(key)) return 0
       strings.set(key, value)
       return 1
+    },
+  }
+
+  const db = {
+    async hincrby(key: string, field: string, by: number) {
+      directMutations += 1
+      return ops.hincrby(key, field, by)
+    },
+    async setnx(key: string, value: string) {
+      directMutations += 1
+      return ops.setnx(key, value)
+    },
+    pipeline() {
+      const queued: Array<() => unknown> = []
+      const pipe = {
+        hincrby(key: string, field: string, by: number) {
+          queued.push(() => ops.hincrby(key, field, by))
+          return pipe
+        },
+        setnx(key: string, value: string) {
+          queued.push(() => ops.setnx(key, value))
+          return pipe
+        },
+        async exec() {
+          execCalls += 1
+          if (fail) throw new Error('down')
+          return queued.map((fn) => fn())
+        },
+      }
+      return pipe
     },
     async hgetall(key: string) {
       return hashes.get(key) ?? null
@@ -32,7 +64,13 @@ function fakeRedis(fail = false) {
       return strings.get(key) ?? null
     },
   }
-  return { db: db as unknown as TallyRedis, hashes, strings }
+  return {
+    db: db as unknown as TallyRedis,
+    hashes,
+    strings,
+    execCalls: () => execCalls,
+    directMutations: () => directMutations,
+  }
 }
 
 describe('tallyKeys', () => {
@@ -65,9 +103,19 @@ describe('recordHit / readTally', () => {
     assert.equal(snap?.since, first)
   })
 
+  it('pipelines hincrby and setnx into a single round trip', async () => {
+    const { db, hashes, strings, execCalls, directMutations } = fakeRedis()
+    await recordHit('presumed_human', db, { VERCEL_ENV: 'preview' })
+    assert.equal(execCalls(), 1)
+    assert.equal(directMutations(), 0)
+    assert.equal(hashes.get('lf:preview:tally:v1')?.presumed_human, 1)
+    assert.equal(typeof strings.get('lf:preview:tally:v1:since'), 'string')
+  })
+
   it('never throws when Redis is down', async () => {
-    const { db } = fakeRedis(true)
+    const { db, execCalls } = fakeRedis(true)
     await assert.doesNotReject(recordHit('presumed_human', db, { VERCEL_ENV: 'production' }))
+    assert.equal(execCalls(), 1)
   })
 
   it('does nothing without a store', async () => {

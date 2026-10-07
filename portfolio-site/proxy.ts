@@ -40,7 +40,7 @@ export function proxy(request: NextRequest, event?: NextFetchEvent) {
     return NextResponse.next()
   }
 
-  // Footer tally: count every page request, human or not, without delaying it.
+  // Footer tally: one Redis pipeline, fire-and-forget. Never delay humans or crawlers.
   if (event && isCountablePageRequest(request.method, pathname, request.headers)) {
     event.waitUntil(recordHit(classifyUserAgent(request.headers.get('user-agent'))))
   }

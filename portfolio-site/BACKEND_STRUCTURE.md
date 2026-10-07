@@ -1,6 +1,6 @@
 # Backend Structure — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-10-06
+**Last Updated:** 2026-10-07
 **Database:** Supabase (PostgreSQL)
 **Edge Functions Runtime:** Deno
 **API Layer:** Next.js Route Handlers (proxy pattern)
@@ -380,10 +380,10 @@ Proxies to GitHub public events API. Returns aggregated activity stats for keega
 
 Public running totals for the house footer tally (`components/house/RequestTally.tsx`).
 
-- **Counting:** `proxy.ts` records one hit per page request (GET, not `/api/*`, not `/_next/*`, not prefetch or RSC data fetches), classified by User-Agent in `lib/tally.ts`, and writes it with `event.waitUntil` so the page is never delayed. Bots that never run JavaScript are counted too.
-- **Storage:** the existing Upstash Redis store (`KV_REST_API_URL` / `KV_REST_API_TOKEN`). Hash `lf:tally:v1` (production) or `lf:preview:tally:v1` (everything else), one field per category; `lf:tally:v1:since` holds the first hit's ISO time. Deploys do not reset it.
+- **Counting:** `proxy.ts` records one hit per page request (GET, not `/api/*`, not `/_next/*`, not `/.well-known/*`, not prefetch or RSC data fetches), classified by User-Agent in `lib/tally.ts`, and writes it with `event.waitUntil` so the page is never delayed. `recordHit` pipelines `HINCRBY` + `SETNX` into one Upstash round trip and never throws. Bots that never run JavaScript are counted too; they are not blocked or slowed.
+- **Storage:** the existing Upstash Redis store (`KV_REST_API_URL` / `KV_REST_API_TOKEN`). Hash `lf:tally:v1` (production) or `lf:preview:tally:v1` (everything else), one field per category; `lf:tally:v1:since` / `lf:preview:tally:v1:since` holds the first hit's ISO time. Deploys do not reset it. Preview never writes production keys.
 - **Response 200:** `{ since: string | null, presumedHuman: number, automated: number, byCategory: Record<category, number> }`, `Cache-Control: public, s-maxage=60, stale-while-revalidate=300`.
-- **Response 503:** `{ error: "tally unavailable" }` when Redis is not configured or unreachable. The footer hides the tally.
+- **Response 503:** `{ error: "tally unavailable" }` when Redis is not configured or unreachable. The footer keeps the collapsed-row height reserved (no CLS); content stays hidden until a 200 snapshot arrives.
 - **Limits:** identity is self declared (User-Agent only). Nothing is network or cryptographically verified yet.
 
 ### POST /api/jd-analyzer

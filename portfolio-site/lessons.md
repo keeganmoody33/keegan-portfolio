@@ -1,6 +1,14 @@
 # Lessons Learned
 
-Updated: 2026-10-06
+Updated: 2026-10-07
+
+## Footer request tally (2026-10-07)
+
+- **Bar colors are house tokens, not invented greys.** `#1a1a1a` / `#4a4a4a` are not decided colors and fail in light theme. Track `--house-line`, fill `--house-ink` / `--house-dim`. LCD may keep `--house-lcd` / `--house-lcd-ink`. Fonts are the existing `--house-font-*` tokens (Doto / Roboto Mono / Space Grotesk).
+- **`recordHit` is one Upstash pipeline.** `hincrby` then `setnx` as separate REST calls is two round trips. Pipeline them. Stay inside `event.waitUntil`, never throw, never delay the response — bots and AI crawlers must not be slowed.
+- **Do not paint a loading chip that later unmounts.** That is CLS. Reserve the collapsed-row height from first paint; keep content `invisible` + `inert` until `/api/tally` 200. Errors keep the reservation.
+- **Hover/focus must not select a category.** Selection is click / Enter / Space. Disclosure name is the visible `breakdown` / `close` (chip is not in the button). Humans / not humans: visible label = accessible name, `aria-pressed`. Honor `prefers-reduced-motion` on color transitions.
+- **Preview Redis stays `lf:preview:tally:v1`.** Production is `lf:tally:v1`. Do not write prod Redis from a preview or this environment. No `vercel.json` crons.
 
 ## Collection covers (2026-10-06)
 

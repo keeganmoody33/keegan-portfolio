@@ -1,3 +1,11 @@
+COMPLETED (2026-10-07 — footer request tally, remaining fixes):
+- Merged origin/main (`7317a89`, #56 Copilot fixes on research/covers) into `feat/request-tally`. Footer stayed main's nav plus `<RequestTally/>`. No vercel.json crons. Preview Redis `lf:preview:tally:v1`; prod `lf:tally:v1`.
+- Bar track/fill use `--house-line` / `--house-ink` / `--house-dim` (no `#1a1a1a` / `#4a4a4a`). Fonts `--house-font-mono` / `--house-font-lcd` / `--house-font-sans`. LCD chip keeps `--house-lcd` tokens.
+- `recordHit` pipelines HINCRBY + SETNX into one Upstash round trip; still fire-and-forget in `event.waitUntil`, never throws.
+- Collapsed-row height reserved from first paint (`invisible` + `inert` until `/api/tally` 200) so loading/errors do not CLS.
+- Category select is click/Enter/Space only. Disclosure `aria-expanded`; humans/not humans `aria-pressed` with visible label = name. `motion-reduce:transition-none`.
+- Tests: `lib/tally.test.ts`, `lib/tally-store.test.ts` (includes single pipeline-exec assertion).
+
 COMPLETED (2026-10-06 — footer request tally):
 - House footer shows a running count of page requests served to presumed humans vs automated clients, since the first counted hit. Counted server side in proxy.ts, classified by User-Agent (lib/tally.ts), stored in Upstash Redis, read via GET /api/tally. Breakdown opens inline below the row. Tests: node --experimental-strip-types --test lib/tally.test.ts.
 
