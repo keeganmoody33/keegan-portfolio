@@ -1,13 +1,16 @@
-IN PROGRESS (2026-10-07 — integrations + QA Gate, merged main `f396637`):
+COMPLETED (2026-10-07 — full preview collection backfill):
+- Preview Redis `lf:preview:` only. Never prod. `prodTouched: false`. 276 unique ids, all stored. Coverage: `/opt/cursor/artifacts/preview-full-backfill.json` (started 2026-10-06T17:54:56Z, finished 2026-10-07T09:15:00Z, ~15.3h wall-clock).
+- Totals: matched MB release 144; recording-level only 74; recording-level any 119; unmatched 56; missing 0; ambiguous 79; temporary 4 (Kiss 5150579 unavailable, Method Man 11287168 / 1406290 / Tim Weisberg 1323531 rate_limit); too_slow 0.
+- Credits by source (records with ≥1 credit fact): MusicBrainz 144, Discogs 255, Wikidata 135, any 262.
+- Samples by source: MusicBrainz 95 (sample-of 51, sampled-by 67). Discogs 0. Wikidata 0. Discogs extraartists and Wikidata already fill credits; they do not carry sample-of / sampled-by. No WhoSampled, no scraping.
+- Mtume 567894: MB release unmatched; recording-level matched. Vocal `1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc` sampled-in The Notorious B.I.G. Juicy `181c0a32-6e3f-4680-8a7d-1daf0b42e43b`.
+- Top sample counts: Marley Legend 25, Freddie Gibbs Piñata 21, Mahalia Stille Nacht 19, ATCQ Love Movement 18, Stevie Songs In The Key Of Life 17.
+- MusicBrainz 429s do not count toward `CRATE_MAX_ATTEMPTS`. After a global MB 429 wait, defer that id and walk other remaining ids. Do not merge, mark ready, or push to #53.
+
+COMPLETED (2026-10-07 — integrations + QA Gate, merged main `f396637`):
 - MusicBrainz 429s do not count toward `CRATE_MAX_ATTEMPTS`. SPARQL/MB abort timers are `min(timeout, remaining)`. Only MB 429 (`MUSICBRAINZ_RATE_LIMIT_MESSAGE`) stops the walk.
 - Track-level: preserve `trackSampleCursor` in `applyDeadlineStop`; strip feat/ft/featuring; reject duration >15s off; `TRACK_LEVEL_FETCH_CAP` 1; `based on` is not a sample; persist merged samples then `setRecording`; HTTP-date Retry-After.
 - Kept `#57` lockfile pin `source-map-js` 1.2.2 (CVE-2026-93749). Tailwind stays v3. `package.json` unchanged.
-- Next: full preview backfill `lf:preview:` only.
-
-SKIPPED (2026-10-07 — full preview collection backfill on this rebase VM):
-- This Cloud Agent environment has no preview Upstash Redis credentials (`KV_REST_API_*` / `UPSTASH_REDIS_REST_*` absent from `printenv`; Upstash MCP `redis_list_databases` returned `[]`). Did not decrypt Vercel Preview env, did not touch prod, did not write `lf:` keys.
-- Coverage numbers, Juicy live Redis check, 10 sample-hit examples, and `--retry` counts are not invented. Re-run `npm run crate:backfill` then `npm run crate:backfill -- --retry` where preview Redis is present (`lf:preview:` only).
-- Skip log: `/opt/cursor/artifacts/preview-full-backfill.log`.
 
 COMPLETED (2026-10-07 — PR #54 rebase onto main `#56` `7317a89`):
 - Branch `cursor/collection-research-trackmatch-7382` HEAD `d0cc837`. Dropped `22d1edf`..`e407a88` (#53 pre-squash), `494a1c9` (creditLine), `72b8679` (unmatched facts). Kept `13b0670`..`1c6b449` replayed as `baa6496`..`d0cc837`.

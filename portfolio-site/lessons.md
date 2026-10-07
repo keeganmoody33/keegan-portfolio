@@ -11,9 +11,11 @@ Updated: 2026-10-07
 - **A `based on` work/recording rel is not a sample.** Keep only `samples material` and `sampled by`.
 - **`applyDeadlineStop` must copy `trackSampleCursor`.** Dropping it re-searches from track 0. `persistTrackLevelDocs` attaches/merges first, then `setRecording` (clone) so Redis has the merged samples.
 
-## Preview crate backfill needs Redis in the agent env (2026-10-07)
+## Credits vs samples (2026-10-07)
 
-- **Do not invent coverage.** A Cloud Agent VM with no `KV_REST_API_*` / `UPSTASH_REDIS_REST_*` cannot run `npm run crate:backfill`. Skip and say so. Do not decrypt Vercel Production env. Do not write unprefixed `lf:` keys. Upstash MCP `redis_list_databases` returning `[]` is also a skip.
+- **Credits can come from Discogs extraartists and Wikidata; sample-of / sampled-by cannot.** Full preview backfill of 276 ids: credits on 255 Discogs / 135 Wikidata / 144 MusicBrainz records; sample facts on 95 records, all MusicBrainz (Discogs 0, Wikidata 0). Mtume → Biggie Juicy is a MusicBrainz recording relationship. Skipping MusicBrainz to dodge 429s drops that graph. No WhoSampled, no scraping.
+- **After waiting out a global MusicBrainz 429, defer that id and walk other remaining ids.** Stalling on one fat album (Kiss Alive II 5150579) burns the cooldown and never drains the rest. `shouldStopWalkOnRateLimit` still stops the current tick; the next tick should not lead with the same cooling id.
+- **Do not invent coverage.** A Cloud Agent VM with no `KV_REST_API_*` / `UPSTASH_REDIS_REST_*` cannot run `npm run crate:backfill`. Skip and say so. Do not decrypt Vercel Production env. Do not write unprefixed `lf:` keys. Upstash MCP `redis_list_databases` returning `[]` is also a skip. This VM did have preview Redis; artifact is `/opt/cursor/artifacts/preview-full-backfill.json`.
 
 ## Dependabot grouped npm bumps (2026-10-07)
 
