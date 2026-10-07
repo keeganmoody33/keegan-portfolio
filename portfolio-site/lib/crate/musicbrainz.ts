@@ -28,9 +28,19 @@ export type MbSearchHit = {
   trackCount: number | null
 }
 
+export type MbRecordingFacts = {
+  mbid: string
+  title: string
+  artist: string
+  credits: Credit[]
+  samplesFrom: SampleLink[]
+  sampledIn: SampleLink[]
+}
+
 export class MusicBrainzRateLimitError extends Error {
   readonly kind = 'rate_limit' as const
   readonly retryAfterMs: number
+  partialRecording: MbRecordingFacts | null = null
 
   constructor(retryAfterMs = 60_000) {
     super(MUSICBRAINZ_RATE_LIMIT_MESSAGE)
@@ -42,6 +52,7 @@ export class MusicBrainzRateLimitError extends Error {
 export class MusicBrainzTimeoutError extends Error {
   readonly kind = 'unavailable' as const
   readonly deadlineExceeded: boolean
+  partialRecording: MbRecordingFacts | null = null
 
   constructor(deadlineExceeded = false) {
     super(deadlineExceeded ? 'MusicBrainz deadline' : 'MusicBrainz timed out')
@@ -160,11 +171,22 @@ function isSampleRelationType(type: string): boolean {
   return normalized === 'samples material' || normalized === 'sampled by'
 }
 
-function sampleLinkFromRelation(rel: MbRelation): SampleLink | null {
+const SAMPLE_ARTIST_LOOKUP_CAP = 8
+
+function rememberArtist(
+  cache: Map<string, string>,
+  mbid: string | undefined,
+  credit: MbRecordingDoc['artist-credit']
+): void {
+  const name = artistCreditName(credit)
+  if (mbid && name) cache.set(mbid, name)
+}
+
+function sampleLinkFromRelation(rel: MbRelation, fallbackArtist = ''): SampleLink | null {
   if (rel.recording?.id) {
     return {
       title: rel.recording.title ?? '',
-      artist: artistCreditName(rel.recording['artist-credit']),
+      artist: artistCreditName(rel.recording['artist-credit']) || fallbackArtist,
       mbid: rel.recording.id,
       sourceUrl: musicbrainzRecordingUrl(rel.recording.id),
       source: 'musicbrainz',
@@ -174,7 +196,7 @@ function sampleLinkFromRelation(rel: MbRelation): SampleLink | null {
   if (rel.work?.id) {
     return {
       title: rel.work.title ?? '',
-      artist: artistCreditName(rel.work['artist-credit']),
+      artist: artistCreditName(rel.work['artist-credit']) || fallbackArtist,
       mbid: rel.work.id,
       sourceUrl: musicbrainzWorkUrl(rel.work.id),
       source: 'musicbrainz',
@@ -484,14 +506,7 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
       }
     },
 
-    async getRecording(mbid: string): Promise<{
-      mbid: string
-      title: string
-      artist: string
-      credits: Credit[]
-      samplesFrom: SampleLink[]
-      sampledIn: SampleLink[]
-    } | null> {
+    async getRecording(mbid: string): Promise<MbRecordingFacts | null> {
       const params = new URLSearchParams({
         inc: 'artist-credits+artist-rels+recording-rels+work-rels+url-rels',
         fmt: 'json',
@@ -505,6 +520,72 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
       const samplesFrom: SampleLink[] = []
       const sampledIn: SampleLink[] = []
       const workIds: string[] = []
+      const artistCache = new Map<string, string>()
+      const lookups = { count: 0 }
+      rememberArtist(artistCache, data.id, data['artist-credit'])
+
+      const facts = (): MbRecordingFacts => ({
+        mbid: data.id!,
+        title: data.title ?? '',
+        artist: artistCreditName(data['artist-credit']),
+        credits,
+        samplesFrom,
+        sampledIn,
+      })
+
+      const attachPartial = (error: unknown): unknown => {
+        if (isMusicBrainzRateLimitError(error) || isMusicBrainzTimeoutError(error)) {
+          error.partialRecording = facts()
+        }
+        return error
+      }
+
+      const fillBlankSampleArtists = async (links: SampleLink[]): Promise<void> => {
+        for (const link of links) {
+          if (link.artist.trim()) continue
+          const cached = artistCache.get(link.mbid)
+          if (cached) {
+            link.artist = cached
+            continue
+          }
+          if (lookups.count >= SAMPLE_ARTIST_LOOKUP_CAP) continue
+          lookups.count += 1
+          const isWork = /\/work\//.test(link.sourceUrl)
+          if (isWork) {
+            const workParams = new URLSearchParams({ inc: 'work-rels', fmt: 'json' })
+            const work = await getJson<{
+              id?: string
+              error?: string
+              'artist-credit'?: MbRecordingDoc['artist-credit']
+              relations?: MbRelation[]
+            }>(`${MUSICBRAINZ_API}/work/${link.mbid}?${workParams.toString()}`)
+            rememberArtist(artistCache, work.id, work['artist-credit'])
+            if (artistCache.get(link.mbid)) {
+              link.artist = artistCache.get(link.mbid) ?? ''
+              continue
+            }
+            for (const rel of work.relations ?? []) {
+              const nested = artistCreditName(rel.recording?.['artist-credit'])
+              if (nested) {
+                link.artist = nested
+                artistCache.set(link.mbid, nested)
+                break
+              }
+            }
+            continue
+          }
+          const rec = await getJson<MbRecordingDoc>(
+            `${MUSICBRAINZ_API}/recording/${link.mbid}?${new URLSearchParams({
+              inc: 'artist-credits',
+              fmt: 'json',
+            }).toString()}`
+          )
+          rememberArtist(artistCache, rec.id, rec['artist-credit'])
+          if (artistCache.get(link.mbid)) {
+            link.artist = artistCache.get(link.mbid) ?? ''
+          }
+        }
+      }
 
       for (const rel of data.relations ?? []) {
         const type = (rel.type ?? '').toLowerCase()
@@ -533,37 +614,39 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
         }
       }
 
-      const uniqueWorks = [...new Set(workIds)].slice(0, 4)
-      for (const workId of uniqueWorks) {
-        const workParams = new URLSearchParams({
-          inc: 'work-rels',
-          fmt: 'json',
-        })
-        const work = await getJson<{
-          id?: string
-          error?: string
-          relations?: MbRelation[]
-        }>(`${MUSICBRAINZ_API}/work/${workId}?${workParams.toString()}`)
-        if (work.error || !work.id) continue
-        for (const rel of work.relations ?? []) {
-          const type = (rel.type ?? '').toLowerCase()
-          if (!isSampleRelationType(type)) continue
-          const link = sampleLinkFromRelation(rel)
-          if (!link || link.mbid === workId) continue
-          const incoming = (rel.direction ?? '').toLowerCase() === 'backward'
-          if (incoming) sampledIn.push(link)
-          else samplesFrom.push(link)
+      try {
+        await fillBlankSampleArtists([...samplesFrom, ...sampledIn])
+        const uniqueWorks = [...new Set(workIds)].slice(0, 4)
+        for (const workId of uniqueWorks) {
+          const workParams = new URLSearchParams({
+            inc: 'work-rels',
+            fmt: 'json',
+          })
+          const work = await getJson<{
+            id?: string
+            error?: string
+            'artist-credit'?: MbRecordingDoc['artist-credit']
+            relations?: MbRelation[]
+          }>(`${MUSICBRAINZ_API}/work/${workId}?${workParams.toString()}`)
+          if (work.error || !work.id) continue
+          rememberArtist(artistCache, work.id, work['artist-credit'])
+          const workArtist = artistCreditName(work['artist-credit'])
+          for (const rel of work.relations ?? []) {
+            const type = (rel.type ?? '').toLowerCase()
+            if (!isSampleRelationType(type)) continue
+            const link = sampleLinkFromRelation(rel, workArtist)
+            if (!link || link.mbid === workId) continue
+            const incoming = (rel.direction ?? '').toLowerCase() === 'backward'
+            if (incoming) sampledIn.push(link)
+            else samplesFrom.push(link)
+          }
         }
+        await fillBlankSampleArtists([...samplesFrom, ...sampledIn])
+      } catch (error) {
+        throw attachPartial(error)
       }
 
-      return {
-        mbid: data.id,
-        title: data.title ?? '',
-        artist: artistCreditName(data['artist-credit']),
-        credits,
-        samplesFrom,
-        sampledIn,
-      }
+      return facts()
     },
   }
 }

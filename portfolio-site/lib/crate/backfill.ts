@@ -169,16 +169,29 @@ export function remainingBackfillIds(
   return ids.filter((id) => !settledSet.has(id) && !deadSet.has(id))
 }
 
-export async function retryBackfillTargets(store: CrateStore): Promise<number[]> {
+const RETRY_LAST_ERROR_KINDS = new Set(['too_slow', 'rate_limit', 'unavailable'])
+
+export async function retryBackfillTargets(
+  store: CrateStore,
+  collectionIds: number[] = []
+): Promise<number[]> {
   const dead = await store.getDead()
   const inspect = await store.getInspect()
   const retryInspect = inspect
-    .filter(
-      (row) =>
-        row.kind === 'too_slow' || row.kind === 'rate_limit' || row.kind === 'unavailable'
-    )
+    .filter((row) => RETRY_LAST_ERROR_KINDS.has(row.kind))
     .map((row) => row.releaseId)
-  return [...new Set([...dead, ...retryInspect])]
+  const pending: number[] = []
+  if (collectionIds.length > 0) {
+    const pressings = await store.getPressings(collectionIds)
+    for (const id of collectionIds) {
+      const pressing = pressings.get(id)
+      if (!pressing) continue
+      const kind = pressing.provenance.lastError?.kind
+      if (!kind || !RETRY_LAST_ERROR_KINDS.has(kind)) continue
+      if (!isBackfillSettled(pressing)) pending.push(id)
+    }
+  }
+  return [...new Set([...dead, ...retryInspect, ...pending])]
 }
 
 function refreshAfterMs(pressing: StoredPressing | null): number {
@@ -197,7 +210,7 @@ export async function runBackfill(
   const ids = options.ids && options.ids.length > 0 ? options.ids : collectionIds
   const targeted = Boolean(options.ids && options.ids.length > 0)
   const retryOnly =
-    options.retry && !targeted ? await retryBackfillTargets(store) : null
+    options.retry && !targeted ? await retryBackfillTargets(store, collectionIds) : null
   const previous = (await store.getBackfill()) ?? emptyBackfillPrevious(started)
   const settled = new Set(migrateSettledIds(previous, collectionIds))
   const prefix = crateRedisKeys().prefix

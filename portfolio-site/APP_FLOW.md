@@ -369,7 +369,7 @@ Discogs API
 
 MusicBrainz / Discogs extraartists / Wikidata SPARQL (manual research only)
             └── crate enrich via CRON_SECRET routes and `npm run crate:backfill` (`--ids` `--retry` `--limit`)
-            └── `--retry` without `--ids` retries dead / inspect too_slow, rate_limit, unavailable
+            └── `--retry` without `--ids` retries dead, inspect too_slow/rate_limit/unavailable, and pending-provenance retryable lastError
             └── Wikidata: P1954 (master) then P436 (MB release group) then P2206 / P5813 (MB release id, not catno); P5707 samples; shared client
             └── samples primary path: recording-level artist+song title (mix suffixes stripped); duration is a tiebreak only
             └── Redis zset `lf:crate:queue:v1` + queued set; lock token compare-and-delete; dead/unresolved inspect sets

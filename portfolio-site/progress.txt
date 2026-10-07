@@ -1,3 +1,9 @@
+COMPLETED (2026-10-07 — PR #54 cleanup pass, preview leftover ids):
+- `--retry` without `--ids` also picks stored pressings whose lastError is still retryable (pending provenance like 1323531), not only dead ∪ inspect.
+- Sample `relatedArtist` fills from the related MusicBrainz recording or work artist-credit when the relation omits it. Rows with no artist render title only.
+- Mix-version / song-level track matches stay as-is (Keegan accepted). Copilot threads on #54: real bugs fixed with tests; remaining threads get a one-line reply and resolve on the parent PR.
+- Preview only (`lf:preview:`, `VERCEL_ENV=preview`). Reset 1409283 / 5328923 / 8404354 to retryable, then `--ids=` those plus 11287168, 1406290, 1323531 until settled or ~30 minutes. Never prod.
+
 COMPLETED (2026-10-07 — merge origin/main `3c6106f` into PR #54):
 - Merge commit of #60 official brand logo and #51 footer request tally. Kept both `progress.txt` sides. `source-map-js` stays 1.2.2. Tailwind stays v3.
 

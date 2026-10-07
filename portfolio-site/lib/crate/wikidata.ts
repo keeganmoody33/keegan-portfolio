@@ -307,6 +307,30 @@ function isAbortError(error: unknown): boolean {
   return typeof error === 'object' && error !== null && 'name' in error && error.name === 'AbortError'
 }
 
+function abortError(): Error {
+  const error = new Error('Aborted')
+  error.name = 'AbortError'
+  return error
+}
+
+async function jsonWithAbort<T>(response: Response, signal: AbortSignal): Promise<T> {
+  if (signal.aborted) throw abortError()
+  return await new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(abortError())
+    signal.addEventListener('abort', onAbort, { once: true })
+    Promise.resolve(response.json() as Promise<T>).then(
+      (data) => {
+        signal.removeEventListener('abort', onAbort)
+        resolve(data)
+      },
+      (error) => {
+        signal.removeEventListener('abort', onAbort)
+        reject(error)
+      }
+    )
+  })
+}
+
 export function createWikidataClient(options: WikidataClientOptions = {}) {
   const fetchImpl = options.fetchImpl ?? fetch
   const now = options.now ?? Date.now
@@ -356,33 +380,49 @@ export function createWikidataClient(options: WikidataClientOptions = {}) {
           ? Number.POSITIVE_INFINITY
           : Math.max(0, lookupOptions.deadlineMs - now())
 
-      const sparqlOnce = async (): Promise<Response> => {
+      let attemptTimer: ReturnType<typeof setTimeout> | null = null
+      let attemptAborted = false
+      let attemptSignal: AbortSignal | undefined
+      const clearAttempt = () => {
+        if (attemptTimer) clearTimeout(attemptTimer)
+        attemptTimer = null
+      }
+      const beginAttempt = (): AbortSignal => {
+        clearAttempt()
+        attemptAborted = false
         const budget = Math.min(timeoutMs, remainingMs())
         if (!Number.isFinite(budget) || budget <= 0) {
           throw new WikidataTemporaryError('timeout')
         }
         const controller = new AbortController()
-        const timer = setTimeout(() => controller.abort(), budget)
+        attemptSignal = controller.signal
+        attemptTimer = setTimeout(() => {
+          attemptAborted = true
+          controller.abort()
+        }, budget)
+        return controller.signal
+      }
+      const fetchSparql = async (): Promise<Response> => {
+        const signal = beginAttempt()
         try {
-          return await postSparql(query, controller.signal)
+          return await postSparql(query, signal)
         } catch (error) {
-          if (isAbortError(error) || controller.signal.aborted) {
+          if (isAbortError(error) || signal.aborted) {
             throw new WikidataTemporaryError('timeout')
           }
           throw new WikidataTemporaryError(503)
-        } finally {
-          clearTimeout(timer)
         }
       }
 
       try {
         const startedAt = now()
-        let response = await sparqlOnce()
+        let response = await fetchSparql()
         if (response.status === 429) {
           const retryAfterMs = Math.min(
             readRetryAfterMs(response),
             WIKIDATA_RETRY_AFTER_CAP_MS
           )
+          clearAttempt()
           if (retryAfterMs > remainingMs()) {
             throw new WikidataTemporaryError(429, retryAfterMs)
           }
@@ -405,7 +445,7 @@ export function createWikidataClient(options: WikidataClientOptions = {}) {
               clearTimeout(retryTimer)
             }
             try {
-              response = await sparqlOnce()
+              response = await fetchSparql()
             } catch (error) {
               if (isAbortError(error)) {
                 throw new WikidataTemporaryError('timeout', retryAfterMs)
@@ -417,16 +457,19 @@ export function createWikidataClient(options: WikidataClientOptions = {}) {
             }
           }
           if (response.status === 429) {
+            clearAttempt()
             throw new WikidataTemporaryError(429, retryAfterMs)
           }
         }
         if (isTemporaryWikidataStatus(response.status)) {
+          clearAttempt()
           throw new WikidataTemporaryError(
             response.status,
             response.status === 429 ? readRetryAfterMs(response) : null
           )
         }
         if (!response.ok) {
+          clearAttempt()
           return {
             status: 'empty',
             facts: [],
@@ -434,10 +477,18 @@ export function createWikidataClient(options: WikidataClientOptions = {}) {
           }
         }
         let data: SparqlResponse
+        const parseSignal = attemptSignal
         try {
-          data = (await response.json()) as SparqlResponse
-        } catch {
+          data = parseSignal
+            ? await jsonWithAbort<SparqlResponse>(response, parseSignal)
+            : ((await response.json()) as SparqlResponse)
+        } catch (error) {
+          if (isAbortError(error) || attemptAborted) {
+            throw new WikidataTemporaryError('timeout')
+          }
           throw new WikidataTemporaryError(503)
+        } finally {
+          clearAttempt()
         }
         return lookupResultFromBindings(
           data.results?.bindings ?? [],
@@ -452,6 +503,8 @@ export function createWikidataClient(options: WikidataClientOptions = {}) {
           return { status: 'temporary', error: new WikidataTemporaryError('timeout') }
         }
         throw error
+      } finally {
+        clearAttempt()
       }
     },
     async lookupDiscogsRelease(

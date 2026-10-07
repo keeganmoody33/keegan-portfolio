@@ -166,6 +166,7 @@ export type TrackOccurrence = {
   index: number
   type_?: string
   identityKey?: string
+  artist?: string
   recording: TrackRecordingRef
 }
 

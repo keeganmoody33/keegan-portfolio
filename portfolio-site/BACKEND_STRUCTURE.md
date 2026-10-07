@@ -295,7 +295,7 @@ Preview-only proof actions (`action=inspect|overlap|kill|recover|exhausted|resyn
 
 ### GET /api/cron/crate-backfill
 
-Resumable research backfill independent of visitor traffic. Same Bearer `CRON_SECRET` gate (missing → 404). Walks collection ids via `enrichPressing`. Query: `?ids=567894,573292&retry=1&limit=10`. `retry=1` with `ids` also `forceRefresh`. Without `ids`, `--retry` / `retry=1` retries dead and inspect `too_slow` / `rate_limit` / `unavailable` (does not re-walk settled ids). Checkpoints a settled-id set; a missing `settled` array does **not** treat `cursor` as an index into the current id list (returns `[]`). Dead ids are skipped unless `{ retry: true }`. `remaining` is exact. Shares the enrich lock with crate-enrich.
+Resumable research backfill independent of visitor traffic. Same Bearer `CRON_SECRET` gate (missing → 404). Walks collection ids via `enrichPressing`. Query: `?ids=567894,573292&retry=1&limit=10`. `retry=1` with `ids` also `forceRefresh`. Without `ids`, `--retry` / `retry=1` retries dead, inspect `too_slow` / `rate_limit` / `unavailable`, and stored pressings whose lastError is still retryable (including pending provenance). It does not re-walk settled ids. Checkpoints a settled-id set; a missing `settled` array does **not** treat `cursor` as an index into the current id list (returns `[]`). Dead ids are skipped unless `{ retry: true }`. `remaining` is exact. Shares the enrich lock with crate-enrich.
 
 Also: `npm run crate:backfill` (`scripts/crate-backfill.ts`) with `--ids=`, `--retry`, `--limit=`.
 
