@@ -1,3 +1,7 @@
+COMPLETED (2026-10-07 — source-map-js 1.2.2, replaces Dependabot #52):
+- Transitive lockfile bump only: `source-map-js` 1.2.1 → 1.2.2 (CVE-2026-93749). `npm update source-map-js` in `portfolio-site/`. `package.json` unchanged. `tailwindcss` stays `^3.3.0` / 3.4.19. `postcss-selector-parser` stays (Tailwind v3 needs it).
+- Do not merge Dependabot #52: it also jumps `tailwindcss` `^3.3.0` → `^4.3.3` and the Vercel preview fails (Turbopack: tailwindcss used directly as PostCSS plugin). Do not close #52 from this work.
+
 COMPLETED (2026-10-06 — rebase covers onto main 65de54e / #53):
 - Rebased `cursor/collection-covers-blob-5ece` onto `65de54e`. Merge-base is `65de54e`, not `41416d1`. Kept CAA Blob + Discogs hotlink and #53 research (`extraartists`, `research.ts`/`wikidata`, SourceLine sr-only `source `, SampleList `inline-flex min-h-6 items-center`).
 - Docs keep unmatched Discogs/Wikidata facts language. Grid hotlink is `thumbnail||cover` unless Blob stored. No visit `after()` enqueue. `vercel.json` has no crons. PR #55 stays draft. Do not merge.
