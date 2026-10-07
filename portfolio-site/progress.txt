@@ -21,7 +21,7 @@ COMPLETED (2026-10-07 — official logo: /brand, stable + hashed URLs, R2 mirror
 - public/brand: logo.svg (canonical), logo-white.svg, 512/1024 PNGs, favicon.svg (simplified: no flag, stroke 0.095, auto dark mode), favicon.ico, apple-touch-icon, icon-192/512. Re-render: `python3 scripts/brand/render.py`, then `node scripts/brand/manifest.mjs`.
 - public/brand/v/<name>.<sha256:10>.<ext> are immutable copies; manifest.json lists every file with sha256, size, stable URL, immutable URL, R2 mirror URL, canonical flag.
 - next.config headers: /brand/* (not v/) max-age=3600 + SWR; /brand/v/* 1y immutable; CORS * on both. Organization JSON-LD now has `logo` (logo-1024.png). app/manifest.ts added. /brand page added to sitemap.
-- R2 mirror: `bash scripts/brand/publish-r2.sh` (wrangler, bucket lecturesfrom-assets, served at assets.lecturesfrom.com). Blocked until R2 is enabled. manifest.json carries no `mirror` URLs until `BRAND_MIRROR_LIVE=1 node scripts/brand/manifest.mjs` after the domain is live.
+- R2 mirror LIVE (2026-10-07): bucket `lecturesfrom-assets` (ENAM), custom domain assets.lecturesfrom.com (zone 6dcecc2143395e17e33a0cfd33271c9b, min TLS 1.2). Files uploaded with `bash scripts/brand/publish-r2.sh` from Keegan's Mac (wrangler OAuth). manifest.json now carries `mirror` URLs; always regenerate with `BRAND_MIRROR_LIVE=1 node scripts/brand/manifest.mjs`.
 - One generator: `npm run generate:brand` (render.py writes public/brand + the three app/ icons; generate-brand-assets.mjs now writes only brand/house-share.png). APP_FLOW, BACKEND_STRUCTURE, TECH_STACK updated.
 - brand/lecturesfrom-mark.svg (scaled core) left untouched; it may feed the animated site logo. Decide separately.
 

@@ -439,7 +439,7 @@ House share images live in the `(house)` route group so they do **not** inherit 
 | `app/twitter-image/route.ts` | `/twitter-image` | Same still as OG. |
 | `public/og.jpg` | `/og.jpg` | GTM certificate. Person metadata only (`personMetadata()`). |
 
-Regenerate with `npm run generate:brand`: `scripts/brand/render.py` writes `public/brand/*` and the three `app/` icons from the official 2026-09-26 master (paths live in the script); `scripts/brand/manifest.mjs` writes hashed copies + `manifest.json`; `scripts/generate-brand-assets.mjs` writes only `brand/house-share.png` from `brand/lecturesfrom-mark.svg` (scaled-core line mark used by the site logo components; OG follow-up). R2 mirror: `scripts/brand/publish-r2.sh`; add mirror URLs with `BRAND_MIRROR_LIVE=1` only after `assets.lecturesfrom.com` is live.
+Regenerate with `npm run generate:brand`: `scripts/brand/render.py` writes `public/brand/*` and the three `app/` icons from the official 2026-09-26 master (paths live in the script); `scripts/brand/manifest.mjs` writes hashed copies + `manifest.json`; `scripts/generate-brand-assets.mjs` writes only `brand/house-share.png` from `brand/lecturesfrom-mark.svg` (scaled-core line mark used by the site logo components; OG follow-up). R2 mirror: `scripts/brand/publish-r2.sh`; mirror is live at `assets.lecturesfrom.com` (bucket `lecturesfrom-assets`); regenerate the manifest with `BRAND_MIRROR_LIVE=1`.
 
 ---
 
