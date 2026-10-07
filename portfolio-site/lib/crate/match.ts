@@ -107,14 +107,31 @@ export function recordingHasSampleMaterial(
 
 export function compareTrackLevelRecordings(
   left: TrackLevelRecordingHit,
-  right: TrackLevelRecordingHit
+  right: TrackLevelRecordingHit,
+  discogsDurationMs: number | null = null
 ): number {
   const scoreDelta = (right.score ?? 0) - (left.score ?? 0)
   if (scoreDelta !== 0) return scoreDelta
   const leftSamples = left.hasSamples ? 1 : 0
   const rightSamples = right.hasSamples ? 1 : 0
   if (leftSamples !== rightSamples) return rightSamples - leftSamples
+  const leftDelta = durationDeltaMs(discogsDurationMs, left.lengthMs)
+  const rightDelta = durationDeltaMs(discogsDurationMs, right.lengthMs)
+  if (leftDelta != null && rightDelta != null && leftDelta !== rightDelta) {
+    return leftDelta - rightDelta
+  }
   return left.mbid.localeCompare(right.mbid)
+}
+
+export function trackLevelHitOutranksPrior(
+  hit: TrackLevelRecordingHit,
+  prior: TrackLevelRecordingHit
+): boolean {
+  const hitScore = hit.score ?? 0
+  const priorScore = prior.score ?? 0
+  if (hitScore > priorScore) return true
+  if (hitScore === priorScore && Boolean(hit.hasSamples) && !prior.hasSamples) return true
+  return false
 }
 
 export function filterTrackLevelRecordings(
@@ -140,17 +157,16 @@ export function pickTrackLevelRecordings(
   options?: { priorMbid?: string | null }
 ): TrackLevelRecordingHit[] {
   const matched = filterTrackLevelRecordings(hits, discogs)
-  const ranked = matched.slice().sort(compareTrackLevelRecordings)
+  const ranked = matched
+    .slice()
+    .sort((left, right) => compareTrackLevelRecordings(left, right, discogs.durationMs))
   const priorMbid = options?.priorMbid
   if (!priorMbid) return ranked
   const prior = matched.find((hit) => hit.mbid === priorMbid)
   if (!prior) return ranked
   const best = ranked[0]
   if (!best) return [prior]
-  const bestScore = best.score ?? 0
-  const priorScore = prior.score ?? 0
-  if (bestScore > priorScore) return ranked
-  if (bestScore === priorScore && best.hasSamples && !prior.hasSamples) return ranked
+  if (trackLevelHitOutranksPrior(best, prior)) return ranked
   return [prior, ...ranked.filter((hit) => hit.mbid !== prior.mbid)]
 }
 

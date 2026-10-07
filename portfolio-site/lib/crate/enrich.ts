@@ -31,6 +31,7 @@ import {
   pickTrackLevelRecordings,
   recordingHasSampleMaterial,
   songTitle,
+  trackLevelHitOutranksPrior,
   type ReleaseMatchCandidate,
   type TrackLevelRecordingHit,
 } from './match.ts'
@@ -728,7 +729,9 @@ async function annotateTrackLevelHits(
   nowIso: string,
   nowMs: number,
   takeFloorMs: number,
-  probeCache: Record<string, StoredRecording>
+  probeCache: Record<string, StoredRecording>,
+  discogsDurationMs: number | null,
+  priorMbid: string | null
 ): Promise<TrackLevelRecordingHit[]> {
   const annotated: TrackLevelRecordingHit[] = hits.map((hit) => ({ ...hit }))
   for (const hit of annotated) {
@@ -738,10 +741,17 @@ async function annotateTrackLevelHits(
       hit.hasSamples = recordingHasSampleMaterial(stored)
     }
   }
+  const prior = priorMbid ? annotated.find((hit) => hit.mbid === priorMbid) : undefined
+  if (prior && !deps.forceRefresh) {
+    const challenger = annotated.some(
+      (hit) => hit.mbid !== prior.mbid && trackLevelHitOutranksPrior(hit, prior)
+    )
+    if (!challenger) return annotated
+  }
   const toProbe = annotated
     .filter((hit) => hit.hasSamples == null)
     .slice()
-    .sort(compareTrackLevelRecordings)
+    .sort((left, right) => compareTrackLevelRecordings(left, right, discogsDurationMs))
     .slice(0, TRACK_LEVEL_ANNOTATE_CAP)
   for (const hit of toProbe) {
     const remaining =
@@ -816,6 +826,9 @@ async function applyTrackLevelSamples(
       artist: queryArtist,
       title: queryTitle,
     })
+    const priorMbid = deps.forceRefresh
+      ? null
+      : priorTrackLevelMbid(track, previousTracks)
     const annotated = await annotateTrackLevelHits(
       filterTrackLevelRecordings(hits, {
         artist: queryArtist,
@@ -829,7 +842,9 @@ async function applyTrackLevelSamples(
       nowIso,
       nowMs,
       takeFloorMs,
-      probeCache
+      probeCache,
+      track.durationMs,
+      priorMbid
     )
     const picked = pickTrackLevelRecordings(
       annotated,
@@ -838,11 +853,7 @@ async function applyTrackLevelSamples(
         title: track.title,
         durationMs: track.durationMs,
       },
-      {
-        priorMbid: deps.forceRefresh
-          ? null
-          : priorTrackLevelMbid(track, previousTracks),
-      }
+      { priorMbid }
     ).slice(0, TRACK_LEVEL_FETCH_CAP)
     if (picked.length === 0) {
       if (

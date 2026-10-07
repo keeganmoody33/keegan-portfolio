@@ -7,6 +7,10 @@ import {
   type Credit,
   type SampleLink,
 } from './types.ts'
+import { presentSampleArtist } from './research.ts'
+
+export const RECORDING_SEARCH_LIMIT = 100
+export const RECORDING_SEARCH_MAX_PAGES = 3
 
 export { MUSICBRAINZ_RETRY_AFTER_CAP_MS }
 
@@ -180,13 +184,15 @@ export function artistCreditName(credit: MbArtistCredit | undefined): string {
     kept.push(part)
   }
   if (kept.length === 0) return ''
-  return kept
-    .map((part, index) => {
-      const name = part.name ?? part.artist?.name ?? ''
-      if (index === kept.length - 1) return name
-      return `${name}${part.joinphrase ?? ''}`
-    })
-    .join('')
+  return presentSampleArtist(
+    kept
+      .map((part, index) => {
+        const name = part.name ?? part.artist?.name ?? ''
+        if (index === kept.length - 1) return name
+        return `${name}${part.joinphrase ?? ''}`
+      })
+      .join('')
+  )
 }
 
 export function musicbrainzRecordingUrl(mbid: string): string {
@@ -217,9 +223,7 @@ function rememberArtist(
 }
 
 function presentLinkArtist(name: string | undefined): string {
-  const trimmed = (name ?? '').trim()
-  if (!trimmed || isMusicBrainzUnknownArtist(trimmed)) return ''
-  return trimmed
+  return presentSampleArtist(name)
 }
 
 function sampleLinkFromRelation(rel: MbRelation, fallbackArtist = ''): SampleLink | null {
@@ -442,36 +446,48 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
       const title = input.title.trim()
       if (!artist || !title) return []
       const query = `artist:"${escapeLucene(artist)}" AND recording:"${escapeLucene(title)}"`
-      const params = new URLSearchParams({
-        query,
-        fmt: 'json',
-        limit: '25',
-      })
-      const data = await getJson<{
-        recordings?: Array<{
-          id?: string
-          title?: string
-          score?: number
-          length?: number
-          'artist-credit'?: Array<{
-            name?: string
-            artist?: { name?: string }
-            joinphrase?: string
-          }>
-        }>
-      }>(`${MUSICBRAINZ_API}/recording?${params.toString()}`)
       const hits: MbRecordingSearchHit[] = []
       const seen = new Set<string>()
-      for (const recording of data.recordings ?? []) {
-        if (!recording.id || seen.has(recording.id)) continue
-        seen.add(recording.id)
-        hits.push({
-          mbid: recording.id,
-          title: recording.title ?? '',
-          artist: artistCreditName(recording['artist-credit']),
-          lengthMs: typeof recording.length === 'number' ? recording.length : null,
-          score: typeof recording.score === 'number' ? recording.score : 0,
+      let offset = 0
+      let topScore: number | null = null
+      for (let page = 0; page < RECORDING_SEARCH_MAX_PAGES; page += 1) {
+        const params = new URLSearchParams({
+          query,
+          fmt: 'json',
+          limit: String(RECORDING_SEARCH_LIMIT),
+          offset: String(offset),
         })
+        const data = await getJson<{
+          recordings?: Array<{
+            id?: string
+            title?: string
+            score?: number
+            length?: number
+            'artist-credit'?: MbArtistCredit
+          }>
+        }>(`${MUSICBRAINZ_API}/recording?${params.toString()}`)
+        const pageHits = data.recordings ?? []
+        if (pageHits.length === 0) break
+        const pageScores = pageHits.map((recording) =>
+          typeof recording.score === 'number' ? recording.score : 0
+        )
+        const pageMax = Math.max(...pageScores)
+        const pageMin = Math.min(...pageScores)
+        if (topScore == null) topScore = pageMax
+        for (const recording of pageHits) {
+          if (!recording.id || seen.has(recording.id)) continue
+          seen.add(recording.id)
+          hits.push({
+            mbid: recording.id,
+            title: recording.title ?? '',
+            artist: artistCreditName(recording['artist-credit']),
+            lengthMs: typeof recording.length === 'number' ? recording.length : null,
+            score: typeof recording.score === 'number' ? recording.score : 0,
+          })
+        }
+        if (pageHits.length < RECORDING_SEARCH_LIMIT) break
+        if (pageMin < (topScore ?? 0)) break
+        offset += RECORDING_SEARCH_LIMIT
       }
       return hits
     },

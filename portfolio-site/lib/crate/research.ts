@@ -57,11 +57,13 @@ export function splitCreditRoles(role: string): string[] {
 }
 
 export function presentSampleArtist(name: string | undefined | null): string {
-  const trimmed = (name ?? '')
-    .trim()
-    .replace(/\s*&\s*\[unknown\]\s*$/i, '')
-    .replace(/\s*[&,]\s*$/, '')
-    .trim()
+  let trimmed = (name ?? '').trim()
+  trimmed = trimmed.replace(/(?:^|(?<=[&,])|(?<=\s))\[unknown\](?=$|(?=[&,])|(?=\s))/gi, '')
+  trimmed = trimmed.replace(/(?:\s*[&,]\s*){2,}/g, (chunk) => (chunk.includes('&') ? ' & ' : ', '))
+  trimmed = trimmed.replace(/^(?:\s*[&,])+\s*/g, '')
+  trimmed = trimmed.replace(/(?:\s*[&,])+\s*$/g, '')
+  trimmed = trimmed.replace(/\s+(?:feat|ft)\.\s*$/i, '')
+  trimmed = trimmed.trim()
   if (!trimmed || isMusicBrainzUnknownArtist(trimmed)) return ''
   return trimmed
 }
