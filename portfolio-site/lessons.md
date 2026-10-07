@@ -10,6 +10,11 @@ Updated: 2026-10-07
 - **Hover/focus must not select a category.** Selection is click / Enter / Space. Disclosure name is the visible `breakdown` / `close` (chip is not in the button). Humans / not humans: visible label = accessible name, `aria-pressed`. Honor `prefers-reduced-motion` on color transitions.
 - **Preview Redis stays `lf:preview:tally:v1`.** Production is `lf:tally:v1`. Do not write prod Redis from a preview or this environment. No `vercel.json` crons.
 
+## Dependabot grouped npm bumps (2026-10-07)
+
+- **A grouped `npm_and_yarn` PR can jump Tailwind majors via caret ranges.** #52 claimed `source-map-js` 1.2.1 → 1.2.2 (CVE-2026-93749) and removing `postcss-selector-parser`, but it also changed `tailwindcss` `^3.3.0` → `^4.3.3`. That breaks the Vercel/Turbopack build (`tailwindcss used directly as PostCSS plugin`). `portfolio-site/` is the Vercel `rootDirectory` — do not merge a Tailwind v4 jump.
+- **Patch `source-map-js` in the lockfile only.** It is transitive via `postcss@8.5.23` (`^1.2.1`). `npm update source-map-js` is enough; no `overrides` and no `package.json` change. Keep Tailwind v3. `postcss-selector-parser` is a Tailwind v3 dependency — leaving it is correct.
+
 ## Collection covers (2026-10-06)
 
 - **Discogs API Terms forbid storing copies.** Do not put Discogs images on Vercel Blob or keep them as a long-lived object store. Hotlink `images[0].uri` / primary. Manifests may record the Discogs URL plus width/height. Cover Art Archive may be copied at our own risk; images stay copyrighted. No extra CAA notice on the page — keep existing Discogs credits.
