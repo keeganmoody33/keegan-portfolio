@@ -47,7 +47,7 @@
 | `/api/cron/crate-inspect` | GET | `app/api/cron/crate-inspect/route.ts` | Read-only queue / dead / unresolved / backfill snapshot. Same auth. |
 | `/api/github` | GET | `app/api/github/route.ts` | Proxy to GitHub public events API |
 | `/api/jd-analyzer` | POST | `app/api/jd-analyzer/route.ts` | Proxy to Supabase `jd-analyzer` Edge Function |
-| `/api/tally` | GET | `app/api/tally/route.ts` | Running totals for the house footer tally (Upstash Redis, `s-maxage=60`). Hits are recorded in `proxy.ts` via one Redis pipeline in `waitUntil`. |
+| `/api/tally` | GET | `app/api/tally/route.ts` | Running totals for the house footer tally (Upstash Redis, `s-maxage=60`; 503s `s-maxage=10`). Hits are recorded in `proxy.ts` via one Redis pipeline in `waitUntil`. |
 
 ---
 
@@ -427,11 +427,11 @@ All interactions ──→ PostHog (client + server events)
 1. The collapsed row is in the layout from first paint (`min-h-11` under the footer hairline) so loading and errors do not shift layout. Until a 200 snapshot arrives the controls stay `invisible` + `inert`.
 2. Humans / not humans is a two-button switch (`aria-pressed`; visible label is the accessible name). The LCD chip is visual only (`aria-hidden`); a polite live region announces the count.
 3. **breakdown** / **close** is a disclosure (`aria-expanded`, `aria-controls`). The chip is not part of that button's name.
-4. The breakdown opens inline below the row (never an overlay). Category rows select on click / Enter / Space only — hover and focus do not re-select. Color transitions are instant under `prefers-reduced-motion`.
+4. The breakdown opens inline below the row (never an overlay). Category rows select on click / Enter / Space only — hover and focus do not re-select. Color transitions are instant under `prefers-reduced-motion` (`motion-reduce:transition-none motion-reduce:duration-0`). Focus-visible is a 2px solid ink outline (`outline-offset: 2px`); orange is hover only.
 
 **Success state:** Count for the selected mode, since date, percent of traffic. Breakdown lists categories (bar track `--house-line`, fill `--house-ink` / `--house-dim`) and the method note.
 
-**Error state:** `/api/tally` 503 or network failure. Reserved height stays; content stays hidden. No spinner.
+**Error state:** `/api/tally` 503 (short CDN cache) or network failure. Reserved height stays; content stays hidden. No spinner.
 
 **Empty state:** Redis zeros. Row still renders the count `0`.
 

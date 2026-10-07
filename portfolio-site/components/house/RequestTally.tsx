@@ -36,7 +36,7 @@ export default function RequestTally() {
 
   useEffect(() => {
     let cancelled = false
-    fetch('/api/tally', { cache: 'no-store' })
+    fetch('/api/tally')
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((data: TallySnapshot) => {
         if (!cancelled) setLoad({ state: 'ready', data })
@@ -68,7 +68,7 @@ export default function RequestTally() {
   const selected: TallyCategory = picked ?? (human ? 'presumed_human' : rows.find((c) => c !== 'presumed_human') ?? 'undeclared')
 
   const toggle = (on: boolean) =>
-    `flex min-h-11 items-center border-b uppercase tracking-[0.18em] transition-colors motion-reduce:transition-none hover:text-[var(--house-orange)] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[var(--house-orange)] sm:min-h-8 ${
+    `flex min-h-11 items-center border-b uppercase tracking-[0.18em] transition-colors motion-reduce:transition-none motion-reduce:duration-0 hover:text-[var(--house-orange)] focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-[var(--house-ink)] sm:min-h-8 ${
       on ? 'border-[var(--house-ink)] text-[var(--house-ink)]' : 'border-transparent text-[var(--house-muted)]'
     }`
 
@@ -113,7 +113,7 @@ export default function RequestTally() {
           <span className="flex min-h-11 items-center gap-3 sm:min-h-8">
             <span
               aria-hidden="true"
-              className="inline-block min-w-[8ch] rounded-[2px] bg-[var(--house-lcd)] px-1.5 py-0.5 text-center font-[family-name:var(--house-font-lcd)] text-[13px] font-extrabold leading-none tracking-[0.04em] text-[var(--house-lcd-ink)] tabular-nums"
+              className="inline-block min-w-[8ch] bg-[var(--house-lcd)] px-1.5 py-0.5 text-center font-[family-name:var(--house-font-lcd)] text-[13px] font-extrabold leading-none tracking-[0.04em] text-[var(--house-lcd-ink)] tabular-nums"
             >
               {value === null ? '·······' : fmt(value)}
             </span>
@@ -125,7 +125,7 @@ export default function RequestTally() {
               }}
               aria-expanded={open}
               aria-controls={panelId}
-              className="uppercase tracking-[0.18em] text-[var(--house-ink)] underline underline-offset-[3px] transition-colors motion-reduce:transition-none hover:text-[var(--house-orange)] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[var(--house-orange)]"
+              className="inline-flex min-h-11 items-center uppercase tracking-[0.18em] text-[var(--house-ink)] underline underline-offset-[3px] transition-colors motion-reduce:transition-none motion-reduce:duration-0 hover:text-[var(--house-orange)] focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-[var(--house-ink)] sm:min-h-8"
             >
               {open ? 'close' : 'breakdown'}
             </button>
@@ -148,7 +148,7 @@ export default function RequestTally() {
                       setPicked(c)
                       posthog.capture('tally_category_selected', { category: c })
                     }}
-                    className={`grid min-h-11 w-full grid-cols-[22px_minmax(0,1fr)_40px_64px] items-center gap-2.5 text-left transition-colors motion-reduce:transition-none hover:text-[var(--house-orange)] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[var(--house-orange)] sm:min-h-[26px] sm:grid-cols-[22px_minmax(0,1fr)_110px_64px] ${
+                    className={`grid min-h-11 w-full grid-cols-[22px_minmax(0,1fr)_40px_64px] items-center gap-2.5 text-left transition-colors motion-reduce:transition-none motion-reduce:duration-0 hover:text-[var(--house-orange)] focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-[var(--house-ink)] sm:min-h-[26px] sm:grid-cols-[22px_minmax(0,1fr)_110px_64px] ${
                       active ? 'text-[var(--house-ink)]' : 'text-[var(--house-muted)]'
                     }`}
                   >

@@ -14,7 +14,7 @@ All versions are pinned from `portfolio-site/package-lock.json`.
 | react | 19.2.4 | UI library |
 | react-dom | 19.2.4 | React DOM renderer |
 | @supabase/supabase-js | 2.90.1 | Supabase client; queries candidate_profile, experiences, etc. |
-| @upstash/redis | 1.35.6 | REST Redis client for the durable Discogs last-good snapshot |
+| @upstash/redis | 1.35.6 | REST Redis client for the durable Discogs last-good snapshot and the footer request tally. REST URL/token resolution lives in `lib/redis-env.ts` (Edge-safe); `discogs-store` re-exports it. |
 | @vercel/blob | 2.8.1 | Public object store for Cover Art Archive fronts (`BLOB_READ_WRITE_TOKEN`). No-op when the token is unset. |
 | posthog-js | 1.436.0 | Client-side analytics (components, page events) |
 | posthog-node | 5.21.2 | Server-side analytics (API routes via lib/posthog-server.ts) |

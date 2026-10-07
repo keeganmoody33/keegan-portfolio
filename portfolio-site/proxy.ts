@@ -12,6 +12,7 @@ import {
   shouldBypassAgentMiddleware,
 } from '@/lib/agent'
 import { classifyUserAgent, isCountablePageRequest } from '@/lib/tally'
+// tally-store pulls Redis REST config from lib/redis-env (not discogs-store) so this Edge file stays small.
 import { recordHit } from '@/lib/tally-store'
 
 function markdown404(): NextResponse {

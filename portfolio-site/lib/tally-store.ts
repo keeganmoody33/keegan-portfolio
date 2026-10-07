@@ -1,15 +1,27 @@
 import { Redis } from '@upstash/redis'
-import { resolveRedisRestConfig } from './discogs-store.ts'
+import {
+  assertPrefixedRedisKey,
+  discogsKeyPrefix,
+  resolveRedisRestConfig,
+} from './redis-env.ts'
 import { toSnapshot, type TallyCategory, type TallySnapshot } from './tally.ts'
+
+export const TALLY_READ_TIMEOUT_MS = 1500
+export const TALLY_SNAPSHOT_CACHE_CONTROL = 'public, s-maxage=60, stale-while-revalidate=300'
+export const TALLY_UNAVAILABLE_CACHE_CONTROL = 'public, s-maxage=10, stale-while-revalidate=30'
 
 /**
  * Durable running totals in the site's existing Upstash Redis store.
  * One hash per environment so preview traffic never touches the public count.
  * Deploys don't reset it: the count lives in Redis, not in the build.
+ * Visitor writes are only `${prefix}tally:v1` and `${prefix}tally:v1:since`.
  */
 export function tallyKeys(env: Record<string, string | undefined> = process.env) {
-  const prefix = env.VERCEL_ENV === 'production' ? 'lf:' : 'lf:preview:'
-  return { counts: `${prefix}tally:v1`, since: `${prefix}tally:v1:since` }
+  const prefix = discogsKeyPrefix(env)
+  return {
+    counts: assertPrefixedRedisKey(`${prefix}tally:v1`, env),
+    since: assertPrefixedRedisKey(`${prefix}tally:v1:since`, env),
+  }
 }
 
 type TallyPipeline = {
@@ -32,20 +44,36 @@ function redis(): Redis | null {
   return client
 }
 
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('tally read timed out')), ms)
+      }),
+    ])
+  } finally {
+    if (timer !== undefined) clearTimeout(timer)
+  }
+}
+
 /**
  * Adds one page request to the running total in a single Redis round trip
  * (pipeline hincrby + setnx). Never throws: counting must not break a page,
  * delay a response, or slow a crawler. Callers fire-and-forget via waitUntil.
+ * The default Redis client is resolved inside the try so a config error is dropped too.
  */
 export async function recordHit(
   category: TallyCategory,
-  db: TallyRedis | null = redis(),
+  db?: TallyRedis | null,
   env: Record<string, string | undefined> = process.env
 ): Promise<void> {
-  if (!db) return
-  const k = tallyKeys(env)
   try {
-    const pipeline = db.pipeline()
+    const store = db === undefined ? redis() : db
+    if (!store) return
+    const k = tallyKeys(env)
+    const pipeline = store.pipeline()
     pipeline.hincrby(k.counts, category, 1)
     pipeline.setnx(k.since, new Date().toISOString())
     await pipeline.exec()
@@ -55,14 +83,23 @@ export async function recordHit(
 }
 
 export async function readTally(
-  db: TallyRedis | null = redis(),
-  env: Record<string, string | undefined> = process.env
+  db?: TallyRedis | null,
+  env: Record<string, string | undefined> = process.env,
+  timeoutMs: number = TALLY_READ_TIMEOUT_MS
 ): Promise<TallySnapshot | null> {
-  if (!db) return null
-  const k = tallyKeys(env)
-  const [counts, since] = await Promise.all([
-    db.hgetall<Record<string, unknown>>(k.counts),
-    db.get<string>(k.since),
-  ])
-  return toSnapshot(counts, typeof since === 'string' ? since : null)
+  try {
+    const store = db === undefined ? redis() : db
+    if (!store) return null
+    const k = tallyKeys(env)
+    const [counts, since] = await withTimeout(
+      Promise.all([
+        store.hgetall<Record<string, unknown>>(k.counts),
+        store.get<string>(k.since),
+      ]),
+      timeoutMs
+    )
+    return toSnapshot(counts, typeof since === 'string' ? since : null)
+  } catch {
+    return null
+  }
 }
