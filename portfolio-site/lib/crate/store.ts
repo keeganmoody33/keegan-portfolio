@@ -162,8 +162,6 @@ export type CrateStore = {
   setSeen(releaseIds: number[]): Promise<void>
   acquireEnrichLock(ttlSeconds: number, token: string): Promise<boolean>
   releaseEnrichLock(token: string): Promise<boolean>
-  getEnrichLockToken(): Promise<string | null>
-  setEnrichLockToken(token: string): Promise<void>
   acquireVisitThrottle(ttlSeconds: number): Promise<boolean>
   markDead(letter: DeadLetter): Promise<void>
   unmarkDead(releaseId: number): Promise<void>
@@ -414,15 +412,6 @@ class RedisCrateStore implements CrateStore {
     return Number(result) === 1
   }
 
-  async getEnrichLockToken(): Promise<string | null> {
-    const value = await this.writeRedis.get<unknown>(this.keys.enrichMeta)
-    return typeof value === 'string' && value.length > 0 ? value : null
-  }
-
-  async setEnrichLockToken(token: string): Promise<void> {
-    await this.writeRedis.set(this.keys.enrichMeta, token)
-  }
-
   async acquireVisitThrottle(ttlSeconds: number): Promise<boolean> {
     const result = await this.writeRedis.set(this.keys.visitThrottle, '1', {
       nx: true,
@@ -505,7 +494,6 @@ export type MemoryCrateStore = CrateStore & {
   inflight: Map<number, number>
   seen: number[]
   lockToken: string | null
-  persistLockToken: string | null
   lockExpires: number
   visitUntil: number
   dead: Set<number>
@@ -539,7 +527,6 @@ export function createMemoryCrateStore(
     inflight: new Map(),
     seen: asNumberArray(initial.seen ?? []),
     lockToken: null,
-    persistLockToken: null,
     lockExpires: 0,
     visitUntil: 0,
     dead: new Set<number>(),
@@ -665,12 +652,6 @@ export function createMemoryCrateStore(
       store.lockToken = null
       store.lockExpires = 0
       return true
-    },
-    async getEnrichLockToken() {
-      return store.persistLockToken
-    },
-    async setEnrichLockToken(token: string) {
-      store.persistLockToken = token
     },
     async acquireVisitThrottle(ttlSeconds: number) {
       const nowMs = store.now()

@@ -24,7 +24,7 @@ import {
 import { AUTH_RETRY_MS, isoFromMs, keepPriorMatch, nextBackoffMs, preservePressingOnFailure, shouldRefreshPressing, withClearedDeadlineStops } from './preserve.ts'
 import { createMemoryCrateStore, crateRedisKeys, DRAFT_TTL_SECONDS, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA, RELEASE_LOCK_LUA, REFRESH_LOCK_LUA, selectEnrichLockToken, type CrateStore } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
-import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, WorkerDeadlineError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, ENRICH_LOCK_SECONDS, TRACK_LEVEL_FETCH_CAP, TRACK_LEVEL_REASON, overlayTrackLevelProgress, applyDeadlineStop, persistTrackLevelDocs, shouldStopWalkOnRateLimit } from './enrich.ts'
+import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, WorkerDeadlineError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, ENRICH_LOCK_SECONDS, TRACK_LEVEL_ANNOTATE_CAP, TRACK_LEVEL_FETCH_CAP, TRACK_LEVEL_REASON, overlayTrackLevelProgress, applyDeadlineStop, persistTrackLevelDocs, shouldStopWalkOnRateLimit } from './enrich.ts'
 import { isUnusableDiscogsNotes, resolveDescription, withReadableDescription } from './description.ts'
 import { COLLECTION_KEEP_PATH, scheduleKeepPing } from './keep-ping.ts'
 import { runCrateEnrichCron } from './keep.ts'
@@ -218,6 +218,10 @@ describe('duration and title helpers', () => {
     }
     const kept = pickTrackLevelRecordings([other, juicy], discogs, { priorMbid: juicyMbid })
     assert.equal(kept[0]?.mbid, juicyMbid)
+    const samplesBeatSaved = pickTrackLevelRecordings([other, juicy], discogs, {
+      priorMbid: otherMbid,
+    })
+    assert.equal(samplesBeatSaved[0]?.mbid, juicyMbid)
     const upgraded = pickTrackLevelRecordings(
       [
         { ...other, score: 101 },
@@ -904,7 +908,7 @@ describe('enrich lock token (P1.4)', () => {
   it('uses Lua compare-and-delete and compare-and-extend with no GET fallback', () => {
     const src = readFileSync(fileURLToPath(new URL('./store.ts', import.meta.url)), 'utf8')
     const acquire = src.slice(src.indexOf('async acquireEnrichLock'), src.indexOf('async releaseEnrichLock'))
-    const release = src.slice(src.indexOf('async releaseEnrichLock'), src.indexOf('async getEnrichLockToken'))
+    const release = src.slice(src.indexOf('async releaseEnrichLock'), src.indexOf('async acquireVisitThrottle'))
     assert.match(acquire, /REFRESH_LOCK_LUA/)
     assert.match(acquire, /nx:\s*true/)
     assert.doesNotMatch(acquire, /writeRedis\.get/)
@@ -918,6 +922,8 @@ describe('enrich lock token (P1.4)', () => {
     assert.match(REFRESH_LOCK_LUA, /redis\.call\('GET'/)
     assert.match(REFRESH_LOCK_LUA, /'EX'/)
     const cli = readFileSync(fileURLToPath(new URL('../../scripts/crate-backfill.ts', import.meta.url)), 'utf8')
+    assert.doesNotMatch(src, /getEnrichLockToken/)
+    assert.doesNotMatch(src, /setEnrichLockToken/)
     assert.doesNotMatch(cli, /getEnrichLockToken/)
     assert.doesNotMatch(cli, /setEnrichLockToken/)
     const enrich = readFileSync(fileURLToPath(new URL('./enrich.ts', import.meta.url)), 'utf8')
@@ -936,7 +942,6 @@ describe('enrich lock token (P1.4)', () => {
 
   it('second worker on the real token path skips and cannot release the first lock', async () => {
     const store = createMemoryCrateStore()
-    await store.setEnrichLockToken('stale-shared-uuid')
     await store.enqueue([240128], { nowMs: 0 })
     const first = selectEnrichLockToken()
     const second = selectEnrichLockToken()
@@ -967,7 +972,6 @@ describe('enrich lock token (P1.4)', () => {
       if (Date.now() - waitStart > 2_000) throw new Error('worker A never took the lock')
       await new Promise((resolve) => setTimeout(resolve, 5))
     }
-    assert.equal(await store.getEnrichLockToken(), 'stale-shared-uuid')
     const workerB = await processEnrichmentQueue(
       {
         store,
@@ -4571,6 +4575,129 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     }
   })
 
+  it('ignores a saved equal-score match on forceRefresh and prefers samples-material', async () => {
+    const juicyMbid = '1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc'
+    const otherMbid = '1aaf2f49-2ba3-4b34-9196-64d5cb0cc0dc'
+    const biggieMbid = '181c0a32-6e3f-4680-8a7d-1daf0b42e43b'
+    const hit = (mbid: string) => ({
+      mbid,
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      lengthMs: 355000,
+      score: 100,
+    })
+    const juicyDoc = {
+      mbid: juicyMbid,
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      credits: [],
+      samplesFrom: [],
+      sampledIn: [
+        {
+          title: 'Juicy',
+          artist: 'The Notorious B.I.G.',
+          mbid: biggieMbid,
+          sourceUrl: `https://musicbrainz.org/recording/${biggieMbid}`,
+          source: 'musicbrainz' as const,
+          providerId: biggieMbid,
+        },
+      ],
+    }
+    const otherDoc = {
+      mbid: otherMbid,
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      credits: [],
+      samplesFrom: [],
+      sampledIn: [],
+    }
+    const store = createMemoryCrateStore()
+    const firstMb = createMusicBrainzClientForTests()
+    firstMb.searchRecordingsByArtistTitle = async () => [hit(otherMbid)]
+    firstMb.getRecording = async (id) => (id === otherMbid ? { ...otherDoc } : null)
+    const first = await enrichPressing(567894, {
+      store,
+      now: () => Date.parse('2026-10-06T08:00:00.000Z'),
+      fetchDiscogs: async () => mtumeDetail(),
+      mb: firstMb,
+    })
+    const firstVocal = first.tracks.find((track) => /vocal/i.test(track.title))
+    assert.equal(firstVocal?.recording.mbid, otherMbid)
+
+    const retryMb = createMusicBrainzClientForTests()
+    retryMb.searchRecordingsByArtistTitle = async () => [hit(otherMbid), hit(juicyMbid)]
+    retryMb.getRecording = async (id) => {
+      if (id === juicyMbid) return { ...juicyDoc, sampledIn: [...juicyDoc.sampledIn] }
+      if (id === otherMbid) return { ...otherDoc }
+      return null
+    }
+    const retried = await enrichPressing(567894, {
+      store,
+      now: () => Date.parse('2026-10-06T09:00:00.000Z'),
+      fetchDiscogs: async () => mtumeDetail(),
+      mb: retryMb,
+      forceRefresh: true,
+    })
+    const vocal = retried.tracks.find((track) => /vocal/i.test(track.title))
+    assert.equal(vocal?.recording.mbid, juicyMbid)
+  })
+
+  it('caps track-level annotation at 3 hits and persists only the picked recording', async () => {
+    assert.equal(TRACK_LEVEL_ANNOTATE_CAP, 3)
+    const fetched: string[] = []
+    const sampledMbid = 'a0000000-0000-0000-0000-000000000002'
+    const hits = Array.from({ length: 10 }, (_, index) => ({
+      mbid: `a0000000-0000-0000-0000-00000000000${index}`,
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      lengthMs: 355000,
+      score: 100,
+    }))
+    const mb = createMusicBrainzClientForTests()
+    let searches = 0
+    mb.searchRecordingsByArtistTitle = async () => {
+      searches += 1
+      if (searches > 1) return []
+      return hits
+    }
+    mb.getRecording = async (id) => {
+      fetched.push(id)
+      return {
+        mbid: id,
+        title: 'Juicy Fruit',
+        artist: 'Mtume',
+        credits: [],
+        samplesFrom: [],
+        sampledIn:
+          id === sampledMbid
+            ? [
+                {
+                  title: 'Juicy',
+                  artist: 'The Notorious B.I.G.',
+                  mbid: '181c0a32-6e3f-4680-8a7d-1daf0b42e43b',
+                  sourceUrl: 'https://musicbrainz.org/recording/181c0a32-6e3f-4680-8a7d-1daf0b42e43b',
+                  source: 'musicbrainz' as const,
+                  providerId: '181c0a32-6e3f-4680-8a7d-1daf0b42e43b',
+                },
+              ]
+            : [],
+      }
+    }
+    const store = createMemoryCrateStore()
+    const result = await enrichPressing(567894, {
+      store,
+      now: () => Date.parse('2026-10-06T08:00:00.000Z'),
+      fetchDiscogs: async () => mtumeDetail(),
+      mb,
+    })
+    assert.ok(fetched.length <= TRACK_LEVEL_ANNOTATE_CAP)
+    assert.equal(fetched.length, TRACK_LEVEL_ANNOTATE_CAP)
+    const vocal = result.tracks.find((track) => /vocal/i.test(track.title))
+    assert.equal(vocal?.recording.mbid, sampledMbid)
+    assert.deepEqual(Object.keys(store.recordings), [sampledMbid])
+    assert.deepEqual(Object.keys(result.recordings), [sampledMbid])
+  })
+
   it('keeps recording-level samples when MusicBrainz 429s after a fetch', async () => {
     const juicyMbid = '1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc'
     const biggieMbid = '181c0a32-6e3f-4680-8a7d-1daf0b42e43b'
@@ -5634,6 +5761,12 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     assert.equal(presentSampleArtist('[unknown]'), '')
     assert.equal(presentSampleArtist('MC Real & [unknown]'), 'MC Real')
     assert.equal(presentSampleArtist('Alpha & [unknown]'), 'Alpha')
+    assert.equal(presentSampleArtist('Alpha &'), 'Alpha')
+    assert.equal(presentSampleArtist('Alpha,'), 'Alpha')
+    assert.equal(presentSampleArtist('Alpha feat.'), 'Alpha')
+    assert.equal(presentSampleArtist('Alpha feat'), 'Alpha')
+    assert.equal(presentSampleArtist('Alpha x'), 'Alpha')
+    assert.equal(presentSampleArtist('The xx'), 'The xx')
     assert.equal(presentSampleArtist('A Tribe Called Quest'), 'A Tribe Called Quest')
     const client = createMusicBrainzClient({
       minIntervalMs: 0,

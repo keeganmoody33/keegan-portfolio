@@ -26,6 +26,7 @@ import {
   classifyReleaseMatch,
   matchDiscogsTrackToMb,
   parseDurationToMs,
+  compareTrackLevelRecordings,
   filterTrackLevelRecordings,
   pickTrackLevelRecordings,
   recordingHasSampleMaterial,
@@ -105,6 +106,7 @@ export const WORKER_DEADLINE_MARGIN_MS = 8_000
 export const DEADLINE_STOP_LIMIT = 3
 export const DEADLINE_BACKOFF_MS = ENRICH_TAKE_FLOOR_MS
 export const TRACK_LEVEL_FETCH_CAP = 1
+export const TRACK_LEVEL_ANNOTATE_CAP = 3
 
 export function overlayTrackLevelProgress(
   base: StoredPressing,
@@ -684,6 +686,39 @@ function priorTrackLevelMbid(
   return prior?.recording.mbid ?? null
 }
 
+function storedRecordingFromLookup(
+  doc: {
+    mbid: string
+    title: string
+    artist: string
+    credits: StoredRecording['credits']
+    samplesFrom: StoredRecording['samplesFrom']
+    sampledIn: StoredRecording['sampledIn']
+  },
+  nowIso: string,
+  nowMs: number
+): StoredRecording {
+  return {
+    mbid: doc.mbid,
+    title: doc.title,
+    artist: doc.artist,
+    credits: doc.credits,
+    samplesFrom: doc.samplesFrom,
+    sampledIn: doc.sampledIn,
+    provenance: {
+      sourceUrls: [musicbrainzRecordingUrl(doc.mbid)],
+      matchStatus: 'matched',
+      confidence: 0.7,
+      reason: TRACK_LEVEL_REASON,
+      checkedAt: nowIso,
+      refreshAfter: isoFromMs(nowMs + SUCCESS_REFRESH_MS),
+      lastError: null,
+      verifiedAt: nowIso,
+      lastAttemptAt: nowIso,
+    },
+  }
+}
+
 async function annotateTrackLevelHits(
   hits: TrackLevelRecordingHit[],
   recordings: Record<string, StoredRecording>,
@@ -692,26 +727,23 @@ async function annotateTrackLevelHits(
   deps: EnrichDeps,
   nowIso: string,
   nowMs: number,
-  takeFloorMs: number
+  takeFloorMs: number,
+  probeCache: Record<string, StoredRecording>
 ): Promise<TrackLevelRecordingHit[]> {
-  const annotated: TrackLevelRecordingHit[] = []
-  for (const hit of hits) {
-    if (hit.hasSamples != null) {
-      annotated.push(hit)
-      continue
-    }
-    const stored = recordings[hit.mbid] ?? (await store.getRecording(hit.mbid))
-    if (stored) {
-      recordings[hit.mbid] = stored
-      annotated.push({ ...hit, hasSamples: recordingHasSampleMaterial(stored) })
-      continue
-    }
-    annotated.push({ ...hit })
-  }
-  const topScore = annotated.reduce((max, hit) => Math.max(max, hit.score ?? 0), 0)
+  const annotated: TrackLevelRecordingHit[] = hits.map((hit) => ({ ...hit }))
   for (const hit of annotated) {
     if (hit.hasSamples != null) continue
-    if ((hit.score ?? 0) !== topScore) continue
+    const stored = recordings[hit.mbid] ?? probeCache[hit.mbid] ?? (await store.getRecording(hit.mbid))
+    if (stored) {
+      hit.hasSamples = recordingHasSampleMaterial(stored)
+    }
+  }
+  const toProbe = annotated
+    .filter((hit) => hit.hasSamples == null)
+    .slice()
+    .sort(compareTrackLevelRecordings)
+    .slice(0, TRACK_LEVEL_ANNOTATE_CAP)
+  for (const hit of toProbe) {
     const remaining =
       deps.deadlineMs == null
         ? Number.POSITIVE_INFINITY
@@ -721,51 +753,16 @@ async function annotateTrackLevelHits(
       assertWithinWorkerDeadline(deps)
       const doc = await mb.getRecording(hit.mbid)
       if (!doc) continue
-      const recording: StoredRecording = {
-        mbid: doc.mbid,
-        title: doc.title,
-        artist: doc.artist,
-        credits: doc.credits,
-        samplesFrom: doc.samplesFrom,
-        sampledIn: doc.sampledIn,
-        provenance: {
-          sourceUrls: [musicbrainzRecordingUrl(doc.mbid)],
-          matchStatus: 'matched',
-          confidence: 0.7,
-          reason: TRACK_LEVEL_REASON,
-          checkedAt: nowIso,
-          refreshAfter: isoFromMs(nowMs + SUCCESS_REFRESH_MS),
-          lastError: null,
-          verifiedAt: nowIso,
-          lastAttemptAt: nowIso,
-        },
-      }
-      recordings[hit.mbid] = recording
+      const recording = storedRecordingFromLookup(doc, nowIso, nowMs)
+      probeCache[hit.mbid] = recording
       hit.hasSamples = recordingHasSampleMaterial(recording)
     } catch (error) {
       if (isMusicBrainzRateLimitError(error) || isMusicBrainzTimeoutError(error)) {
         if (error.partialRecording) {
           const partial = error.partialRecording
-          recordings[partial.mbid] = {
-            mbid: partial.mbid,
-            title: partial.title,
-            artist: partial.artist,
-            credits: partial.credits,
-            samplesFrom: partial.samplesFrom,
-            sampledIn: partial.sampledIn,
-            provenance: {
-              sourceUrls: [musicbrainzRecordingUrl(partial.mbid)],
-              matchStatus: 'matched',
-              confidence: 0.7,
-              reason: TRACK_LEVEL_REASON,
-              checkedAt: nowIso,
-              refreshAfter: isoFromMs(nowMs + SUCCESS_REFRESH_MS),
-              lastError: null,
-              verifiedAt: nowIso,
-              lastAttemptAt: nowIso,
-            },
-          }
-          hit.hasSamples = recordingHasSampleMaterial(recordings[partial.mbid])
+          const recording = storedRecordingFromLookup(partial, nowIso, nowMs)
+          probeCache[partial.mbid] = recording
+          hit.hasSamples = recordingHasSampleMaterial(recording)
         }
         if (isMusicBrainzRateLimitError(error)) throw error
         continue
@@ -790,6 +787,7 @@ async function applyTrackLevelSamples(
   onProgress?: (cursor: number) => Promise<void>
 ): Promise<{ cursor: number; incomplete: boolean }> {
   const playable = tracks.filter((track) => isPlayableOccurrence(track))
+  const probeCache: Record<string, StoredRecording> = {}
   let cursor = startCursor
   for (let index = 0; index < playable.length; index++) {
     if (index < startCursor) continue
@@ -830,7 +828,8 @@ async function applyTrackLevelSamples(
       deps,
       nowIso,
       nowMs,
-      takeFloorMs
+      takeFloorMs,
+      probeCache
     )
     const picked = pickTrackLevelRecordings(
       annotated,
@@ -839,7 +838,11 @@ async function applyTrackLevelSamples(
         title: track.title,
         durationMs: track.durationMs,
       },
-      { priorMbid: priorTrackLevelMbid(track, previousTracks) }
+      {
+        priorMbid: deps.forceRefresh
+          ? null
+          : priorTrackLevelMbid(track, previousTracks),
+      }
     ).slice(0, TRACK_LEVEL_FETCH_CAP)
     if (picked.length === 0) {
       if (
@@ -865,6 +868,12 @@ async function applyTrackLevelSamples(
           await persistTrackLevelDocs(deps.store, track, recordings, docs)
         }
         return { cursor, incomplete: true }
+      }
+      const probed = probeCache[hit.mbid]
+      if (probed) {
+        recordings[hit.mbid] = probed
+        docs.push(probed)
+        continue
       }
       const previousRecording =
         recordings[hit.mbid] ?? (await deps.store.getRecording(hit.mbid))
@@ -957,9 +966,9 @@ export async function persistTrackLevelDocs(
   docs: StoredRecording[]
 ): Promise<void> {
   attachTrackLevelDocs(track, recordings, docs)
-  const ids = new Set(docs.map((doc) => doc.mbid))
-  if (track.recording.mbid) ids.add(track.recording.mbid)
-  for (const mbid of ids) {
+  const pickedIds = new Set(docs.map((doc) => doc.mbid))
+  if (track.recording.mbid) pickedIds.add(track.recording.mbid)
+  for (const mbid of pickedIds) {
     const recording = recordings[mbid]
     if (recording) await store.setRecording(structuredClone(recording))
   }

@@ -146,7 +146,11 @@ export function pickTrackLevelRecordings(
   const prior = matched.find((hit) => hit.mbid === priorMbid)
   if (!prior) return ranked
   const best = ranked[0]
-  if (best && (best.score ?? 0) > (prior.score ?? 0)) return ranked
+  if (!best) return [prior]
+  const bestScore = best.score ?? 0
+  const priorScore = prior.score ?? 0
+  if (bestScore > priorScore) return ranked
+  if (bestScore === priorScore && best.hasSamples && !prior.hasSamples) return ranked
   return [prior, ...ranked.filter((hit) => hit.mbid !== prior.mbid)]
 }
 
