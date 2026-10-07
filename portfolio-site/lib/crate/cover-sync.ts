@@ -15,6 +15,7 @@ import {
 } from './cover.ts'
 import { blobReadWriteToken, putCoverBlob } from './cover-blob.ts'
 import type { CoverStore } from './cover-store.ts'
+import { parseIdList } from './ids.ts'
 import { fixturePressing } from './read.ts'
 import type { CrateStore } from './store.ts'
 
@@ -58,11 +59,7 @@ export function parseCoverSyncArgs(argv: string[]): CoverSyncArgs {
     else if (raw === '--prod') args.prod = true
     else if (raw === '--dry-run') args.dryRun = true
     else if (raw.startsWith('--ids=')) {
-      args.ids = raw
-        .slice('--ids='.length)
-        .split(',')
-        .map((part) => Number.parseInt(part.trim(), 10))
-        .filter((id) => Number.isInteger(id) && id > 0)
+      args.ids = parseIdList(raw.slice('--ids='.length))
     } else if (raw.startsWith('--limit=')) {
       const limit = Number.parseInt(raw.slice('--limit='.length), 10)
       if (Number.isInteger(limit) && limit > 0) args.limit = limit
@@ -122,8 +119,10 @@ export async function syncCovers(options: {
   const discover = options.discover ?? discoverCover
 
   for (const releaseId of options.ids) {
-    const existing = options.force || options.dryRun ? null : await options.coverStore?.get(releaseId)
-    if (existing) {
+    const existing =
+      options.force || options.dryRun ? null : await options.coverStore?.get(releaseId)
+    // A manifest with no URL is a past failure: retry it rather than skip.
+    if (existing?.url) {
       rows.push({
         releaseId,
         skipped: true,
@@ -142,17 +141,31 @@ export async function syncCovers(options: {
       continue
     }
 
-    const input = lookup
-      ? await lookup(releaseId)
-      : await lookupCoverSources(releaseId, {
-          fetchDiscogs: (id) =>
-            fetchDiscogsReleaseDetail(id, { fetchImpl: discogsPacer.fetch }),
-          getPressing: async (id) => {
-            const stored = await options.crateStore?.getPressing(id)
-            return stored ?? fixturePressing(id)
-          },
-        })
-    const discovered = await discover(input, { pacer: caaPacer })
+    let discovered: CoverDiscoverResult
+    try {
+      const input = lookup
+        ? await lookup(releaseId)
+        : await lookupCoverSources(releaseId, {
+            fetchDiscogs: (id) =>
+              fetchDiscogsReleaseDetail(id, { fetchImpl: discogsPacer.fetch }),
+            getPressing: async (id) => {
+              const stored = await options.crateStore?.getPressing(id)
+              return stored ?? fixturePressing(id)
+            },
+          })
+      discovered = await discover(input, { pacer: caaPacer })
+    } catch (error) {
+      // One failed release must not abort the rest of the sync.
+      rows.push({
+        releaseId,
+        skipped: true,
+        reason: `lookup failed: ${error instanceof Error ? error.message : String(error)}`,
+        discogsPx: null,
+        best: null,
+        blob: null,
+      })
+      continue
+    }
     const best = discovered.best
     if (!best) {
       rows.push({
@@ -180,7 +193,10 @@ export async function syncCovers(options: {
     }
 
     const manifest = manifestFromDiscovery(discovered, stored)
-    if (!options.dryRun && manifest && options.coverStore) {
+    // Never commit a manifest without a URL (failed upload, no token): it
+    // would overwrite a working cover under --force, and later syncs would
+    // skip it as "already stored" instead of retrying.
+    if (!options.dryRun && manifest?.url && options.coverStore) {
       await options.coverStore.set(manifest)
     }
 

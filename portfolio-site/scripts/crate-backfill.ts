@@ -25,7 +25,14 @@ function parseArgs(argv: string[]): { retry: boolean; ids: number[]; limit?: num
   let limit: number | undefined
   for (const arg of argv) {
     if (arg === '--retry' || arg === 'retry=1' || arg === '--retry=1') retry = true
-    else if (arg.startsWith('--ids=')) ids = parseIdList(arg.slice('--ids='.length))
+    else if (arg.startsWith('--ids=')) {
+      ids = parseIdList(arg.slice('--ids='.length))
+      // Explicit but invalid --ids must not fall through to a full backfill.
+      if (ids.length === 0) {
+        console.error('invalid --ids: expected comma-separated positive integers')
+        process.exit(1)
+      }
+    }
     else if (arg.startsWith('--limit=')) {
       const parsed = Number.parseInt(arg.slice('--limit='.length), 10)
       if (Number.isInteger(parsed) && parsed > 0) limit = parsed

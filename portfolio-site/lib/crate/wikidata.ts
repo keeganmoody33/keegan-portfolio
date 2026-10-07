@@ -83,6 +83,24 @@ function sparqlEscape(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 }
 
+async function abortableSleep(
+  sleep: (ms: number) => Promise<void>,
+  ms: number,
+  signal: AbortSignal
+): Promise<void> {
+  if (signal.aborted) return
+  let onAbort: (() => void) | null = null
+  const aborted = new Promise<void>((resolve) => {
+    onAbort = () => resolve()
+    signal.addEventListener('abort', onAbort, { once: true })
+  })
+  try {
+    await Promise.race([sleep(ms), aborted])
+  } finally {
+    if (onAbort) signal.removeEventListener('abort', onAbort)
+  }
+}
+
 export function wikidataEntityUrl(qid: string): string {
   return `https://www.wikidata.org/wiki/${qid}`
 }
@@ -329,6 +347,7 @@ export function createWikidataClient(options: WikidataClientOptions = {}) {
     ): Promise<WikidataLookupResult> {
       const query = wikidataReleaseQuery(input)
       const controller = new AbortController()
+      const startedAt = now()
       const timer = setTimeout(() => controller.abort(), timeoutMs)
       try {
         let response: Response
@@ -345,8 +364,15 @@ export function createWikidataClient(options: WikidataClientOptions = {}) {
             readRetryAfterMs(response),
             WIKIDATA_RETRY_AFTER_CAP_MS
           )
-          if (retryAfterMs > 0 && !controller.signal.aborted) {
-            await sleep(retryAfterMs)
+          // The retry must fit inside this request's timeout. A Retry-After
+          // longer than what's left surfaces as a temporary 429 right away
+          // instead of holding the worker past its budget.
+          const remainingMs = timeoutMs - (now() - startedAt)
+          if (retryAfterMs > 0 && retryAfterMs < remainingMs && !controller.signal.aborted) {
+            await abortableSleep(sleep, retryAfterMs, controller.signal)
+            if (controller.signal.aborted) {
+              throw new WikidataTemporaryError('timeout', retryAfterMs)
+            }
             try {
               response = await postSparql(query, controller.signal)
             } catch (error) {
