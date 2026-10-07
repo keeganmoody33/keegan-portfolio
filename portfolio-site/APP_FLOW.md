@@ -18,9 +18,10 @@
 | `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate (ISR 300s; durable last-good in Redis when configured). Cover click opens `/collection/[releaseId]`. Under the `{n} releases` line: **shuffle** (client Fisher-Yates of the whole grid; reload restores ISR order; no server cost) and **pull one** (random listed id → existing overlay/route). Grid `next/image` uses a stored CAA Blob URL when the cover manifest has one; otherwise the current Discogs hotlink. |
 | `/collection/[releaseId]` | `app/(house)/collection/[releaseId]/page.tsx` | Record detail (overview / tracks). Intercepting overlay at `@detail/(.)[releaseId]` when opened from the grid; full page on direct visit / refresh. |
 | `/legal`         | `app/(house)/legal/page.tsx`         | Entity + long about + Data sources (Discogs API non-affiliation). Markdown twin `/legal.md`. Organization JSON-LD is not a /legal twin. |
-| `/icon.svg`      | `app/icon.svg`                       | Site icon; `prefers-color-scheme` stroke. Older line-mark — left untouched this pass (follow-up). Applies to house and person. |
-| `/favicon.ico`   | `app/favicon.ico`                    | 16/32/48 ico: `#ececec` rounded plate, mark `#20262b` (matches apple-icon). Older line-mark — left untouched this pass (follow-up). |
-| `/apple-icon.png`| `app/apple-icon.png`                 | 180px, light ground, mark `#20262b`. Older line-mark — left untouched this pass (follow-up). |
+| `/brand`        | `app/(house)/brand/page.tsx`         | Official mark: light/dark preview, downloads, stable URLs, usage rules. Files live in `public/brand/` (`logo.svg` is canonical; hashed immutable copies in `public/brand/v/`; `manifest.json`). |
+| `/icon.svg`      | `app/icon.svg`                       | Site icon. Simplified official mark (2026-09-26 master minus flag, stroke 0.095); `prefers-color-scheme` stroke `#20262b` / `#ffffff`. Copy of `public/brand/favicon.svg`. Applies to house and person. |
+| `/favicon.ico`   | `app/favicon.ico`                    | 16/32/48 ico, simplified official mark `#20262b` on transparent. Copy of `public/brand/favicon.ico`. |
+| `/apple-icon.png`| `app/apple-icon.png`                 | 180px, full official mark `#20262b` on white. Copy of `public/brand/apple-touch-icon.png`. |
 | `/opengraph-image` | `app/(house)/opengraph-image.tsx`  | House share image 1200×630 (older line-mark — left untouched this pass; follow-up). Person page keeps `/og.jpg`. |
 | `/keeganmoody33` | `app/keeganmoody33/page.tsx` | Principal / person page (Ask AI, JD Fit Analyzer, timeline)     |
 | `/keegan`        | next.config + vercel.json    | 301 → `/keeganmoody33`                                          |
@@ -33,7 +34,7 @@
 | Redirect (301) | `/keeganMoody33` | `/keeganmoody33` | Case normalization  |
 | Redirect (301) | `/keegan`        | `/keeganmoody33` | Short alias         |
 
-**Result:** Visitors land on `lecturesfrom.com` and see the house title card + crate. `/` never redirects to the person page. The person page is at `/keeganmoody33`. House ↔ person crossings use `SignalCut` (not a global layout animation). Ask AI and JD Fit Analyzer stay on the person page only. The hero wordmark's last `o` is the static `LogoMark` (owner line-only PNG geometry; `variant="line"`; no spin). Favicon / og stay the older line-mark (untouched). `LogoGlobe` is kept on disk and is not mounted. `HouseFooter` is shared on `/`, `/catalog`, `/collection`, `/legal` (Motion switch not rendered). `/keeganmoody33` has its own footer.
+**Result:** Visitors land on `lecturesfrom.com` and see the house title card + crate. `/` never redirects to the person page. The person page is at `/keeganmoody33`. House ↔ person crossings use `SignalCut` (not a global layout animation). Ask AI and JD Fit Analyzer stay on the person page only. The hero wordmark's last `o` is the static `LogoMark` (owner line-only PNG geometry; `variant="line"`; no spin). Favicon and app icons use the official 2026-09-26 master (see `/brand`); og stays the older line-mark (follow-up). `LogoGlobe` is kept on disk and is not mounted. `HouseFooter` is shared on `/`, `/catalog`, `/collection`, `/legal`, `/brand` (Motion switch not rendered). `/keeganmoody33` has its own footer.
 
 ### API Routes
 
