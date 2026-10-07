@@ -1,6 +1,7 @@
 IN PROGRESS (2026-10-07 — integrations + QA Gate, merged main `f396637`):
 - MusicBrainz 429s do not count toward `CRATE_MAX_ATTEMPTS`. SPARQL/MB abort timers are `min(timeout, remaining)`. Only MB 429 (`MUSICBRAINZ_RATE_LIMIT_MESSAGE`) stops the walk.
 - Track-level: preserve `trackSampleCursor` in `applyDeadlineStop`; strip feat/ft/featuring; reject duration >15s off; `TRACK_LEVEL_FETCH_CAP` 1; `based on` is not a sample; persist merged samples then `setRecording`; HTTP-date Retry-After.
+- Enrich lock: 90s TTL; owner token may re-acquire/refresh; Lua release plus GET+DEL fallback; release on exit. Do not use a 3700s lock.
 - Kept `#57` lockfile pin `source-map-js` 1.2.2 (CVE-2026-93749). Tailwind stays v3. `package.json` unchanged.
 - Next: full preview backfill `lf:preview:` only.
 

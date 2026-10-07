@@ -10,6 +10,7 @@ Updated: 2026-10-07
 - **Track-level samples pick one recording.** Strip `feat.` / `ft.` / `featuring` from artist and title. Reject a hit whose duration is more than `DURATION_FAR_MS` (15s) off when both durations are known. `TRACK_LEVEL_FETCH_CAP` is 1. Do not merge sample rels from far-off recordings.
 - **A `based on` work/recording rel is not a sample.** Keep only `samples material` and `sampled by`.
 - **`applyDeadlineStop` must copy `trackSampleCursor`.** Dropping it re-searches from track 0. `persistTrackLevelDocs` attaches/merges first, then `setRecording` (clone) so Redis has the merged samples.
+- **Enrich lock TTL is 90s; the owner token must be able to re-acquire.** `SET NX` plus a Lua compare that misses JSON-encoded GET values leaves the key held. The next tick `skipped: true` until TTL. Re-acquire when `GET` matches the owner and refresh `EX`. Release via Lua, then GET+DEL fallback. Release on process exit. Do not use a 3700s lock TTL.
 
 ## Preview crate backfill needs Redis in the agent env (2026-10-07)
 
