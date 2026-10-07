@@ -13,7 +13,8 @@ import { fileURLToPath } from 'node:url'
 import { imageSize } from './image-size.mjs'
 
 const SITE = 'https://www.lecturesfrom.com'
-const MIRROR = 'https://assets.lecturesfrom.com'
+// Set BRAND_MIRROR_LIVE=1 once assets.lecturesfrom.com serves the R2 bucket.
+const MIRROR = process.env.BRAND_MIRROR_LIVE === '1' ? 'https://assets.lecturesfrom.com' : null
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'public', 'brand')
 const vdir = join(dir, 'v')
 mkdirSync(vdir, { recursive: true })
@@ -51,7 +52,7 @@ const assets = FILES.map((entry) => {
     sha256,
     url: `${SITE}/brand/${entry.file}`,
     immutable: `${SITE}/brand/v/${hashed}`,
-    mirror: `${MIRROR}/brand/v/${hashed}`,
+    ...(MIRROR ? { mirror: `${MIRROR}/brand/v/${hashed}` } : {}),
   }
 })
 

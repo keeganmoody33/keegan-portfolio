@@ -1,6 +1,6 @@
 # Renders the official lecturesfrom logo set from the 2026-09-26 master paths.
 # Usage: pip install cairosvg pillow && python3 scripts/brand/render.py
-# Then: node scripts/brand/manifest.mjs
+# Or run everything: npm run generate:brand
 import io, os, cairosvg
 from PIL import Image
 OUT=os.path.join(os.path.dirname(__file__), '..', '..', 'public', 'brand'); os.makedirs(OUT,exist_ok=True)
@@ -50,4 +50,9 @@ png(simple,32).save(f'{OUT}/favicon-32.png')
 app = mark(INK, scale=190, bg=WHITE, title=False)
 png(app,180).convert('RGB').save(f'{OUT}/apple-touch-icon.png')
 for s in (192,512): png(app,s).convert('RGB').save(f'{OUT}/icon-{s}.png')
+# Next.js file-convention icons are byte-identical copies of the public files
+import shutil
+APP=os.path.join(os.path.dirname(__file__), '..', '..', 'app')
+for src, dst in (('favicon.svg','icon.svg'),('favicon.ico','favicon.ico'),('apple-touch-icon.png','apple-icon.png')):
+    shutil.copyfile(f'{OUT}/{src}', os.path.join(APP, dst))
 print(sorted(os.listdir(OUT)))

@@ -4,6 +4,9 @@
 #   npx wrangler login          # once
 #   bash scripts/brand/publish-r2.sh
 #
+# After the custom domain is live, add mirror URLs to the manifest and republish:
+#   BRAND_MIRROR_LIVE=1 node scripts/brand/manifest.mjs && bash scripts/brand/publish-r2.sh
+#
 # Hashed files get a one-year immutable cache. Stable names and manifest.json get one hour.
 set -euo pipefail
 BUCKET="${R2_BUCKET:-lecturesfrom-assets}"
