@@ -2,6 +2,18 @@
 
 Updated: 2026-10-07
 
+## Footer request tally (2026-10-07)
+
+- **Bar colors are house tokens, not invented greys.** `#1a1a1a` / `#4a4a4a` are not decided colors and fail in light theme. Track `--house-line`, fill `--house-ink` / `--house-dim`. LCD may keep `--house-lcd` / `--house-lcd-ink`. Fonts are the existing `--house-font-*` tokens (Doto / Roboto Mono / Space Grotesk). LCD has no radius.
+- **Focus is 2px solid ink, not orange `outline: auto`.** Orange is hover only (`FRONTEND_GUIDELINES` house-text-button, `globals.css` `.house-text-button:focus-visible`). Tailwind v3 sets solid via `outline` (`outline-style: solid`); `outline-solid` is v4 and is dropped here, so Chrome keeps `outline: auto` (rounded ring, reads as orange). Use `focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--house-ink)]`.
+- **`recordHit` is one Upstash pipeline.** `hincrby` then `setnx` as separate REST calls is two round trips. Pipeline them. Stay inside `event.waitUntil`, never throw, never delay the response — bots and AI crawlers must not be slowed. Resolve `redis()` *inside* the try: default-arg evaluation runs before the body and a config throw would escape.
+- **Do not import `discogs-store` from Edge.** `proxy.ts` → `tally-store` pulling `discogs-store` put ~273K on the middleware chunk. Redis REST config and `discogsKeyPrefix` live in `lib/redis-env.ts` (no Discogs/crate/SDK). Crate paths keep importing the re-exports from `discogs-store`.
+- **Production Redis is `VERCEL_ENV=production` *and* ref `main`.** Same `isProductionRedisNamespace` as Discogs. `vercel --prod` from another branch must write `lf:preview:tally:v1`, not `lf:tally:v1`. Visitor writes stay `*:tally:v1` / `*:tally:v1:since`.
+- **Do not paint a loading chip that later unmounts.** That is CLS. Reserve the collapsed-row height from first paint; keep content `invisible` + `inert` until `/api/tally` 200. Errors keep the reservation.
+- **Hover/focus must not select a category.** Selection is click / Enter / Space. Disclosure name is the visible `breakdown` / `close` (chip is not in the button). Humans / not humans: visible label = accessible name, `aria-pressed`. Honor `prefers-reduced-motion` (`motion-reduce:transition-none motion-reduce:duration-0`). Breakdown tap target is `min-h-11` / `sm:min-h-8`.
+- **`cache: 'no-store'` on the footer fetch fights `s-maxage=60`.** Drop it so the CDN cache applies. 503s get a short `s-maxage=10`. `readTally` times out around 1.5s.
+- **Preview Redis stays `lf:preview:tally:v1`.** Production is `lf:tally:v1`. Do not write prod Redis from a preview or this environment. No `vercel.json` crons.
+
 ## Dependabot grouped npm bumps (2026-10-07)
 
 - **A grouped `npm_and_yarn` PR can jump Tailwind majors via caret ranges.** #52 claimed `source-map-js` 1.2.1 → 1.2.2 (CVE-2026-93749) and removing `postcss-selector-parser`, but it also changed `tailwindcss` `^3.3.0` → `^4.3.3`. That breaks the Vercel/Turbopack build (`tailwindcss used directly as PostCSS plugin`). `portfolio-site/` is the Vercel `rootDirectory` — do not merge a Tailwind v4 jump.

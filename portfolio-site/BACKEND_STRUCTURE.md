@@ -1,6 +1,6 @@
 # Backend Structure — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-10-06
+**Last Updated:** 2026-10-07
 **Database:** Supabase (PostgreSQL)
 **Edge Functions Runtime:** Deno
 **API Layer:** Next.js Route Handlers (proxy pattern)
@@ -376,6 +376,16 @@ Proxies to GitHub public events API. Returns aggregated activity stats for keega
 
 ---
 
+### GET /api/tally
+
+Public running totals for the house footer tally (`components/house/RequestTally.tsx`).
+
+- **Counting:** `proxy.ts` records one hit per page request (GET, not `/api/*`, not `/_next/*`, not `/.well-known/*`, not prefetch or RSC data fetches), classified by User-Agent in `lib/tally.ts`, and writes it with `event.waitUntil` so the page is never delayed. `recordHit` pipelines `HINCRBY` + `SETNX` into one Upstash round trip and never throws (Redis client construction sits inside the try). Bots that never run JavaScript are counted too; they are not blocked or slowed. Edge Redis config comes from `lib/redis-env.ts`, not `discogs-store.ts`.
+- **Storage:** the existing Upstash Redis store (`KV_REST_API_URL` / `KV_REST_API_TOKEN`). Same production check as Discogs: `VERCEL_ENV=production` *and* git ref `main` (`isProductionRedisNamespace`). Hash `lf:tally:v1` (that production namespace) or `lf:preview:tally:v1` (everything else, including `vercel --prod` from another branch), one field per category; `lf:tally:v1:since` / `lf:preview:tally:v1:since` holds the first hit's ISO time. Visitor writes are only `*:tally:v1` / `*:tally:v1:since`. Deploys do not reset it. Preview never writes production keys.
+- **Response 200:** `{ since: string | null, presumedHuman: number, automated: number, byCategory: Record<category, number> }`, `Cache-Control: public, s-maxage=60, stale-while-revalidate=300`. The footer fetch does not send `cache: 'no-store'`, so the CDN cache applies.
+- **Response 503:** `{ error: "tally unavailable" }` when Redis is not configured, unreachable, or `readTally` exceeds ~1.5s. `Cache-Control: public, s-maxage=10, stale-while-revalidate=30`. The footer keeps the collapsed-row height reserved (no CLS); content stays hidden until a 200 snapshot arrives.
+- **Limits:** identity is self declared (User-Agent only). Nothing is network or cryptographically verified yet.
+
 ### POST /api/jd-analyzer
 
 Proxies to Supabase `jd-analyzer` Edge Function.
@@ -486,9 +496,9 @@ Both deployed via `supabase functions deploy <name>`. Source in `supabase/functi
 | `NEXT_PUBLIC_SUPABASE_URL` | Public (client + server) | Yes | `/api/chat`, `/api/jd-analyzer`, `lib/supabase.ts` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public (client + server) | Yes | `/api/chat`, `/api/jd-analyzer`, `lib/supabase.ts` |
 | `NEXT_PUBLIC_POSTHOG_KEY` | Public (client + server) | No | `providers.tsx`, `lib/posthog-server.ts` |
-| `NEXT_PUBLIC_POSTHOG_HOST` | Public (client only) | No | Browser ingest host (`lib/posthog-client.ts`). Defaults to `https://us.i.posthog.com`; set to `https://flow.lecturesfrom.com` once the managed proxy is live. Server analytics (`lib/posthog-server.ts`) always send to `https://us.i.posthog.com`. |
+| `NEXT_PUBLIC_POSTHOG_HOST` | Public (client only) | No | Browser ingest host (`lib/posthog-client.ts`). Defaults to `https://us.i.posthog.com`; production uses the managed proxy `https://flow.lecturesfrom.com`. Server analytics (`lib/posthog-server.ts`) always send to `https://us.i.posthog.com`. |
 | `DISCOGS_TOKEN` | Server-only | No | `/api/discogs/collection` (sent when present; public collection works without it) |
-| `KV_REST_API_URL` | Server-only | No | Durable Discogs snapshot (Vercel Marketplace Upstash for Redis). Preferred over UPSTASH_*. |
+| `KV_REST_API_URL` | Server-only | No | Durable Discogs snapshot and the footer request tally (`lib/tally-store.ts`, `/api/tally`). Vercel Marketplace Upstash for Redis. Preferred over UPSTASH_*. |
 | `KV_REST_API_TOKEN` | Server-only | No | Pair with `KV_REST_API_URL`. Read-write token; do not use `KV_REST_API_READ_ONLY_TOKEN`. |
 | `UPSTASH_REDIS_REST_URL` | Server-only | No | Fallback if KV_* pair is missing. |
 | `UPSTASH_REDIS_REST_TOKEN` | Server-only | No | Fallback if KV_* pair is missing. |

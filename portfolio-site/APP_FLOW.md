@@ -1,6 +1,6 @@
 # App Flow — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-10-06
+**Last Updated:** 2026-10-07
 **Framework:** Next.js (App Router)
 **Deployment:** Vercel (auto-deploy on push to main)
 
@@ -48,6 +48,7 @@
 | `/api/cron/crate-inspect` | GET | `app/api/cron/crate-inspect/route.ts` | Read-only queue / dead / unresolved / backfill snapshot. Same auth. |
 | `/api/github` | GET | `app/api/github/route.ts` | Proxy to GitHub public events API |
 | `/api/jd-analyzer` | POST | `app/api/jd-analyzer/route.ts` | Proxy to Supabase `jd-analyzer` Edge Function |
+| `/api/tally` | GET | `app/api/tally/route.ts` | Running totals for the house footer tally (Upstash Redis, `s-maxage=60`; 503s `s-maxage=10`). Hits are recorded in `proxy.ts` via one Redis pipeline in `waitUntil`. |
 
 ---
 
@@ -415,6 +416,27 @@ All interactions ──→ PostHog (client + server events)
 **Error / abort state:** One idempotent `teardown()` (Copilot review comment 4111027402). It stops snow, cancels every timeout and rAF, reverts `document.documentElement` transform/classes, and removes the overlay. Called from completion, hard-cap fallback (`setTimeout(1500 + fade + 80)`), slow-destination hold, popstate, pagehide, `visibilitychange` hidden, thrown errors, and a second click (swallowed so no second loop). The triggering Link's React unmount is **not** a teardown path — that unmount is the route swap. Hidden-tab abort does not navigate if `router.push` has not already run.
 
 **PostHog events:** `signal_cut_started` (`direction`, `href`)
+
+---
+
+### 10. Footer request tally
+
+**Trigger:** House footer on `/`, `/catalog`, `/collection`, `/legal`. `proxy.ts` records the page request; the row reads `GET /api/tally`.
+
+**Steps:**
+
+1. The collapsed row is in the layout from first paint (`min-h-11` under the footer hairline) so loading and errors do not shift layout. Until a 200 snapshot arrives the controls stay `invisible` + `inert`.
+2. Humans / not humans is a two-button switch (`aria-pressed`; visible label is the accessible name). The LCD chip is visual only (`aria-hidden`); a polite live region announces the count.
+3. **breakdown** / **close** is a disclosure (`aria-expanded`, `aria-controls`). The chip is not part of that button's name.
+4. The breakdown opens inline below the row (never an overlay). Category rows select on click / Enter / Space only — hover and focus do not re-select. Color transitions are instant under `prefers-reduced-motion` (`motion-reduce:transition-none motion-reduce:duration-0`). Focus-visible is a 2px solid ink outline (`outline-offset: 2px`); orange is hover only.
+
+**Success state:** Count for the selected mode, since date, percent of traffic. Breakdown lists categories (bar track `--house-line`, fill `--house-ink` / `--house-dim`) and the method note.
+
+**Error state:** `/api/tally` 503 (short CDN cache) or network failure. Reserved height stays; content stays hidden. No spinner.
+
+**Empty state:** Redis zeros. Row still renders the count `0`.
+
+**PostHog events:** `tally_mode_changed`, `tally_breakdown_toggled`, `tally_category_selected`
 
 ---
 
