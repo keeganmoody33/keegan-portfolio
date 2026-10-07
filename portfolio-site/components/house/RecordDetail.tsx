@@ -357,7 +357,7 @@ export default function RecordDetail({
                         <p className="house-meta">{row.label}</p>
                         <a
                           href={row.href}
-                          className={`mt-1 inline-block text-sm hover:text-[var(--house-orange)] ${focusRing}`}
+                          className={`mt-1 inline-flex min-h-6 items-center text-sm hover:text-[var(--house-orange)] ${focusRing}`}
                           rel="noopener noreferrer"
                           target="_blank"
                         >

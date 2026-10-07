@@ -1,4 +1,5 @@
 import {
+  DISCOGS_RATE_LIMIT_MESSAGE,
   DiscogsRateLimitError,
   isDiscogsAuthError,
   isDiscogsRateLimitError,
@@ -1412,7 +1413,10 @@ export function classifyQueueOutcome(pressing: StoredPressing): 'completed' | 'f
 
 export function shouldStopWalkOnRateLimit(pressing: StoredPressing): boolean {
   const err = pressing.provenance.lastError
-  return err?.kind === 'rate_limit' && err.message === MUSICBRAINZ_RATE_LIMIT_MESSAGE
+  if (err?.kind !== 'rate_limit') return false
+  return (
+    err.message === MUSICBRAINZ_RATE_LIMIT_MESSAGE || err.message === DISCOGS_RATE_LIMIT_MESSAGE
+  )
 }
 
 export function isBackfillSettled(pressing: StoredPressing): boolean {
@@ -1447,12 +1451,13 @@ export async function processEnrichmentQueue(
   deps: EnrichDeps,
   limit?: number
 ): Promise<EnrichQueueResult> {
-  const token = deps.lockToken ?? randomLockToken()
+  const token = deps.lockToken ?? (await deps.store.getEnrichLockToken()) ?? randomLockToken()
   const lockTtl = deps.lockTtlSeconds ?? ENRICH_LOCK_SECONDS
   const locked = await deps.store.acquireEnrichLock(lockTtl, token)
   if (!locked) {
     return emptyQueueResult(true)
   }
+  await deps.store.setEnrichLockToken(token)
 
   const now = deps.now ?? Date.now
   const started = now()
@@ -1559,7 +1564,7 @@ export async function processEnrichmentQueue(
           )
           break
         }
-        if (isMusicBrainzRateLimitError(error)) {
+        if (isMusicBrainzRateLimitError(error) || isDiscogsRateLimitError(error)) {
           stoppedOnRateLimit = true
           break
         }

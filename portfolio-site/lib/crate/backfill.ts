@@ -300,7 +300,7 @@ export async function runBackfill(
     return snapshotCounts(emptyExtra, 0, 0)
   }
 
-  const token = deps.lockToken ?? randomLockToken()
+  const token = deps.lockToken ?? (await store.getEnrichLockToken()) ?? randomLockToken()
   const lockTtl = deps.lockTtlSeconds ?? ENRICH_LOCK_SECONDS
   const locked = await store.acquireEnrichLock(lockTtl, token)
   if (!locked) {
@@ -331,6 +331,7 @@ export async function runBackfill(
       unresolvedThis: 0,
     }
   }
+  await store.setEnrichLockToken(token)
 
   const takeFloorMs = deps.takeFloorMs ?? ENRICH_TAKE_FLOOR_MS
   const deadlineMs = deps.deadlineMs ?? started + (deps.budgetMs ?? ENRICH_BUDGET_MS)

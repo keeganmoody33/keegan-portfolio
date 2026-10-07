@@ -17,7 +17,7 @@
  * Missing secret → 404. Visitor traffic never writes Redis.
  */
 import { parseIdList, runBackfill } from '../lib/crate/backfill.ts'
-import { getDefaultCrateStore } from '../lib/crate/store.ts'
+import { getDefaultCrateStore, randomLockToken } from '../lib/crate/store.ts'
 import { readCachedCollection } from '../lib/discogs.ts'
 
 function parseArgs(argv: string[]): { retry: boolean; ids: number[]; limit?: number } {
@@ -55,8 +55,9 @@ if (!collection) {
 }
 
 const { retry, ids, limit } = parseArgs(process.argv.slice(2))
+const lockToken = (await store.getEnrichLockToken()) ?? randomLockToken()
 const result = await runBackfill(
-  { store, collection, forceRefresh: Boolean(retry) },
+  { store, collection, forceRefresh: Boolean(retry), lockToken },
   { retry, ids: ids.length > 0 ? ids : undefined, limit }
 )
 console.log(JSON.stringify(result, null, 2))

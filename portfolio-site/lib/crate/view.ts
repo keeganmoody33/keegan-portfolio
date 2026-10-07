@@ -8,7 +8,14 @@ import {
   type StoredRecording,
   type TrackOccurrence,
 } from './types.ts'
-import { creditLine, creditsFromFacts, factsForTrack, sampledByFacts, samplesFromFacts } from './research.ts'
+import {
+  creditLine,
+  creditsFromFacts,
+  factsForTrack,
+  isRecordingOrReleaseSampleLink,
+  sampledByFacts,
+  samplesFromFacts,
+} from './research.ts'
 
 export { creditLine }
 
@@ -64,7 +71,7 @@ export function overviewConnections(pressing: StoredPressing, limit = 3): Connec
   }
 
   for (const fact of facts) {
-    if (fact.kind === 'sample_of') {
+    if (fact.kind === 'sample_of' && isRecordingOrReleaseSampleLink(fact)) {
       add({
         label: `${fact.track?.title ?? pressing.facts.title} samples`,
         title: fact.relatedArtist
@@ -73,7 +80,7 @@ export function overviewConnections(pressing: StoredPressing, limit = 3): Connec
         href: fact.sourceUrl,
         source: fact.source,
       })
-    } else if (fact.kind === 'sampled_by') {
+    } else if (fact.kind === 'sampled_by' && isRecordingOrReleaseSampleLink(fact)) {
       add({
         label: `${fact.track?.title ?? pressing.facts.title} sampled in`,
         title: fact.relatedArtist
@@ -93,6 +100,7 @@ export function overviewConnections(pressing: StoredPressing, limit = 3): Connec
     const recording = pressing.recordings[mbid]
     if (!recording) continue
     for (const sample of recording.samplesFrom) {
+      if (!isRecordingOrReleaseSampleLink(sample)) continue
       add({
         label: `${track.title} samples`,
         title: sample.artist ? `${sample.artist} — ${sample.title}` : sample.title,
@@ -101,6 +109,7 @@ export function overviewConnections(pressing: StoredPressing, limit = 3): Connec
       })
     }
     for (const sample of recording.sampledIn) {
+      if (!isRecordingOrReleaseSampleLink(sample)) continue
       add({
         label: `${track.title} sampled in`,
         title: sample.artist ? `${sample.artist} — ${sample.title}` : sample.title,

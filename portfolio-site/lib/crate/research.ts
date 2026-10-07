@@ -112,6 +112,12 @@ export function mergeResearchFacts(...groups: ResearchFact[][]): ResearchFact[] 
     ) {
       continue
     }
+    if (
+      (fact.kind === 'sample_of' || fact.kind === 'sampled_by') &&
+      !isRecordingOrReleaseSampleLink(fact)
+    ) {
+      continue
+    }
     if (fact.kind === 'credit') {
       const identity = creditIdentityKey(fact)
       const tracks = creditTracks.get(identity) ?? new Set<string>()
@@ -208,9 +214,11 @@ export function factsFromRecordings(
         facts.push(creditFact(credit, track, fetchedAt))
       }
       for (const sample of recording.samplesFrom) {
+        if (!isRecordingOrReleaseSampleLink(sample)) continue
         facts.push(sampleFact('sample_of', sample, track, fetchedAt))
       }
       for (const sample of recording.sampledIn) {
+        if (!isRecordingOrReleaseSampleLink(sample)) continue
         facts.push(sampleFact('sampled_by', sample, track, fetchedAt))
       }
     }
@@ -372,10 +380,19 @@ export function creditsFromFacts(facts: ResearchFact[]): ResearchFact[] {
   return facts.filter((fact) => fact.kind === 'credit')
 }
 
+export function isRecordingOrReleaseSampleLink(sample: { sourceUrl: string }): boolean {
+  if (/\/work\//.test(sample.sourceUrl)) return false
+  return /\/recording\//.test(sample.sourceUrl) || /\/release\//.test(sample.sourceUrl)
+}
+
 export function samplesFromFacts(facts: ResearchFact[]): ResearchFact[] {
-  return facts.filter((fact) => fact.kind === 'sample_of')
+  return facts.filter(
+    (fact) => fact.kind === 'sample_of' && isRecordingOrReleaseSampleLink(fact)
+  )
 }
 
 export function sampledByFacts(facts: ResearchFact[]): ResearchFact[] {
-  return facts.filter((fact) => fact.kind === 'sampled_by')
+  return facts.filter(
+    (fact) => fact.kind === 'sampled_by' && isRecordingOrReleaseSampleLink(fact)
+  )
 }

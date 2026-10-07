@@ -22,29 +22,33 @@ import {
   stripFeaturingCredits,
 } from './match.ts'
 import { AUTH_RETRY_MS, isoFromMs, keepPriorMatch, nextBackoffMs, preservePressingOnFailure, shouldRefreshPressing, withClearedDeadlineStops } from './preserve.ts'
-import { createMemoryCrateStore, crateRedisKeys, DRAFT_TTL_SECONDS, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA, type CrateStore } from './store.ts'
+import { createMemoryCrateStore, crateRedisKeys, DRAFT_TTL_SECONDS, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA, RELEASE_LOCK_LUA, REFRESH_LOCK_LUA, type CrateStore } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
-import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, WorkerDeadlineError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, TRACK_LEVEL_FETCH_CAP, TRACK_LEVEL_REASON, overlayTrackLevelProgress, applyDeadlineStop, persistTrackLevelDocs } from './enrich.ts'
+import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, WorkerDeadlineError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, ENRICH_LOCK_SECONDS, TRACK_LEVEL_FETCH_CAP, TRACK_LEVEL_REASON, overlayTrackLevelProgress, applyDeadlineStop, persistTrackLevelDocs, shouldStopWalkOnRateLimit } from './enrich.ts'
 import { isUnusableDiscogsNotes, resolveDescription, withReadableDescription } from './description.ts'
 import { COLLECTION_KEEP_PATH, scheduleKeepPing } from './keep-ping.ts'
 import { runCrateEnrichCron } from './keep.ts'
 import { crateProofAllowed, parseProofAction, PROOF_KILL_ID, runCrateProof } from './proof.ts'
 import {
+  MB_SAMPLES_MATERIAL_RECORDING_TYPE_ID,
+  MB_SAMPLES_MATERIAL_RELEASE_TYPE_ID,
+  MUSICBRAINZ_RETRY_AFTER_CAP_MS,
   MusicBrainzRateLimitError,
   MusicBrainzTimeoutError,
   createMusicBrainzClient,
+  musicbrainzRetryAfterMs,
   readRetryAfterMs,
   type MusicBrainzClient,
 } from './musicbrainz.ts'
 import { CRATE_MAX_ATTEMPTS, CRATE_SCHEMA_VERSION, type ResearchFact, type SampleLink, type StoredPressing, type StoredRecording, type TrackOccurrence } from './types.ts'
-import { mapRelease, parseDurableCollection, DiscogsAuthError, DiscogsNotFoundError, createMemoryLastGoodStore } from '../discogs.ts'
+import { mapRelease, parseDurableCollection, DiscogsAuthError, DiscogsNotFoundError, DiscogsRateLimitError, DISCOGS_RATE_LIMIT_MESSAGE, createMemoryLastGoodStore } from '../discogs.ts'
 import { createMemoryDurableStore } from '../discogs-store.ts'
 import { fixturePressing, parseReleaseParam, readStoredPressing, unavailableHeading, unavailablePressing } from './read.ts'
 import { factRows, overviewConnections, pressingCheckedNoMatchLine } from './view.ts'
 import { cronSecretEqual } from './cron-auth.ts'
 import { coverageOf, hydratePressing, isPlayableOccurrence, shouldQueuePressing } from './lifecycle.ts'
-import { errorForDiscogsStatus, mapDiscogsReleaseDetail, probeDiscogsIdentity } from './discogs-release.ts'
-import { creditLine, factsFromRecordings, mergeResearchFacts, normalizeCreditRole, researchFactsFromDiscogs } from './research.ts'
+import { DISCOGS_RELEASE_TIMEOUT_MS, errorForDiscogsStatus, fetchDiscogsReleaseDetail, mapDiscogsReleaseDetail, probeDiscogsIdentity } from './discogs-release.ts'
+import { creditLine, factsFromRecordings, isRecordingOrReleaseSampleLink, mergeResearchFacts, normalizeCreditRole, researchFactsFromDiscogs } from './research.ts'
 import {
   createWikidataClient,
   getSharedWikidataClient,
@@ -849,6 +853,78 @@ describe('enrich lock token (P1.4)', () => {
     assert.equal(await store.acquireEnrichLock(60, 'other'), false)
     nowMs = 90_001
     assert.equal(await store.acquireEnrichLock(60, 'other'), true)
+  })
+
+  it('uses Lua compare-and-delete and compare-and-extend with no GET fallback', () => {
+    const src = readFileSync(fileURLToPath(new URL('./store.ts', import.meta.url)), 'utf8')
+    const acquire = src.slice(src.indexOf('async acquireEnrichLock'), src.indexOf('async releaseEnrichLock'))
+    const release = src.slice(src.indexOf('async releaseEnrichLock'), src.indexOf('async getEnrichLockToken'))
+    assert.match(acquire, /REFRESH_LOCK_LUA/)
+    assert.match(acquire, /nx:\s*true/)
+    assert.doesNotMatch(acquire, /writeRedis\.get/)
+    assert.match(release, /RELEASE_LOCK_LUA/)
+    assert.doesNotMatch(release, /writeRedis\.get/)
+    assert.doesNotMatch(release, /writeRedis\.del/)
+    assert.match(RELEASE_LOCK_LUA, /redis\.call\('GET'/)
+    assert.match(RELEASE_LOCK_LUA, /redis\.call\('DEL'/)
+    assert.match(REFRESH_LOCK_LUA, /redis\.call\('GET'/)
+    assert.match(REFRESH_LOCK_LUA, /'EX'/)
+    const cli = readFileSync(fileURLToPath(new URL('../../scripts/crate-backfill.ts', import.meta.url)), 'utf8')
+    assert.match(cli, /lockToken/)
+    assert.match(cli, /getEnrichLockToken/)
+    assert.ok(DISCOGS_RELEASE_TIMEOUT_MS < ENRICH_LOCK_SECONDS * 1000)
+  })
+
+  it('passes a persisted lock token on CLI re-entry', async () => {
+    const store = createMemoryCrateStore()
+    await store.setEnrichLockToken('cli-token')
+    assert.equal(await store.acquireEnrichLock(60, 'cli-token'), true)
+    const skipped = await processEnrichmentQueue(
+      {
+        store,
+        now: () => 1_000,
+        lockToken: 'other',
+        takeFloorMs: 0,
+        fetchDiscogs: async () => bootsyDetail(),
+        mb: createMusicBrainzClientForTests(),
+      },
+      1
+    )
+    assert.equal(skipped.skipped, true)
+    const reused = await processEnrichmentQueue(
+      {
+        store,
+        now: () => 1_000,
+        lockToken: (await store.getEnrichLockToken()) ?? 'missing',
+        takeFloorMs: 0,
+        budgetMs: 45_000,
+        fetchDiscogs: async () => bootsyDetail(),
+        mb: createMusicBrainzClientForTests(),
+      },
+      1
+    )
+    assert.equal(reused.skipped, false)
+  })
+
+  it('aborts a hanging Discogs release fetch well under the lock TTL', async () => {
+    await assert.rejects(
+      () =>
+        fetchDiscogsReleaseDetail(573292, {
+          timeoutMs: 20,
+          fetchImpl: async (_url, init) =>
+            new Promise((_, reject) => {
+              init?.signal?.addEventListener('abort', () => {
+                const error = new Error('aborted')
+                error.name = 'AbortError'
+                reject(error)
+              })
+            }),
+        }),
+      (error: unknown) => {
+        assert.equal((error as { name?: string }).name, 'DiscogsUnavailableError')
+        return true
+      }
+    )
   })
 
   it('stops taking items when the time budget is short', async () => {
@@ -2554,6 +2630,32 @@ describe('resumable backfill checkpoints', () => {
     assert.equal(result.stoppedOnRateLimit, false)
     assert.deepEqual(fetches, [573292, 240128])
     assert.equal(result.processed.length, 2)
+  })
+
+  it('stops the walk on a Discogs 429 like a MusicBrainz 429', async () => {
+    const fetches: number[] = []
+    const result = await runBackfill(
+      {
+        store: createMemoryCrateStore(),
+        collection: collectionOf([BOOTSY_ROW, GOODIE_ROW]),
+        now: () => Date.parse('2026-10-06T08:00:00.000Z'),
+        takeFloorMs: 0,
+        budgetMs: 45_000,
+        fetchDiscogs: async (releaseId) => {
+          fetches.push(releaseId)
+          throw new DiscogsRateLimitError(30)
+        },
+        mb: createMusicBrainzClientForTests(),
+      },
+      { limit: 2 }
+    )
+    assert.equal(result.stoppedOnRateLimit, true)
+    assert.deepEqual(fetches, [573292])
+    assert.deepEqual(result.processed, [573292])
+    const cooling = preservePressingOnFailure(null, Date.parse('2026-10-06T08:00:00.000Z'), 'rate_limit', DISCOGS_RATE_LIMIT_MESSAGE, {
+      releaseId: 573292,
+    })
+    assert.equal(shouldStopWalkOnRateLimit(cooling), true)
   })
 
   it('uses a settled-id set so added and removed ids are neither skipped nor double-run', async () => {
@@ -4527,6 +4629,26 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     assert.equal(readRetryAfterMs(seconds, 60_000, nowMs), 12_000)
   })
 
+  it('caps MusicBrainz Retry-After at 120s', async () => {
+    assert.equal(MUSICBRAINZ_RETRY_AFTER_CAP_MS, 120_000)
+    const hour = new Response('', { headers: { 'Retry-After': '3600' } })
+    assert.equal(musicbrainzRetryAfterMs(hour), 120_000)
+    const short = new Response('', { headers: { 'Retry-After': '12' } })
+    assert.equal(musicbrainzRetryAfterMs(short), 12_000)
+    const client = createMusicBrainzClient({
+      minIntervalMs: 0,
+      fetchImpl: async () => new Response('', { status: 429, headers: { 'Retry-After': '3600' } }),
+    })
+    await assert.rejects(
+      () => client.getRecording('rec-1'),
+      (error: unknown) => {
+        assert.equal(error instanceof MusicBrainzRateLimitError, true)
+        assert.equal((error as MusicBrainzRateLimitError).retryAfterMs, 120_000)
+        return true
+      }
+    )
+  })
+
   it('persists merged sample links after attach, not before', async () => {
     const linkFromA: SampleLink = {
       title: 'Source A',
@@ -4639,9 +4761,11 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
   })
 
   it('does not treat based-on work rels as samples', async () => {
+    const urls: string[] = []
     const client = createMusicBrainzClient({
       minIntervalMs: 0,
       fetchImpl: async (url) => {
+        urls.push(String(url))
         if (String(url).includes('/recording/')) {
           return Response.json({
             id: 'rec-1',
@@ -4676,6 +4800,7 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
             },
             {
               type: 'samples material',
+              'type-id': MB_SAMPLES_MATERIAL_RECORDING_TYPE_ID,
               direction: 'backward',
               recording: {
                 id: 'sampled',
@@ -4688,9 +4813,301 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
       },
     })
     const doc = await client.getRecording('rec-1')
+    assert.equal(urls.some((url) => url.includes('/work/')), false)
+    assert.equal(doc?.samplesFrom.length, 0)
+    assert.equal(doc?.sampledIn.length, 0)
+  })
+
+  it('produces zero sample facts from work rels and never stores a /work/ sourceUrl', async () => {
+    const urls: string[] = []
+    const client = createMusicBrainzClient({
+      minIntervalMs: 0,
+      fetchImpl: async (url) => {
+        urls.push(String(url))
+        return Response.json({
+          id: 'bridge',
+          title: 'Bridge Over Troubled Water',
+          'artist-credit': [{ name: 'Simon & Garfunkel' }],
+          relations: [
+            {
+              'target-type': 'work',
+              type: 'performance',
+              work: { id: 'work-bridge', title: 'Bridge Over Troubled Water' },
+            },
+            {
+              'target-type': 'work',
+              type: 'based on',
+              direction: 'backward',
+              work: { id: 'work-mashup', title: 'A Bridge Over You' },
+            },
+            {
+              'target-type': 'work',
+              type: 'samples material',
+              direction: 'forward',
+              work: { id: 'work-other', title: 'Should Not Appear' },
+            },
+          ],
+        })
+      },
+    })
+    const doc = await client.getRecording('bridge')
+    assert.equal(urls.some((url) => url.includes('/work/')), false)
+    assert.equal(doc?.samplesFrom.length, 0)
+    assert.equal(doc?.sampledIn.length, 0)
+    const stored = [...(doc?.samplesFrom ?? []), ...(doc?.sampledIn ?? [])]
+    assert.equal(stored.some((link) => link.sourceUrl.includes('/work/')), false)
+  })
+
+  it('does not treat Bridge Over Troubled Water as sampling A Bridge Over You', async () => {
+    const client = createMusicBrainzClient({
+      minIntervalMs: 0,
+      fetchImpl: async () =>
+        Response.json({
+          id: 'botw',
+          title: 'Bridge Over Troubled Water',
+          'artist-credit': [{ name: 'Simon & Garfunkel' }],
+          relations: [
+            {
+              'target-type': 'work',
+              type: 'performance',
+              work: { id: 'work-botw', title: 'Bridge Over Troubled Water' },
+            },
+            {
+              'target-type': 'work',
+              type: 'based on',
+              direction: 'backward',
+              work: { id: 'work-mashup', title: 'A Bridge Over You' },
+            },
+          ],
+        }),
+    })
+    const doc = await client.getRecording('botw')
+    assert.equal(
+      [...(doc?.samplesFrom ?? []), ...(doc?.sampledIn ?? [])].some((link) =>
+        /bridge over you/i.test(link.title)
+      ),
+      false
+    )
+  })
+
+  it('does not treat Village Ghetto Land / Ghetto Village work rels as samples', async () => {
+    const client = createMusicBrainzClient({
+      minIntervalMs: 0,
+      fetchImpl: async () =>
+        Response.json({
+          id: 'vgl',
+          title: 'Village Ghetto Land',
+          'artist-credit': [{ name: 'Stevie Wonder' }],
+          relations: [
+            {
+              'target-type': 'work',
+              type: 'performance',
+              work: { id: 'work-vgl', title: 'Village Ghetto Land' },
+            },
+            {
+              'target-type': 'work',
+              type: 'other version',
+              direction: 'backward',
+              work: { id: 'work-gv', title: 'Ghetto Village' },
+            },
+          ],
+        }),
+    })
+    const doc = await client.getRecording('vgl')
+    assert.equal(doc?.samplesFrom.length, 0)
+    assert.equal(doc?.sampledIn.length, 0)
+  })
+
+  it('maps samples material forward to sample_of and backward to sampled_by', async () => {
+    const client = createMusicBrainzClient({
+      minIntervalMs: 0,
+      fetchImpl: async () =>
+        Response.json({
+          id: 'rec-1',
+          title: 'Song',
+          'artist-credit': [{ name: 'Artist' }],
+          relations: [
+            {
+              'target-type': 'recording',
+              type: 'samples material',
+              'type-id': MB_SAMPLES_MATERIAL_RECORDING_TYPE_ID,
+              direction: 'forward',
+              recording: {
+                id: 'source',
+                title: 'Source',
+                'artist-credit': [{ name: 'Original' }],
+              },
+            },
+            {
+              'target-type': 'recording',
+              type: 'samples material',
+              'type-id': MB_SAMPLES_MATERIAL_RECORDING_TYPE_ID,
+              direction: 'backward',
+              recording: {
+                id: 'later',
+                title: 'Later',
+                'artist-credit': [{ name: 'Rapper' }],
+              },
+            },
+          ],
+        }),
+    })
+    const doc = await client.getRecording('rec-1')
+    assert.equal(doc?.samplesFrom.length, 1)
+    assert.equal(doc?.samplesFrom[0]?.title, 'Source')
+    assert.equal(doc?.samplesFrom[0]?.sourceUrl, 'https://musicbrainz.org/recording/source')
+    assert.equal(doc?.sampledIn.length, 1)
+    assert.equal(doc?.sampledIn[0]?.title, 'Later')
+    assert.equal(doc?.sampledIn[0]?.sourceUrl, 'https://musicbrainz.org/recording/later')
+  })
+
+  it('does not invert a bare sampled-by label', async () => {
+    const client = createMusicBrainzClient({
+      minIntervalMs: 0,
+      fetchImpl: async () =>
+        Response.json({
+          id: 'rec-1',
+          title: 'Song',
+          'artist-credit': [{ name: 'Artist' }],
+          relations: [
+            {
+              'target-type': 'recording',
+              type: 'sampled by',
+              direction: 'backward',
+              recording: {
+                id: 'sampled',
+                title: 'Sampled',
+                'artist-credit': [{ name: 'Rapper' }],
+              },
+            },
+            {
+              'target-type': 'recording',
+              type: 'sampled by',
+              'type-id': MB_SAMPLES_MATERIAL_RECORDING_TYPE_ID,
+              direction: 'forward',
+              recording: {
+                id: 'source',
+                title: 'Source',
+                'artist-credit': [{ name: 'Original' }],
+              },
+            },
+          ],
+        }),
+    })
+    const doc = await client.getRecording('rec-1')
+    assert.equal(doc?.sampledIn.length, 0)
+    assert.equal(doc?.samplesFrom.length, 1)
+    assert.equal(doc?.samplesFrom[0]?.title, 'Source')
+  })
+
+  it('accepts a getRecording samples-material backward recording target', async () => {
+    const client = createMusicBrainzClient({
+      minIntervalMs: 0,
+      fetchImpl: async () =>
+        Response.json({
+          id: '1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc',
+          title: 'Juicy Fruit',
+          'artist-credit': [{ name: 'Mtume' }],
+          relations: [
+            {
+              'target-type': 'recording',
+              type: 'samples material',
+              'type-id': MB_SAMPLES_MATERIAL_RECORDING_TYPE_ID,
+              direction: 'backward',
+              recording: {
+                id: '181c0a32-6e3f-4680-8a7d-1daf0b42e43b',
+                title: 'Juicy',
+                'artist-credit': [{ name: 'The Notorious B.I.G.' }],
+              },
+            },
+          ],
+        }),
+    })
+    const doc = await client.getRecording('1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc')
     assert.equal(doc?.samplesFrom.length, 0)
     assert.equal(doc?.sampledIn.length, 1)
-    assert.equal(doc?.sampledIn[0]?.title, 'Sampled')
+    assert.equal(doc?.sampledIn[0]?.title, 'Juicy')
+    assert.equal(doc?.sampledIn[0]?.artist, 'The Notorious B.I.G.')
+    assert.equal(
+      doc?.sampledIn[0]?.sourceUrl,
+      'https://musicbrainz.org/recording/181c0a32-6e3f-4680-8a7d-1daf0b42e43b'
+    )
+  })
+
+  it('keeps recording-to-release samples material from release-rels', async () => {
+    const client = createMusicBrainzClient({
+      minIntervalMs: 0,
+      fetchImpl: async () =>
+        Response.json({
+          id: 'rec-1',
+          title: 'Song',
+          'artist-credit': [{ name: 'Artist' }],
+          relations: [
+            {
+              'target-type': 'release',
+              type: 'samples material',
+              'type-id': MB_SAMPLES_MATERIAL_RELEASE_TYPE_ID,
+              direction: 'forward',
+              release: { id: 'rel-1', title: 'Sampled Album' },
+            },
+          ],
+        }),
+    })
+    const doc = await client.getRecording('rec-1')
+    assert.equal(doc?.samplesFrom[0]?.title, 'Sampled Album')
+    assert.equal(doc?.samplesFrom[0]?.sourceUrl, 'https://musicbrainz.org/release/rel-1')
+    assert.equal(doc?.sampledIn.length, 0)
+  })
+
+  it('drops stored work-target sample links at read time', () => {
+    const mbid = '08b1c4e3-b0eb-4dd2-b870-740d6eebe627'
+    const pressing = hydratePressing(
+      pressingStub({
+        recordings: {
+          [mbid]: {
+            mbid,
+            title: 'Song',
+            artist: 'Artist',
+            credits: [],
+            samplesFrom: [
+              {
+                title: 'A Bridge Over You',
+                artist: '',
+                mbid: 'work-mashup',
+                sourceUrl: 'https://musicbrainz.org/work/work-mashup',
+                source: 'musicbrainz',
+                providerId: 'work-mashup',
+              },
+              {
+                title: 'Source',
+                artist: 'Original',
+                mbid: 'source',
+                sourceUrl: 'https://musicbrainz.org/recording/source',
+                source: 'musicbrainz',
+                providerId: 'source',
+              },
+            ],
+            sampledIn: [],
+            provenance: {
+              sourceUrls: [],
+              matchStatus: 'matched',
+              confidence: 0.9,
+              reason: TRACK_LEVEL_REASON,
+              checkedAt: '2026-10-06T00:00:00.000Z',
+              refreshAfter: '2026-11-05T00:00:00.000Z',
+              lastError: null,
+              verifiedAt: '2026-10-06T00:00:00.000Z',
+              lastAttemptAt: '2026-10-06T00:00:00.000Z',
+            },
+          },
+        },
+      })
+    )
+    const facts = factsFromRecordings(pressing)
+    assert.equal(facts.some((fact) => fact.sourceUrl.includes('/work/')), false)
+    assert.equal(facts.filter((fact) => fact.kind === 'sample_of').length, 1)
+    assert.equal(facts.find((fact) => fact.kind === 'sample_of')?.relatedTitle, 'Source')
+    assert.equal(isRecordingOrReleaseSampleLink({ sourceUrl: 'https://musicbrainz.org/work/x' }), false)
   })
 
   it('fills a sample artist from the related recording when the relation omits artist-credit', async () => {
@@ -4705,7 +5122,8 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
             relations: [
               {
                 'target-type': 'recording',
-                type: 'sampled by',
+                type: 'samples material',
+                'type-id': MB_SAMPLES_MATERIAL_RECORDING_TYPE_ID,
                 direction: 'backward',
                 recording: { id: 'sampled', title: 'Sampled' },
               },
@@ -4727,11 +5145,11 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     assert.equal(doc?.sampledIn[0]?.title, 'Sampled')
   })
 
-  it('returns the base recording when work expansion 429s so the caller can persist it', async () => {
+  it('returns the base recording when a related-recording artist lookup 429s', async () => {
     const client = createMusicBrainzClient({
       minIntervalMs: 0,
       fetchImpl: async (url) => {
-        if (String(url).includes('/recording/')) {
+        if (String(url).includes('/recording/rec-1')) {
           return Response.json({
             id: 'rec-1',
             title: 'Song',
@@ -4739,15 +5157,14 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
             relations: [
               {
                 'target-type': 'recording',
-                type: 'sampled by',
+                type: 'samples material',
+                'type-id': MB_SAMPLES_MATERIAL_RECORDING_TYPE_ID,
                 direction: 'backward',
                 recording: {
                   id: 'sampled',
                   title: 'Sampled',
-                  'artist-credit': [{ name: 'Rapper' }],
                 },
               },
-              { 'target-type': 'work', type: 'performance', work: { id: 'work-1', title: 'Song' } },
             ],
           })
         }
@@ -4760,18 +5177,29 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
         assert.equal(error instanceof MusicBrainzRateLimitError, true)
         const partial = (error as MusicBrainzRateLimitError).partialRecording
         assert.equal(partial?.sampledIn[0]?.title, 'Sampled')
-        assert.equal(partial?.sampledIn[0]?.artist, 'Rapper')
         return true
       }
     )
   })
 
-  it('looks up MusicBrainz works with work-rels only so artist-credits does not 400', () => {
+  it('does not fetch MusicBrainz works from getRecording', () => {
     const src = readFileSync(fileURLToPath(new URL('./musicbrainz.ts', import.meta.url)), 'utf8')
     const start = src.indexOf('async getRecording')
     const body = src.slice(start, src.indexOf('export type MusicBrainzClient', start))
-    assert.match(body, /inc: 'work-rels'/)
-    assert.doesNotMatch(body, /work-rels\+artist-credits/)
+    assert.match(body, /recording-rels\+release-rels/)
+    assert.doesNotMatch(body, /\/work\//)
+    assert.doesNotMatch(body, /work-rels/)
+  })
+
+  it('gives overview connection titles a 24px hit target', () => {
+    const src = readFileSync(
+      fileURLToPath(new URL('../../components/house/RecordDetail.tsx', import.meta.url)),
+      'utf8'
+    )
+    const start = src.indexOf('aria-label="connections"')
+    const body = src.slice(start, src.indexOf('role="tabpanel"', start))
+    assert.match(body, /mt-1 inline-flex min-h-6 items-center/)
+    assert.doesNotMatch(body, /inline-block/)
   })
 
   it('records an ambiguous recording-level miss and merges no samples', async () => {

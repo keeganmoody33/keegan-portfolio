@@ -1,3 +1,9 @@
+COMPLETED (2026-10-07 — PR #54 samples graph + lock/429 + a11y):
+- Sample facts are MusicBrainz `samples material` on recordings/releases only (type-ids `9efd9ce9-…fe62` / `967746f9-…7fc`). `direction` maps forward → `sample_of`, backward → `sampled_by`. Work-to-work (`based on`, parody, etc.) is out of samples; `getRecording` no longer fetches `/work/` or `work-rels`. Read-time filter drops leftover `/work/` `sourceUrl`s. Cap MB Retry-After at 120s.
+- P2: Discogs 429 stops the walk like MB 429. Enrich lock is Lua compare-and-delete / compare-and-extend only (strip JSON quotes in Lua; no GET+DEL / GET+SET). CLI Discogs timeout 15s; CLI re-entry passes persisted `lockToken`.
+- A11y (WCAG 2.5.8): OVERVIEW connection titles `mt-1 inline-flex min-h-6 items-center`, matching FactSampleList.
+- Landed on `cursor/collection-research-trackmatch-7382` (#54), including `cursor/crate-research-cleanup-3033` at `652b21d`. Preview only (`lf:preview:`, `VERCEL_ENV=preview`). Never prod.
+
 COMPLETED (2026-10-07 — PR #54 cleanup pass, preview leftover ids):
 - `--retry` without `--ids` also picks stored pressings whose lastError is still retryable (pending provenance like 1323531), not only dead ∪ inspect.
 - Sample `relatedArtist` fills from the related MusicBrainz recording or work artist-credit when the relation omits it. Rows with no artist render title only. Preview crate blank-artist sample rows: **132 / 433 before**, **132 / 432 after** (stored facts on the rest of the crate were not rewritten; fill applies on new `getRecording` fetches).

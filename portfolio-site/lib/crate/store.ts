@@ -68,11 +68,26 @@ redis.call('DEL', KEYS[3])
 return 1
 `
 
-export const RELEASE_LOCK_LUA = `
-if redis.call('GET', KEYS[1]) == ARGV[1] then
-  return redis.call('DEL', KEYS[1])
+function lockTokenMatchesLua(): string {
+  return `
+local current = redis.call('GET', KEYS[1])
+if not current then return 0 end
+if string.sub(current, 1, 1) == '"' and string.sub(current, -1) == '"' then
+  current = string.sub(current, 2, -2)
 end
-return 0
+if current ~= ARGV[1] then return 0 end
+`
+}
+
+export const RELEASE_LOCK_LUA = `
+${lockTokenMatchesLua().trim()}
+return redis.call('DEL', KEYS[1])
+`
+
+export const REFRESH_LOCK_LUA = `
+${lockTokenMatchesLua().trim()}
+redis.call('SET', KEYS[1], ARGV[1], 'EX', ARGV[2])
+return 1
 `
 
 export type CrateRedisKeys = {
@@ -151,6 +166,8 @@ export type CrateStore = {
   setSeen(releaseIds: number[]): Promise<void>
   acquireEnrichLock(ttlSeconds: number, token: string): Promise<boolean>
   releaseEnrichLock(token: string): Promise<boolean>
+  getEnrichLockToken(): Promise<string | null>
+  setEnrichLockToken(token: string): Promise<void>
   acquireVisitThrottle(ttlSeconds: number): Promise<boolean>
   markDead(letter: DeadLetter): Promise<void>
   unmarkDead(releaseId: number): Promise<void>
@@ -375,35 +392,35 @@ class RedisCrateStore implements CrateStore {
   }
 
   async acquireEnrichLock(ttlSeconds: number, token: string): Promise<boolean> {
-    const current = await this.writeRedis.get<string>(this.keys.enrichLock)
-    if (current === token) {
-      const refreshed = await this.writeRedis.set(this.keys.enrichLock, token, {
-        ex: ttlSeconds,
-      })
-      return refreshed === 'OK'
-    }
-    const result = await this.writeRedis.set(this.keys.enrichLock, token, {
+    const created = await this.writeRedis.set(this.keys.enrichLock, token, {
       nx: true,
       ex: ttlSeconds,
     })
-    return result === 'OK'
+    if (created === 'OK') return true
+    const refreshed = await this.writeRedis.eval<string[], number>(
+      REFRESH_LOCK_LUA,
+      [this.keys.enrichLock],
+      [token, String(ttlSeconds)]
+    )
+    return Number(refreshed) === 1
   }
 
   async releaseEnrichLock(token: string): Promise<boolean> {
-    try {
-      const result = await this.writeRedis.eval<string[], number>(
-        RELEASE_LOCK_LUA,
-        [this.keys.enrichLock],
-        [token]
-      )
-      if (Number(result) === 1) return true
-    } catch {
-      // REST Lua can fail or miss JSON-encoded GET values; fall through.
-    }
-    const current = await this.writeRedis.get<string>(this.keys.enrichLock)
-    if (current !== token) return false
-    await this.writeRedis.del(this.keys.enrichLock)
-    return true
+    const result = await this.writeRedis.eval<string[], number>(
+      RELEASE_LOCK_LUA,
+      [this.keys.enrichLock],
+      [token]
+    )
+    return Number(result) === 1
+  }
+
+  async getEnrichLockToken(): Promise<string | null> {
+    const value = await this.writeRedis.get<unknown>(this.keys.enrichMeta)
+    return typeof value === 'string' && value.length > 0 ? value : null
+  }
+
+  async setEnrichLockToken(token: string): Promise<void> {
+    await this.writeRedis.set(this.keys.enrichMeta, token)
   }
 
   async acquireVisitThrottle(ttlSeconds: number): Promise<boolean> {
@@ -488,6 +505,7 @@ export type MemoryCrateStore = CrateStore & {
   inflight: Map<number, number>
   seen: number[]
   lockToken: string | null
+  persistLockToken: string | null
   lockExpires: number
   visitUntil: number
   dead: Set<number>
@@ -521,6 +539,7 @@ export function createMemoryCrateStore(
     inflight: new Map(),
     seen: asNumberArray(initial.seen ?? []),
     lockToken: null,
+    persistLockToken: null,
     lockExpires: 0,
     visitUntil: 0,
     dead: new Set<number>(),
@@ -646,6 +665,12 @@ export function createMemoryCrateStore(
       store.lockToken = null
       store.lockExpires = 0
       return true
+    },
+    async getEnrichLockToken() {
+      return store.persistLockToken
+    },
+    async setEnrichLockToken(token: string) {
+      store.persistLockToken = token
     },
     async acquireVisitThrottle(ttlSeconds: number) {
       const nowMs = store.now()

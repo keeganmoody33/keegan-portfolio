@@ -256,16 +256,32 @@ export async function probeDiscogsIdentity(
   }
 }
 
+export const DISCOGS_RELEASE_TIMEOUT_MS = 15_000
+
 export async function fetchDiscogsReleaseDetail(
   releaseId: number,
-  options: { fetchImpl?: DiscogsFetch; token?: string } = {}
+  options: { fetchImpl?: DiscogsFetch; token?: string; timeoutMs?: number } = {}
 ): Promise<DiscogsReleaseDetail> {
   const fetchImpl = options.fetchImpl ?? fetch
   const token = options.token !== undefined ? options.token : getDiscogsToken()
-  const response = await fetchImpl(`https://api.discogs.com/releases/${releaseId}`, {
-    headers: discogsHeaders(token),
-    cache: 'no-store',
-  })
+  const timeoutMs = options.timeoutMs ?? DISCOGS_RELEASE_TIMEOUT_MS
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  let response: Response
+  try {
+    response = await fetchImpl(`https://api.discogs.com/releases/${releaseId}`, {
+      headers: discogsHeaders(token),
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new DiscogsUnavailableError()
+    }
+    throw error
+  } finally {
+    clearTimeout(timer)
+  }
   throwForDiscogsStatus(response)
   let raw: unknown
   try {
