@@ -57,7 +57,7 @@ import { resolveDescription } from './description.ts'
 import {
   INFLIGHT_TTL_SECONDS,
   DRAFT_TTL_SECONDS,
-  randomLockToken,
+  selectEnrichLockToken,
   type CrateStore,
 } from './store.ts'
 import { collectionReleaseId } from './sync.ts'
@@ -1451,13 +1451,17 @@ export async function processEnrichmentQueue(
   deps: EnrichDeps,
   limit?: number
 ): Promise<EnrichQueueResult> {
-  const token = deps.lockToken ?? (await deps.store.getEnrichLockToken()) ?? randomLockToken()
+  const token = selectEnrichLockToken(deps.lockToken)
   const lockTtl = deps.lockTtlSeconds ?? ENRICH_LOCK_SECONDS
   const locked = await deps.store.acquireEnrichLock(lockTtl, token)
   if (!locked) {
+    try {
+      await deps.store.releaseEnrichLock(token)
+    } catch {
+      // lock ttl still expires
+    }
     return emptyQueueResult(true)
   }
-  await deps.store.setEnrichLockToken(token)
 
   const now = deps.now ?? Date.now
   const started = now()

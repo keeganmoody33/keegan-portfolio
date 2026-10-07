@@ -167,13 +167,25 @@ function defaultSleep(ms: number): Promise<void> {
 
 export function artistCreditName(credit: MbArtistCredit | undefined): string {
   if (!credit || credit.length === 0) return ''
-  const parts = credit.filter((part) => {
+  const kept: MbArtistCredit = []
+  for (const part of credit) {
     const name = part.name ?? part.artist?.name ?? ''
-    return !isMusicBrainzUnknownArtist(name, part.artist?.id)
-  })
-  if (parts.length === 0) return ''
-  return parts
-    .map((part) => `${part.name ?? part.artist?.name ?? ''}${part.joinphrase ?? ''}`)
+    if (isMusicBrainzUnknownArtist(name, part.artist?.id)) {
+      if (kept.length > 0) {
+        const prev = kept[kept.length - 1]!
+        kept[kept.length - 1] = { ...prev, joinphrase: part.joinphrase ?? '' }
+      }
+      continue
+    }
+    kept.push(part)
+  }
+  if (kept.length === 0) return ''
+  return kept
+    .map((part, index) => {
+      const name = part.name ?? part.artist?.name ?? ''
+      if (index === kept.length - 1) return name
+      return `${name}${part.joinphrase ?? ''}`
+    })
     .join('')
 }
 

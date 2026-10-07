@@ -16,7 +16,7 @@ import {
   type EnrichDeps,
 } from './enrich.ts'
 import { createMusicBrainzClient } from './musicbrainz.ts'
-import { crateRedisKeys, randomLockToken, type CrateStore } from './store.ts'
+import { crateRedisKeys, selectEnrichLockToken, type CrateStore } from './store.ts'
 import { AUTH_RETRY_MS, isoFromMs, storedPressingHasVisitorFacts } from './preserve.ts'
 import type { BackfillState, DeadLetter, StoredPressing } from './types.ts'
 import type { DiscogsCollection } from '../discogs.ts'
@@ -300,10 +300,15 @@ export async function runBackfill(
     return snapshotCounts(emptyExtra, 0, 0)
   }
 
-  const token = deps.lockToken ?? (await store.getEnrichLockToken()) ?? randomLockToken()
+  const token = selectEnrichLockToken(deps.lockToken)
   const lockTtl = deps.lockTtlSeconds ?? ENRICH_LOCK_SECONDS
   const locked = await store.acquireEnrichLock(lockTtl, token)
   if (!locked) {
+    try {
+      await store.releaseEnrichLock(token)
+    } catch {
+      // lock ttl still expires
+    }
     const dead = await store.getDead()
     const remaining = remainingBackfillIds(ids, settled, dead, options.retry, retryOnly).length
     const elapsedMs = Math.max(1, now() - started)
@@ -331,7 +336,6 @@ export async function runBackfill(
       unresolvedThis: 0,
     }
   }
-  await store.setEnrichLockToken(token)
 
   const takeFloorMs = deps.takeFloorMs ?? ENRICH_TAKE_FLOOR_MS
   const deadlineMs = deps.deadlineMs ?? started + (deps.budgetMs ?? ENRICH_BUDGET_MS)

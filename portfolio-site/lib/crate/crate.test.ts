@@ -22,7 +22,7 @@ import {
   stripFeaturingCredits,
 } from './match.ts'
 import { AUTH_RETRY_MS, isoFromMs, keepPriorMatch, nextBackoffMs, preservePressingOnFailure, shouldRefreshPressing, withClearedDeadlineStops } from './preserve.ts'
-import { createMemoryCrateStore, crateRedisKeys, DRAFT_TTL_SECONDS, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA, RELEASE_LOCK_LUA, REFRESH_LOCK_LUA, type CrateStore } from './store.ts'
+import { createMemoryCrateStore, crateRedisKeys, DRAFT_TTL_SECONDS, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA, RELEASE_LOCK_LUA, REFRESH_LOCK_LUA, selectEnrichLockToken, type CrateStore } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
 import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, WorkerDeadlineError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, ENRICH_LOCK_SECONDS, TRACK_LEVEL_FETCH_CAP, TRACK_LEVEL_REASON, overlayTrackLevelProgress, applyDeadlineStop, persistTrackLevelDocs, shouldStopWalkOnRateLimit } from './enrich.ts'
 import { isUnusableDiscogsNotes, resolveDescription, withReadableDescription } from './description.ts'
@@ -46,11 +46,11 @@ import { CRATE_MAX_ATTEMPTS, CRATE_SCHEMA_VERSION, type ResearchFact, type Sampl
 import { mapRelease, parseDurableCollection, DiscogsAuthError, DiscogsNotFoundError, DiscogsRateLimitError, DISCOGS_RATE_LIMIT_MESSAGE, createMemoryLastGoodStore } from '../discogs.ts'
 import { createMemoryDurableStore } from '../discogs-store.ts'
 import { fixturePressing, parseReleaseParam, readStoredPressing, unavailableHeading, unavailablePressing } from './read.ts'
-import { factRows, overviewConnections, pressingCheckedNoMatchLine } from './view.ts'
+import { factRows, overviewConnections, pressingCheckedNoMatchLine, trackSampleFacts } from './view.ts'
 import { cronSecretEqual } from './cron-auth.ts'
 import { coverageOf, hydratePressing, isPlayableOccurrence, shouldQueuePressing, trackIdentityKey } from './lifecycle.ts'
 import { DISCOGS_RELEASE_TIMEOUT_MS, errorForDiscogsStatus, fetchDiscogsReleaseDetail, mapDiscogsReleaseDetail, probeDiscogsIdentity } from './discogs-release.ts'
-import { creditLine, factsFromRecordings, isRecordingOrReleaseSampleLink, mergeResearchFacts, mergeSampleLinks, normalizeCreditRole, presentSampleArtist, researchFactsFromDiscogs } from './research.ts'
+import { creditLine, factsFromRecordings, isRecordingOrReleaseSampleLink, mergeResearchFacts, mergeSampleLinks, normalizeCreditRole, presentSampleArtist, researchFactsFromDiscogs, samplesFromFacts } from './research.ts'
 import {
   createWikidataClient,
   getSharedWikidataClient,
@@ -869,43 +869,120 @@ describe('enrich lock token (P1.4)', () => {
     assert.doesNotMatch(release, /writeRedis\.del/)
     assert.match(RELEASE_LOCK_LUA, /redis\.call\('GET'/)
     assert.match(RELEASE_LOCK_LUA, /redis\.call\('DEL'/)
+    assert.doesNotMatch(RELEASE_LOCK_LUA, /string\.sub/)
+    assert.doesNotMatch(REFRESH_LOCK_LUA, /string\.sub/)
     assert.match(REFRESH_LOCK_LUA, /redis\.call\('GET'/)
     assert.match(REFRESH_LOCK_LUA, /'EX'/)
     const cli = readFileSync(fileURLToPath(new URL('../../scripts/crate-backfill.ts', import.meta.url)), 'utf8')
-    assert.match(cli, /lockToken/)
-    assert.match(cli, /getEnrichLockToken/)
+    assert.doesNotMatch(cli, /getEnrichLockToken/)
+    assert.doesNotMatch(cli, /setEnrichLockToken/)
+    const enrich = readFileSync(fileURLToPath(new URL('./enrich.ts', import.meta.url)), 'utf8')
+    const queueFn = enrich.slice(enrich.indexOf('export async function processEnrichmentQueue'))
+    assert.match(queueFn, /selectEnrichLockToken/)
+    assert.doesNotMatch(queueFn, /getEnrichLockToken/)
+    assert.doesNotMatch(queueFn, /setEnrichLockToken/)
+    const backfill = readFileSync(fileURLToPath(new URL('./backfill.ts', import.meta.url)), 'utf8')
+    assert.match(backfill, /selectEnrichLockToken/)
+    assert.doesNotMatch(backfill, /getEnrichLockToken/)
+    assert.doesNotMatch(backfill, /setEnrichLockToken/)
+    const proof = readFileSync(fileURLToPath(new URL('./proof.ts', import.meta.url)), 'utf8')
+    assert.doesNotMatch(proof, /lockToken:\s*randomLockToken/)
     assert.ok(DISCOGS_RELEASE_TIMEOUT_MS < ENRICH_LOCK_SECONDS * 1000)
   })
 
-  it('passes a persisted lock token on CLI re-entry', async () => {
+  it('second worker on the real token path skips and cannot release the first lock', async () => {
     const store = createMemoryCrateStore()
-    await store.setEnrichLockToken('cli-token')
-    assert.equal(await store.acquireEnrichLock(60, 'cli-token'), true)
-    const skipped = await processEnrichmentQueue(
+    await store.setEnrichLockToken('stale-shared-uuid')
+    await store.enqueue([240128], { nowMs: 0 })
+    const first = selectEnrichLockToken()
+    const second = selectEnrichLockToken()
+    assert.notEqual(first, second)
+    assert.equal(selectEnrichLockToken('stale-shared-uuid'), 'stale-shared-uuid')
+
+    let aHolds = false
+    let releaseA!: () => void
+    const holdA = new Promise<void>((resolve) => {
+      releaseA = resolve
+    })
+    const workerA = processEnrichmentQueue(
       {
         store,
-        now: () => 1_000,
-        lockToken: 'other',
-        takeFloorMs: 0,
-        fetchDiscogs: async () => bootsyDetail(),
-        mb: createMusicBrainzClientForTests(),
-      },
-      1
-    )
-    assert.equal(skipped.skipped, true)
-    const reused = await processEnrichmentQueue(
-      {
-        store,
-        now: () => 1_000,
-        lockToken: (await store.getEnrichLockToken()) ?? 'missing',
         takeFloorMs: 0,
         budgetMs: 45_000,
-        fetchDiscogs: async () => bootsyDetail(),
+        fetchDiscogs: async () => {
+          aHolds = true
+          await holdA
+          throw new Error('A still working')
+        },
         mb: createMusicBrainzClientForTests(),
       },
       1
     )
-    assert.equal(reused.skipped, false)
+    const waitStart = Date.now()
+    while (!aHolds) {
+      if (Date.now() - waitStart > 2_000) throw new Error('worker A never took the lock')
+      await new Promise((resolve) => setTimeout(resolve, 5))
+    }
+    assert.equal(await store.getEnrichLockToken(), 'stale-shared-uuid')
+    const workerB = await processEnrichmentQueue(
+      {
+        store,
+        takeFloorMs: 0,
+        budgetMs: 45_000,
+        fetchDiscogs: async () => {
+          throw new Error('B must not fetch')
+        },
+        mb: createMusicBrainzClientForTests(),
+      },
+      1
+    )
+    assert.equal(workerB.skipped, true)
+    assert.deepEqual(workerB.processed, [])
+    assert.equal(await store.releaseEnrichLock('stale-shared-uuid'), false)
+    assert.equal(await store.acquireEnrichLock(60, 'intruder'), false)
+    releaseA()
+    const aResult = await workerA
+    assert.equal(aResult.skipped, false)
+  })
+
+  it('aborts a stalled Discogs response body', async () => {
+    const discogsSrc = readFileSync(fileURLToPath(new URL('./discogs-release.ts', import.meta.url)), 'utf8')
+    const start = discogsSrc.indexOf('export async function fetchDiscogsReleaseDetail')
+    const body = discogsSrc.slice(start, start + 2_000)
+    const jsonAt = body.indexOf('response.json()')
+    const clearAt = body.lastIndexOf('clearTimeout')
+    assert.ok(jsonAt >= 0 && clearAt > jsonAt)
+    await assert.rejects(
+      () =>
+        fetchDiscogsReleaseDetail(573292, {
+          timeoutMs: 20,
+          fetchImpl: async (_url, init) => {
+            const stream = new ReadableStream({
+              start(controller) {
+                const abort = () => {
+                  try {
+                    const error = new Error('aborted')
+                    error.name = 'AbortError'
+                    controller.error(error)
+                  } catch {
+                    // already closed
+                  }
+                }
+                if (init?.signal?.aborted) abort()
+                else init?.signal?.addEventListener('abort', abort, { once: true })
+              },
+            })
+            return new Response(stream, {
+              status: 200,
+              headers: { 'content-type': 'application/json' },
+            })
+          },
+        }),
+      (error: unknown) => {
+        assert.equal((error as { name?: string }).name, 'DiscogsUnavailableError')
+        return true
+      }
+    )
   })
 
   it('aborts a hanging Discogs release fetch well under the lock TTL', async () => {
@@ -5265,6 +5342,129 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     assert.equal(isRecordingOrReleaseSampleLink({ sourceUrl: 'https://musicbrainz.org/work/x' }), false)
   })
 
+  it('keeps Wikidata P5707 sample facts through hydrate, persist, coverage, and render', async () => {
+    const researchSrc = readFileSync(fileURLToPath(new URL('./research.ts', import.meta.url)), 'utf8')
+    const helper = researchSrc.slice(
+      researchSrc.indexOf('export function isRecordingOrReleaseSampleLink'),
+      researchSrc.indexOf('export function samplesFromFacts')
+    )
+    const fromRecordings = researchSrc.slice(
+      researchSrc.indexOf('export function factsFromRecordings'),
+      researchSrc.indexOf('export function ensureResearchFacts')
+    )
+    assert.match(helper, /musicbrainz\\.org\\\/work/)
+    assert.doesNotMatch(helper, /\/recording\//)
+    assert.doesNotMatch(helper, /\/release\//)
+    assert.match(fromRecordings, /isRecordingOrReleaseSampleLink/)
+    assert.equal(
+      isRecordingOrReleaseSampleLink({ sourceUrl: 'https://www.wikidata.org/wiki/Q6305224' }),
+      true
+    )
+    assert.equal(
+      isRecordingOrReleaseSampleLink({ sourceUrl: 'https://musicbrainz.org/work/work-mashup' }),
+      false
+    )
+    const fetchedAt = '2026-10-07T13:00:00.000Z'
+    const wikiUrl = 'https://www.wikidata.org/wiki/Q6305224'
+    const mbid = '08b1c4e3-b0eb-4dd2-b870-740d6eebe627'
+    const wikiFact: ResearchFact = {
+      kind: 'sample_of',
+      trackKey: '',
+      track: null,
+      role: 'samples',
+      person: '',
+      relatedTitle: 'Sampled Work',
+      relatedArtist: '',
+      source: 'wikidata',
+      sourceId: 'Q9',
+      sourceUrl: wikiUrl,
+      fetchedAt,
+    }
+    const merged = mergeResearchFacts([wikiFact])
+    assert.equal(merged.length, 1)
+    assert.equal(merged[0]?.sourceUrl, wikiUrl)
+
+    const hydrated = hydratePressing(
+      pressingStub({
+        researchFacts: [wikiFact],
+        recordings: {
+          [mbid]: {
+            mbid,
+            title: 'Song',
+            artist: 'Artist',
+            credits: [],
+            samplesFrom: [
+              {
+                title: 'Track Wiki Sample',
+                artist: '',
+                mbid: 'Q8',
+                sourceUrl: 'https://www.wikidata.org/wiki/Q8',
+                source: 'wikidata',
+                providerId: 'Q8',
+              },
+              {
+                title: 'A Bridge Over You',
+                artist: '',
+                mbid: 'work-mashup',
+                sourceUrl: 'https://musicbrainz.org/work/work-mashup',
+                source: 'musicbrainz',
+                providerId: 'work-mashup',
+              },
+            ],
+            sampledIn: [],
+            provenance: {
+              sourceUrls: [],
+              matchStatus: 'matched',
+              confidence: 0.9,
+              reason: TRACK_LEVEL_REASON,
+              checkedAt: fetchedAt,
+              refreshAfter: '2026-11-05T00:00:00.000Z',
+              lastError: null,
+              verifiedAt: fetchedAt,
+              lastAttemptAt: fetchedAt,
+            },
+          },
+        },
+      })
+    )
+    const fromRecording = factsFromRecordings(hydrated)
+    assert.equal(
+      fromRecording.some((fact) => fact.sourceUrl === 'https://www.wikidata.org/wiki/Q8'),
+      true
+    )
+    assert.equal(
+      fromRecording.some((fact) => fact.sourceUrl.includes('musicbrainz.org/work/')),
+      false
+    )
+    assert.equal(
+      (hydrated.researchFacts ?? []).some((fact) => fact.sourceUrl === wikiUrl),
+      true
+    )
+    assert.equal(
+      (hydrated.researchFacts ?? []).some((fact) => fact.sourceUrl.includes('musicbrainz.org/work/')),
+      false
+    )
+    assert.equal(hydrated.coverage?.withReleaseSamples, true)
+    assert.ok((hydrated.coverage?.withSamples ?? 0) >= 1)
+    const overview = overviewConnections(hydrated)
+    assert.equal(overview.some((row) => row.href === wikiUrl), true)
+    assert.equal(samplesFromFacts(hydrated.researchFacts ?? []).some((fact) => fact.sourceUrl === wikiUrl), true)
+    assert.equal(
+      trackSampleFacts(hydrated, hydrated.tracks[0] ?? null).some((fact) => fact.sourceUrl === wikiUrl),
+      true
+    )
+
+    const store = createMemoryCrateStore()
+    await store.setPressing(hydrated)
+    const persisted = hydratePressing((await store.getPressing(hydrated.releaseId))!)
+    assert.equal(
+      (persisted.researchFacts ?? []).some((fact) => fact.sourceUrl === wikiUrl && fact.kind === 'sample_of'),
+      true
+    )
+    assert.equal(persisted.coverage?.withReleaseSamples, true)
+    assert.equal(overviewConnections(persisted).some((row) => row.href === wikiUrl), true)
+  })
+
   it('fills a sample artist from the related recording when the relation omits artist-credit', async () => {
     const client = createMusicBrainzClient({
       minIntervalMs: 0,
@@ -5309,6 +5509,20 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
         },
       ]),
       ''
+    )
+    assert.equal(
+      artistCreditName([
+        {
+          name: 'Alpha',
+          joinphrase: ' & ',
+          artist: { id: 'alpha', name: 'Alpha' },
+        },
+        {
+          name: '[unknown]',
+          artist: { id: MUSICBRAINZ_UNKNOWN_ARTIST_MBID, name: '[unknown]' },
+        },
+      ]),
+      'Alpha'
     )
     assert.equal(presentSampleArtist('[unknown]'), '')
     assert.equal(presentSampleArtist('A Tribe Called Quest'), 'A Tribe Called Quest')
@@ -5422,7 +5636,10 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     )
     const start = src.indexOf('aria-label="connections"')
     const body = src.slice(start, src.indexOf('role="tabpanel"', start))
-    assert.match(body, /mt-1 inline-flex min-h-6 items-center/)
+    assert.match(
+      body,
+      /mt-1 inline-flex min-h-6 items-center \[overflow-wrap:anywhere\] min-w-0 max-w-full/
+    )
     assert.doesNotMatch(body, /inline-block/)
   })
 

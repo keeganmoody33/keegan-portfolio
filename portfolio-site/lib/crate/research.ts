@@ -402,8 +402,7 @@ export function creditsFromFacts(facts: ResearchFact[]): ResearchFact[] {
 }
 
 export function isRecordingOrReleaseSampleLink(sample: { sourceUrl: string }): boolean {
-  if (/\/work\//.test(sample.sourceUrl)) return false
-  return /\/recording\//.test(sample.sourceUrl) || /\/release\//.test(sample.sourceUrl)
+  return !/musicbrainz\.org\/work\//i.test(sample.sourceUrl ?? '')
 }
 
 export function samplesFromFacts(facts: ResearchFact[]): ResearchFact[] {

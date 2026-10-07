@@ -71,10 +71,6 @@ return 1
 function lockTokenMatchesLua(): string {
   return `
 local current = redis.call('GET', KEYS[1])
-if not current then return 0 end
-if string.sub(current, 1, 1) == '"' and string.sub(current, -1) == '"' then
-  current = string.sub(current, 2, -2)
-end
 if current ~= ARGV[1] then return 0 end
 `
 }
@@ -183,6 +179,10 @@ export type CrateStore = {
 
 export function randomLockToken(): string {
   return randomUUID()
+}
+
+export function selectEnrichLockToken(explicit?: string): string {
+  return explicit || randomLockToken()
 }
 
 function asNumberArray(value: unknown): number[] {

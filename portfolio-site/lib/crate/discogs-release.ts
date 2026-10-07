@@ -267,29 +267,34 @@ export async function fetchDiscogsReleaseDetail(
   const timeoutMs = options.timeoutMs ?? DISCOGS_RELEASE_TIMEOUT_MS
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
-  let response: Response
   try {
-    response = await fetchImpl(`https://api.discogs.com/releases/${releaseId}`, {
-      headers: discogsHeaders(token),
-      cache: 'no-store',
-      signal: controller.signal,
-    })
-  } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
+    let response: Response
+    try {
+      response = await fetchImpl(`https://api.discogs.com/releases/${releaseId}`, {
+        headers: discogsHeaders(token),
+        cache: 'no-store',
+        signal: controller.signal,
+      })
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new DiscogsUnavailableError()
+      }
+      throw error
+    }
+    throwForDiscogsStatus(response)
+    let raw: unknown
+    try {
+      raw = await response.json()
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new DiscogsUnavailableError()
+      }
       throw new DiscogsUnavailableError()
     }
-    throw error
+    const mapped = mapDiscogsReleaseDetail(raw as Parameters<typeof mapDiscogsReleaseDetail>[0])
+    if (!mapped) throw new DiscogsUnavailableError()
+    return mapped
   } finally {
     clearTimeout(timer)
   }
-  throwForDiscogsStatus(response)
-  let raw: unknown
-  try {
-    raw = await response.json()
-  } catch {
-    throw new DiscogsUnavailableError()
-  }
-  const mapped = mapDiscogsReleaseDetail(raw as Parameters<typeof mapDiscogsReleaseDetail>[0])
-  if (!mapped) throw new DiscogsUnavailableError()
-  return mapped
 }
