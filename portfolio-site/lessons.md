@@ -1,6 +1,10 @@
 # Lessons Learned
 
-Updated: 2026-10-06
+Updated: 2026-10-07
+
+## Preview crate backfill needs Redis in the agent env (2026-10-07)
+
+- **Do not invent coverage.** A Cloud Agent VM with no `KV_REST_API_*` / `UPSTASH_REDIS_REST_*` cannot run `npm run crate:backfill`. Skip and say so. Do not decrypt Vercel Production env. Do not write unprefixed `lf:` keys. Upstash MCP `redis_list_databases` returning `[]` is also a skip.
 
 ## Collection covers (2026-10-06)
 

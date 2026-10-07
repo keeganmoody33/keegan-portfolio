@@ -1,7 +1,12 @@
-IN PROGRESS (2026-10-06 — full preview collection backfill):
-- Preview Redis `lf:preview:` only. Never prod. ~276 unique ids.
-- 429 overlay `refreshAfter` is MusicBrainz Retry-After, not the 1h preserve backoff. A cooling `rate_limit` stops the backfill walk instead of skipping to the next id (global MB limit).
-- Coverage artifact: `/opt/cursor/artifacts/preview-full-backfill.json`. Confirm Mtume 567894 Biggie Juicy if MB has the relationship.
+SKIPPED (2026-10-07 — full preview collection backfill on this rebase VM):
+- This Cloud Agent environment has no preview Upstash Redis credentials (`KV_REST_API_*` / `UPSTASH_REDIS_REST_*` absent from `printenv`; Upstash MCP `redis_list_databases` returned `[]`). Did not decrypt Vercel Preview env, did not touch prod, did not write `lf:` keys.
+- Coverage numbers, Juicy live Redis check, 10 sample-hit examples, and `--retry` counts are not invented. Re-run `npm run crate:backfill` then `npm run crate:backfill -- --retry` where preview Redis is present (`lf:preview:` only).
+- Skip log: `/opt/cursor/artifacts/preview-full-backfill.log`.
+
+COMPLETED (2026-10-07 — PR #54 rebase onto main `#56` `7317a89`):
+- Branch `cursor/collection-research-trackmatch-7382` HEAD `d0cc837`. Dropped `22d1edf`..`e407a88` (#53 pre-squash), `494a1c9` (creditLine), `72b8679` (unmatched facts). Kept `13b0670`..`1c6b449` replayed as `baa6496`..`d0cc837`.
+- `wikidata.ts`: #56 abort-aware Retry-After/timeout plus #54 `max(AUTH_RETRY_MS, Retry-After)` / `--retry` inspect kinds / P5813 = MB release. Covers, SourceLine sr-only `source `, SampleList `min-h-6` untouched.
+- Local: `npm ci`, `tsc --noEmit`, eslint, `npm test` (281 pass), `next build` (26/26 with dummy supabase). PR #54 marked ready. Preview `https://keegan-portfolio-content-9rfc25c5b-groundskeep.vercel.app`. Do not merge.
 
 COMPLETED (2026-10-06 — collection research follow-up: P2s + track-level samples):
 - Follow-up branch `cursor/collection-research-trackmatch-7382` (PR #54), rebased onto main `#56` (`7317a89`). `#53` is squashed as `65de54e`.
