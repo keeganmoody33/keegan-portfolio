@@ -375,6 +375,13 @@ class RedisCrateStore implements CrateStore {
   }
 
   async acquireEnrichLock(ttlSeconds: number, token: string): Promise<boolean> {
+    const current = await this.writeRedis.get<string>(this.keys.enrichLock)
+    if (current === token) {
+      const refreshed = await this.writeRedis.set(this.keys.enrichLock, token, {
+        ex: ttlSeconds,
+      })
+      return refreshed === 'OK'
+    }
     const result = await this.writeRedis.set(this.keys.enrichLock, token, {
       nx: true,
       ex: ttlSeconds,
@@ -383,12 +390,20 @@ class RedisCrateStore implements CrateStore {
   }
 
   async releaseEnrichLock(token: string): Promise<boolean> {
-    const result = await this.writeRedis.eval<string[], number>(
-      RELEASE_LOCK_LUA,
-      [this.keys.enrichLock],
-      [token]
-    )
-    return Number(result) === 1
+    try {
+      const result = await this.writeRedis.eval<string[], number>(
+        RELEASE_LOCK_LUA,
+        [this.keys.enrichLock],
+        [token]
+      )
+      if (Number(result) === 1) return true
+    } catch {
+      // REST Lua can fail or miss JSON-encoded GET values; fall through.
+    }
+    const current = await this.writeRedis.get<string>(this.keys.enrichLock)
+    if (current !== token) return false
+    await this.writeRedis.del(this.keys.enrichLock)
+    return true
   }
 
   async acquireVisitThrottle(ttlSeconds: number): Promise<boolean> {
@@ -619,7 +634,9 @@ export function createMemoryCrateStore(
     },
     async acquireEnrichLock(ttlSeconds: number, token: string) {
       const nowMs = store.now()
-      if (store.lockToken && store.lockExpires > nowMs) return false
+      if (store.lockToken && store.lockExpires > nowMs && store.lockToken !== token) {
+        return false
+      }
       store.lockToken = token
       store.lockExpires = nowMs + ttlSeconds * 1000
       return true

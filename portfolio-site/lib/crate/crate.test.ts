@@ -815,6 +815,17 @@ describe('enrich lock token (P1.4)', () => {
     assert.equal(await store.acquireEnrichLock(60, 'other'), true)
   })
 
+  it('lets the owner re-acquire and refresh the enrich lock', async () => {
+    let nowMs = 1_000
+    const store = createMemoryCrateStore({ now: () => nowMs })
+    assert.equal(await store.acquireEnrichLock(60, 'owner'), true)
+    nowMs = 30_000
+    assert.equal(await store.acquireEnrichLock(60, 'owner'), true)
+    assert.equal(await store.acquireEnrichLock(60, 'other'), false)
+    nowMs = 90_001
+    assert.equal(await store.acquireEnrichLock(60, 'other'), true)
+  })
+
   it('stops taking items when the time budget is short', async () => {
     const now = 0
     const store = createMemoryCrateStore({ queue: [1, 2, 3], now: () => now })
