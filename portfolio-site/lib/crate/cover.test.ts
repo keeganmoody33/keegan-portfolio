@@ -268,6 +268,7 @@ describe('cover sync guards', () => {
       }),
     })
     assert.equal(rows.length, 1)
+    // Image bytes only — crate facts still persist elsewhere.
     assert.equal(rows[0]?.blob, 'skipped-discogs-terms')
     assert.equal(rows[0]?.best?.stored, false)
     assert.equal(rows[0]?.best?.url, discogsUrl)

@@ -140,9 +140,10 @@ These are explicitly **not** what this site is:
 
 1. **Navigation redesign** -- Current top nav vs. fixed left sidebar (per `FRONTEND_GUIDELINES.md` and `docs/NAVIGATION_PATHWAYS_SPEC.md`). When to ship?
 
-## Prototype gaps (collection record detail)
+## Collection crate policy (settled 2026-10-07)
 
-- **Discogs 6h freshness clause** is not implemented. Listing last-good is Redis; gated `/api/cron/collection-keep` refreshes when older than `DISCOGS_SNAPSHOT_TTL_MS` (24h); ISR `revalidate = 300`. Successful research is reused indefinitely (`CRATE_RESEARCH_REFRESH_MS`). Attribution is implemented. See Discogs [API Terms of Use](https://support.discogs.com/hc/en-us/articles/360009334593-API-Terms-of-Use). **Research is manual-only** (gated `/api/cron/crate-backfill` + `npm run crate:backfill`). No Vercel cron. `CRON_SECRET` is not in production and must not be added without Keegan's yes. Wikidata identity is Discogs master `P1954`, then MusicBrainz release group `P436`, then Discogs release `P2206` / MusicBrainz release `P5813`. Samples are primarily recording-level (artist + song title).
+- **Copies vs facts.** Do not store Discogs image bytes (hotlink). Titles, credits, extraartists, samples, catno, tracklists, and other crate facts are information about Keegan's records — persist them and use them for matching. API Terms must not restrain extraartists, Redis last-good, or research reuse.
+- Listing last-good is Redis; gated `/api/cron/collection-keep` refreshes when older than `DISCOGS_SNAPSHOT_TTL_MS` (24h); ISR `revalidate = 300`. Successful research is reused indefinitely (`CRATE_RESEARCH_REFRESH_MS`). Attribution is implemented (User-Agent, `Data provided by Discogs.`, `/legal` non-affiliation). A 6h freshness clause is not a product constraint. **Research is manual-only** (gated `/api/cron/crate-backfill` + `npm run crate:backfill`). No Vercel cron. `CRON_SECRET` is not in production and must not be added without Keegan's yes. Wikidata identity is Discogs master `P1954`, then MusicBrainz release group `P436`, then Discogs release `P2206` / MusicBrainz release `P5813`. Samples are primarily recording-level (artist + song title).
 
 ---
 

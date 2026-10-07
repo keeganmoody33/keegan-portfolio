@@ -181,6 +181,8 @@ export async function syncCovers(options: {
 
     let blobStatus: CoverSyncRow['blob'] = null
     let stored: { url: string; hash: string } | null = null
+    // Image bytes from the Discogs CDN are copies. Do not put them on Blob.
+    // Crate facts (titles, credits, extraartists, samples) are not copies.
     if (best.source === 'discogs') {
       blobStatus = 'skipped-discogs-terms'
     } else if (!token) {
