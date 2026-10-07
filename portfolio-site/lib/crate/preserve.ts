@@ -1,4 +1,5 @@
 import type {
+  CrateCheckpoint,
   DurableErrorKind,
   Lifecycles,
   PressingFacts,
@@ -29,9 +30,26 @@ export function isoFromMs(ms: number): string {
   return new Date(ms).toISOString()
 }
 
+function copyCheckpoint(
+  checkpoint: CrateCheckpoint | null | undefined,
+  patch: Partial<CrateCheckpoint> = {}
+): CrateCheckpoint {
+  return {
+    stage: patch.stage ?? checkpoint?.stage ?? 'pressing',
+    researchCursor: patch.researchCursor ?? checkpoint?.researchCursor ?? 0,
+    trackSampleCursor: patch.trackSampleCursor ?? checkpoint?.trackSampleCursor,
+    deadlineStops: patch.deadlineStops ?? checkpoint?.deadlineStops,
+  }
+}
+
 export function nextBackoffMs(attemptCount: number): number {
   const index = Math.max(0, attemptCount - 1)
   return BACKOFF_MS[Math.min(index, BACKOFF_MS.length - 1)] ?? TERMINAL_REFRESH_MS
+}
+
+/** Auth and rate_limit never burn the 5-attempt exhausted/dead budget. */
+export function countsTowardAttempts(kind: DurableErrorKind): boolean {
+  return kind !== 'auth' && kind !== 'rate_limit'
 }
 
 export function storedPressingHasVisitorFacts(pressing: StoredPressing | null | undefined): boolean {
@@ -81,7 +99,8 @@ export function errorPressingStub(
     countAttempt?: boolean
   } = {}
 ): StoredPressing {
-  const attempts = options.countAttempt === false || kind === 'auth' ? 0 : 1
+  const attempts =
+    options.countAttempt === false || !countsTowardAttempts(kind) ? 0 : 1
   const backoff =
     options.terminal
       ? TERMINAL_REFRESH_MS
@@ -170,11 +189,12 @@ export function preservePressingOnFailure(
   if (!previous) {
     return errorPressingStub(options.releaseId ?? options.facts?.releaseId ?? 0, nowMs, kind, message, options)
   }
-  const countAttempt = options.countAttempt !== false && kind !== 'auth'
+  const countAttempt = options.countAttempt !== false && countsTowardAttempts(kind)
   const attempts = countAttempt
     ? (previous.provenance.lastError?.attempts ?? 0) + 1
     : (previous.provenance.lastError?.attempts ?? 0)
-  const exhausted = attempts >= CRATE_MAX_ATTEMPTS && kind !== 'auth' && kind !== 'not_found'
+  const exhausted =
+    attempts >= CRATE_MAX_ATTEMPTS && countsTowardAttempts(kind) && kind !== 'not_found'
   const errorKind = exhausted ? 'exhausted' : kind
   const backoff =
     options.terminal || exhausted
@@ -221,11 +241,7 @@ export function preservePressingOnFailure(
           reason: message,
         }
       : previous.mbRelease,
-    checkpoint: {
-      stage: previous.checkpoint?.stage ?? 'pressing',
-      researchCursor: previous.checkpoint?.researchCursor ?? 0,
-      deadlineStops: 0,
-    },
+    checkpoint: copyCheckpoint(previous.checkpoint, { deadlineStops: 0 }),
   }
 }
 
@@ -233,11 +249,7 @@ export function withClearedDeadlineStops(pressing: StoredPressing): StoredPressi
   if ((pressing.checkpoint?.deadlineStops ?? 0) === 0) return pressing
   return {
     ...pressing,
-    checkpoint: {
-      stage: pressing.checkpoint?.stage ?? 'pressing',
-      researchCursor: pressing.checkpoint?.researchCursor ?? 0,
-      deadlineStops: 0,
-    },
+    checkpoint: copyCheckpoint(pressing.checkpoint, { deadlineStops: 0 }),
   }
 }
 
@@ -256,6 +268,23 @@ export function matchRank(
 
 export function isDiscogsUrlMatch(reason: string): boolean {
   return /discogs url/i.test(reason)
+}
+
+function inheritReleaseGroupMbid(
+  previous: StoredPressing,
+  next: StoredPressing
+): string | null | undefined {
+  if (previous.mbRelease.releaseGroupMbid !== undefined) {
+    return previous.mbRelease.releaseGroupMbid
+  }
+  if (
+    previous.mbRelease.mbid &&
+    next.mbRelease.mbid &&
+    previous.mbRelease.mbid === next.mbRelease.mbid
+  ) {
+    return next.mbRelease.releaseGroupMbid
+  }
+  return previous.mbRelease.releaseGroupMbid
 }
 
 export function keepPriorMatch(
@@ -282,7 +311,10 @@ export function keepPriorMatch(
   return {
     ...next,
     tracks: mergeTracksKeepRecordings(next.tracks, previous.tracks),
-    mbRelease: previous.mbRelease,
+    mbRelease: {
+      ...previous.mbRelease,
+      releaseGroupMbid: inheritReleaseGroupMbid(previous, next),
+    },
     recordings: previous.recordings,
     lifecycles: {
       pressing: nextCycles.pressing,

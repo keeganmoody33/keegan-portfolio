@@ -1,9 +1,19 @@
+export const MUSICBRAINZ_UNKNOWN_ARTIST_MBID = '125ec42a-7229-4250-afc5-e057484327fe'
+
+export function isMusicBrainzUnknownArtist(name?: string, id?: string): boolean {
+  const idNorm = (id ?? '').trim().toLowerCase()
+  if (idNorm === MUSICBRAINZ_UNKNOWN_ARTIST_MBID) return true
+  return (name ?? '').trim().toLowerCase() === '[unknown]'
+}
+
 export const CRATE_EMPTY_LINE = 'nothing on file yet'
 export const CRATE_PICK_TRACK = 'pick a track for credits and samples'
 export const CRATE_UNAVAILABLE_LINE = "couldn't reach discogs"
 export const CRATE_NO_RECORDING = 'no matched recording yet'
 export const MUSICBRAINZ_USER_AGENT = 'lecturesfrom/1.0 ( 33@lecturesfrom.com )'
 export const MUSICBRAINZ_MIN_INTERVAL_MS = 1100
+export const MUSICBRAINZ_TIMEOUT_MS = 5000
+export const MUSICBRAINZ_RETRY_AFTER_CAP_MS = 120_000
 export const WIKIDATA_USER_AGENT = 'lecturesfrom/1.0 +https://lecturesfrom.com ( 33@lecturesfrom.com )'
 export const WIKIDATA_MIN_INTERVAL_MS = 1100
 export const WIKIDATA_TIMEOUT_MS = 5000
@@ -78,6 +88,7 @@ export type CrateCheckpoint = {
   stage: LifecycleName
   researchCursor: number
   deadlineStops?: number
+  trackSampleCursor?: number
 }
 
 export type SourcedRef = {
@@ -164,6 +175,7 @@ export type TrackOccurrence = {
   index: number
   type_?: string
   identityKey?: string
+  artist?: string
   recording: TrackRecordingRef
 }
 

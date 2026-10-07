@@ -127,12 +127,14 @@ export const DISCOGS_COLLECTION_PAGE = `https://www.discogs.com/user/${DISCOGS_U
 const COLLECTION_URL = `https://api.discogs.com/users/${DISCOGS_USER}/collection/folders/0/releases`
 const RELEASE_URL_PATTERN = /^https:\/\/www\.discogs\.com\/release\/[1-9]\d*$/
 
+export const DISCOGS_RATE_LIMIT_MESSAGE = 'Too many requests'
+
 export class DiscogsRateLimitError extends Error {
   readonly status = 429 as const
   readonly retryAfter: number
 
   constructor(retryAfter = DISCOGS_DEFAULT_RETRY_AFTER) {
-    super('Too many requests')
+    super(DISCOGS_RATE_LIMIT_MESSAGE)
     this.name = 'DiscogsRateLimitError'
     this.retryAfter = retryAfter
   }

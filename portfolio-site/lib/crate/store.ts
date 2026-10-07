@@ -68,11 +68,22 @@ redis.call('DEL', KEYS[3])
 return 1
 `
 
+function lockTokenMatchesLua(): string {
+  return `
+local current = redis.call('GET', KEYS[1])
+if current ~= ARGV[1] then return 0 end
+`
+}
+
 export const RELEASE_LOCK_LUA = `
-if redis.call('GET', KEYS[1]) == ARGV[1] then
-  return redis.call('DEL', KEYS[1])
-end
-return 0
+${lockTokenMatchesLua().trim()}
+return redis.call('DEL', KEYS[1])
+`
+
+export const REFRESH_LOCK_LUA = `
+${lockTokenMatchesLua().trim()}
+redis.call('SET', KEYS[1], ARGV[1], 'EX', ARGV[2])
+return 1
 `
 
 export type CrateRedisKeys = {
@@ -81,7 +92,6 @@ export type CrateRedisKeys = {
   queued: string
   seen: string
   enrichLock: string
-  enrichMeta: string
   visitThrottle: string
   inflightPrefix: string
   pressing: (releaseId: number) => string
@@ -103,7 +113,6 @@ export function crateRedisKeys(env: Record<string, string | undefined> = process
     queued: assertPrefixedRedisKey(`${prefix}crate:queued:v1`, env),
     seen: assertPrefixedRedisKey(`${prefix}crate:seen:v1`, env),
     enrichLock: assertPrefixedRedisKey(`${prefix}crate:enrich:lock:v1`, env),
-    enrichMeta: assertPrefixedRedisKey(`${prefix}crate:enrich:meta:v1`, env),
     visitThrottle: assertPrefixedRedisKey(`${prefix}crate:visit:v1`, env),
     inflightPrefix: assertPrefixedRedisKey(`${prefix}crate:inflight:`, env),
     pressing: (releaseId: number) =>
@@ -155,6 +164,7 @@ export type CrateStore = {
   markDead(letter: DeadLetter): Promise<void>
   unmarkDead(releaseId: number): Promise<void>
   markUnresolved(letter: DeadLetter): Promise<void>
+  unmarkUnresolved(releaseId: number): Promise<void>
   getDead(): Promise<number[]>
   getUnresolved(): Promise<number[]>
   getInspect(): Promise<DeadLetter[]>
@@ -165,6 +175,10 @@ export type CrateStore = {
 
 export function randomLockToken(): string {
   return randomUUID()
+}
+
+export function selectEnrichLockToken(explicit?: string): string {
+  return explicit || randomLockToken()
 }
 
 function asNumberArray(value: unknown): number[] {
@@ -374,11 +388,17 @@ class RedisCrateStore implements CrateStore {
   }
 
   async acquireEnrichLock(ttlSeconds: number, token: string): Promise<boolean> {
-    const result = await this.writeRedis.set(this.keys.enrichLock, token, {
+    const created = await this.writeRedis.set(this.keys.enrichLock, token, {
       nx: true,
       ex: ttlSeconds,
     })
-    return result === 'OK'
+    if (created === 'OK') return true
+    const refreshed = await this.writeRedis.eval<string[], number>(
+      REFRESH_LOCK_LUA,
+      [this.keys.enrichLock],
+      [token, String(ttlSeconds)]
+    )
+    return Number(refreshed) === 1
   }
 
   async releaseEnrichLock(token: string): Promise<boolean> {
@@ -414,6 +434,13 @@ class RedisCrateStore implements CrateStore {
     const pipeline = this.writeRedis.pipeline()
     pipeline.sadd(this.keys.unresolved, String(letter.releaseId))
     pipeline.hset(this.keys.inspect, { [String(letter.releaseId)]: letter })
+    await pipeline.exec()
+  }
+
+  async unmarkUnresolved(releaseId: number): Promise<void> {
+    const pipeline = this.writeRedis.pipeline()
+    pipeline.srem(this.keys.unresolved, String(releaseId))
+    pipeline.hdel(this.keys.inspect, String(releaseId))
     await pipeline.exec()
   }
 
@@ -611,7 +638,9 @@ export function createMemoryCrateStore(
     },
     async acquireEnrichLock(ttlSeconds: number, token: string) {
       const nowMs = store.now()
-      if (store.lockToken && store.lockExpires > nowMs) return false
+      if (store.lockToken && store.lockExpires > nowMs && store.lockToken !== token) {
+        return false
+      }
       store.lockToken = token
       store.lockExpires = nowMs + ttlSeconds * 1000
       return true
@@ -639,6 +668,10 @@ export function createMemoryCrateStore(
     async markUnresolved(letter: DeadLetter) {
       store.unresolved.add(letter.releaseId)
       store.inspect.set(letter.releaseId, letter)
+    },
+    async unmarkUnresolved(releaseId: number) {
+      store.unresolved.delete(releaseId)
+      store.inspect.delete(releaseId)
     },
     async getDead() {
       return [...store.dead]

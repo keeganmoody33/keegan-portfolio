@@ -58,10 +58,100 @@ export function normalizeTitle(value: string): string {
     .trim()
 }
 
+const FEATURING_TAIL = /\s*[([]?\s*(?:feat\.?|ft\.?|featuring)\b.+$/iu
+
+export function stripFeaturingCredits(value: string): string {
+  const stripped = value.replace(FEATURING_TAIL, '').replace(/[(\[]\s*$/u, '').trim()
+  return stripped || value.trim()
+}
+
 export function coreTitle(value: string): string {
-  const withoutParens = value.replace(/\([^)]*\)/g, ' ').replace(/\[[^\]]*\]/g, ' ')
+  const withoutParens = stripFeaturingCredits(value)
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\[[^\]]*\]/g, ' ')
   const normalized = normalizeTitle(withoutParens)
-  return normalized || normalizeTitle(value)
+  return normalized || normalizeTitle(stripFeaturingCredits(value))
+}
+
+const VERSION_TOKEN_SET = new Set<string>(VERSION_TOKENS)
+
+export function songTitle(value: string): string {
+  const core = coreTitle(value)
+  const words = core.split(/\s+/).filter((word) => word && !VERSION_TOKEN_SET.has(word))
+  return words.join(' ').trim() || core
+}
+
+export function artistsMatch(left: string, right: string): boolean {
+  const a = normalizeTitle(stripFeaturingCredits(left).replace(/\s+\(\d+\)$/u, ''))
+  const b = normalizeTitle(stripFeaturingCredits(right).replace(/\s+\(\d+\)$/u, ''))
+  if (!a || !b) return false
+  if (a === b) return true
+  return a.replace(/^the /, '') === b.replace(/^the /, '')
+}
+
+export type TrackLevelRecordingHit = {
+  mbid: string
+  title: string
+  artist: string
+  lengthMs: number | null
+  score?: number
+  hasSamples?: boolean
+}
+
+export function recordingHasSampleMaterial(
+  recording?: { samplesFrom?: unknown[]; sampledIn?: unknown[] } | null
+): boolean {
+  if (!recording) return false
+  return (recording.samplesFrom?.length ?? 0) > 0 || (recording.sampledIn?.length ?? 0) > 0
+}
+
+export function compareTrackLevelRecordings(
+  left: TrackLevelRecordingHit,
+  right: TrackLevelRecordingHit
+): number {
+  const scoreDelta = (right.score ?? 0) - (left.score ?? 0)
+  if (scoreDelta !== 0) return scoreDelta
+  const leftSamples = left.hasSamples ? 1 : 0
+  const rightSamples = right.hasSamples ? 1 : 0
+  if (leftSamples !== rightSamples) return rightSamples - leftSamples
+  return left.mbid.localeCompare(right.mbid)
+}
+
+export function filterTrackLevelRecordings(
+  hits: TrackLevelRecordingHit[],
+  discogs: { artist: string; title: string; durationMs: number | null }
+): TrackLevelRecordingHit[] {
+  const discogsSong = songTitle(discogs.title)
+  return hits.filter((hit) => {
+    if (!artistsMatch(discogs.artist, hit.artist)) return false
+    const titleOk =
+      titlesSimilar(discogs.title, hit.title) ||
+      Boolean(discogsSong && songTitle(hit.title) && discogsSong === songTitle(hit.title))
+    if (!titleOk) return false
+    const delta = durationDeltaMs(discogs.durationMs, hit.lengthMs)
+    if (delta == null) return true
+    return delta <= DURATION_FAR_MS
+  })
+}
+
+export function pickTrackLevelRecordings(
+  hits: TrackLevelRecordingHit[],
+  discogs: { artist: string; title: string; durationMs: number | null },
+  options?: { priorMbid?: string | null }
+): TrackLevelRecordingHit[] {
+  const matched = filterTrackLevelRecordings(hits, discogs)
+  const ranked = matched.slice().sort(compareTrackLevelRecordings)
+  const priorMbid = options?.priorMbid
+  if (!priorMbid) return ranked
+  const prior = matched.find((hit) => hit.mbid === priorMbid)
+  if (!prior) return ranked
+  const best = ranked[0]
+  if (!best) return [prior]
+  const bestScore = best.score ?? 0
+  const priorScore = prior.score ?? 0
+  if (bestScore > priorScore) return ranked
+  if (bestScore === priorScore && best.hasSamples && !prior.hasSamples) return ranked
+  return [prior, ...ranked.filter((hit) => hit.mbid !== prior.mbid)]
 }
 
 export function normalizePosition(value: string): string {

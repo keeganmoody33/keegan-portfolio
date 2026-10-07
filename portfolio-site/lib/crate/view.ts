@@ -8,9 +8,17 @@ import {
   type StoredRecording,
   type TrackOccurrence,
 } from './types.ts'
-import { creditLine, creditsFromFacts, factsForTrack, sampledByFacts, samplesFromFacts } from './research.ts'
+import {
+  creditLine,
+  creditsFromFacts,
+  factsForTrack,
+  isRecordingOrReleaseSampleLink,
+  presentSampleArtist,
+  sampledByFacts,
+  samplesFromFacts,
+} from './research.ts'
 
-export { creditLine }
+export { creditLine, presentSampleArtist }
 
 export type Connection = {
   label: string
@@ -51,6 +59,11 @@ export function pressingCheckedNoMatchLine(pressing: StoredPressing): string | n
   )
 }
 
+function sampleRowTitle(artist: string | undefined, title: string): string {
+  const name = presentSampleArtist(artist)
+  return name ? `${name} — ${title}` : title
+}
+
 export function overviewConnections(pressing: StoredPressing, limit = 3): Connection[] {
   const rows: Connection[] = []
   const seen = new Set<string>()
@@ -64,21 +77,17 @@ export function overviewConnections(pressing: StoredPressing, limit = 3): Connec
   }
 
   for (const fact of facts) {
-    if (fact.kind === 'sample_of') {
+    if (fact.kind === 'sample_of' && isRecordingOrReleaseSampleLink(fact)) {
       add({
         label: `${fact.track?.title ?? pressing.facts.title} samples`,
-        title: fact.relatedArtist
-          ? `${fact.relatedArtist} — ${fact.relatedTitle}`
-          : fact.relatedTitle,
+        title: sampleRowTitle(fact.relatedArtist, fact.relatedTitle),
         href: fact.sourceUrl,
         source: fact.source,
       })
-    } else if (fact.kind === 'sampled_by') {
+    } else if (fact.kind === 'sampled_by' && isRecordingOrReleaseSampleLink(fact)) {
       add({
         label: `${fact.track?.title ?? pressing.facts.title} sampled in`,
-        title: fact.relatedArtist
-          ? `${fact.relatedArtist} — ${fact.relatedTitle}`
-          : fact.relatedTitle,
+        title: sampleRowTitle(fact.relatedArtist, fact.relatedTitle),
         href: fact.sourceUrl,
         source: fact.source,
       })
@@ -93,17 +102,19 @@ export function overviewConnections(pressing: StoredPressing, limit = 3): Connec
     const recording = pressing.recordings[mbid]
     if (!recording) continue
     for (const sample of recording.samplesFrom) {
+      if (!isRecordingOrReleaseSampleLink(sample)) continue
       add({
         label: `${track.title} samples`,
-        title: sample.artist ? `${sample.artist} — ${sample.title}` : sample.title,
+        title: sampleRowTitle(sample.artist, sample.title),
         href: sample.sourceUrl,
         source: sample.source,
       })
     }
     for (const sample of recording.sampledIn) {
+      if (!isRecordingOrReleaseSampleLink(sample)) continue
       add({
         label: `${track.title} sampled in`,
-        title: sample.artist ? `${sample.artist} — ${sample.title}` : sample.title,
+        title: sampleRowTitle(sample.artist, sample.title),
         href: sample.sourceUrl,
         source: sample.source,
       })

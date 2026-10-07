@@ -10,6 +10,7 @@ import {
   checkedNoMatchLine,
   factRows,
   overviewConnections,
+  presentSampleArtist,
   pressingCheckedNoMatchLine,
   trackCreditFacts,
   trackSampleFacts,
@@ -357,7 +358,7 @@ export default function RecordDetail({
                         <p className="house-meta">{row.label}</p>
                         <a
                           href={row.href}
-                          className={`mt-1 inline-block text-sm hover:text-[var(--house-orange)] ${focusRing}`}
+                          className={`mt-1 inline-flex min-h-6 items-center [overflow-wrap:anywhere] min-w-0 max-w-full text-sm hover:text-[var(--house-orange)] ${focusRing}`}
                           rel="noopener noreferrer"
                           target="_blank"
                         >
@@ -604,7 +605,7 @@ function TrackExtras({
               key={`${credit.role}-${credit.person}-${index}`}
               className="border-t border-[var(--house-line)] py-3 last:border-b"
             >
-              <p className="text-sm">
+              <p className="min-w-0 text-sm [overflow-wrap:anywhere]">
                 {credit.person}
                 <span className="text-[var(--house-muted)]"> · {credit.role}</span>
               </p>
@@ -629,19 +630,22 @@ function FactSampleList({ items }: { items: ResearchFact[] }) {
   }
   return (
     <ul className="mt-2 list-none p-0">
-      {items.map((item) => (
-        <li key={`${item.sourceId}-${item.sourceUrl}`} className="border-t border-[var(--house-line)] py-3 last:border-b">
-          <a
-            href={item.sourceUrl}
-            className={`inline-flex min-h-6 items-center text-sm hover:text-[var(--house-orange)] ${focusRing}`}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            {item.relatedArtist ? `${item.relatedArtist} — ${item.relatedTitle}` : item.relatedTitle}
-          </a>
-          <SourceLine source={item.source} href={item.sourceUrl} />
-        </li>
-      ))}
+      {items.map((item) => {
+        const artist = presentSampleArtist(item.relatedArtist)
+        return (
+          <li key={`${item.sourceId}-${item.sourceUrl}`} className="border-t border-[var(--house-line)] py-3 last:border-b">
+            <a
+              href={item.sourceUrl}
+              className={`inline-flex min-h-6 min-w-0 items-center text-sm [overflow-wrap:anywhere] hover:text-[var(--house-orange)] ${focusRing}`}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              {artist ? `${artist} — ${item.relatedTitle}` : item.relatedTitle}
+            </a>
+            <SourceLine source={item.source} href={item.sourceUrl} />
+          </li>
+        )
+      })}
     </ul>
   )
 }

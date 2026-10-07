@@ -1,11 +1,12 @@
 import type { DiscogsReleaseDetail } from './discogs-release.ts'
-import type {
-  Credit,
-  ResearchFact,
-  SampleLink,
-  SourceName,
-  StoredPressing,
-  TrackOccurrence,
+import {
+  isMusicBrainzUnknownArtist,
+  type Credit,
+  type ResearchFact,
+  type SampleLink,
+  type SourceName,
+  type StoredPressing,
+  type TrackOccurrence,
 } from './types.ts'
 
 const SOURCE_ORDER: Record<SourceName, number> = {
@@ -24,7 +25,8 @@ const ROLE_SYNONYMS: Record<string, string> = {
   'written-by': 'written by',
   'written by': 'written by',
   writer: 'written by',
-  composer: 'composer',
+  composer: 'written by',
+  'composed by': 'written by',
   lyricist: 'lyricist',
   'lyrics by': 'lyricist',
   'lyrics': 'lyricist',
@@ -54,7 +56,24 @@ export function splitCreditRoles(role: string): string[] {
     .filter(Boolean)
 }
 
+export function presentSampleArtist(name: string | undefined | null): string {
+  const trimmed = (name ?? '')
+    .trim()
+    .replace(/\s*&\s*\[unknown\]\s*$/i, '')
+    .replace(/\s*[&,]\s*$/, '')
+    .trim()
+  if (!trimmed || isMusicBrainzUnknownArtist(trimmed)) return ''
+  return trimmed
+}
+
+export function sampleFactIdentityKey(fact: ResearchFact): string {
+  return [fact.kind, fact.trackKey, fact.sourceId || fact.sourceUrl].join('\u001f')
+}
+
 export function factDedupeKey(fact: ResearchFact): string {
+  if (fact.kind === 'sample_of' || fact.kind === 'sampled_by') {
+    return sampleFactIdentityKey(fact)
+  }
   return [
     fact.kind,
     fact.trackKey,
@@ -75,6 +94,25 @@ export function creditLine(credit: Credit): string {
   return credit.role
 }
 
+export function mergeSampleLinks(...groups: SampleLink[][]): SampleLink[] {
+  const index = new Map<string, number>()
+  const merged: SampleLink[] = []
+  for (const group of groups) {
+    for (const link of group) {
+      const next = { ...link, artist: presentSampleArtist(link.artist) }
+      const key = next.mbid || next.sourceUrl
+      const at = index.get(key)
+      if (at == null) {
+        index.set(key, merged.length)
+        merged.push(next)
+        continue
+      }
+      if (next.artist && !merged[at]!.artist) merged[at] = next
+    }
+  }
+  return merged
+}
+
 export function mergeResearchFacts(...groups: ResearchFact[][]): ResearchFact[] {
   const ranked = groups
     .flat()
@@ -82,15 +120,27 @@ export function mergeResearchFacts(...groups: ResearchFact[][]): ResearchFact[] 
     .sort((left, right) => SOURCE_ORDER[left.source] - SOURCE_ORDER[right.source])
   const seen = new Set<string>()
   const merged: ResearchFact[] = []
+  const sampleIndex = new Map<string, number>()
   const creditTracks = new Map<string, Set<string>>()
   const creditReleaseIndex = new Map<string, number>()
   for (const fact of ranked) {
     if (!fact.person && fact.kind === 'credit') continue
-    if (
-      (fact.kind === 'sample_of' || fact.kind === 'sampled_by') &&
-      !fact.relatedTitle &&
-      !fact.relatedArtist
-    ) {
+    if (fact.kind === 'sample_of' || fact.kind === 'sampled_by') {
+      const sample = {
+        ...fact,
+        relatedArtist: presentSampleArtist(fact.relatedArtist),
+      }
+      if (!sample.relatedTitle && !sample.relatedArtist) continue
+      if (!isRecordingOrReleaseSampleLink(sample)) continue
+      const key = factDedupeKey(sample)
+      const at = sampleIndex.get(key)
+      if (at == null) {
+        sampleIndex.set(key, merged.length)
+        seen.add(key)
+        merged.push(sample)
+        continue
+      }
+      if (sample.relatedArtist && !merged[at]!.relatedArtist) merged[at] = sample
       continue
     }
     if (fact.kind === 'credit') {
@@ -155,7 +205,7 @@ function sampleFact(
     role: kind === 'sample_of' ? 'samples' : 'sampled in',
     person: '',
     relatedTitle: sample.title,
-    relatedArtist: sample.artist,
+    relatedArtist: presentSampleArtist(sample.artist),
     source: sample.source,
     sourceId: sample.providerId ?? sample.mbid,
     sourceUrl: sample.sourceUrl,
@@ -189,9 +239,11 @@ export function factsFromRecordings(
         facts.push(creditFact(credit, track, fetchedAt))
       }
       for (const sample of recording.samplesFrom) {
+        if (!isRecordingOrReleaseSampleLink(sample)) continue
         facts.push(sampleFact('sample_of', sample, track, fetchedAt))
       }
       for (const sample of recording.sampledIn) {
+        if (!isRecordingOrReleaseSampleLink(sample)) continue
         facts.push(sampleFact('sampled_by', sample, track, fetchedAt))
       }
     }
@@ -353,10 +405,18 @@ export function creditsFromFacts(facts: ResearchFact[]): ResearchFact[] {
   return facts.filter((fact) => fact.kind === 'credit')
 }
 
+export function isRecordingOrReleaseSampleLink(sample: { sourceUrl: string }): boolean {
+  return !/musicbrainz\.org\/work\//i.test(sample.sourceUrl ?? '')
+}
+
 export function samplesFromFacts(facts: ResearchFact[]): ResearchFact[] {
-  return facts.filter((fact) => fact.kind === 'sample_of')
+  return facts.filter(
+    (fact) => fact.kind === 'sample_of' && isRecordingOrReleaseSampleLink(fact)
+  )
 }
 
 export function sampledByFacts(facts: ResearchFact[]): ResearchFact[] {
-  return facts.filter((fact) => fact.kind === 'sampled_by')
+  return facts.filter(
+    (fact) => fact.kind === 'sampled_by' && isRecordingOrReleaseSampleLink(fact)
+  )
 }

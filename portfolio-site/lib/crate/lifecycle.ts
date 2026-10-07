@@ -11,7 +11,7 @@ import type {
   TrackOccurrence,
 } from './types.ts'
 import { CRATE_MAX_ATTEMPTS, CRATE_RESEARCH_REFRESH_MS } from './types.ts'
-import { factsFromRecordings, mergeResearchFacts } from './research.ts'
+import { factsFromRecordings, isRecordingOrReleaseSampleLink, mergeResearchFacts } from './research.ts'
 
 export function emptyFetchState(): FetchState {
   return {
@@ -71,7 +71,10 @@ export function coverageOf(
   const facts = pressing.researchFacts ?? []
   const withReleaseCredits = facts.some((fact) => fact.kind === 'credit' && !fact.trackKey)
   const withReleaseSamples = facts.some(
-    (fact) => (fact.kind === 'sample_of' || fact.kind === 'sampled_by') && !fact.trackKey
+    (fact) =>
+      (fact.kind === 'sample_of' || fact.kind === 'sampled_by') &&
+      !fact.trackKey &&
+      isRecordingOrReleaseSampleLink(fact)
   )
   let matched = 0
   let withCredits = 0
@@ -87,9 +90,15 @@ export function coverageOf(
       trackFacts.some((fact) => fact.kind === 'credit') ||
       Boolean(recording && recording.credits.length > 0)
     const sample =
-      trackFacts.some((fact) => fact.kind === 'sample_of' || fact.kind === 'sampled_by') ||
+      trackFacts.some(
+        (fact) =>
+          (fact.kind === 'sample_of' || fact.kind === 'sampled_by') &&
+          isRecordingOrReleaseSampleLink(fact)
+      ) ||
       Boolean(
-        recording && (recording.samplesFrom.length > 0 || recording.sampledIn.length > 0)
+        recording &&
+          (recording.samplesFrom.some(isRecordingOrReleaseSampleLink) ||
+            recording.sampledIn.some(isRecordingOrReleaseSampleLink))
       )
     if (credit) withCredits += 1
     if (sample) withSamples += 1

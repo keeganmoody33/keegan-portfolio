@@ -1,9 +1,16 @@
 import {
   MUSICBRAINZ_MIN_INTERVAL_MS,
+  MUSICBRAINZ_RETRY_AFTER_CAP_MS,
+  MUSICBRAINZ_TIMEOUT_MS,
   MUSICBRAINZ_USER_AGENT,
+  isMusicBrainzUnknownArtist,
   type Credit,
   type SampleLink,
 } from './types.ts'
+
+export { MUSICBRAINZ_RETRY_AFTER_CAP_MS }
+
+export const MUSICBRAINZ_RATE_LIMIT_MESSAGE = 'MusicBrainz rate limited'
 
 export const MUSICBRAINZ_API = 'https://musicbrainz.org/ws/2'
 
@@ -14,6 +21,8 @@ export type MbClientOptions = {
   now?: () => number
   sleep?: (ms: number) => Promise<void>
   minIntervalMs?: number
+  timeoutMs?: number
+  deadlineMs?: number
 }
 
 export type MbSearchHit = {
@@ -23,15 +32,46 @@ export type MbSearchHit = {
   trackCount: number | null
 }
 
+export type MbRecordingFacts = {
+  mbid: string
+  title: string
+  artist: string
+  credits: Credit[]
+  samplesFrom: SampleLink[]
+  sampledIn: SampleLink[]
+}
+
 export class MusicBrainzRateLimitError extends Error {
   readonly kind = 'rate_limit' as const
   readonly retryAfterMs: number
+  partialRecording: MbRecordingFacts | null = null
 
   constructor(retryAfterMs = 60_000) {
-    super('MusicBrainz rate limited')
+    super(MUSICBRAINZ_RATE_LIMIT_MESSAGE)
     this.name = 'MusicBrainzRateLimitError'
     this.retryAfterMs = retryAfterMs
   }
+}
+
+export class MusicBrainzTimeoutError extends Error {
+  readonly kind = 'unavailable' as const
+  readonly deadlineExceeded: boolean
+  partialRecording: MbRecordingFacts | null = null
+
+  constructor(deadlineExceeded = false) {
+    super(deadlineExceeded ? 'MusicBrainz deadline' : 'MusicBrainz timed out')
+    this.name = 'MusicBrainzTimeoutError'
+    this.deadlineExceeded = deadlineExceeded
+  }
+}
+
+export function isMusicBrainzTimeoutError(error: unknown): error is MusicBrainzTimeoutError {
+  return error instanceof MusicBrainzTimeoutError
+}
+
+function isAbortError(error: unknown): boolean {
+  if (error instanceof Error && error.name === 'AbortError') return true
+  return typeof error === 'object' && error !== null && 'name' in error && error.name === 'AbortError'
 }
 
 export function isMusicBrainzRateLimitError(
@@ -55,8 +95,28 @@ export function isMusicBrainzAuthError(error: unknown): error is MusicBrainzAuth
   return error instanceof MusicBrainzAuthError
 }
 
+export type MbRecordingSearchHit = {
+  mbid: string
+  title: string
+  artist: string
+  lengthMs: number | null
+  score: number
+}
+
+export const MB_SAMPLES_MATERIAL_RECORDING_TYPE_ID = '9efd9ce9-e702-448b-8e76-641515e8fe62'
+export const MB_SAMPLES_MATERIAL_RELEASE_TYPE_ID = '967746f9-9d79-456c-9d1e-50116f0b27fc'
+export { MUSICBRAINZ_UNKNOWN_ARTIST_MBID, isMusicBrainzUnknownArtist } from './types.ts'
+
+type MbArtistCreditPart = {
+  name?: string
+  artist?: { id?: string; name?: string }
+  joinphrase?: string
+}
+type MbArtistCredit = MbArtistCreditPart[]
+
 type MbRelation = {
   type?: string
+  'type-id'?: string
   direction?: string
   'target-type'?: string
   attributes?: string[]
@@ -64,9 +124,18 @@ type MbRelation = {
   recording?: {
     id?: string
     title?: string
-    'artist-credit'?: Array<{ name?: string; artist?: { name?: string } }>
+    'artist-credit'?: MbArtistCredit
   }
-  release?: { id?: string; title?: string }
+  work?: {
+    id?: string
+    title?: string
+    'artist-credit'?: MbArtistCredit
+  }
+  release?: {
+    id?: string
+    title?: string
+    'artist-credit'?: MbArtistCredit
+  }
 }
 
 type MbUrlLookup = {
@@ -86,7 +155,7 @@ type MbReleaseSearch = {
 type MbRecordingDoc = {
   id?: string
   title?: string
-  'artist-credit'?: Array<{ name?: string; artist?: { name?: string }; joinphrase?: string }>
+  'artist-credit'?: MbArtistCredit
   relations?: MbRelation[]
 }
 
@@ -96,12 +165,27 @@ function defaultSleep(ms: number): Promise<void> {
   })
 }
 
-function artistCreditName(
-  credit: Array<{ name?: string; artist?: { name?: string }; joinphrase?: string }> | undefined
-): string {
+export function artistCreditName(credit: MbArtistCredit | undefined): string {
   if (!credit || credit.length === 0) return ''
-  return credit
-    .map((part) => `${part.name ?? part.artist?.name ?? ''}${part.joinphrase ?? ''}`)
+  const kept: MbArtistCredit = []
+  for (const part of credit) {
+    const name = part.name ?? part.artist?.name ?? ''
+    if (isMusicBrainzUnknownArtist(name, part.artist?.id)) {
+      if (kept.length > 0) {
+        const prev = kept[kept.length - 1]!
+        kept[kept.length - 1] = { ...prev, joinphrase: part.joinphrase ?? '' }
+      }
+      continue
+    }
+    kept.push(part)
+  }
+  if (kept.length === 0) return ''
+  return kept
+    .map((part, index) => {
+      const name = part.name ?? part.artist?.name ?? ''
+      if (index === kept.length - 1) return name
+      return `${name}${part.joinphrase ?? ''}`
+    })
     .join('')
 }
 
@@ -113,6 +197,59 @@ export function musicbrainzReleaseUrl(mbid: string): string {
   return `https://musicbrainz.org/release/${mbid}`
 }
 
+export function isSamplesMaterialRelation(rel: { 'type-id'?: string }): boolean {
+  const typeId = (rel['type-id'] ?? '').toLowerCase()
+  return (
+    typeId === MB_SAMPLES_MATERIAL_RECORDING_TYPE_ID ||
+    typeId === MB_SAMPLES_MATERIAL_RELEASE_TYPE_ID
+  )
+}
+
+const SAMPLE_ARTIST_LOOKUP_CAP = 8
+
+function rememberArtist(
+  cache: Map<string, string>,
+  mbid: string | undefined,
+  credit: MbRecordingDoc['artist-credit']
+): void {
+  const name = artistCreditName(credit)
+  if (mbid && name) cache.set(mbid, name)
+}
+
+function presentLinkArtist(name: string | undefined): string {
+  const trimmed = (name ?? '').trim()
+  if (!trimmed || isMusicBrainzUnknownArtist(trimmed)) return ''
+  return trimmed
+}
+
+function sampleLinkFromRelation(rel: MbRelation, fallbackArtist = ''): SampleLink | null {
+  if (rel.recording?.id) {
+    return {
+      title: rel.recording.title ?? '',
+      artist:
+        artistCreditName(rel.recording['artist-credit']) ||
+        presentLinkArtist(fallbackArtist),
+      mbid: rel.recording.id,
+      sourceUrl: musicbrainzRecordingUrl(rel.recording.id),
+      source: 'musicbrainz',
+      providerId: rel.recording.id,
+    }
+  }
+  if (rel.release?.id) {
+    return {
+      title: rel.release.title ?? '',
+      artist:
+        artistCreditName(rel.release['artist-credit']) ||
+        presentLinkArtist(fallbackArtist),
+      mbid: rel.release.id,
+      sourceUrl: musicbrainzReleaseUrl(rel.release.id),
+      source: 'musicbrainz',
+      providerId: rel.release.id,
+    }
+  }
+  return null
+}
+
 export function escapeLucene(value: string): string {
   return value.replace(/[+\-!(){}[\]^"~*?:\\/]/g, '\\$&')
 }
@@ -121,14 +258,28 @@ export function stripDiscogsArtistSuffix(name: string): string {
   return name.replace(/\s+\(\d+\)$/u, '').trim()
 }
 
-export function readRetryAfterMs(response: Response, fallbackMs = 60_000): number {
+export function readRetryAfterMs(
+  response: Response,
+  fallbackMs = 60_000,
+  nowMs = Date.now()
+): number {
   const raw = response.headers.get('Retry-After')
   if (!raw) return fallbackMs
   const seconds = Number.parseInt(raw, 10)
   if (Number.isFinite(seconds) && seconds >= 0) return seconds * 1000
   const date = Date.parse(raw)
-  if (Number.isFinite(date)) return Math.max(0, date - Date.now())
+  if (Number.isFinite(date)) return Math.max(0, date - nowMs)
   return fallbackMs
+}
+
+export function musicbrainzRetryAfterMs(
+  response: Response,
+  nowMs = Date.now()
+): number {
+  return Math.min(
+    MUSICBRAINZ_RETRY_AFTER_CAP_MS,
+    Math.max(0, readRetryAfterMs(response, 60_000, nowMs))
+  )
 }
 
 function hitsFromSearch(data: MbReleaseSearch): MbSearchHit[] {
@@ -152,35 +303,70 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
   const now = options.now ?? Date.now
   const sleep = options.sleep ?? defaultSleep
   const minInterval = options.minIntervalMs ?? MUSICBRAINZ_MIN_INTERVAL_MS
+  const timeoutMs = options.timeoutMs ?? MUSICBRAINZ_TIMEOUT_MS
+  const deadlineMs = options.deadlineMs
   let lastAt = 0
   let requestCount = 0
 
+  const remainingMs = (): number =>
+    deadlineMs == null ? Number.POSITIVE_INFINITY : Math.max(0, deadlineMs - now())
+
   async function getJson<T>(url: string): Promise<T> {
     const wait = lastAt + minInterval - now()
-    if (wait > 0) await sleep(wait)
+    const remaining = remainingMs()
+    if (deadlineMs != null && remaining <= 0) {
+      throw new MusicBrainzTimeoutError(true)
+    }
+    if (wait > 0) {
+      if (deadlineMs != null && wait > remaining) {
+        throw new MusicBrainzTimeoutError(true)
+      }
+      await sleep(wait)
+    }
     lastAt = now()
     requestCount += 1
-    const response = await fetchImpl(url, {
-      headers: {
-        'User-Agent': MUSICBRAINZ_USER_AGENT,
-        Accept: 'application/json',
-      },
-    })
-    if (response.status === 404) {
-      return { error: 'Not Found' } as T
+    const requestTimeout = Math.min(timeoutMs, remainingMs())
+    if (requestTimeout <= 0) {
+      throw new MusicBrainzTimeoutError(deadlineMs != null)
     }
-    if (response.status === 401 || response.status === 403) {
-      throw new MusicBrainzAuthError(response.status)
-    }
-    if (response.status === 503 || response.status === 429) {
-      throw new MusicBrainzRateLimitError(readRetryAfterMs(response))
-    }
-    if (!response.ok) {
-      const error = new Error('MusicBrainz unavailable')
-      ;(error as Error & { kind: 'unavailable' }).kind = 'unavailable'
+    const controller = new AbortController()
+    const timer = setTimeout(
+      () => controller.abort(),
+      Number.isFinite(requestTimeout) ? requestTimeout : timeoutMs
+    )
+    try {
+      const response = await fetchImpl(url, {
+        headers: {
+          'User-Agent': MUSICBRAINZ_USER_AGENT,
+          Accept: 'application/json',
+        },
+        signal: controller.signal,
+      })
+      if (response.status === 404) {
+        return { error: 'Not Found' } as T
+      }
+      if (response.status === 401 || response.status === 403) {
+        throw new MusicBrainzAuthError(response.status)
+      }
+      if (response.status === 503 || response.status === 429) {
+        throw new MusicBrainzRateLimitError(musicbrainzRetryAfterMs(response, now()))
+      }
+      if (!response.ok) {
+        const error = new Error('MusicBrainz unavailable')
+        ;(error as Error & { kind: 'unavailable' }).kind = 'unavailable'
+        throw error
+      }
+      return (await response.json()) as T
+    } catch (error) {
+      if (isMusicBrainzRateLimitError(error) || isMusicBrainzAuthError(error)) throw error
+      if (error instanceof Error && 'kind' in error && error.kind === 'unavailable') throw error
+      if (isAbortError(error) || controller.signal.aborted) {
+        throw new MusicBrainzTimeoutError(deadlineMs != null && remainingMs() <= 0)
+      }
       throw error
+    } finally {
+      clearTimeout(timer)
     }
-    return (await response.json()) as T
   }
 
   return {
@@ -246,6 +432,48 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
       const params = new URLSearchParams({ query: parts.join(' AND '), fmt: 'json' })
       const data = await getJson<MbReleaseSearch>(`${MUSICBRAINZ_API}/release?${params.toString()}`)
       return hitsFromSearch(data)
+    },
+
+    async searchRecordingsByArtistTitle(input: {
+      artist: string
+      title: string
+    }): Promise<MbRecordingSearchHit[]> {
+      const artist = stripDiscogsArtistSuffix(input.artist)
+      const title = input.title.trim()
+      if (!artist || !title) return []
+      const query = `artist:"${escapeLucene(artist)}" AND recording:"${escapeLucene(title)}"`
+      const params = new URLSearchParams({
+        query,
+        fmt: 'json',
+        limit: '25',
+      })
+      const data = await getJson<{
+        recordings?: Array<{
+          id?: string
+          title?: string
+          score?: number
+          length?: number
+          'artist-credit'?: Array<{
+            name?: string
+            artist?: { name?: string }
+            joinphrase?: string
+          }>
+        }>
+      }>(`${MUSICBRAINZ_API}/recording?${params.toString()}`)
+      const hits: MbRecordingSearchHit[] = []
+      const seen = new Set<string>()
+      for (const recording of data.recordings ?? []) {
+        if (!recording.id || seen.has(recording.id)) continue
+        seen.add(recording.id)
+        hits.push({
+          mbid: recording.id,
+          title: recording.title ?? '',
+          artist: artistCreditName(recording['artist-credit']),
+          lengthMs: typeof recording.length === 'number' ? recording.length : null,
+          score: typeof recording.score === 'number' ? recording.score : 0,
+        })
+      }
+      return hits
     },
 
     async getRelease(mbid: string): Promise<{
@@ -332,16 +560,9 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
       }
     },
 
-    async getRecording(mbid: string): Promise<{
-      mbid: string
-      title: string
-      artist: string
-      credits: Credit[]
-      samplesFrom: SampleLink[]
-      sampledIn: SampleLink[]
-    } | null> {
+    async getRecording(mbid: string): Promise<MbRecordingFacts | null> {
       const params = new URLSearchParams({
-        inc: 'artist-credits+artist-rels+recording-rels+work-rels+url-rels',
+        inc: 'artist-credits+artist-rels+recording-rels+release-rels+url-rels',
         fmt: 'json',
       })
       const data = await getJson<MbRecordingDoc>(
@@ -352,6 +573,62 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
       const credits: Credit[] = []
       const samplesFrom: SampleLink[] = []
       const sampledIn: SampleLink[] = []
+      const artistCache = new Map<string, string>()
+      const lookups = { count: 0 }
+      rememberArtist(artistCache, data.id, data['artist-credit'])
+
+      const facts = (): MbRecordingFacts => ({
+        mbid: data.id!,
+        title: data.title ?? '',
+        artist: artistCreditName(data['artist-credit']),
+        credits,
+        samplesFrom,
+        sampledIn,
+      })
+
+      const attachPartial = (error: unknown): unknown => {
+        if (isMusicBrainzRateLimitError(error) || isMusicBrainzTimeoutError(error)) {
+          error.partialRecording = facts()
+        }
+        return error
+      }
+
+      const fillBlankSampleArtists = async (links: SampleLink[]): Promise<void> => {
+        for (const link of links) {
+          link.artist = presentLinkArtist(link.artist)
+          if (link.artist) continue
+          const cached = presentLinkArtist(artistCache.get(link.mbid))
+          if (cached) {
+            link.artist = cached
+            continue
+          }
+          if (!/\/recording\//.test(link.sourceUrl) && !/\/release\//.test(link.sourceUrl)) continue
+          if (lookups.count >= SAMPLE_ARTIST_LOOKUP_CAP) continue
+          lookups.count += 1
+          if (/\/release\//.test(link.sourceUrl)) {
+            const release = await getJson<{
+              id?: string
+              'artist-credit'?: MbRecordingDoc['artist-credit']
+            }>(
+              `${MUSICBRAINZ_API}/release/${link.mbid}?${new URLSearchParams({
+                inc: 'artist-credits',
+                fmt: 'json',
+              }).toString()}`
+            )
+            rememberArtist(artistCache, release.id, release['artist-credit'])
+            link.artist = presentLinkArtist(artistCache.get(link.mbid))
+            continue
+          }
+          const rec = await getJson<MbRecordingDoc>(
+            `${MUSICBRAINZ_API}/recording/${link.mbid}?${new URLSearchParams({
+              inc: 'artist-credits',
+              fmt: 'json',
+            }).toString()}`
+          )
+          rememberArtist(artistCache, rec.id, rec['artist-credit'])
+          link.artist = presentLinkArtist(artistCache.get(link.mbid))
+        }
+      }
 
       for (const rel of data.relations ?? []) {
         const type = (rel.type ?? '').toLowerCase()
@@ -367,31 +644,23 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
             providerId: rel.artist.id,
           })
         }
-        if (type === 'samples material' || type.includes('sample')) {
-          const recording = rel.recording
-          if (!recording?.id) continue
-          const link: SampleLink = {
-            title: recording.title ?? '',
-            artist: artistCreditName(recording['artist-credit']),
-            mbid: recording.id,
-            sourceUrl: musicbrainzRecordingUrl(recording.id),
-            source: 'musicbrainz',
-            providerId: recording.id,
+        if (isSamplesMaterialRelation(rel)) {
+          const link = sampleLinkFromRelation(rel)
+          if (link) {
+            const incoming = (rel.direction ?? '').toLowerCase() === 'backward'
+            if (incoming) sampledIn.push(link)
+            else samplesFrom.push(link)
           }
-          const incoming = (rel.direction ?? '').toLowerCase() === 'backward'
-          if (incoming) sampledIn.push(link)
-          else samplesFrom.push(link)
         }
       }
 
-      return {
-        mbid: data.id,
-        title: data.title ?? '',
-        artist: artistCreditName(data['artist-credit']),
-        credits,
-        samplesFrom,
-        sampledIn,
+      try {
+        await fillBlankSampleArtists([...samplesFrom, ...sampledIn])
+      } catch (error) {
+        throw attachPartial(error)
       }
+
+      return facts()
     },
   }
 }

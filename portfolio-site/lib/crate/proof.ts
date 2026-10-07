@@ -15,7 +15,7 @@ import {
   type DiscogsReleaseDetail,
 } from './discogs-release.ts'
 import { AUTH_RETRY_MS, storedPressingHasVisitorFacts } from './preserve.ts'
-import { crateRedisKeys, randomLockToken, type CrateStore } from './store.ts'
+import { crateRedisKeys, type CrateStore } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
 import { createMusicBrainzClient, type MusicBrainzClient } from './musicbrainz.ts'
 import type { StoredPressing } from './types.ts'
@@ -131,6 +131,7 @@ function throwingMusicBrainzClient(): MusicBrainzClient {
     searchReleaseByBarcode: fail,
     searchReleaseByCatno: fail,
     searchReleaseByArtistTitle: fail,
+    searchRecordingsByArtistTitle: fail,
     getRelease: fail,
     getRecording: fail,
   }
@@ -175,8 +176,8 @@ async function proveOverlap(store: CrateStore): Promise<Record<string, unknown>>
     fetchDiscogs,
   }
   const [first, second] = await Promise.all([
-    processEnrichmentQueue({ ...deps, lockToken: randomLockToken() }, 1),
-    processEnrichmentQueue({ ...deps, lockToken: randomLockToken() }, 1),
+    processEnrichmentQueue(deps, 1),
+    processEnrichmentQueue(deps, 1),
   ])
   const processed = [...first.processed, ...second.processed]
   const uniqueProcessed = [...new Set(processed)]
