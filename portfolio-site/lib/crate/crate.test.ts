@@ -924,6 +924,7 @@ describe('enrich lock token (P1.4)', () => {
     const cli = readFileSync(fileURLToPath(new URL('../../scripts/crate-backfill.ts', import.meta.url)), 'utf8')
     assert.doesNotMatch(src, /getEnrichLockToken/)
     assert.doesNotMatch(src, /setEnrichLockToken/)
+    assert.doesNotMatch(src, /enrichMeta/)
     assert.doesNotMatch(cli, /getEnrichLockToken/)
     assert.doesNotMatch(cli, /setEnrichLockToken/)
     const enrich = readFileSync(fileURLToPath(new URL('./enrich.ts', import.meta.url)), 'utf8')
