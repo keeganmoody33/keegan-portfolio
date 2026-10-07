@@ -35,7 +35,7 @@ All versions are pinned from `portfolio-site/package-lock.json`.
 | postcss | 8.5.23 | CSS processing pipeline |
 | autoprefixer | 10.4.23 | Vendor prefixes for CSS |
 
-**Brand assets:** `npm run generate:brand` (`scripts/generate-brand-assets.mjs`) rebuilds `icon.svg`, `favicon.ico`, `apple-icon.png`, and house OG/twitter PNGs from `brand/lecturesfrom-mark.svg`. Needs system `rsvg-convert` and `python3-pil`. Not an npm dependency.
+**Brand assets:** `npm run generate:brand` runs `scripts/brand/render.py` (official logo set in `public/brand/` + `app/icon.svg`, `favicon.ico`, `apple-icon.png`; needs `pip install cairosvg pillow`), `scripts/brand/manifest.mjs` (hashed copies + `manifest.json`), then `scripts/generate-brand-assets.mjs` (house OG PNG only, from `brand/lecturesfrom-mark.svg`; needs system `rsvg-convert` and `python3-pil`). Not npm dependencies.
 
 ---
 

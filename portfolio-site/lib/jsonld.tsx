@@ -29,6 +29,16 @@ export function houseOrganizationJsonLd() {
         legalName: 'lecturesfrom LLC',
         description: HOUSE_DESCRIPTION,
         url: SITE_URL,
+        logo: {
+          '@type': 'ImageObject',
+          '@id': `${SITE_URL}/#logo`,
+          url: `${SITE_URL}/brand/logo-1024.png`,
+          contentUrl: `${SITE_URL}/brand/logo-1024.png`,
+          width: 1024,
+          height: 1024,
+          caption: 'lecturesfrom',
+        },
+        image: { '@id': `${SITE_URL}/#logo` },
         foundingDate: '2025',
         address: {
           '@type': 'PostalAddress',

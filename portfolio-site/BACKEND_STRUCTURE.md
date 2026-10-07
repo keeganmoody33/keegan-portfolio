@@ -427,16 +427,19 @@ House share images live in the `(house)` route group so they do **not** inherit 
 
 | File | URL | Notes |
 |------|-----|--------|
-| `app/icon.svg` | `/icon.svg` | Stroke via `prefers-color-scheme` (`#20262b` light / `#ececec` dark). No `currentColor`. |
-| `app/favicon.ico` | `/favicon.ico` | 16 / 32 / 48 on a `#ececec` rounded plate, mark `#20262b`. |
-| `app/apple-icon.png` | `/apple-icon.png` | 180×180, solid `#ececec` ground, mark `#20262b`. |
+| `app/icon.svg` | `/icon.svg` | Simplified official mark (no flag, stroke 0.095). Stroke via `prefers-color-scheme` (`#20262b` light / `#ffffff` dark). No `currentColor`. |
+| `app/favicon.ico` | `/favicon.ico` | 16 / 32 / 48, simplified official mark `#20262b`, transparent. |
+| `app/apple-icon.png` | `/apple-icon.png` | 180×180, white ground, full official mark `#20262b`. |
+| `app/manifest.ts` | `/manifest.webmanifest` | Icons `/brand/icon-192.png`, `/brand/icon-512.png`. |
+| `public/brand/*` | `/brand/*` | Official logo files + `manifest.json`. `Cache-Control: max-age=3600, stale-while-revalidate=86400`, CORS `*` (next.config `headers()`). |
+| `public/brand/v/*` | `/brand/v/*` | Content-hashed copies. `max-age=31536000, immutable`, CORS `*`. |
 | `app/(house)/opengraph-image.tsx` | hashed `/opengraph-image-*` | Injects house `og:image`. |
 | `app/opengraph-image/route.ts` | `/opengraph-image` | Stable 1200×630 PNG from `brand/house-share.png`. |
 | `app/(house)/twitter-image.tsx` | hashed `/twitter-image-*` | Injects house `twitter:image`. |
 | `app/twitter-image/route.ts` | `/twitter-image` | Same still as OG. |
 | `public/og.jpg` | `/og.jpg` | GTM certificate. Person metadata only (`personMetadata()`). |
 
-Regenerate rasters with `npm run generate:brand`. Canonical vector: `brand/lecturesfrom-mark.svg`.
+Regenerate with `npm run generate:brand`: `scripts/brand/render.py` writes `public/brand/*` and the three `app/` icons from the official 2026-09-26 master (paths live in the script); `scripts/brand/manifest.mjs` writes hashed copies + `manifest.json`; `scripts/generate-brand-assets.mjs` writes only `brand/house-share.png` from `brand/lecturesfrom-mark.svg` (scaled-core line mark used by the site logo components; OG follow-up). R2 mirror: `scripts/brand/publish-r2.sh`; add mirror URLs with `BRAND_MIRROR_LIVE=1` only after `assets.lecturesfrom.com` is live.
 
 ---
 
