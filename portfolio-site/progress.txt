@@ -1,3 +1,10 @@
+COMPLETED (2026-10-07 — PR #54 UX pick determinism + docs nits):
+- Track-level recording pick is deterministic: score desc, then samples-material, then lowest MBID. Keep a prior stored match unless a new hit scores strictly higher. Shuffled Mtume 567894 vocal search still yields `1d890c2b` (Juicy) over `1aaf2f49`. `presentSampleArtist` strips a trailing `& [unknown]` (`MC Real & [unknown]` → `MC Real`). FRONTEND_GUIDELINES / APP_FLOW wrap lists include sample rows and credit lines; FG never a placeholder `Unknown`/`[unknown]` (real artists named Unknown kept).
+- tsc: narrow `track.recording.mbid` before indexing `recordings` in `attachTrackLevelDocs`. BACKEND_STRUCTURE recording-level path matches the stable pick (15s duration reject, `TRACK_LEVEL_FETCH_CAP` 1).
+- Integrations leftovers already on this branch: per-process lock tokens (`selectEnrichLockToken`, never persist `crate:enrich:meta:v1`); Discogs abort through `json()`; Lua no quote strip; P5707 work-URL filter keeps Wikidata; OVERVIEW wrap.
+- Preview Redis DEL of `lf:preview:crate:enrich:meta:v1` skipped this VM (Upstash MCP `redis_list_databases` `[]`; Vercel CLI env pull needs login). Tests ran with KV unset. Never prod. `652b21d` still ancestor.
+- tsc / eslint / `npm test` (370 pass) / `next build` (28/28). Never prod. Do not merge.
+
 COMPLETED (2026-10-07 — PR #54 UX overlay dedupe + [unknown] + wrap):
 - P1-1: sample facts dedupe on `kind + trackKey + sourceId` (not artist). A 429 overlay keeps stored facts and swaps recordings; `hydratePressing` keeps the artist-filled row. Test: Sir Duke 266650 Footprints blank + filled collapses to one ATCQ row.
 - P1-2: MusicBrainz artist id `125ec42a-7229-4250-afc5-e057484327fe` and the literal `[unknown]` are empty in `artistCreditName` / artist fill. Rows render title-only — never `Unknown` or a stray dash.
