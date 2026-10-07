@@ -11,6 +11,7 @@ Updated: 2026-10-07
 - **A `based on` work/recording rel is not a sample.** Keep only `samples material` and `sampled by`.
 - **`applyDeadlineStop` must copy `trackSampleCursor`.** Dropping it re-searches from track 0. `persistTrackLevelDocs` attaches/merges first, then `setRecording` (clone) so Redis has the merged samples.
 - **Enrich lock TTL is 90s; the owner token must be able to re-acquire.** `SET NX` plus a Lua compare that misses JSON-encoded GET values leaves the key held. The next tick `skipped: true` until TTL. Re-acquire when `GET` matches the owner and refresh `EX`. Release via Lua, then GET+DEL fallback. Release on process exit. Do not use a 3700s lock TTL.
+- **Official `npm run crate:backfill` is one 45s tick.** `--ids=a,b,c,d --retry` still stops at the take floor. A 20-track rematch (Kiss 5150579) burned the whole budget; the other listed ids never started. Do not loop the official CLI unless asked. 1323531 can have `lastError` rate_limit on the pressing and still be missing from inspect — `--retry` without `--ids` will not pick it up.
 
 ## Credits vs samples (2026-10-07)
 

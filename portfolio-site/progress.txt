@@ -1,3 +1,13 @@
+COMPLETED (2026-10-07 — four leftover preview ids, official `--retry` once):
+- No walker running. Pulled `5846b22`, pushed lock fix `1567fc6` (no force). Preview Redis `lf:preview:` only. `VERCEL_ENV=preview`. Never prod.
+- `npm run crate:backfill -- --ids=5150579,11287168,1406290,1323531 --retry` once (45s `ENRICH_BUDGET_MS`). Processed Kiss 5150579 only (41 MB requests). Did not start the other three.
+- 5150579 Kiss Alive II: **matched** (MB `fe12c2ab-8ce4-4d20-9c7f-0526b5859684`, 20/20 tracks). Residual inspect `unavailable` (`wikidata skipped: worker budget below floor`, attempts 0).
+- 11287168 Method Man & Redman Blackout!: unchanged this tick. Stored. MB release **ambiguous** (shared catno). Recording-level samples present. `lastError` rate_limit attempts 0 from 08:04Z.
+- 1406290 Steel Pulse Reggae Fever (listing; not Method Man): unchanged. Discogs facts blank (`artist`/`title` empty), 10 tracks with recording-level matches. `lastError` rate_limit attempts 1. Inspect `not_found`.
+- 1323531 Tim Weisberg Night-Rider!: unchanged. MB release matched, 12/12 tracks matched, provenance still `pending` with rate_limit attempts 1. **Not in inspect**, so bare `--retry` without `--ids` would miss it.
+- Dead still 1409283 / 5328923 / 8404354: exhausted attempts 5 `Too many requests` on 2026-10-06 17:40–17:47Z, before rate_limit stopped counting toward `CRATE_MAX_ATTEMPTS`. Not retried.
+- Official 45s tick cannot rematch a 20-track live album and three more ids. Next leftover pass needs `--ids=11287168,1406290,1323531 --retry` (and optionally Kiss again for Wikidata).
+
 COMPLETED (2026-10-07 — full preview collection backfill):
 - Preview Redis `lf:preview:` only. Never prod. `prodTouched: false`. 276 unique ids, all stored. Coverage: `/opt/cursor/artifacts/preview-full-backfill.json` (started 2026-10-06T17:54:56Z, finished 2026-10-07T09:15:00Z, ~15.3h wall-clock).
 - Totals: matched MB release 144; recording-level only 74; recording-level any 119; unmatched 56; missing 0; ambiguous 79; temporary 4 (Kiss 5150579 unavailable, Method Man 11287168 / 1406290 / Tim Weisberg 1323531 rate_limit); too_slow 0.
