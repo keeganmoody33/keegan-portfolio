@@ -3,6 +3,7 @@ import {
   MUSICBRAINZ_RETRY_AFTER_CAP_MS,
   MUSICBRAINZ_TIMEOUT_MS,
   MUSICBRAINZ_USER_AGENT,
+  isMusicBrainzUnknownArtist,
   type Credit,
   type SampleLink,
 } from './types.ts'
@@ -104,8 +105,14 @@ export type MbRecordingSearchHit = {
 
 export const MB_SAMPLES_MATERIAL_RECORDING_TYPE_ID = '9efd9ce9-e702-448b-8e76-641515e8fe62'
 export const MB_SAMPLES_MATERIAL_RELEASE_TYPE_ID = '967746f9-9d79-456c-9d1e-50116f0b27fc'
+export { MUSICBRAINZ_UNKNOWN_ARTIST_MBID, isMusicBrainzUnknownArtist } from './types.ts'
 
-type MbArtistCredit = Array<{ name?: string; artist?: { name?: string }; joinphrase?: string }>
+type MbArtistCreditPart = {
+  name?: string
+  artist?: { id?: string; name?: string }
+  joinphrase?: string
+}
+type MbArtistCredit = MbArtistCreditPart[]
 
 type MbRelation = {
   type?: string
@@ -148,7 +155,7 @@ type MbReleaseSearch = {
 type MbRecordingDoc = {
   id?: string
   title?: string
-  'artist-credit'?: Array<{ name?: string; artist?: { name?: string }; joinphrase?: string }>
+  'artist-credit'?: MbArtistCredit
   relations?: MbRelation[]
 }
 
@@ -158,11 +165,14 @@ function defaultSleep(ms: number): Promise<void> {
   })
 }
 
-function artistCreditName(
-  credit: Array<{ name?: string; artist?: { name?: string }; joinphrase?: string }> | undefined
-): string {
+export function artistCreditName(credit: MbArtistCredit | undefined): string {
   if (!credit || credit.length === 0) return ''
-  return credit
+  const parts = credit.filter((part) => {
+    const name = part.name ?? part.artist?.name ?? ''
+    return !isMusicBrainzUnknownArtist(name, part.artist?.id)
+  })
+  if (parts.length === 0) return ''
+  return parts
     .map((part) => `${part.name ?? part.artist?.name ?? ''}${part.joinphrase ?? ''}`)
     .join('')
 }
@@ -194,11 +204,19 @@ function rememberArtist(
   if (mbid && name) cache.set(mbid, name)
 }
 
+function presentLinkArtist(name: string | undefined): string {
+  const trimmed = (name ?? '').trim()
+  if (!trimmed || isMusicBrainzUnknownArtist(trimmed)) return ''
+  return trimmed
+}
+
 function sampleLinkFromRelation(rel: MbRelation, fallbackArtist = ''): SampleLink | null {
   if (rel.recording?.id) {
     return {
       title: rel.recording.title ?? '',
-      artist: artistCreditName(rel.recording['artist-credit']) || fallbackArtist,
+      artist:
+        artistCreditName(rel.recording['artist-credit']) ||
+        presentLinkArtist(fallbackArtist),
       mbid: rel.recording.id,
       sourceUrl: musicbrainzRecordingUrl(rel.recording.id),
       source: 'musicbrainz',
@@ -208,7 +226,9 @@ function sampleLinkFromRelation(rel: MbRelation, fallbackArtist = ''): SampleLin
   if (rel.release?.id) {
     return {
       title: rel.release.title ?? '',
-      artist: artistCreditName(rel.release['artist-credit']) || fallbackArtist,
+      artist:
+        artistCreditName(rel.release['artist-credit']) ||
+        presentLinkArtist(fallbackArtist),
       mbid: rel.release.id,
       sourceUrl: musicbrainzReleaseUrl(rel.release.id),
       source: 'musicbrainz',
@@ -563,8 +583,9 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
 
       const fillBlankSampleArtists = async (links: SampleLink[]): Promise<void> => {
         for (const link of links) {
-          if (link.artist.trim()) continue
-          const cached = artistCache.get(link.mbid)
+          link.artist = presentLinkArtist(link.artist)
+          if (link.artist) continue
+          const cached = presentLinkArtist(artistCache.get(link.mbid))
           if (cached) {
             link.artist = cached
             continue
@@ -583,9 +604,7 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
               }).toString()}`
             )
             rememberArtist(artistCache, release.id, release['artist-credit'])
-            if (artistCache.get(link.mbid)) {
-              link.artist = artistCache.get(link.mbid) ?? ''
-            }
+            link.artist = presentLinkArtist(artistCache.get(link.mbid))
             continue
           }
           const rec = await getJson<MbRecordingDoc>(
@@ -595,9 +614,7 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
             }).toString()}`
           )
           rememberArtist(artistCache, rec.id, rec['artist-credit'])
-          if (artistCache.get(link.mbid)) {
-            link.artist = artistCache.get(link.mbid) ?? ''
-          }
+          link.artist = presentLinkArtist(artistCache.get(link.mbid))
         }
       }
 

@@ -1,3 +1,11 @@
+export const MUSICBRAINZ_UNKNOWN_ARTIST_MBID = '125ec42a-7229-4250-afc5-e057484327fe'
+
+export function isMusicBrainzUnknownArtist(name?: string, id?: string): boolean {
+  const idNorm = (id ?? '').trim().toLowerCase()
+  if (idNorm === MUSICBRAINZ_UNKNOWN_ARTIST_MBID) return true
+  return (name ?? '').trim().toLowerCase() === '[unknown]'
+}
+
 export const CRATE_EMPTY_LINE = 'nothing on file yet'
 export const CRATE_PICK_TRACK = 'pick a track for credits and samples'
 export const CRATE_UNAVAILABLE_LINE = "couldn't reach discogs"

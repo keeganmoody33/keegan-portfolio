@@ -33,8 +33,10 @@ import {
   MB_SAMPLES_MATERIAL_RECORDING_TYPE_ID,
   MB_SAMPLES_MATERIAL_RELEASE_TYPE_ID,
   MUSICBRAINZ_RETRY_AFTER_CAP_MS,
+  MUSICBRAINZ_UNKNOWN_ARTIST_MBID,
   MusicBrainzRateLimitError,
   MusicBrainzTimeoutError,
+  artistCreditName,
   createMusicBrainzClient,
   musicbrainzRetryAfterMs,
   readRetryAfterMs,
@@ -46,9 +48,9 @@ import { createMemoryDurableStore } from '../discogs-store.ts'
 import { fixturePressing, parseReleaseParam, readStoredPressing, unavailableHeading, unavailablePressing } from './read.ts'
 import { factRows, overviewConnections, pressingCheckedNoMatchLine } from './view.ts'
 import { cronSecretEqual } from './cron-auth.ts'
-import { coverageOf, hydratePressing, isPlayableOccurrence, shouldQueuePressing } from './lifecycle.ts'
+import { coverageOf, hydratePressing, isPlayableOccurrence, shouldQueuePressing, trackIdentityKey } from './lifecycle.ts'
 import { DISCOGS_RELEASE_TIMEOUT_MS, errorForDiscogsStatus, fetchDiscogsReleaseDetail, mapDiscogsReleaseDetail, probeDiscogsIdentity } from './discogs-release.ts'
-import { creditLine, factsFromRecordings, isRecordingOrReleaseSampleLink, mergeResearchFacts, normalizeCreditRole, researchFactsFromDiscogs } from './research.ts'
+import { creditLine, factsFromRecordings, isRecordingOrReleaseSampleLink, mergeResearchFacts, mergeSampleLinks, normalizeCreditRole, presentSampleArtist, researchFactsFromDiscogs } from './research.ts'
 import {
   createWikidataClient,
   getSharedWikidataClient,
@@ -4581,6 +4583,159 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     )
   })
 
+  it('dedupes blank-artist sample facts when a 429 overlay fills the artist', () => {
+    const recordingMbid = 'sir-duke-vocal'
+    const footprintsId = 'atcq-footprints'
+    const toutId = 'tout-le-monde'
+    const track = {
+      position: 'A1',
+      title: 'Sir Duke',
+      duration: '3:54',
+      durationMs: 234000,
+      index: 0,
+      type_: 'track',
+      recording: {
+        matchStatus: 'matched' as const,
+        confidence: 0.7,
+        reason: TRACK_LEVEL_REASON,
+        mbid: recordingMbid,
+        recordingUrl: `https://musicbrainz.org/recording/${recordingMbid}`,
+      },
+    }
+    const trackKey = trackIdentityKey(track)
+    const provenance = {
+      sourceUrls: [`https://musicbrainz.org/recording/${recordingMbid}`],
+      matchStatus: 'matched' as const,
+      confidence: 0.7,
+      reason: TRACK_LEVEL_REASON,
+      checkedAt: '2026-10-06T08:00:00.000Z',
+      refreshAfter: '2026-11-05T08:00:00.000Z',
+      lastError: null,
+      verifiedAt: '2026-10-06T08:00:00.000Z',
+      lastAttemptAt: '2026-10-06T08:00:00.000Z',
+    }
+    const blankFact = (title: string, sourceId: string, artist = ''): ResearchFact => ({
+      kind: 'sampled_by',
+      trackKey,
+      track: { position: 'A1', title: 'Sir Duke' },
+      role: 'sampled in',
+      person: '',
+      relatedTitle: title,
+      relatedArtist: artist,
+      source: 'musicbrainz',
+      sourceId,
+      sourceUrl: `https://musicbrainz.org/recording/${sourceId}`,
+      fetchedAt: '2026-10-06T08:00:00.000Z',
+    })
+    const previous = hydratePressing(
+      pressingStub({
+        releaseId: 266650,
+        tracks: [track],
+        recordings: {
+          [recordingMbid]: {
+            mbid: recordingMbid,
+            title: 'Sir Duke',
+            artist: 'Stevie Wonder',
+            credits: [],
+            samplesFrom: [],
+            sampledIn: [
+              {
+                title: 'Footprints',
+                artist: '',
+                mbid: footprintsId,
+                sourceUrl: `https://musicbrainz.org/recording/${footprintsId}`,
+                source: 'musicbrainz',
+                providerId: footprintsId,
+              },
+              {
+                title: 'Tout le monde en parle : Sir Duke',
+                artist: '[unknown]',
+                mbid: toutId,
+                sourceUrl: `https://musicbrainz.org/recording/${toutId}`,
+                source: 'musicbrainz',
+                providerId: toutId,
+              },
+            ],
+            provenance,
+          },
+        },
+        researchFacts: [
+          blankFact('Footprints', footprintsId),
+          blankFact('Tout le monde en parle : Sir Duke', toutId, '[unknown]'),
+        ],
+      })
+    )
+    const preserved = preservePressingOnFailure(
+      previous,
+      Date.parse('2026-10-06T08:01:00.000Z'),
+      'rate_limit',
+      'MusicBrainz rate limited'
+    )
+    const overlaid = overlayTrackLevelProgress(preserved, {
+      tracks: [{ ...track, identityKey: trackKey }],
+      recordings: {
+        [recordingMbid]: {
+          mbid: recordingMbid,
+          title: 'Sir Duke',
+          artist: 'Stevie Wonder',
+          credits: [],
+          samplesFrom: [],
+          sampledIn: [
+            {
+              title: 'Footprints',
+              artist: 'A Tribe Called Quest',
+              mbid: footprintsId,
+              sourceUrl: `https://musicbrainz.org/recording/${footprintsId}`,
+              source: 'musicbrainz',
+              providerId: footprintsId,
+            },
+            {
+              title: 'Tout le monde en parle : Sir Duke',
+              artist: '[unknown]',
+              mbid: toutId,
+              sourceUrl: `https://musicbrainz.org/recording/${toutId}`,
+              source: 'musicbrainz',
+              providerId: toutId,
+            },
+          ],
+          provenance,
+        },
+      },
+    })
+    const samples = (overlaid.researchFacts ?? []).filter((fact) => fact.kind === 'sampled_by')
+    const footprints = samples.filter((fact) => fact.sourceId === footprintsId)
+    const tout = samples.filter((fact) => fact.sourceId === toutId)
+    assert.equal(footprints.length, 1)
+    assert.equal(footprints[0]?.relatedArtist, 'A Tribe Called Quest')
+    assert.equal(footprints[0]?.relatedTitle, 'Footprints')
+    assert.equal(tout.length, 1)
+    assert.equal(tout[0]?.relatedArtist, '')
+    assert.equal(tout[0]?.relatedTitle, 'Tout le monde en parle : Sir Duke')
+    assert.equal(overlaid.provenance.lastError?.kind, 'rate_limit')
+    const links = mergeSampleLinks(
+      [
+        {
+          title: 'Footprints',
+          artist: '',
+          mbid: footprintsId,
+          sourceUrl: `https://musicbrainz.org/recording/${footprintsId}`,
+          source: 'musicbrainz',
+        },
+      ],
+      [
+        {
+          title: 'Footprints',
+          artist: 'A Tribe Called Quest',
+          mbid: footprintsId,
+          sourceUrl: `https://musicbrainz.org/recording/${footprintsId}`,
+          source: 'musicbrainz',
+        },
+      ]
+    )
+    assert.equal(links.length, 1)
+    assert.equal(links[0]?.artist, 'A Tribe Called Quest')
+  })
+
   it('keeps the committed track association unless the overlay has that recording doc', () => {
     const previous = hydratePressing(pressingStub())
     const committedMbid = previous.tracks[0]?.recording.mbid
@@ -5145,6 +5300,75 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     assert.equal(doc?.sampledIn[0]?.title, 'Sampled')
   })
 
+  it('treats MusicBrainz [unknown] sample artists as empty', async () => {
+    assert.equal(
+      artistCreditName([
+        {
+          name: '[unknown]',
+          artist: { id: MUSICBRAINZ_UNKNOWN_ARTIST_MBID, name: '[unknown]' },
+        },
+      ]),
+      ''
+    )
+    assert.equal(presentSampleArtist('[unknown]'), '')
+    assert.equal(presentSampleArtist('A Tribe Called Quest'), 'A Tribe Called Quest')
+    const client = createMusicBrainzClient({
+      minIntervalMs: 0,
+      fetchImpl: async (url) => {
+        if (String(url).includes('/recording/rec-1')) {
+          return Response.json({
+            id: 'rec-1',
+            title: 'Sir Duke',
+            'artist-credit': [{ name: 'Stevie Wonder' }],
+            relations: [
+              {
+                'target-type': 'recording',
+                type: 'samples material',
+                'type-id': MB_SAMPLES_MATERIAL_RECORDING_TYPE_ID,
+                direction: 'backward',
+                recording: {
+                  id: 'tout',
+                  title: 'Tout le monde en parle : Sir Duke',
+                  'artist-credit': [
+                    {
+                      name: '[unknown]',
+                      artist: { id: MUSICBRAINZ_UNKNOWN_ARTIST_MBID, name: '[unknown]' },
+                    },
+                  ],
+                },
+              },
+              {
+                'target-type': 'recording',
+                type: 'samples material',
+                'type-id': MB_SAMPLES_MATERIAL_RECORDING_TYPE_ID,
+                direction: 'backward',
+                recording: { id: 'omitted', title: 'Omitted Credit' },
+              },
+            ],
+          })
+        }
+        if (String(url).includes('/recording/omitted')) {
+          return Response.json({
+            id: 'omitted',
+            title: 'Omitted Credit',
+            'artist-credit': [
+              {
+                name: '[unknown]',
+                artist: { id: MUSICBRAINZ_UNKNOWN_ARTIST_MBID, name: '[unknown]' },
+              },
+            ],
+          })
+        }
+        return Response.json({ id: 'unused', relations: [] })
+      },
+    })
+    const doc = await client.getRecording('rec-1')
+    assert.equal(doc?.sampledIn[0]?.title, 'Tout le monde en parle : Sir Duke')
+    assert.equal(doc?.sampledIn[0]?.artist, '')
+    assert.equal(doc?.sampledIn[1]?.title, 'Omitted Credit')
+    assert.equal(doc?.sampledIn[1]?.artist, '')
+  })
+
   it('returns the base recording when a related-recording artist lookup 429s', async () => {
     const client = createMusicBrainzClient({
       minIntervalMs: 0,
@@ -5200,6 +5424,17 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     const body = src.slice(start, src.indexOf('role="tabpanel"', start))
     assert.match(body, /mt-1 inline-flex min-h-6 items-center/)
     assert.doesNotMatch(body, /inline-block/)
+  })
+
+  it('wraps long sample titles and credit lines', () => {
+    const src = readFileSync(
+      fileURLToPath(new URL('../../components/house/RecordDetail.tsx', import.meta.url)),
+      'utf8'
+    )
+    const extras = src.slice(src.indexOf('function TrackExtras'), src.indexOf('function FactSampleList'))
+    const samples = src.slice(src.indexOf('function FactSampleList'))
+    assert.match(extras, /min-w-0 text-sm \[overflow-wrap:anywhere\]/)
+    assert.match(samples, /inline-flex min-h-6 min-w-0 items-center text-sm \[overflow-wrap:anywhere\]/)
   })
 
   it('records an ambiguous recording-level miss and merges no samples', async () => {

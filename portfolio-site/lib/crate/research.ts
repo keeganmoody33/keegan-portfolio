@@ -1,11 +1,12 @@
 import type { DiscogsReleaseDetail } from './discogs-release.ts'
-import type {
-  Credit,
-  ResearchFact,
-  SampleLink,
-  SourceName,
-  StoredPressing,
-  TrackOccurrence,
+import {
+  isMusicBrainzUnknownArtist,
+  type Credit,
+  type ResearchFact,
+  type SampleLink,
+  type SourceName,
+  type StoredPressing,
+  type TrackOccurrence,
 } from './types.ts'
 
 const SOURCE_ORDER: Record<SourceName, number> = {
@@ -55,7 +56,20 @@ export function splitCreditRoles(role: string): string[] {
     .filter(Boolean)
 }
 
+export function presentSampleArtist(name: string | undefined | null): string {
+  const trimmed = (name ?? '').trim()
+  if (!trimmed || isMusicBrainzUnknownArtist(trimmed)) return ''
+  return trimmed
+}
+
+export function sampleFactIdentityKey(fact: ResearchFact): string {
+  return [fact.kind, fact.trackKey, fact.sourceId || fact.sourceUrl].join('\u001f')
+}
+
 export function factDedupeKey(fact: ResearchFact): string {
+  if (fact.kind === 'sample_of' || fact.kind === 'sampled_by') {
+    return sampleFactIdentityKey(fact)
+  }
   return [
     fact.kind,
     fact.trackKey,
@@ -77,18 +91,19 @@ export function creditLine(credit: Credit): string {
 }
 
 export function mergeSampleLinks(...groups: SampleLink[][]): SampleLink[] {
-  const seen = new Set<string>()
+  const index = new Map<string, number>()
   const merged: SampleLink[] = []
   for (const group of groups) {
     for (const link of group) {
-      const key = [
-        link.mbid,
-        normalizeFactText(link.title),
-        normalizeFactText(link.artist),
-      ].join('\u001f')
-      if (seen.has(key)) continue
-      seen.add(key)
-      merged.push(link)
+      const next = { ...link, artist: presentSampleArtist(link.artist) }
+      const key = next.mbid || next.sourceUrl
+      const at = index.get(key)
+      if (at == null) {
+        index.set(key, merged.length)
+        merged.push(next)
+        continue
+      }
+      if (next.artist && !merged[at]!.artist) merged[at] = next
     }
   }
   return merged
@@ -101,21 +116,27 @@ export function mergeResearchFacts(...groups: ResearchFact[][]): ResearchFact[] 
     .sort((left, right) => SOURCE_ORDER[left.source] - SOURCE_ORDER[right.source])
   const seen = new Set<string>()
   const merged: ResearchFact[] = []
+  const sampleIndex = new Map<string, number>()
   const creditTracks = new Map<string, Set<string>>()
   const creditReleaseIndex = new Map<string, number>()
   for (const fact of ranked) {
     if (!fact.person && fact.kind === 'credit') continue
-    if (
-      (fact.kind === 'sample_of' || fact.kind === 'sampled_by') &&
-      !fact.relatedTitle &&
-      !fact.relatedArtist
-    ) {
-      continue
-    }
-    if (
-      (fact.kind === 'sample_of' || fact.kind === 'sampled_by') &&
-      !isRecordingOrReleaseSampleLink(fact)
-    ) {
+    if (fact.kind === 'sample_of' || fact.kind === 'sampled_by') {
+      const sample = {
+        ...fact,
+        relatedArtist: presentSampleArtist(fact.relatedArtist),
+      }
+      if (!sample.relatedTitle && !sample.relatedArtist) continue
+      if (!isRecordingOrReleaseSampleLink(sample)) continue
+      const key = factDedupeKey(sample)
+      const at = sampleIndex.get(key)
+      if (at == null) {
+        sampleIndex.set(key, merged.length)
+        seen.add(key)
+        merged.push(sample)
+        continue
+      }
+      if (sample.relatedArtist && !merged[at]!.relatedArtist) merged[at] = sample
       continue
     }
     if (fact.kind === 'credit') {
@@ -180,7 +201,7 @@ function sampleFact(
     role: kind === 'sample_of' ? 'samples' : 'sampled in',
     person: '',
     relatedTitle: sample.title,
-    relatedArtist: sample.artist,
+    relatedArtist: presentSampleArtist(sample.artist),
     source: sample.source,
     sourceId: sample.providerId ?? sample.mbid,
     sourceUrl: sample.sourceUrl,

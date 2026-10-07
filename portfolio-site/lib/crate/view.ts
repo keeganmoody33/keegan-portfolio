@@ -13,11 +13,12 @@ import {
   creditsFromFacts,
   factsForTrack,
   isRecordingOrReleaseSampleLink,
+  presentSampleArtist,
   sampledByFacts,
   samplesFromFacts,
 } from './research.ts'
 
-export { creditLine }
+export { creditLine, presentSampleArtist }
 
 export type Connection = {
   label: string
@@ -58,6 +59,11 @@ export function pressingCheckedNoMatchLine(pressing: StoredPressing): string | n
   )
 }
 
+function sampleRowTitle(artist: string | undefined, title: string): string {
+  const name = presentSampleArtist(artist)
+  return name ? `${name} — ${title}` : title
+}
+
 export function overviewConnections(pressing: StoredPressing, limit = 3): Connection[] {
   const rows: Connection[] = []
   const seen = new Set<string>()
@@ -74,18 +80,14 @@ export function overviewConnections(pressing: StoredPressing, limit = 3): Connec
     if (fact.kind === 'sample_of' && isRecordingOrReleaseSampleLink(fact)) {
       add({
         label: `${fact.track?.title ?? pressing.facts.title} samples`,
-        title: fact.relatedArtist
-          ? `${fact.relatedArtist} — ${fact.relatedTitle}`
-          : fact.relatedTitle,
+        title: sampleRowTitle(fact.relatedArtist, fact.relatedTitle),
         href: fact.sourceUrl,
         source: fact.source,
       })
     } else if (fact.kind === 'sampled_by' && isRecordingOrReleaseSampleLink(fact)) {
       add({
         label: `${fact.track?.title ?? pressing.facts.title} sampled in`,
-        title: fact.relatedArtist
-          ? `${fact.relatedArtist} — ${fact.relatedTitle}`
-          : fact.relatedTitle,
+        title: sampleRowTitle(fact.relatedArtist, fact.relatedTitle),
         href: fact.sourceUrl,
         source: fact.source,
       })
@@ -103,7 +105,7 @@ export function overviewConnections(pressing: StoredPressing, limit = 3): Connec
       if (!isRecordingOrReleaseSampleLink(sample)) continue
       add({
         label: `${track.title} samples`,
-        title: sample.artist ? `${sample.artist} — ${sample.title}` : sample.title,
+        title: sampleRowTitle(sample.artist, sample.title),
         href: sample.sourceUrl,
         source: sample.source,
       })
@@ -112,7 +114,7 @@ export function overviewConnections(pressing: StoredPressing, limit = 3): Connec
       if (!isRecordingOrReleaseSampleLink(sample)) continue
       add({
         label: `${track.title} sampled in`,
-        title: sample.artist ? `${sample.artist} — ${sample.title}` : sample.title,
+        title: sampleRowTitle(sample.artist, sample.title),
         href: sample.sourceUrl,
         source: sample.source,
       })
