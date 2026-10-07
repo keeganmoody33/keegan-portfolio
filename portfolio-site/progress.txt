@@ -1,3 +1,11 @@
+COMPLETED (2026-10-07 — PR #54 UX overlay dedupe + [unknown] + wrap):
+- P1-1: sample facts dedupe on `kind + trackKey + sourceId` (not artist). A 429 overlay keeps stored facts and swaps recordings; `hydratePressing` keeps the artist-filled row. Test: Sir Duke 266650 Footprints blank + filled collapses to one ATCQ row.
+- P1-2: MusicBrainz artist id `125ec42a-7229-4250-afc5-e057484327fe` and the literal `[unknown]` are empty in `artistCreditName` / artist fill. Rows render title-only — never `Unknown` or a stray dash.
+- P2-1: FactSampleList link and credit `<p>` use `[overflow-wrap:anywhere] min-w-0`.
+- P2-2: FRONTEND_GUIDELINES sample-list sentence: `Artist — Title`, title-only when blank or `[unknown]`, lists not truncated.
+- Preview Redis `lf:preview:` hydrate rewrite (278 pressings, 0 prod writes, 3 pressings / 1 recording written). Recording sample links **360**, `/work/` **0**, `[unknown]` **1 → 0**, title-only blank-artist **1** (266650 Tout le monde), records with samples **72**, sample_of **111**, sampled_by **249**. ResearchFacts work rows **0**. Sir Duke research Footprints is one ATCQ row; Tout le monde is title-only. Mtume 567894 vocal `1d890c2b-…c0dc` still sampled-in Biggie Juicy `https://musicbrainz.org/recording/181c0a32-6e3f-4680-8a7d-1daf0b42e43b`. Artifact `/opt/cursor/artifacts/preview-overlay-hydrate.json`.
+- Landed on `cursor/collection-research-trackmatch-7382` (#54) `c1b4ca135633eacd47c6cf7cbbc57561cc26f4a8`, including `cursor/crate-research-cleanup-3033` at `652b21d` (PR #61 merged). tsc / eslint / `npm test` (366 pass) / `next build` (28/28 dummy supabase). Never prod.
+
 COMPLETED (2026-10-07 — PR #54 samples graph + lock/429 + a11y):
 - Sample facts are MusicBrainz `samples material` on recordings/releases only (type-ids `9efd9ce9-…fe62` / `967746f9-…7fc`). `direction` maps forward → `sample_of`, backward → `sampled_by`. Work-to-work (`based on`, parody, etc.) is out of samples; `getRecording` no longer fetches `/work/` or `work-rels`. Read-time filter drops leftover `/work/` `sourceUrl`s. Cap MB Retry-After at 120s.
 - P2: Discogs 429 stops the walk like MB 429. Enrich lock is Lua compare-and-delete / compare-and-extend only (strip JSON quotes in Lua; no GET+DEL / GET+SET). CLI Discogs timeout 15s; CLI re-entry passes persisted `lockToken`.
