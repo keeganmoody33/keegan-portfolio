@@ -12,6 +12,7 @@ import {
   isWorkerDeadlineError,
   remainingBelowTakeFloor,
   remainingBudgetMs,
+  shouldStopWalkOnRateLimit,
   type EnrichDeps,
 } from './enrich.ts'
 import { createMusicBrainzClient } from './musicbrainz.ts'
@@ -318,8 +319,12 @@ export async function runBackfill(
     }
   }
 
-  const mb = deps.mb ?? createMusicBrainzClient({ now: deps.now })
-  const wikidataClient = deps.wikidataClient ?? wikidataClientFor(deps.wikidata)
+  const takeFloorMs = deps.takeFloorMs ?? ENRICH_TAKE_FLOOR_MS
+  const deadlineMs = deps.deadlineMs ?? started + (deps.budgetMs ?? ENRICH_BUDGET_MS)
+  const mb = deps.mb ?? createMusicBrainzClient({ now: deps.now, deadlineMs })
+  const wikidataClient =
+    deps.wikidataClient ??
+    (deps.wikidata ? wikidataClientFor({ now: deps.now, ...deps.wikidata }) : undefined)
   const baseFetch = deps.fetchDiscogs ?? ((releaseId: number) => fetchDiscogsReleaseDetail(releaseId))
   let discogsThis = 0
   const wrappedFetch = async (releaseId: number) => {
@@ -327,8 +332,6 @@ export async function runBackfill(
     return baseFetch(releaseId)
   }
   const mbStart = mb.requestCount
-  const takeFloorMs = deps.takeFloorMs ?? ENRICH_TAKE_FLOOR_MS
-  const deadlineMs = deps.deadlineMs ?? started + (deps.budgetMs ?? ENRICH_BUDGET_MS)
   const cap = options.limit ?? Number.POSITIVE_INFINITY
   const processed: number[] = []
   let completedThis = 0
@@ -362,7 +365,7 @@ export async function runBackfill(
         Number.isFinite(retryAt) &&
         retryAt > now()
       ) {
-        if (stored.provenance.lastError.kind === 'rate_limit') {
+        if (shouldStopWalkOnRateLimit(stored)) {
           stoppedOnRateLimit = true
           break
         }
@@ -385,7 +388,7 @@ export async function runBackfill(
           await store.nack(releaseId, now() + AUTH_RETRY_MS)
           break
         }
-        if (kind === 'rate_limit') {
+        if (shouldStopWalkOnRateLimit(pressing)) {
           stoppedOnRateLimit = true
           const rateRetry = Date.parse(pressing.provenance.refreshAfter)
           await store.nack(releaseId, Number.isFinite(rateRetry) ? rateRetry : now() + 60 * 60 * 1000)

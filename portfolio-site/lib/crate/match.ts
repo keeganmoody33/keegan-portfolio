@@ -58,10 +58,19 @@ export function normalizeTitle(value: string): string {
     .trim()
 }
 
+const FEATURING_TAIL = /\s*[([]?\s*(?:feat\.?|ft\.?|featuring)\b.+$/iu
+
+export function stripFeaturingCredits(value: string): string {
+  const stripped = value.replace(FEATURING_TAIL, '').replace(/[(\[]\s*$/u, '').trim()
+  return stripped || value.trim()
+}
+
 export function coreTitle(value: string): string {
-  const withoutParens = value.replace(/\([^)]*\)/g, ' ').replace(/\[[^\]]*\]/g, ' ')
+  const withoutParens = stripFeaturingCredits(value)
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\[[^\]]*\]/g, ' ')
   const normalized = normalizeTitle(withoutParens)
-  return normalized || normalizeTitle(value)
+  return normalized || normalizeTitle(stripFeaturingCredits(value))
 }
 
 const VERSION_TOKEN_SET = new Set<string>(VERSION_TOKENS)
@@ -73,8 +82,8 @@ export function songTitle(value: string): string {
 }
 
 export function artistsMatch(left: string, right: string): boolean {
-  const a = normalizeTitle(left.replace(/\s+\(\d+\)$/u, ''))
-  const b = normalizeTitle(right.replace(/\s+\(\d+\)$/u, ''))
+  const a = normalizeTitle(stripFeaturingCredits(left).replace(/\s+\(\d+\)$/u, ''))
+  const b = normalizeTitle(stripFeaturingCredits(right).replace(/\s+\(\d+\)$/u, ''))
   if (!a || !b) return false
   if (a === b) return true
   return a.replace(/^the /, '') === b.replace(/^the /, '')
@@ -99,7 +108,12 @@ export function pickTrackLevelRecordings(
     const hitSong = songTitle(hit.title)
     return Boolean(discogsSong && hitSong && discogsSong === hitSong)
   })
-  return matched.sort((left, right) => {
+  const durationOk = matched.filter((hit) => {
+    const delta = durationDeltaMs(discogs.durationMs, hit.lengthMs)
+    if (delta == null) return true
+    return delta <= DURATION_FAR_MS
+  })
+  return durationOk.sort((left, right) => {
     const leftDelta = durationDeltaMs(discogs.durationMs, left.lengthMs)
     const rightDelta = durationDeltaMs(discogs.durationMs, right.lengthMs)
     if (leftDelta != null && rightDelta != null && leftDelta !== rightDelta) {

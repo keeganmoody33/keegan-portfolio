@@ -357,8 +357,12 @@ export function createWikidataClient(options: WikidataClientOptions = {}) {
           : Math.max(0, lookupOptions.deadlineMs - now())
 
       const sparqlOnce = async (): Promise<Response> => {
+        const budget = Math.min(timeoutMs, remainingMs())
+        if (!Number.isFinite(budget) || budget <= 0) {
+          throw new WikidataTemporaryError('timeout')
+        }
         const controller = new AbortController()
-        const timer = setTimeout(() => controller.abort(), timeoutMs)
+        const timer = setTimeout(() => controller.abort(), budget)
         try {
           return await postSparql(query, controller.signal)
         } catch (error) {
@@ -385,7 +389,7 @@ export function createWikidataClient(options: WikidataClientOptions = {}) {
           // Sleep sits outside the SPARQL timer. A Retry-After longer than
           // what's left of this request's timeout still surfaces as a
           // temporary 429 right away instead of holding the worker.
-          const requestRemainingMs = timeoutMs - (now() - startedAt)
+          const requestRemainingMs = Math.min(timeoutMs - (now() - startedAt), remainingMs())
           if (retryAfterMs >= requestRemainingMs) {
             throw new WikidataTemporaryError(429, retryAfterMs)
           }

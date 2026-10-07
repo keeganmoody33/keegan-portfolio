@@ -33,6 +33,8 @@ import {
   createMusicBrainzClient,
   isMusicBrainzAuthError,
   isMusicBrainzRateLimitError,
+  isMusicBrainzTimeoutError,
+  MUSICBRAINZ_RATE_LIMIT_MESSAGE,
   musicbrainzRecordingUrl,
   musicbrainzReleaseUrl,
   type MbSearchHit,
@@ -40,6 +42,7 @@ import {
 } from './musicbrainz.ts'
 import {
   AUTH_RETRY_MS,
+  countsTowardAttempts,
   hasPriorVerifiedRecord,
   isoFromMs,
   keepPriorMatch,
@@ -97,7 +100,7 @@ export const WORKER_MAX_DURATION_MS = 60_000
 export const WORKER_DEADLINE_MARGIN_MS = 8_000
 export const DEADLINE_STOP_LIMIT = 3
 export const DEADLINE_BACKOFF_MS = ENRICH_TAKE_FLOOR_MS
-export const TRACK_LEVEL_FETCH_CAP = 6
+export const TRACK_LEVEL_FETCH_CAP = 1
 
 export function overlayTrackLevelProgress(
   base: StoredPressing,
@@ -211,6 +214,7 @@ export async function applyDeadlineStop(
         checkpoint: {
           stage: live.checkpoint?.stage ?? 'pressing',
           researchCursor: live.checkpoint?.researchCursor ?? 0,
+          trackSampleCursor: live.checkpoint?.trackSampleCursor,
           deadlineStops: stops,
         },
       })
@@ -292,11 +296,14 @@ function errorMessage(error: unknown): string {
     return 'authentication failed'
   }
   if (isDiscogsTerminalClientError(error)) return 'Discogs release not found'
-  if (isDiscogsRateLimitError(error) || isMusicBrainzRateLimitError(error)) {
+  if (isMusicBrainzRateLimitError(error)) {
+    return MUSICBRAINZ_RATE_LIMIT_MESSAGE
+  }
+  if (isDiscogsRateLimitError(error)) {
     return 'Too many requests'
   }
   if (error instanceof Error) {
-    if (error.message === 'MusicBrainz rate limited') return 'Too many requests'
+    if (error.message === MUSICBRAINZ_RATE_LIMIT_MESSAGE) return MUSICBRAINZ_RATE_LIMIT_MESSAGE
     if (error.message === 'MusicBrainz unavailable') return 'Failed to fetch from MusicBrainz'
   }
   return 'Failed to enrich pressing'
@@ -701,7 +708,9 @@ async function applyTrackLevelSamples(
           ? Number.POSITIVE_INFINITY
           : remainingBudgetMs(deps.deadlineMs, (deps.now ?? Date.now)())
       if (remainingBelowTakeFloor(remainingHit, takeFloorMs)) {
-        if (docs.length > 0) attachTrackLevelDocs(track, recordings, docs)
+        if (docs.length > 0) {
+          await persistTrackLevelDocs(deps.store, track, recordings, docs)
+        }
         return { cursor, incomplete: true }
       }
       const previousRecording =
@@ -735,7 +744,6 @@ async function applyTrackLevelSamples(
           },
         }
         recordings[hit.mbid] = recording
-        await deps.store.setRecording(recording)
         docs.push(recording)
       } catch (error) {
         if (isMusicBrainzRateLimitError(error) && docs.length > 0) {
@@ -750,7 +758,7 @@ async function applyTrackLevelSamples(
       cursor = index + 1
       continue
     }
-    attachTrackLevelDocs(track, recordings, docs)
+    await persistTrackLevelDocs(deps.store, track, recordings, docs)
     if (rateLimitError) {
       await onProgress?.(cursor)
       throw rateLimitError
@@ -759,6 +767,21 @@ async function applyTrackLevelSamples(
     await onProgress?.(cursor)
   }
   return { cursor, incomplete: false }
+}
+
+export async function persistTrackLevelDocs(
+  store: CrateStore,
+  track: TrackOccurrence,
+  recordings: Record<string, StoredRecording>,
+  docs: StoredRecording[]
+): Promise<void> {
+  attachTrackLevelDocs(track, recordings, docs)
+  const ids = new Set(docs.map((doc) => doc.mbid))
+  if (track.recording.mbid) ids.add(track.recording.mbid)
+  for (const mbid of ids) {
+    const recording = recordings[mbid]
+    if (recording) await store.setRecording(structuredClone(recording))
+  }
 }
 
 function attachTrackLevelDocs(
@@ -801,7 +824,7 @@ export async function enrichPressing(
     storedPrevious && storedPressingHasVisitorFacts(storedPrevious)
       ? storedPrevious
       : fixturePressing(releaseId) ?? storedPrevious
-  const mb = deps.mb ?? createMusicBrainzClient()
+  const mb = deps.mb ?? createMusicBrainzClient({ now: deps.now, deadlineMs: deps.deadlineMs })
   const fetchDetail = deps.fetchDiscogs ?? ((id: number) => fetchDiscogsReleaseDetail(id))
   const shouldFail = deps.failRefresh ?? ((id: number) => failRefreshFromEnv(id))
   const entryInstanceIds =
@@ -1244,6 +1267,9 @@ export async function enrichPressing(
     return committed
   } catch (error) {
     if (isWorkerDeadlineError(error)) throw error
+    if (isMusicBrainzTimeoutError(error) && error.deadlineExceeded) {
+      throw new WorkerDeadlineError()
+    }
     const kind = errorKind(error)
     const draft = await deps.store.getDraftPressing(releaseId)
     const latest = hasPriorVerifiedRecord(previous)
@@ -1264,7 +1290,7 @@ export async function enrichPressing(
         terminal: isDiscogsTerminalClientError(error),
         releaseId,
         entryInstanceIds,
-        countAttempt: kind !== 'auth',
+        countAttempt: countsTowardAttempts(kind),
         stage: stageFromError(error, stage),
       }
     )
@@ -1329,6 +1355,11 @@ export function classifyQueueOutcome(pressing: StoredPressing): 'completed' | 'f
   return 'completed'
 }
 
+export function shouldStopWalkOnRateLimit(pressing: StoredPressing): boolean {
+  const err = pressing.provenance.lastError
+  return err?.kind === 'rate_limit' && err.message === MUSICBRAINZ_RATE_LIMIT_MESSAGE
+}
+
 export function isBackfillSettled(pressing: StoredPressing): boolean {
   const kind = pressing.provenance.lastError?.kind
   if (kind === 'auth' || kind === 'rate_limit' || kind === 'unavailable') return false
@@ -1375,8 +1406,10 @@ export async function processEnrichmentQueue(
     deps.deadlineMs ?? started + (deps.budgetMs ?? ENRICH_BUDGET_MS)
   const inflightTtl = deps.inflightTtlSeconds ?? INFLIGHT_TTL_SECONDS
   const cap = limit ?? Number.POSITIVE_INFINITY
-  const mb = deps.mb ?? createMusicBrainzClient({ now: deps.now })
-  const wikidataClient = deps.wikidataClient ?? wikidataClientFor(deps.wikidata)
+  const mb = deps.mb ?? createMusicBrainzClient({ now: deps.now, deadlineMs })
+  const wikidataClient =
+    deps.wikidataClient ??
+    (deps.wikidata ? wikidataClientFor({ now: deps.now, ...deps.wikidata }) : undefined)
   const processed: number[] = []
   const completed: number[] = []
   const failed: number[] = []
@@ -1440,7 +1473,7 @@ export async function processEnrichmentQueue(
             Number.isFinite(retryAt) ? retryAt : now() + 60 * 60 * 1000
           )
           record(releaseId, outcome)
-          if (kind === 'rate_limit') {
+          if (shouldStopWalkOnRateLimit(pressing)) {
             stoppedOnRateLimit = true
             break
           }
@@ -1471,7 +1504,7 @@ export async function processEnrichmentQueue(
           )
           break
         }
-        if (isMusicBrainzRateLimitError(error) || isDiscogsRateLimitError(error)) {
+        if (isMusicBrainzRateLimitError(error)) {
           stoppedOnRateLimit = true
           break
         }

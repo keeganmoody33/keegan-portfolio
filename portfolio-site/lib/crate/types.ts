@@ -4,6 +4,7 @@ export const CRATE_UNAVAILABLE_LINE = "couldn't reach discogs"
 export const CRATE_NO_RECORDING = 'no matched recording yet'
 export const MUSICBRAINZ_USER_AGENT = 'lecturesfrom/1.0 ( 33@lecturesfrom.com )'
 export const MUSICBRAINZ_MIN_INTERVAL_MS = 1100
+export const MUSICBRAINZ_TIMEOUT_MS = 5000
 export const WIKIDATA_USER_AGENT = 'lecturesfrom/1.0 +https://lecturesfrom.com ( 33@lecturesfrom.com )'
 export const WIKIDATA_MIN_INTERVAL_MS = 1100
 export const WIKIDATA_TIMEOUT_MS = 5000

@@ -1,9 +1,12 @@
 import {
   MUSICBRAINZ_MIN_INTERVAL_MS,
+  MUSICBRAINZ_TIMEOUT_MS,
   MUSICBRAINZ_USER_AGENT,
   type Credit,
   type SampleLink,
 } from './types.ts'
+
+export const MUSICBRAINZ_RATE_LIMIT_MESSAGE = 'MusicBrainz rate limited'
 
 export const MUSICBRAINZ_API = 'https://musicbrainz.org/ws/2'
 
@@ -14,6 +17,8 @@ export type MbClientOptions = {
   now?: () => number
   sleep?: (ms: number) => Promise<void>
   minIntervalMs?: number
+  timeoutMs?: number
+  deadlineMs?: number
 }
 
 export type MbSearchHit = {
@@ -28,10 +33,30 @@ export class MusicBrainzRateLimitError extends Error {
   readonly retryAfterMs: number
 
   constructor(retryAfterMs = 60_000) {
-    super('MusicBrainz rate limited')
+    super(MUSICBRAINZ_RATE_LIMIT_MESSAGE)
     this.name = 'MusicBrainzRateLimitError'
     this.retryAfterMs = retryAfterMs
   }
+}
+
+export class MusicBrainzTimeoutError extends Error {
+  readonly kind = 'unavailable' as const
+  readonly deadlineExceeded: boolean
+
+  constructor(deadlineExceeded = false) {
+    super(deadlineExceeded ? 'MusicBrainz deadline' : 'MusicBrainz timed out')
+    this.name = 'MusicBrainzTimeoutError'
+    this.deadlineExceeded = deadlineExceeded
+  }
+}
+
+export function isMusicBrainzTimeoutError(error: unknown): error is MusicBrainzTimeoutError {
+  return error instanceof MusicBrainzTimeoutError
+}
+
+function isAbortError(error: unknown): boolean {
+  if (error instanceof Error && error.name === 'AbortError') return true
+  return typeof error === 'object' && error !== null && 'name' in error && error.name === 'AbortError'
 }
 
 export function isMusicBrainzRateLimitError(
@@ -131,8 +156,8 @@ export function musicbrainzWorkUrl(mbid: string): string {
 }
 
 function isSampleRelationType(type: string): boolean {
-  const normalized = type.toLowerCase()
-  return normalized === 'samples material' || normalized.includes('sample')
+  const normalized = type.toLowerCase().trim()
+  return normalized === 'samples material' || normalized === 'sampled by'
 }
 
 function sampleLinkFromRelation(rel: MbRelation): SampleLink | null {
@@ -167,13 +192,17 @@ export function stripDiscogsArtistSuffix(name: string): string {
   return name.replace(/\s+\(\d+\)$/u, '').trim()
 }
 
-export function readRetryAfterMs(response: Response, fallbackMs = 60_000): number {
+export function readRetryAfterMs(
+  response: Response,
+  fallbackMs = 60_000,
+  nowMs = Date.now()
+): number {
   const raw = response.headers.get('Retry-After')
   if (!raw) return fallbackMs
   const seconds = Number.parseInt(raw, 10)
   if (Number.isFinite(seconds) && seconds >= 0) return seconds * 1000
   const date = Date.parse(raw)
-  if (Number.isFinite(date)) return Math.max(0, date - Date.now())
+  if (Number.isFinite(date)) return Math.max(0, date - nowMs)
   return fallbackMs
 }
 
@@ -198,35 +227,70 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
   const now = options.now ?? Date.now
   const sleep = options.sleep ?? defaultSleep
   const minInterval = options.minIntervalMs ?? MUSICBRAINZ_MIN_INTERVAL_MS
+  const timeoutMs = options.timeoutMs ?? MUSICBRAINZ_TIMEOUT_MS
+  const deadlineMs = options.deadlineMs
   let lastAt = 0
   let requestCount = 0
 
+  const remainingMs = (): number =>
+    deadlineMs == null ? Number.POSITIVE_INFINITY : Math.max(0, deadlineMs - now())
+
   async function getJson<T>(url: string): Promise<T> {
     const wait = lastAt + minInterval - now()
-    if (wait > 0) await sleep(wait)
+    const remaining = remainingMs()
+    if (deadlineMs != null && remaining <= 0) {
+      throw new MusicBrainzTimeoutError(true)
+    }
+    if (wait > 0) {
+      if (deadlineMs != null && wait > remaining) {
+        throw new MusicBrainzTimeoutError(true)
+      }
+      await sleep(wait)
+    }
     lastAt = now()
     requestCount += 1
-    const response = await fetchImpl(url, {
-      headers: {
-        'User-Agent': MUSICBRAINZ_USER_AGENT,
-        Accept: 'application/json',
-      },
-    })
-    if (response.status === 404) {
-      return { error: 'Not Found' } as T
+    const requestTimeout = Math.min(timeoutMs, remainingMs())
+    if (requestTimeout <= 0) {
+      throw new MusicBrainzTimeoutError(deadlineMs != null)
     }
-    if (response.status === 401 || response.status === 403) {
-      throw new MusicBrainzAuthError(response.status)
-    }
-    if (response.status === 503 || response.status === 429) {
-      throw new MusicBrainzRateLimitError(readRetryAfterMs(response))
-    }
-    if (!response.ok) {
-      const error = new Error('MusicBrainz unavailable')
-      ;(error as Error & { kind: 'unavailable' }).kind = 'unavailable'
+    const controller = new AbortController()
+    const timer = setTimeout(
+      () => controller.abort(),
+      Number.isFinite(requestTimeout) ? requestTimeout : timeoutMs
+    )
+    try {
+      const response = await fetchImpl(url, {
+        headers: {
+          'User-Agent': MUSICBRAINZ_USER_AGENT,
+          Accept: 'application/json',
+        },
+        signal: controller.signal,
+      })
+      if (response.status === 404) {
+        return { error: 'Not Found' } as T
+      }
+      if (response.status === 401 || response.status === 403) {
+        throw new MusicBrainzAuthError(response.status)
+      }
+      if (response.status === 503 || response.status === 429) {
+        throw new MusicBrainzRateLimitError(readRetryAfterMs(response, 60_000, now()))
+      }
+      if (!response.ok) {
+        const error = new Error('MusicBrainz unavailable')
+        ;(error as Error & { kind: 'unavailable' }).kind = 'unavailable'
+        throw error
+      }
+      return (await response.json()) as T
+    } catch (error) {
+      if (isMusicBrainzRateLimitError(error) || isMusicBrainzAuthError(error)) throw error
+      if (error instanceof Error && 'kind' in error && error.kind === 'unavailable') throw error
+      if (isAbortError(error) || controller.signal.aborted) {
+        throw new MusicBrainzTimeoutError(deadlineMs != null && remainingMs() <= 0)
+      }
       throw error
+    } finally {
+      clearTimeout(timer)
     }
-    return (await response.json()) as T
   }
 
   return {
@@ -483,7 +547,7 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
         if (work.error || !work.id) continue
         for (const rel of work.relations ?? []) {
           const type = (rel.type ?? '').toLowerCase()
-          if (!isSampleRelationType(type) && type !== 'based on') continue
+          if (!isSampleRelationType(type)) continue
           const link = sampleLinkFromRelation(rel)
           if (!link || link.mbid === workId) continue
           const incoming = (rel.direction ?? '').toLowerCase() === 'backward'

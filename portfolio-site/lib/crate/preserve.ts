@@ -47,6 +47,11 @@ export function nextBackoffMs(attemptCount: number): number {
   return BACKOFF_MS[Math.min(index, BACKOFF_MS.length - 1)] ?? TERMINAL_REFRESH_MS
 }
 
+/** Auth and rate_limit never burn the 5-attempt exhausted/dead budget. */
+export function countsTowardAttempts(kind: DurableErrorKind): boolean {
+  return kind !== 'auth' && kind !== 'rate_limit'
+}
+
 export function storedPressingHasVisitorFacts(pressing: StoredPressing | null | undefined): boolean {
   if (!pressing) return false
   return pressing.facts.title.trim().length > 0 || pressing.tracks.length > 0
@@ -94,7 +99,8 @@ export function errorPressingStub(
     countAttempt?: boolean
   } = {}
 ): StoredPressing {
-  const attempts = options.countAttempt === false || kind === 'auth' ? 0 : 1
+  const attempts =
+    options.countAttempt === false || !countsTowardAttempts(kind) ? 0 : 1
   const backoff =
     options.terminal
       ? TERMINAL_REFRESH_MS
@@ -183,11 +189,12 @@ export function preservePressingOnFailure(
   if (!previous) {
     return errorPressingStub(options.releaseId ?? options.facts?.releaseId ?? 0, nowMs, kind, message, options)
   }
-  const countAttempt = options.countAttempt !== false && kind !== 'auth'
+  const countAttempt = options.countAttempt !== false && countsTowardAttempts(kind)
   const attempts = countAttempt
     ? (previous.provenance.lastError?.attempts ?? 0) + 1
     : (previous.provenance.lastError?.attempts ?? 0)
-  const exhausted = attempts >= CRATE_MAX_ATTEMPTS && kind !== 'auth' && kind !== 'not_found'
+  const exhausted =
+    attempts >= CRATE_MAX_ATTEMPTS && countsTowardAttempts(kind) && kind !== 'not_found'
   const errorKind = exhausted ? 'exhausted' : kind
   const backoff =
     options.terminal || exhausted

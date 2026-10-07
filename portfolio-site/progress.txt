@@ -1,3 +1,8 @@
+IN PROGRESS (2026-10-07 — integrations + QA Gate on `afebd8c`):
+- MusicBrainz 429s do not count toward `CRATE_MAX_ATTEMPTS`. SPARQL/MB abort timers are `min(timeout, remaining)`. Only MB 429 (`MUSICBRAINZ_RATE_LIMIT_MESSAGE`) stops the walk.
+- Track-level: preserve `trackSampleCursor` in `applyDeadlineStop`; strip feat/ft/featuring; reject duration >15s off; `TRACK_LEVEL_FETCH_CAP` 1; `based on` is not a sample; persist merged samples then `setRecording`; HTTP-date Retry-After.
+- Next: merge main `f396637` keeping `source-map-js` 1.2.2 (Tailwind v3, `package.json` unchanged), drop stale “Do not close #52 from this work”, then full preview backfill `lf:preview:` only.
+
 SKIPPED (2026-10-07 — full preview collection backfill on this rebase VM):
 - This Cloud Agent environment has no preview Upstash Redis credentials (`KV_REST_API_*` / `UPSTASH_REDIS_REST_*` absent from `printenv`; Upstash MCP `redis_list_databases` returned `[]`). Did not decrypt Vercel Preview env, did not touch prod, did not write `lf:` keys.
 - Coverage numbers, Juicy live Redis check, 10 sample-hit examples, and `--retry` counts are not invented. Re-run `npm run crate:backfill` then `npm run crate:backfill -- --retry` where preview Redis is present (`lf:preview:` only).
