@@ -26,7 +26,7 @@ import {
 import { AUTH_RETRY_MS, isoFromMs, keepPriorMatch, nextBackoffMs, preservePressingOnFailure, shouldRefreshPressing, withClearedDeadlineStops } from './preserve.ts'
 import { createMemoryCrateStore, crateRedisKeys, DRAFT_TTL_SECONDS, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA, RELEASE_LOCK_LUA, REFRESH_LOCK_LUA, selectEnrichLockToken, type CrateStore } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
-import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, WorkerDeadlineError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, ENRICH_LOCK_SECONDS, TRACK_LEVEL_ANNOTATE_CAP, TRACK_LEVEL_FETCH_CAP, TRACK_LEVEL_REASON, overlayTrackLevelProgress, applyDeadlineStop, persistTrackLevelDocs, shouldStopWalkOnRateLimit } from './enrich.ts'
+import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, resumeForceRefreshTrackCursor, WorkerDeadlineError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, ENRICH_LOCK_SECONDS, TRACK_LEVEL_ANNOTATE_CAP, TRACK_LEVEL_FETCH_CAP, TRACK_LEVEL_REASON, overlayTrackLevelProgress, applyDeadlineStop, persistTrackLevelDocs, shouldStopWalkOnRateLimit } from './enrich.ts'
 import { isUnusableDiscogsNotes, resolveDescription, withReadableDescription } from './description.ts'
 import { COLLECTION_KEEP_PATH, scheduleKeepPing } from './keep-ping.ts'
 import { runCrateEnrichCron } from './keep.ts'
@@ -2340,6 +2340,37 @@ describe('independent lifecycles (direction change)', () => {
     const afterOk = await store.getPressing(9107339)
     assert.equal(afterOk?.provenance.lastError, null)
     assert.equal(afterOk?.provenance.verifiedAt, isoFromMs(successNow))
+  })
+
+  it('resumeForceRefreshTrackCursor only continues incomplete retry errors', () => {
+    const previous = hydratePressing(
+      pressingStub({
+        checkpoint: { stage: 'research', researchCursor: 0, trackSampleCursor: 4 },
+        provenance: {
+          ...pressingStub().provenance,
+          lastError: {
+            kind: 'rate_limit',
+            message: 'MusicBrainz rate limited',
+            attempts: 0,
+            at: '2026-10-07T16:00:00.000Z',
+          },
+        },
+      })
+    )
+    assert.equal(resumeForceRefreshTrackCursor(previous, true), 4)
+    assert.equal(resumeForceRefreshTrackCursor(previous, true, true), 0)
+    assert.equal(resumeForceRefreshTrackCursor(previous, false), 0)
+    assert.equal(
+      resumeForceRefreshTrackCursor(
+        hydratePressing(
+          pressingStub({
+            checkpoint: { stage: 'research', researchCursor: 0, trackSampleCursor: 4 },
+          })
+        ),
+        true
+      ),
+      0
+    )
   })
 
   it('keeps Mtume unmatched without rematching when lastError is null', async () => {
@@ -4690,6 +4721,66 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     })
     const vocal = retried.tracks.find((track) => /vocal/i.test(track.title))
     assert.equal(vocal?.recording.mbid, juicyMbid)
+  })
+
+  it('forceRefresh after rate_limit resumes trackSampleCursor', async () => {
+    const vocalMbid = '1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc'
+    const instMbid = 'bbbbbbbb-2ba3-4b34-9196-64d5cb0cc0dc'
+    const hit = (mbid: string) => ({
+      mbid,
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      lengthMs: 355000,
+      score: 100,
+    })
+    const doc = (mbid: string) => ({
+      mbid,
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      credits: [],
+      samplesFrom: [],
+      sampledIn: [],
+    })
+    const store = createMemoryCrateStore()
+    const firstMb = createMusicBrainzClientForTests()
+    let firstSearches = 0
+    firstMb.searchRecordingsByArtistTitle = async () => {
+      firstSearches += 1
+      if (firstSearches === 1) return [hit(vocalMbid)]
+      throw new MusicBrainzRateLimitError(60_000)
+    }
+    firstMb.getRecording = async (id) => (id === vocalMbid ? doc(vocalMbid) : null)
+    const first = await enrichPressing(567894, {
+      store,
+      now: () => Date.parse('2026-10-06T08:00:00.000Z'),
+      fetchDiscogs: async () => mtumeDetail(),
+      mb: firstMb,
+    })
+    assert.equal(first.checkpoint?.trackSampleCursor, 1)
+    assert.equal(first.provenance.lastError?.kind, 'rate_limit')
+    const firstVocal = first.tracks.find((track) => /vocal/i.test(track.title))
+    assert.equal(firstVocal?.recording.mbid, vocalMbid)
+
+    const titles: string[] = []
+    const retryMb = createMusicBrainzClientForTests()
+    retryMb.searchRecordingsByArtistTitle = async ({ title }) => {
+      titles.push(title)
+      return [{ ...hit(instMbid), lengthMs: 424000 }]
+    }
+    retryMb.getRecording = async (id) =>
+      id === instMbid ? doc(instMbid) : id === vocalMbid ? doc(vocalMbid) : null
+    const retried = await enrichPressing(567894, {
+      store,
+      now: () => Date.parse('2026-10-06T09:00:00.000Z'),
+      fetchDiscogs: async () => mtumeDetail(),
+      mb: retryMb,
+      forceRefresh: true,
+    })
+    assert.equal(titles.length, 1)
+    const vocal = retried.tracks.find((track) => /vocal/i.test(track.title))
+    const inst = retried.tracks.find((track) => /instrumental/i.test(track.title))
+    assert.equal(vocal?.recording.mbid, vocalMbid)
+    assert.equal(inst?.recording.mbid, instMbid)
   })
 
   it('caps track-level annotation at 3 hits and persists only the picked recording', async () => {

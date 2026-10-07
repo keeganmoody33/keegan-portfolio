@@ -280,6 +280,20 @@ export function shouldSkipMatch(
   return previous.mbRelease.matchStatus !== 'pending'
 }
 
+const RESUME_FORCE_REFRESH_ERROR_KINDS = new Set(['rate_limit', 'unavailable', 'too_slow'])
+
+/** Incomplete --retry: keep already-rematched tracks and continue after the checkpoint. */
+export function resumeForceRefreshTrackCursor(
+  previous: StoredPressing | null,
+  forceRefresh: boolean,
+  identityShifted = false
+): number {
+  if (!forceRefresh || !previous || identityShifted) return 0
+  const kind = previous.provenance.lastError?.kind
+  if (!kind || !RESUME_FORCE_REFRESH_ERROR_KINDS.has(kind)) return 0
+  return Math.max(0, previous.checkpoint?.trackSampleCursor ?? 0)
+}
+
 export type EnrichDeps = {
   store: CrateStore
   now?: () => number
@@ -1060,6 +1074,8 @@ export async function enrichPressing(
     let facts: PressingFacts
     let tracks: TrackOccurrence[]
     let skipMatch: boolean
+    let skipReleaseRematch = false
+    let resumeCursor = 0
     let pressingDraft: StoredPressing
     let playable: TrackOccurrence[]
     let discogsFacts: ResearchFact[] = []
@@ -1070,6 +1086,8 @@ export async function enrichPressing(
       tracks = pressingDraft.tracks
       playable = tracks.filter(isPlayableOccurrence)
       skipMatch = shouldSkipMatch(previous, false, Boolean(deps.forceRefresh))
+      resumeCursor = resumeForceRefreshTrackCursor(previous, Boolean(deps.forceRefresh), false)
+      skipReleaseRematch = skipMatch || resumeCursor > 0
       discogsFacts = (pressingDraft.researchFacts ?? []).filter((fact) => fact.source === 'discogs')
     } else {
       assertWithinWorkerDeadline(deps)
@@ -1079,6 +1097,12 @@ export async function enrichPressing(
       playable = tracks.filter(isPlayableOccurrence)
       const identityShifted = identityChanged(previous, tracks)
       skipMatch = shouldSkipMatch(previous, identityShifted, Boolean(deps.forceRefresh))
+      resumeCursor = resumeForceRefreshTrackCursor(
+        previous,
+        Boolean(deps.forceRefresh),
+        identityShifted
+      )
+      skipReleaseRematch = skipMatch || resumeCursor > 0
       discogsFacts = researchFactsFromDiscogs(detail, tracks, nowIso)
 
       pressingDraft = hydratePressing({
@@ -1095,8 +1119,8 @@ export async function enrichPressing(
           previous: previous?.description ?? null,
           releaseId,
         }),
-        tracks: skipMatch ? adoptPriorRecordings(tracks, previous?.tracks) : tracks,
-        mbRelease: skipMatch && previous
+        tracks: skipReleaseRematch ? adoptPriorRecordings(tracks, previous?.tracks) : tracks,
+        mbRelease: skipReleaseRematch && previous
           ? previous.mbRelease
           : {
               mbid: null,
@@ -1105,13 +1129,13 @@ export async function enrichPressing(
               confidence: 0,
               reason: 'queued for matching',
             },
-        recordings: skipMatch && previous ? { ...previous.recordings } : {},
+        recordings: skipReleaseRematch && previous ? { ...previous.recordings } : {},
         researchFacts: discogsFacts,
         provenance: {
           sourceUrls: [facts.discogsUrl],
-          matchStatus: skipMatch && previous ? previous.provenance.matchStatus : 'pending',
-          confidence: skipMatch && previous ? previous.provenance.confidence : 0,
-          reason: skipMatch && previous ? previous.provenance.reason : 'queued for matching',
+          matchStatus: skipReleaseRematch && previous ? previous.provenance.matchStatus : 'pending',
+          confidence: skipReleaseRematch && previous ? previous.provenance.confidence : 0,
+          reason: skipReleaseRematch && previous ? previous.provenance.reason : 'queued for matching',
           checkedAt: nowIso,
           refreshAfter: isoFromMs(nowMs + SUCCESS_REFRESH_MS),
           lastError: null,
@@ -1132,9 +1156,11 @@ export async function enrichPressing(
           withReleaseSamples: false,
         },
         checkpoint: {
-          stage: skipMatch ? 'research' : 'match',
+          stage: skipReleaseRematch ? 'research' : 'match',
           researchCursor: previous?.checkpoint?.researchCursor ?? 0,
-          trackSampleCursor: skipMatch ? previous?.checkpoint?.trackSampleCursor ?? 0 : 0,
+          trackSampleCursor: skipReleaseRematch
+            ? previous?.checkpoint?.trackSampleCursor ?? 0
+            : 0,
           deadlineStops: 0,
         },
       })
@@ -1148,7 +1174,7 @@ export async function enrichPressing(
     let researchCycle = priorCycles.research
     let researchCursor = pressingDraft.checkpoint?.researchCursor ?? 0
 
-    if (!skipMatch) {
+    if (!skipReleaseRematch) {
       assertWithinWorkerDeadline(deps)
       stage = 'match'
       const { releaseMatch, mbReleaseDoc } = await matchRelease(facts, playable.length, mb)
@@ -1201,8 +1227,10 @@ export async function enrichPressing(
     }
 
     stage = 'research'
-    let trackSampleCursor = skipMatch
-      ? pressingDraft.checkpoint?.trackSampleCursor ?? 0
+    let trackSampleCursor = skipReleaseRematch
+      ? resumeCursor > 0
+        ? resumeCursor
+        : pressingDraft.checkpoint?.trackSampleCursor ?? 0
       : 0
     const acceptedMbids = [
       ...new Set(
