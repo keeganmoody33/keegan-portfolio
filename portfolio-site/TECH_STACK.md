@@ -14,7 +14,7 @@ All versions are pinned from `portfolio-site/package-lock.json`.
 | react | 19.2.4 | UI library |
 | react-dom | 19.2.4 | React DOM renderer |
 | @supabase/supabase-js | 2.90.1 | Supabase client; queries candidate_profile, experiences, etc. |
-| @upstash/redis | 1.35.6 | REST Redis client for the durable Discogs last-good snapshot |
+| @upstash/redis | 1.35.6 | REST Redis client for the durable Discogs last-good snapshot and the footer request tally. REST URL/token resolution lives in `lib/redis-env.ts` (Edge-safe); `discogs-store` re-exports it. |
 | @vercel/blob | 2.8.1 | Public object store for Cover Art Archive fronts (`BLOB_READ_WRITE_TOKEN`). No-op when the token is unset. |
 | posthog-js | 1.436.0 | Client-side analytics (components, page events) |
 | posthog-node | 5.21.2 | Server-side analytics (API routes via lib/posthog-server.ts) |
@@ -35,7 +35,7 @@ All versions are pinned from `portfolio-site/package-lock.json`.
 | postcss | 8.5.23 | CSS processing pipeline |
 | autoprefixer | 10.4.23 | Vendor prefixes for CSS |
 
-**Brand assets:** `npm run generate:brand` (`scripts/generate-brand-assets.mjs`) rebuilds `icon.svg`, `favicon.ico`, `apple-icon.png`, and house OG/twitter PNGs from `brand/lecturesfrom-mark.svg`. Needs system `rsvg-convert` and `python3-pil`. Not an npm dependency.
+**Brand assets:** `npm run generate:brand` runs `scripts/brand/render.py` (official logo set in `public/brand/` + `app/icon.svg`, `favicon.ico`, `apple-icon.png`; needs `pip install cairosvg pillow`), `scripts/brand/manifest.mjs` (hashed copies + `manifest.json`), then `scripts/generate-brand-assets.mjs` (house OG PNG only, from `brand/lecturesfrom-mark.svg`; needs system `rsvg-convert` and `python3-pil`). Not npm dependencies.
 
 ---
 

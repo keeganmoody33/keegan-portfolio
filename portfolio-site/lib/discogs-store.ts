@@ -1,6 +1,20 @@
 import { Redis } from '@upstash/redis'
 import type { Requester, UpstashRequest, UpstashResponse } from '@upstash/redis'
 import type { DiscogsCollection } from './discogs.ts'
+import {
+  assertPrefixedRedisKey,
+  discogsKeyPrefix,
+  resolveRedisRestConfig,
+  type RedisRestConfig,
+} from './redis-env.ts'
+
+export {
+  assertPrefixedRedisKey,
+  discogsKeyPrefix,
+  isProductionRedisNamespace,
+  resolveRedisRestConfig,
+} from './redis-env.ts'
+export type { RedisRestConfig } from './redis-env.ts'
 
 export const DISCOGS_SNAPSHOT_TTL_MS = 24 * 60 * 60 * 1000
 export const DISCOGS_REFRESH_LOCK_SECONDS = 120
@@ -34,11 +48,6 @@ export type DurableStore = {
   releaseLock(): Promise<void>
 }
 
-export type RedisRestConfig = {
-  url: string
-  token: string
-}
-
 export type DiscogsRedisKeys = {
   prefix: string
   collection: string
@@ -64,55 +73,6 @@ export type UpstashFetch = (
 ) => Promise<Response>
 
 type EnvMap = Record<string, string | undefined>
-
-function trimEnv(value: string | undefined): string | undefined {
-  if (value == null) return undefined
-  const trimmed = value.trim()
-  return trimmed === '' ? undefined : trimmed
-}
-
-export function resolveRedisRestConfig(
-  env: EnvMap = process.env
-): RedisRestConfig | null {
-  const kvUrl = trimEnv(env.KV_REST_API_URL)
-  const kvToken = trimEnv(env.KV_REST_API_TOKEN)
-  if (kvUrl && kvToken) {
-    return { url: kvUrl, token: kvToken }
-  }
-
-  const upstashUrl = trimEnv(env.UPSTASH_REDIS_REST_URL)
-  const upstashToken = trimEnv(env.UPSTASH_REDIS_REST_TOKEN)
-  if (upstashUrl && upstashToken) {
-    return { url: upstashUrl, token: upstashToken }
-  }
-
-  return null
-}
-
-const PRODUCTION_REDIS_PREFIX = 'lf:'
-const PREVIEW_REDIS_PREFIX = 'lf:preview:'
-
-export function isProductionRedisNamespace(env: EnvMap = process.env): boolean {
-  if (env.VERCEL_ENV !== 'production') return false
-  const ref = env.VERCEL_GIT_COMMIT_REF
-  if (ref && ref !== 'main') return false
-  return true
-}
-
-export function discogsKeyPrefix(env: EnvMap = process.env): string {
-  return isProductionRedisNamespace(env) ? PRODUCTION_REDIS_PREFIX : PREVIEW_REDIS_PREFIX
-}
-
-export function assertPrefixedRedisKey(key: string, env: EnvMap = process.env): string {
-  const prefix = discogsKeyPrefix(env)
-  if (prefix === PREVIEW_REDIS_PREFIX && /^lf:(?!preview:)/.test(key)) {
-    throw new Error(`preview Redis must not write unprefixed key: ${key}`)
-  }
-  if (!key.startsWith(prefix)) {
-    throw new Error(`Redis key must start with ${prefix}`)
-  }
-  return key
-}
 
 export function discogsRedisKeys(env: EnvMap = process.env): DiscogsRedisKeys {
   const prefix = discogsKeyPrefix(env)

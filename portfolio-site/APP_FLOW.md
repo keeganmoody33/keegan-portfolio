@@ -1,6 +1,6 @@
 # App Flow — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-10-06
+**Last Updated:** 2026-10-07
 **Framework:** Next.js (App Router)
 **Deployment:** Vercel (auto-deploy on push to main)
 
@@ -18,9 +18,10 @@
 | `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate (ISR 300s; durable last-good in Redis when configured). Cover click opens `/collection/[releaseId]`. Under the `{n} releases` line: **shuffle** (client Fisher-Yates of the whole grid; reload restores ISR order; no server cost) and **pull one** (random listed id → existing overlay/route). Grid `next/image` uses a stored CAA Blob URL when the cover manifest has one; otherwise the current Discogs hotlink. |
 | `/collection/[releaseId]` | `app/(house)/collection/[releaseId]/page.tsx` | Record detail (overview / tracks). Intercepting overlay at `@detail/(.)[releaseId]` when opened from the grid; full page on direct visit / refresh. |
 | `/legal`         | `app/(house)/legal/page.tsx`         | Entity + long about + Data sources (Discogs API non-affiliation). Markdown twin `/legal.md`. Organization JSON-LD is not a /legal twin. |
-| `/icon.svg`      | `app/icon.svg`                       | Site icon; `prefers-color-scheme` stroke. Older line-mark — left untouched this pass (follow-up). Applies to house and person. |
-| `/favicon.ico`   | `app/favicon.ico`                    | 16/32/48 ico: `#ececec` rounded plate, mark `#20262b` (matches apple-icon). Older line-mark — left untouched this pass (follow-up). |
-| `/apple-icon.png`| `app/apple-icon.png`                 | 180px, light ground, mark `#20262b`. Older line-mark — left untouched this pass (follow-up). |
+| `/brand`        | `app/(house)/brand/page.tsx`         | Official mark: light/dark preview, downloads, stable URLs, usage rules. Files live in `public/brand/` (`logo.svg` is canonical; hashed immutable copies in `public/brand/v/`; `manifest.json`). |
+| `/icon.svg`      | `app/icon.svg`                       | Site icon. Simplified official mark (2026-09-26 master minus flag, stroke 0.095); `prefers-color-scheme` stroke `#20262b` / `#ffffff`. Copy of `public/brand/favicon.svg`. Applies to house and person. |
+| `/favicon.ico`   | `app/favicon.ico`                    | 16/32/48 ico, simplified official mark `#20262b` on transparent. Copy of `public/brand/favicon.ico`. |
+| `/apple-icon.png`| `app/apple-icon.png`                 | 180px, full official mark `#20262b` on white. Copy of `public/brand/apple-touch-icon.png`. |
 | `/opengraph-image` | `app/(house)/opengraph-image.tsx`  | House share image 1200×630 (older line-mark — left untouched this pass; follow-up). Person page keeps `/og.jpg`. |
 | `/keeganmoody33` | `app/keeganmoody33/page.tsx` | Principal / person page (Ask AI, JD Fit Analyzer, timeline)     |
 | `/keegan`        | next.config + vercel.json    | 301 → `/keeganmoody33`                                          |
@@ -33,7 +34,7 @@
 | Redirect (301) | `/keeganMoody33` | `/keeganmoody33` | Case normalization  |
 | Redirect (301) | `/keegan`        | `/keeganmoody33` | Short alias         |
 
-**Result:** Visitors land on `lecturesfrom.com` and see the house title card + crate. `/` never redirects to the person page. The person page is at `/keeganmoody33`. House ↔ person crossings use `SignalCut` (not a global layout animation). Ask AI and JD Fit Analyzer stay on the person page only. The hero wordmark's last `o` is the static `LogoMark` (owner line-only PNG geometry; `variant="line"`; no spin). Favicon / og stay the older line-mark (untouched). `LogoGlobe` is kept on disk and is not mounted. `HouseFooter` is shared on `/`, `/catalog`, `/collection`, `/legal` (Motion switch not rendered). `/keeganmoody33` has its own footer.
+**Result:** Visitors land on `lecturesfrom.com` and see the house title card + crate. `/` never redirects to the person page. The person page is at `/keeganmoody33`. House ↔ person crossings use `SignalCut` (not a global layout animation). Ask AI and JD Fit Analyzer stay on the person page only. The hero wordmark's last `o` is the static `LogoMark` (owner line-only PNG geometry; `variant="line"`; no spin). Favicon and app icons use the official 2026-09-26 master (see `/brand`); og stays the older line-mark (follow-up). `LogoGlobe` is kept on disk and is not mounted. `HouseFooter` is shared on `/`, `/catalog`, `/collection`, `/legal`, `/brand` (Motion switch not rendered). `/keeganmoody33` has its own footer.
 
 ### API Routes
 
@@ -47,6 +48,7 @@
 | `/api/cron/crate-inspect` | GET | `app/api/cron/crate-inspect/route.ts` | Read-only queue / dead / unresolved / backfill snapshot. Same auth. |
 | `/api/github` | GET | `app/api/github/route.ts` | Proxy to GitHub public events API |
 | `/api/jd-analyzer` | POST | `app/api/jd-analyzer/route.ts` | Proxy to Supabase `jd-analyzer` Edge Function |
+| `/api/tally` | GET | `app/api/tally/route.ts` | Running totals for the house footer tally (Upstash Redis, `s-maxage=60`; 503s `s-maxage=10`). Hits are recorded in `proxy.ts` via one Redis pipeline in `waitUntil`. |
 
 ---
 
@@ -415,6 +417,27 @@ All interactions ──→ PostHog (client + server events)
 **Error / abort state:** One idempotent `teardown()` (Copilot review comment 4111027402). It stops snow, cancels every timeout and rAF, reverts `document.documentElement` transform/classes, and removes the overlay. Called from completion, hard-cap fallback (`setTimeout(1500 + fade + 80)`), slow-destination hold, popstate, pagehide, `visibilitychange` hidden, thrown errors, and a second click (swallowed so no second loop). The triggering Link's React unmount is **not** a teardown path — that unmount is the route swap. Hidden-tab abort does not navigate if `router.push` has not already run.
 
 **PostHog events:** `signal_cut_started` (`direction`, `href`)
+
+---
+
+### 10. Footer request tally
+
+**Trigger:** House footer on `/`, `/catalog`, `/collection`, `/legal`. `proxy.ts` records the page request; the row reads `GET /api/tally`.
+
+**Steps:**
+
+1. The collapsed row is in the layout from first paint (`min-h-11` under the footer hairline) so loading and errors do not shift layout. Until a 200 snapshot arrives the controls stay `invisible` + `inert`.
+2. Humans / not humans is a two-button switch (`aria-pressed`; visible label is the accessible name). The LCD chip is visual only (`aria-hidden`); a polite live region announces the count.
+3. **breakdown** / **close** is a disclosure (`aria-expanded`, `aria-controls`). The chip is not part of that button's name.
+4. The breakdown opens inline below the row (never an overlay). Category rows select on click / Enter / Space only — hover and focus do not re-select. Color transitions are instant under `prefers-reduced-motion` (`motion-reduce:transition-none motion-reduce:duration-0`). Focus-visible is a 2px solid ink outline (`outline-offset: 2px`); orange is hover only.
+
+**Success state:** Count for the selected mode, since date, percent of traffic. Breakdown lists categories (bar track `--house-line`, fill `--house-ink` / `--house-dim`) and the method note.
+
+**Error state:** `/api/tally` 503 (short CDN cache) or network failure. Reserved height stays; content stays hidden. No spinner.
+
+**Empty state:** Redis zeros. Row still renders the count `0`.
+
+**PostHog events:** `tally_mode_changed`, `tally_breakdown_toggled`, `tally_category_selected`
 
 ---
 
