@@ -43,7 +43,12 @@ export default async function RecordDetailRoute({
 
   const read = await readStoredPressingOnce(releaseId)
   if (read.status === 'not_found') notFound()
-  const cover = (await getDefaultCoverStore()?.get(releaseId)) ?? null
+  // Optional metadata: a failed cover lookup is a missing manifest, so the
+  // pressing and Discogs cover fallbacks still render during a store outage.
+  const cover =
+    (await getDefaultCoverStore()
+      ?.get(releaseId)
+      .catch(() => null)) ?? null
   if (read.status === 'unavailable') {
     return (
       <RecordDetail

@@ -79,6 +79,7 @@ export default function RecordDetail({
   const [selected, setSelected] = useState<number | null>(null)
   const facts = pressing.facts
   const connections = overviewConnections(pressing)
+  const noMatchLine = pressingCheckedNoMatchLine(pressing)
   const selectedTrack = selected == null ? null : pressing.tracks[selected]
   const selectedRecording =
     selectedTrack?.recording.mbid
@@ -341,12 +342,13 @@ export default function RecordDetail({
 
               <section className="mt-10" aria-label="connections">
                 <h2 className="house-meta mb-3">connections</h2>
+                {/* The no-match line renders on its own: an unmatched release can
+                    still carry fallback facts (Wikidata, Discogs credits) below it. */}
+                {noMatchLine ? <p className="house-source">{noMatchLine}</p> : null}
                 {connections.length === 0 ? (
-                  <p className="house-source">
-                    {pressingCheckedNoMatchLine(pressing) ?? CRATE_EMPTY_LINE}
-                  </p>
+                  noMatchLine ? null : <p className="house-source">{CRATE_EMPTY_LINE}</p>
                 ) : (
-                  <ul className="list-none p-0">
+                  <ul className={`list-none p-0${noMatchLine ? ' mt-3' : ''}`}>
                     {connections.map((row) => (
                       <li
                         key={`${row.label}-${row.href}`}

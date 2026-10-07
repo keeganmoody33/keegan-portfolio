@@ -213,10 +213,38 @@ function matchTracksByPositions(
     .map((part) => part.trim().toLowerCase())
     .filter(Boolean)
   if (tokens.length === 0) return []
-  return tracks.filter((track) => {
-    const position = track.position.trim().toLowerCase()
-    return tokens.some((token) => token === position || position.startsWith(token))
-  })
+  const positionOf = (track: TrackOccurrence) => track.position.trim().toLowerCase()
+  const matches = (token: string, track: TrackOccurrence) => {
+    const position = positionOf(track)
+    if (token === position) return true
+    if (!position.startsWith(token)) return false
+    // Prefix selects a side or subtrack ("A" → "A1", "3" → "3a" / "3.1"),
+    // never a longer number: "1" must not match "10" or "20" → "2" etc.
+    const last = token.charAt(token.length - 1)
+    const next = position.charAt(token.length)
+    return !(/\d/.test(last) && /\d/.test(next))
+  }
+  const picked = new Set<TrackOccurrence>()
+  for (const token of tokens) {
+    // Discogs range notation, e.g. "A1 to A3": inclusive span in tracklist order.
+    const range = token.match(/^(.+?)\s+to\s+(.+)$/)
+    if (range) {
+      const start = tracks.findIndex((track) => matches(range[1]!.trim(), track))
+      let end = -1
+      for (let i = tracks.length - 1; i >= 0; i -= 1) {
+        if (matches(range[2]!.trim(), tracks[i]!)) {
+          end = i
+          break
+        }
+      }
+      if (start >= 0 && end >= start) {
+        for (const track of tracks.slice(start, end + 1)) picked.add(track)
+      }
+      continue
+    }
+    for (const track of tracks) if (matches(token, track)) picked.add(track)
+  }
+  return tracks.filter((track) => picked.has(track))
 }
 
 function pushDiscogsCredit(
@@ -262,6 +290,9 @@ export function researchFactsFromDiscogs(
 
   for (const artist of detail.extraartists ?? []) {
     const matched = matchTracksByPositions(artist.tracks, playable)
+    // Release-level only when Discogs gave no `tracks` at all. A track-scoped
+    // credit we can't resolve stays unmatched rather than landing on every track.
+    if (artist.tracks?.trim() && matched.length === 0) continue
     const targets = matched.length > 0 ? matched : [null]
     for (const track of targets) {
       pushDiscogsCredit(facts, {

@@ -43,8 +43,12 @@ export default async function CollectionPage() {
 
   const pullOneId = pickListedId(releases)
   const coverStore = getDefaultCoverStore()
+  // Cover manifests are optional: a store outage must not fail the render,
+  // the grid falls back to Discogs hotlinks.
   const coverMap = coverStore
-    ? await coverStore.getMany(releases.map((release) => release.releaseId))
+    ? await coverStore
+        .getMany(releases.map((release) => release.releaseId))
+        .catch(() => new Map())
     : new Map()
   const covers = Object.fromEntries(
     [...coverMap.entries()].map(([id, cover]) => [String(id), cover])

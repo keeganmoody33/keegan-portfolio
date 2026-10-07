@@ -1,4 +1,5 @@
 import { collectionReleaseIds } from './sync.ts'
+export { parseIdList, parsePositiveId } from './ids.ts'
 import { fetchDiscogsReleaseDetail } from './discogs-release.ts'
 import {
   ENRICH_BUDGET_MS,
@@ -148,20 +149,6 @@ export function migrateSettledIds(previous: BackfillState, ids: number[]): numbe
   }
   void ids
   return []
-}
-
-export function parseIdList(raw: string | null | undefined): number[] {
-  if (!raw?.trim()) return []
-  const ids: number[] = []
-  const seen = new Set<number>()
-  for (const part of raw.split(',')) {
-    const n = Number.parseInt(part.trim(), 10)
-    if (Number.isInteger(n) && n > 0 && !seen.has(n)) {
-      ids.push(n)
-      seen.add(n)
-    }
-  }
-  return ids
 }
 
 export function remainingBackfillIds(
