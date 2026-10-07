@@ -1,6 +1,11 @@
 # Lessons Learned
 
-Updated: 2026-10-06
+Updated: 2026-10-07
+
+## Dependabot grouped npm bumps (2026-10-07)
+
+- **A grouped `npm_and_yarn` PR can jump Tailwind majors via caret ranges.** #52 claimed `source-map-js` 1.2.1 → 1.2.2 (CVE-2026-93749) and removing `postcss-selector-parser`, but it also changed `tailwindcss` `^3.3.0` → `^4.3.3`. That breaks the Vercel/Turbopack build (`tailwindcss used directly as PostCSS plugin`). `portfolio-site/` is the Vercel `rootDirectory` — do not merge a Tailwind v4 jump.
+- **Patch `source-map-js` in the lockfile only.** It is transitive via `postcss@8.5.23` (`^1.2.1`). `npm update source-map-js` is enough; no `overrides` and no `package.json` change. Keep Tailwind v3. `postcss-selector-parser` is a Tailwind v3 dependency — leaving it is correct.
 
 ## Collection covers (2026-10-06)
 
