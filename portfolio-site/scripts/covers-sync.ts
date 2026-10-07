@@ -2,6 +2,7 @@
  * Fetch, optionally store CAA covers on Vercel Blob, and write Redis manifests.
  * Preview Redis (`lf:preview:`) unless --prod. Refuses production keys without --prod.
  * Without BLOB_READ_WRITE_TOKEN, discovery still runs and Discogs URLs stay hotlinked.
+ * Discogs image bytes are never uploaded; crate metadata is not a copy.
  *
  *   npm run covers:sync -- --ids=573292,240128 --limit=10 --force
  *   npm run covers:sync -- --dry-run --limit=10

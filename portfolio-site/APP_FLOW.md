@@ -375,7 +375,7 @@ MusicBrainz / Discogs extraartists / Wikidata SPARQL (manual research only)
             └── HTML `data-crate-source="redis|fixture|collection"` marks which one served
             └── never called on a visitor request. Detail routes are `force-dynamic`. A visit does not enqueue or process.
             └── successful research is reused (`CRATE_RESEARCH_REFRESH_MS`, six months); a later Discogs refresh does not rematch unchanged identities
-            └── prototype gap: Discogs 6h freshness clause is not implemented
+            └── crate facts (credits, extraartists, samples, titles) are not copies; Discogs image bytes stay hotlinked
             └── listing last-good is Redis; gated `/api/cron/collection-keep` refreshes when older than `DISCOGS_SNAPSHOT_TTL_MS` (24h); ISR `revalidate = 300`
             └── research is manual-only; a visit never writes Redis; no Vercel cron; too_slow recovery is a manual `--retry`
 
