@@ -1,3 +1,11 @@
+COMPLETED (2026-10-07 — official logo: /brand, stable + hashed URLs, R2 mirror script):
+- Official mark is the 2026-09-26 master (bold 0.0625, ellipse at 60°, core NOT scaled). The old app/icon.svg and brand/lecturesfrom-mark.svg used `scale(0.74)` on the core; app icons now use the master.
+- public/brand: logo.svg (canonical), logo-white.svg, 512/1024 PNGs, favicon.svg (simplified: no flag, stroke 0.095, auto dark mode), favicon.ico, apple-touch-icon, icon-192/512. Re-render: `python3 scripts/brand/render.py`, then `node scripts/brand/manifest.mjs`.
+- public/brand/v/<name>.<sha256:10>.<ext> are immutable copies; manifest.json lists every file with sha256, size, stable URL, immutable URL, R2 mirror URL, canonical flag.
+- next.config headers: /brand/* (not v/) max-age=3600 + SWR; /brand/v/* 1y immutable; CORS * on both. Organization JSON-LD now has `logo` (logo-1024.png). app/manifest.ts added. /brand page added to sitemap.
+- R2 mirror: `bash scripts/brand/publish-r2.sh` (wrangler, bucket lecturesfrom-assets, served at assets.lecturesfrom.com). Blocked until R2 is enabled on the Cloudflare account.
+- brand/lecturesfrom-mark.svg (scaled core) left untouched; it may feed the animated site logo. Decide separately.
+
 COMPLETED (2026-10-07 — source-map-js 1.2.2, replaces Dependabot #52):
 - Transitive lockfile bump only: `source-map-js` 1.2.1 → 1.2.2 (CVE-2026-93749). `npm update source-map-js` in `portfolio-site/`. `package.json` unchanged. `tailwindcss` stays `^3.3.0` / 3.4.19. `postcss-selector-parser` stays (Tailwind v3 needs it).
 - Do not merge Dependabot #52: it also jumps `tailwindcss` `^3.3.0` → `^4.3.3` and the Vercel preview fails (Turbopack: tailwindcss used directly as PostCSS plugin). Do not close #52 from this work.
