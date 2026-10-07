@@ -989,7 +989,9 @@ function attachTrackLevelDocs(
     }
     return
   }
-  const existing = recordings[track.recording.mbid]
+  const existingMbid = track.recording.mbid
+  if (!existingMbid) return
+  const existing = recordings[existingMbid]
   if (!existing) return
   existing.samplesFrom = mergeSampleLinks(existing.samplesFrom, mergedFrom)
   existing.sampledIn = mergeSampleLinks(existing.sampledIn, mergedIn)
