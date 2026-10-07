@@ -15,6 +15,11 @@ Updated: 2026-10-07
 
 - **Do not invent coverage.** A Cloud Agent VM with no `KV_REST_API_*` / `UPSTASH_REDIS_REST_*` cannot run `npm run crate:backfill`. Skip and say so. Do not decrypt Vercel Production env. Do not write unprefixed `lf:` keys. Upstash MCP `redis_list_databases` returning `[]` is also a skip.
 
+## Dependabot grouped npm bumps (2026-10-07)
+
+- **A grouped `npm_and_yarn` PR can jump Tailwind majors via caret ranges.** #52 claimed `source-map-js` 1.2.1 → 1.2.2 (CVE-2026-93749) and removing `postcss-selector-parser`, but it also changed `tailwindcss` `^3.3.0` → `^4.3.3`. That breaks the Vercel/Turbopack build (`tailwindcss used directly as PostCSS plugin`). `portfolio-site/` is the Vercel `rootDirectory` — do not merge a Tailwind v4 jump.
+- **Patch `source-map-js` in the lockfile only.** It is transitive via `postcss@8.5.23` (`^1.2.1`). `npm update source-map-js` is enough; no `overrides` and no `package.json` change. Keep Tailwind v3. `postcss-selector-parser` is a Tailwind v3 dependency — leaving it is correct.
+
 ## Collection covers (2026-10-06)
 
 - **Discogs API Terms forbid storing copies.** Do not put Discogs images on Vercel Blob or keep them as a long-lived object store. Hotlink `images[0].uri` / primary. Manifests may record the Discogs URL plus width/height. Cover Art Archive may be copied at our own risk; images stay copyrighted. No extra CAA notice on the page — keep existing Discogs credits.

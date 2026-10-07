@@ -1,7 +1,8 @@
-IN PROGRESS (2026-10-07 — integrations + QA Gate on `afebd8c`):
+IN PROGRESS (2026-10-07 — integrations + QA Gate, merged main `f396637`):
 - MusicBrainz 429s do not count toward `CRATE_MAX_ATTEMPTS`. SPARQL/MB abort timers are `min(timeout, remaining)`. Only MB 429 (`MUSICBRAINZ_RATE_LIMIT_MESSAGE`) stops the walk.
 - Track-level: preserve `trackSampleCursor` in `applyDeadlineStop`; strip feat/ft/featuring; reject duration >15s off; `TRACK_LEVEL_FETCH_CAP` 1; `based on` is not a sample; persist merged samples then `setRecording`; HTTP-date Retry-After.
-- Next: merge main `f396637` keeping `source-map-js` 1.2.2 (Tailwind v3, `package.json` unchanged), drop stale “Do not close #52 from this work”, then full preview backfill `lf:preview:` only.
+- Kept `#57` lockfile pin `source-map-js` 1.2.2 (CVE-2026-93749). Tailwind stays v3. `package.json` unchanged.
+- Next: full preview backfill `lf:preview:` only.
 
 SKIPPED (2026-10-07 — full preview collection backfill on this rebase VM):
 - This Cloud Agent environment has no preview Upstash Redis credentials (`KV_REST_API_*` / `UPSTASH_REDIS_REST_*` absent from `printenv`; Upstash MCP `redis_list_databases` returned `[]`). Did not decrypt Vercel Preview env, did not touch prod, did not write `lf:` keys.
@@ -11,7 +12,7 @@ SKIPPED (2026-10-07 — full preview collection backfill on this rebase VM):
 COMPLETED (2026-10-07 — PR #54 rebase onto main `#56` `7317a89`):
 - Branch `cursor/collection-research-trackmatch-7382` HEAD `d0cc837`. Dropped `22d1edf`..`e407a88` (#53 pre-squash), `494a1c9` (creditLine), `72b8679` (unmatched facts). Kept `13b0670`..`1c6b449` replayed as `baa6496`..`d0cc837`.
 - `wikidata.ts`: #56 abort-aware Retry-After/timeout plus #54 `max(AUTH_RETRY_MS, Retry-After)` / `--retry` inspect kinds / P5813 = MB release. Covers, SourceLine sr-only `source `, SampleList `min-h-6` untouched.
-- Local: `npm ci`, `tsc --noEmit`, eslint, `npm test` (281 pass), `next build` (26/26 with dummy supabase). PR #54 marked ready. Preview `https://keegan-portfolio-content-9rfc25c5b-groundskeep.vercel.app`. Do not merge.
+- Local: `npm ci`, `tsc --noEmit`, eslint, `npm test` (281 pass), `next build` (26/26 with dummy supabase). PR #54 marked ready. Preview `https://keegan-portfolio-content-9rfc25c5b-groundskeep.vercel.app`.
 
 COMPLETED (2026-10-06 — collection research follow-up: P2s + track-level samples):
 - Follow-up branch `cursor/collection-research-trackmatch-7382` (PR #54), rebased onto main `#56` (`7317a89`). `#53` is squashed as `65de54e`.
@@ -22,6 +23,11 @@ COMPLETED (2026-10-06 — collection research follow-up: P2s + track-level sampl
 - Track-level samples are the **primary** sample path: search recordings by artist + `songTitle` (mix suffixes stripped), pick by artist+title, duration only as a tiebreak, merge sample rels across recordings of the same song, refuse only when the artist does not match. Provenance `musicbrainz` with matched mbid(s). Checkpoint `trackSampleCursor` so skipMatch revisits do not re-search. `keepPriorMatch` persists `releaseGroupMbid` (null if unknown). Preserve/clear-deadline copies `trackSampleCursor`. No confident recording-level hit → merge nothing. MusicBrainz work follow-up is `inc=work-rels` only (`artist-credits` 400s on works). A MusicBrainz 429 after a recording fetch overlays those samples onto the preserved verified pressing (`overlayTrackLevelProgress`); it does not drop in-flight `sampled_by` facts. Fresh recordings in the store are reused instead of refetching.
 - Fixture: Mtume 567894 Juicy Fruit (Vocal) → sampled in The Notorious B.I.G. - Juicy.
 - Preview Redis `lf:preview:` 567894: MusicBrainz recording `1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc` has sampled-in The Notorious B.I.G. - Juicy (`181c0a32-6e3f-4680-8a7d-1daf0b42e43b`). Skip-match retry after 429 reused stored recordings (2 MB searches). `lastError` null. No prod writes.
+
+COMPLETED (2026-10-07 — source-map-js 1.2.2, replaces Dependabot #52):
+- Transitive lockfile bump only: `source-map-js` 1.2.1 → 1.2.2 (CVE-2026-93749). `npm update source-map-js` in `portfolio-site/`. `package.json` unchanged. `tailwindcss` stays `^3.3.0` / 3.4.19. `postcss-selector-parser` stays (Tailwind v3 needs it).
+- Do not merge Dependabot #52: it also jumps `tailwindcss` `^3.3.0` → `^4.3.3` and the Vercel preview fails (Turbopack: tailwindcss used directly as PostCSS plugin).
+
 
 COMPLETED (2026-10-06 — rebase covers onto main 65de54e / #53):
 - Rebased `cursor/collection-covers-blob-5ece` onto `65de54e`. Merge-base is `65de54e`, not `41416d1`. Kept CAA Blob + Discogs hotlink and #53 research (`extraartists`, `research.ts`/`wikidata`, SourceLine sr-only `source `, SampleList `inline-flex min-h-6 items-center`).
