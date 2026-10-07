@@ -1,5 +1,5 @@
 COMPLETED (2026-10-07 — footer tally UX + QA follow-ups):
-- Focus-visible is 2px solid `--house-ink` (`outline-solid`, offset 2px) on humans / not humans, breakdown/close, and category rows. Orange stays hover. LCD chip dropped `rounded-[2px]`. Breakdown is `inline-flex min-h-11 items-center sm:min-h-8`. `motion-reduce:duration-0` next to `transition-none`.
+- Focus-visible is 2px solid `--house-ink` (`outline` + `outline-2`, offset 2px) on humans / not humans, breakdown/close, and category rows. Tailwind v3 has no `outline-solid`. Orange stays hover. LCD chip dropped `rounded-[2px]`. Breakdown is `inline-flex min-h-11 items-center sm:min-h-8`. `motion-reduce:duration-0` next to `transition-none`.
 - Tally production keys use `isProductionRedisNamespace` (`VERCEL_ENV=production` and ref `main`) via `discogsKeyPrefix` / `assertPrefixedRedisKey` from `lib/redis-env.ts`. `vercel --prod` off main writes `lf:preview:tally:v1`.
 - `recordHit` / `readTally` resolve the default Redis client inside try. `readTally` times out at 1.5s. 503s send `Cache-Control: public, s-maxage=10, stale-while-revalidate=30`. Client fetch dropped `cache: 'no-store'`.
 - Split `resolveRedisRestConfig` + prefix helpers into `lib/redis-env.ts` (no Discogs/crate). `discogs-store` re-exports; crate research paths unchanged. Visitor writes still only `*:tally:v1` / `*:tally:v1:since`.
