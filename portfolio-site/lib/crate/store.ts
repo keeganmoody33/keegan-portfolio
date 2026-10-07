@@ -92,7 +92,6 @@ export type CrateRedisKeys = {
   queued: string
   seen: string
   enrichLock: string
-  enrichMeta: string
   visitThrottle: string
   inflightPrefix: string
   pressing: (releaseId: number) => string
@@ -114,7 +113,6 @@ export function crateRedisKeys(env: Record<string, string | undefined> = process
     queued: assertPrefixedRedisKey(`${prefix}crate:queued:v1`, env),
     seen: assertPrefixedRedisKey(`${prefix}crate:seen:v1`, env),
     enrichLock: assertPrefixedRedisKey(`${prefix}crate:enrich:lock:v1`, env),
-    enrichMeta: assertPrefixedRedisKey(`${prefix}crate:enrich:meta:v1`, env),
     visitThrottle: assertPrefixedRedisKey(`${prefix}crate:visit:v1`, env),
     inflightPrefix: assertPrefixedRedisKey(`${prefix}crate:inflight:`, env),
     pressing: (releaseId: number) =>

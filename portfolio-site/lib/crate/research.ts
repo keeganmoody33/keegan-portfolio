@@ -60,7 +60,7 @@ export function presentSampleArtist(name: string | undefined | null): string {
   const trimmed = (name ?? '')
     .trim()
     .replace(/\s*&\s*\[unknown\]\s*$/i, '')
-    .replace(/(?:\s*[&,]|\s+feat\.?|\s+x)\s*$/i, '')
+    .replace(/\s*[&,]\s*$/, '')
     .trim()
   if (!trimmed || isMusicBrainzUnknownArtist(trimmed)) return ''
   return trimmed

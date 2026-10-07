@@ -1,3 +1,7 @@
+COMPLETED (2026-10-07 — PR #54 joiner strip: trailing `&`/comma only):
+- `presentSampleArtist` strips only a leftover trailing `\s*[&,]\s*$` after `& [unknown]`. Do not strip `feat.` or `x` (`Malcolm X`, `Little Feat`, `Lowell George & Little Feat`, `Generation X`, `Brand X`, `Mr. X`, `Earth, Wind & Fire`, `Tyler, The Creator` stay). `Alpha &` / `Alpha,` still become `Alpha`. Dropped unused `enrichMeta` from `crateRedisKeys`.
+- Never prod. `652b21d` still ancestor. Do not merge.
+
 COMPLETED (2026-10-07 — PR #54 P2 forceRefresh lock-in + annotate cap):
 - `--retry` / `forceRefresh` ignores the saved track-level MBID. Equal-score hits with samples-material beat a saved match without them. Store holding `1aaf2f49` then forced retry at score 100 ends on `1d890c2b`.
 - `annotateTrackLevelHits` probes at most `TRACK_LEVEL_ANNOTATE_CAP` 3 hits (score, then MBID) into a probe cache; persist only the picked recording. Ten tied hits → 3 `getRecording`, 1 saved.
