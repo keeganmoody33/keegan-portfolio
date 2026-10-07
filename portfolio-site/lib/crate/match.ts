@@ -95,34 +95,59 @@ export type TrackLevelRecordingHit = {
   artist: string
   lengthMs: number | null
   score?: number
+  hasSamples?: boolean
 }
 
-export function pickTrackLevelRecordings(
+export function recordingHasSampleMaterial(
+  recording?: { samplesFrom?: unknown[]; sampledIn?: unknown[] } | null
+): boolean {
+  if (!recording) return false
+  return (recording.samplesFrom?.length ?? 0) > 0 || (recording.sampledIn?.length ?? 0) > 0
+}
+
+export function compareTrackLevelRecordings(
+  left: TrackLevelRecordingHit,
+  right: TrackLevelRecordingHit
+): number {
+  const scoreDelta = (right.score ?? 0) - (left.score ?? 0)
+  if (scoreDelta !== 0) return scoreDelta
+  const leftSamples = left.hasSamples ? 1 : 0
+  const rightSamples = right.hasSamples ? 1 : 0
+  if (leftSamples !== rightSamples) return rightSamples - leftSamples
+  return left.mbid.localeCompare(right.mbid)
+}
+
+export function filterTrackLevelRecordings(
   hits: TrackLevelRecordingHit[],
   discogs: { artist: string; title: string; durationMs: number | null }
 ): TrackLevelRecordingHit[] {
   const discogsSong = songTitle(discogs.title)
-  const matched = hits.filter((hit) => {
+  return hits.filter((hit) => {
     if (!artistsMatch(discogs.artist, hit.artist)) return false
-    if (titlesSimilar(discogs.title, hit.title)) return true
-    const hitSong = songTitle(hit.title)
-    return Boolean(discogsSong && hitSong && discogsSong === hitSong)
-  })
-  const durationOk = matched.filter((hit) => {
+    const titleOk =
+      titlesSimilar(discogs.title, hit.title) ||
+      Boolean(discogsSong && songTitle(hit.title) && discogsSong === songTitle(hit.title))
+    if (!titleOk) return false
     const delta = durationDeltaMs(discogs.durationMs, hit.lengthMs)
     if (delta == null) return true
     return delta <= DURATION_FAR_MS
   })
-  return durationOk.sort((left, right) => {
-    const leftDelta = durationDeltaMs(discogs.durationMs, left.lengthMs)
-    const rightDelta = durationDeltaMs(discogs.durationMs, right.lengthMs)
-    if (leftDelta != null && rightDelta != null && leftDelta !== rightDelta) {
-      return leftDelta - rightDelta
-    }
-    if (leftDelta != null && rightDelta == null) return -1
-    if (leftDelta == null && rightDelta != null) return 1
-    return (right.score ?? 0) - (left.score ?? 0)
-  })
+}
+
+export function pickTrackLevelRecordings(
+  hits: TrackLevelRecordingHit[],
+  discogs: { artist: string; title: string; durationMs: number | null },
+  options?: { priorMbid?: string | null }
+): TrackLevelRecordingHit[] {
+  const matched = filterTrackLevelRecordings(hits, discogs)
+  const ranked = matched.slice().sort(compareTrackLevelRecordings)
+  const priorMbid = options?.priorMbid
+  if (!priorMbid) return ranked
+  const prior = matched.find((hit) => hit.mbid === priorMbid)
+  if (!prior) return ranked
+  const best = ranked[0]
+  if (best && (best.score ?? 0) > (prior.score ?? 0)) return ranked
+  return [prior, ...ranked.filter((hit) => hit.mbid !== prior.mbid)]
 }
 
 export function normalizePosition(value: string): string {

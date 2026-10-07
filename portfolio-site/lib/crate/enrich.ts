@@ -26,9 +26,12 @@ import {
   classifyReleaseMatch,
   matchDiscogsTrackToMb,
   parseDurationToMs,
+  filterTrackLevelRecordings,
   pickTrackLevelRecordings,
+  recordingHasSampleMaterial,
   songTitle,
   type ReleaseMatchCandidate,
+  type TrackLevelRecordingHit,
 } from './match.ts'
 import {
   createMusicBrainzClient,
@@ -669,6 +672,110 @@ function markVocalInstrumentalAmbiguous(tracks: TrackOccurrence[]): void {
   }
 }
 
+function priorTrackLevelMbid(
+  track: TrackOccurrence,
+  previousTracks?: TrackOccurrence[]
+): string | null {
+  if (track.recording.mbid) return track.recording.mbid
+  const key = track.identityKey ?? trackIdentityKey(track)
+  const prior = previousTracks?.find(
+    (row) => (row.identityKey ?? trackIdentityKey(row)) === key
+  )
+  return prior?.recording.mbid ?? null
+}
+
+async function annotateTrackLevelHits(
+  hits: TrackLevelRecordingHit[],
+  recordings: Record<string, StoredRecording>,
+  store: CrateStore,
+  mb: MusicBrainzClient,
+  deps: EnrichDeps,
+  nowIso: string,
+  nowMs: number,
+  takeFloorMs: number
+): Promise<TrackLevelRecordingHit[]> {
+  const annotated: TrackLevelRecordingHit[] = []
+  for (const hit of hits) {
+    if (hit.hasSamples != null) {
+      annotated.push(hit)
+      continue
+    }
+    const stored = recordings[hit.mbid] ?? (await store.getRecording(hit.mbid))
+    if (stored) {
+      recordings[hit.mbid] = stored
+      annotated.push({ ...hit, hasSamples: recordingHasSampleMaterial(stored) })
+      continue
+    }
+    annotated.push({ ...hit })
+  }
+  const topScore = annotated.reduce((max, hit) => Math.max(max, hit.score ?? 0), 0)
+  for (const hit of annotated) {
+    if (hit.hasSamples != null) continue
+    if ((hit.score ?? 0) !== topScore) continue
+    const remaining =
+      deps.deadlineMs == null
+        ? Number.POSITIVE_INFINITY
+        : remainingBudgetMs(deps.deadlineMs, (deps.now ?? Date.now)())
+    if (remainingBelowTakeFloor(remaining, takeFloorMs)) break
+    try {
+      assertWithinWorkerDeadline(deps)
+      const doc = await mb.getRecording(hit.mbid)
+      if (!doc) continue
+      const recording: StoredRecording = {
+        mbid: doc.mbid,
+        title: doc.title,
+        artist: doc.artist,
+        credits: doc.credits,
+        samplesFrom: doc.samplesFrom,
+        sampledIn: doc.sampledIn,
+        provenance: {
+          sourceUrls: [musicbrainzRecordingUrl(doc.mbid)],
+          matchStatus: 'matched',
+          confidence: 0.7,
+          reason: TRACK_LEVEL_REASON,
+          checkedAt: nowIso,
+          refreshAfter: isoFromMs(nowMs + SUCCESS_REFRESH_MS),
+          lastError: null,
+          verifiedAt: nowIso,
+          lastAttemptAt: nowIso,
+        },
+      }
+      recordings[hit.mbid] = recording
+      hit.hasSamples = recordingHasSampleMaterial(recording)
+    } catch (error) {
+      if (isMusicBrainzRateLimitError(error) || isMusicBrainzTimeoutError(error)) {
+        if (error.partialRecording) {
+          const partial = error.partialRecording
+          recordings[partial.mbid] = {
+            mbid: partial.mbid,
+            title: partial.title,
+            artist: partial.artist,
+            credits: partial.credits,
+            samplesFrom: partial.samplesFrom,
+            sampledIn: partial.sampledIn,
+            provenance: {
+              sourceUrls: [musicbrainzRecordingUrl(partial.mbid)],
+              matchStatus: 'matched',
+              confidence: 0.7,
+              reason: TRACK_LEVEL_REASON,
+              checkedAt: nowIso,
+              refreshAfter: isoFromMs(nowMs + SUCCESS_REFRESH_MS),
+              lastError: null,
+              verifiedAt: nowIso,
+              lastAttemptAt: nowIso,
+            },
+          }
+          hit.hasSamples = recordingHasSampleMaterial(recordings[partial.mbid])
+        }
+        if (isMusicBrainzRateLimitError(error)) throw error
+        continue
+      }
+      throw error
+    }
+  }
+  return annotated
+}
+
 async function applyTrackLevelSamples(
   tracks: TrackOccurrence[],
   recordings: Record<string, StoredRecording>,
@@ -679,6 +786,7 @@ async function applyTrackLevelSamples(
   nowMs: number,
   takeFloorMs: number,
   startCursor: number,
+  previousTracks?: TrackOccurrence[],
   onProgress?: (cursor: number) => Promise<void>
 ): Promise<{ cursor: number; incomplete: boolean }> {
   const playable = tracks.filter((track) => isPlayableOccurrence(track))
@@ -710,11 +818,29 @@ async function applyTrackLevelSamples(
       artist: queryArtist,
       title: queryTitle,
     })
-    const picked = pickTrackLevelRecordings(hits, {
-      artist: queryArtist,
-      title: track.title,
-      durationMs: track.durationMs,
-    }).slice(0, TRACK_LEVEL_FETCH_CAP)
+    const annotated = await annotateTrackLevelHits(
+      filterTrackLevelRecordings(hits, {
+        artist: queryArtist,
+        title: track.title,
+        durationMs: track.durationMs,
+      }),
+      recordings,
+      deps.store,
+      mb,
+      deps,
+      nowIso,
+      nowMs,
+      takeFloorMs
+    )
+    const picked = pickTrackLevelRecordings(
+      annotated,
+      {
+        artist: queryArtist,
+        title: track.title,
+        durationMs: track.durationMs,
+      },
+      { priorMbid: priorTrackLevelMbid(track, previousTracks) }
+    ).slice(0, TRACK_LEVEL_FETCH_CAP)
     if (picked.length === 0) {
       if (
         hits.length > 0 &&
@@ -851,7 +977,9 @@ function attachTrackLevelDocs(
   primary.samplesFrom = mergedFrom
   primary.sampledIn = mergedIn
   recordings[primary.mbid] = primary
-  if (!track.recording.mbid) {
+  const canReplace =
+    !track.recording.mbid || track.recording.reason === TRACK_LEVEL_REASON
+  if (canReplace) {
     track.recording = {
       matchStatus: 'matched',
       confidence: 0.7,
@@ -1158,6 +1286,7 @@ export async function enrichPressing(
       nowMs,
       takeFloorMs,
       trackSampleCursor,
+      previous?.tracks,
       checkpointTrackLevel
     )
     trackSampleCursor = trackLevel.cursor

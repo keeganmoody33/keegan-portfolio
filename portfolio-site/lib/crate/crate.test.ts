@@ -185,6 +185,50 @@ describe('duration and title helpers', () => {
     assert.equal(TRACK_LEVEL_FETCH_CAP, 1)
   })
 
+  it('picks the samples-material recording for Mtume vocal even when search order shuffles', () => {
+    const juicyMbid = '1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc'
+    const otherMbid = '1aaf2f49-2ba3-4b34-9196-64d5cb0cc0dc'
+    const discogs = {
+      artist: 'Mtume',
+      title: 'Juicy Fruit (Vocal)',
+      durationMs: 355000,
+    }
+    const juicy = {
+      mbid: juicyMbid,
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      lengthMs: 355000,
+      score: 100,
+      hasSamples: true,
+    }
+    const other = {
+      mbid: otherMbid,
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      lengthMs: 355000,
+      score: 100,
+      hasSamples: false,
+    }
+    for (const hits of [
+      [other, juicy],
+      [juicy, other],
+    ]) {
+      const picked = pickTrackLevelRecordings(hits, discogs)
+      assert.equal(picked[0]?.mbid, juicyMbid)
+    }
+    const kept = pickTrackLevelRecordings([other, juicy], discogs, { priorMbid: juicyMbid })
+    assert.equal(kept[0]?.mbid, juicyMbid)
+    const upgraded = pickTrackLevelRecordings(
+      [
+        { ...other, score: 101 },
+        { ...juicy, score: 100 },
+      ],
+      discogs,
+      { priorMbid: juicyMbid }
+    )
+    assert.equal(upgraded[0]?.mbid, otherMbid)
+  })
+
   it('does not pick a recording when the song title does not match', () => {
     const picked = pickTrackLevelRecordings(
       [
@@ -4436,7 +4480,7 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     assert.equal(stored?.sampledIn[0]?.artist, 'The Notorious B.I.G.')
   })
 
-  it('fetches only the closest duration-ok recording-level hit', async () => {
+  it('fetches the higher-score duration-ok recording-level hit', async () => {
     const fetched: string[] = []
     const mb = createMusicBrainzClientForTests()
     mb.searchRecordingsByArtistTitle = async () => [
@@ -4461,7 +4505,70 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
       fetchDiscogs: async () => mtumeDetail(),
       mb,
     })
-    assert.deepEqual(fetched, ['closest'])
+    assert.equal(fetched[0], 'farther')
+    assert.equal(
+      fetched.filter((id) => id === 'farther').length >= 1,
+      true
+    )
+  })
+
+  it('keeps the Juicy Fruit vocal recording when MusicBrainz search order shuffles', async () => {
+    const juicyMbid = '1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc'
+    const otherMbid = '1aaf2f49-2ba3-4b34-9196-64d5cb0cc0dc'
+    const biggieMbid = '181c0a32-6e3f-4680-8a7d-1daf0b42e43b'
+    const juicyDoc = {
+      mbid: juicyMbid,
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      credits: [],
+      samplesFrom: [],
+      sampledIn: [
+        {
+          title: 'Juicy',
+          artist: 'The Notorious B.I.G.',
+          mbid: biggieMbid,
+          sourceUrl: `https://musicbrainz.org/recording/${biggieMbid}`,
+          source: 'musicbrainz' as const,
+          providerId: biggieMbid,
+        },
+      ],
+    }
+    const otherDoc = {
+      mbid: otherMbid,
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      credits: [],
+      samplesFrom: [],
+      sampledIn: [],
+    }
+    const hit = (mbid: string) => ({
+      mbid,
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      lengthMs: 355000,
+      score: 100,
+    })
+    for (const order of [
+      [hit(otherMbid), hit(juicyMbid)],
+      [hit(juicyMbid), hit(otherMbid)],
+    ]) {
+      const mb = createMusicBrainzClientForTests()
+      mb.searchRecordingsByArtistTitle = async () => order
+      mb.getRecording = async (id) => {
+        if (id === juicyMbid) return { ...juicyDoc, sampledIn: [...juicyDoc.sampledIn] }
+        if (id === otherMbid) return { ...otherDoc }
+        return null
+      }
+      const store = createMemoryCrateStore()
+      const result = await enrichPressing(567894, {
+        store,
+        now: () => Date.parse('2026-10-06T08:00:00.000Z'),
+        fetchDiscogs: async () => mtumeDetail(),
+        mb,
+      })
+      const vocal = result.tracks.find((track) => /vocal/i.test(track.title))
+      assert.equal(vocal?.recording.mbid, juicyMbid)
+    }
   })
 
   it('keeps recording-level samples when MusicBrainz 429s after a fetch', async () => {
@@ -5525,6 +5632,8 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
       'Alpha'
     )
     assert.equal(presentSampleArtist('[unknown]'), '')
+    assert.equal(presentSampleArtist('MC Real & [unknown]'), 'MC Real')
+    assert.equal(presentSampleArtist('Alpha & [unknown]'), 'Alpha')
     assert.equal(presentSampleArtist('A Tribe Called Quest'), 'A Tribe Called Quest')
     const client = createMusicBrainzClient({
       minIntervalMs: 0,
