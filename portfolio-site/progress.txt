@@ -2,7 +2,8 @@ COMPLETED (2026-10-07 — PR #54 samples graph + lock/429 + a11y):
 - Sample facts are MusicBrainz `samples material` on recordings/releases only (type-ids `9efd9ce9-…fe62` / `967746f9-…7fc`). `direction` maps forward → `sample_of`, backward → `sampled_by`. Work-to-work (`based on`, parody, etc.) is out of samples; `getRecording` no longer fetches `/work/` or `work-rels`. Read-time filter drops leftover `/work/` `sourceUrl`s. Cap MB Retry-After at 120s.
 - P2: Discogs 429 stops the walk like MB 429. Enrich lock is Lua compare-and-delete / compare-and-extend only (strip JSON quotes in Lua; no GET+DEL / GET+SET). CLI Discogs timeout 15s; CLI re-entry passes persisted `lockToken`.
 - A11y (WCAG 2.5.8): OVERVIEW connection titles `mt-1 inline-flex min-h-6 items-center`, matching FactSampleList.
-- Landed on `cursor/collection-research-trackmatch-7382` (#54), including `cursor/crate-research-cleanup-3033` at `652b21d`. Preview only (`lf:preview:`, `VERCEL_ENV=preview`). Never prod.
+- Preview Redis `lf:preview:` cleaned (278 pressings, 0 prod writes). Recording sample links **794 → 360**, `/work/` **434 → 0**, blank-artist **434 → 0**, records with samples **97 → 72**, sample_of **484 → 111**, sampled_by **310 → 249**. ResearchFacts work rows **132 → 0**. Mtume 567894 vocal `1d890c2b-…c0dc` still sampled-in Biggie Juicy `https://musicbrainz.org/recording/181c0a32-6e3f-4680-8a7d-1daf0b42e43b`.
+- Landed on `cursor/collection-research-trackmatch-7382` (#54) HEAD `966c657802178fe6325ece63fc0c537d5046f802`, including `cursor/crate-research-cleanup-3033` at `652b21d` (PR #61 merged/superseded). tsc / eslint / `npm test` (363 pass) / `next build` (28/28 dummy supabase). Vercel preview READY. Never prod.
 
 COMPLETED (2026-10-07 — PR #54 cleanup pass, preview leftover ids):
 - `--retry` without `--ids` also picks stored pressings whose lastError is still retryable (pending provenance like 1323531), not only dead ∪ inspect.
