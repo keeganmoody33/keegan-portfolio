@@ -1,3 +1,8 @@
+COMPLETED (2026-10-08 — class (d) sidecar recordings map):
+- `--retry` used to start `pressing.recordings` empty whenever release rematch ran. Persist only writes the picked recording, so unused map docs (old sibling picks with sample rels) dropped. Snapshot totals count every map entry — that was ~19 orphaned / 34 of the 332→304 gap, the largest slice.
+- `carryPriorRecordings` overlays this-run docs on the prior map at draft, walk, and commit. Forced rematch of an unchanged pick keeps a sidecar sample. Test goes red on the old empty-map seed.
+- 360→332 (pre-05:21): account from surviving #54 recording docs in preview Redis after the walk. Walker later on lost+#54/05:21 ids. Never prod. Do not merge.
+
 COMPLETED (2026-10-08 — recall-first picks + Redis hasSamples + series reset):
 - Loss audit vs 05:21Z: 5 unique class (b) same-song sibling swaps (0 wrong-song, 0 x-collab/`presentSampleArtist`). Main cause: annotate cap 3 + duration ranking left a 4th-ranked sampled hit unfetched (Integrations 1). Causes 1–4 real; 5 unconfirmed; 6 possible; 7 not these 56 links. Artists: Blige, Beatnuts, EWF, BEP, Marley.
 - Matching uses `rawArtistCreditName` (keeps `[unknown]` parts). `artistsMatch` strips `[unknown]` only — display `'Alpha x x'` must not decide hits. `presentSampleArtist('Alpha x x [unknown]')` stays `'Alpha x x'`.

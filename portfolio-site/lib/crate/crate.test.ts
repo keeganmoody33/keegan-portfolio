@@ -28,7 +28,7 @@ import {
 import { AUTH_RETRY_MS, isoFromMs, keepPriorMatch, nextBackoffMs, preferCompleteRecording, preservePressingOnFailure, shouldRefreshPressing, SUCCESS_REFRESH_MS, TERMINAL_REFRESH_MS, withClearedDeadlineStops } from './preserve.ts'
 import { createMemoryCrateStore, crateRedisKeys, DRAFT_TTL_SECONDS, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA, RELEASE_LOCK_LUA, REFRESH_LOCK_LUA, selectEnrichLockToken, type CrateStore } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
-import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, resumeForceRefreshTrackCursor, isForceRunStampFresh, isWikidataOnlyLastError, WorkerDeadlineError, EnrichLockLostError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, DEADLINE_STOP_MESSAGE, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, CLI_BACKFILL_BUDGET_MS, ENRICH_LOCK_SECONDS, ENRICH_LOCK_HEARTBEAT_MS, ENRICH_LOCK_HEARTBEAT_REQUESTS, INCOMPLETE_RECORDING_MESSAGE, TRACK_LEVEL_ANNOTATE_CAP, TRACK_LEVEL_FETCH_CAP, TRACK_LEVEL_REASON, overlayTrackLevelProgress, applyDeadlineStop, persistTrackLevelDocs, shouldStopWalkOnRateLimit, createEnrichLockHeartbeat, isEnrichLockLostError, createForceSeriesId } from './enrich.ts'
+import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, resumeForceRefreshTrackCursor, isForceRunStampFresh, isWikidataOnlyLastError, WorkerDeadlineError, EnrichLockLostError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, DEADLINE_STOP_MESSAGE, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, CLI_BACKFILL_BUDGET_MS, ENRICH_LOCK_SECONDS, ENRICH_LOCK_HEARTBEAT_MS, ENRICH_LOCK_HEARTBEAT_REQUESTS, INCOMPLETE_RECORDING_MESSAGE, TRACK_LEVEL_ANNOTATE_CAP, TRACK_LEVEL_FETCH_CAP, TRACK_LEVEL_REASON, overlayTrackLevelProgress, applyDeadlineStop, persistTrackLevelDocs, shouldStopWalkOnRateLimit, createEnrichLockHeartbeat, isEnrichLockLostError, createForceSeriesId, carryPriorRecordings } from './enrich.ts'
 import { isUnusableDiscogsNotes, resolveDescription, withReadableDescription } from './description.ts'
 import { COLLECTION_KEEP_PATH, scheduleKeepPing } from './keep-ping.ts'
 import { runCrateEnrichCron } from './keep.ts'
@@ -5682,6 +5682,153 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
       (fact) => fact.kind === 'sampled_by' && /juicy/i.test(fact.relatedTitle)
     )
     assert.ok(juicy)
+  })
+
+  it('carryPriorRecordings keeps unused sidecar docs when this-run map is empty', () => {
+    const orphan: StoredRecording = {
+      mbid: 'orphan-mbid',
+      title: 'Song 1 (album)',
+      artist: 'Lecturer',
+      credits: [],
+      samplesFrom: [],
+      sampledIn: [
+        {
+          title: 'The Hit',
+          artist: 'Later Artist',
+          mbid: 'hit-mbid',
+          sourceUrl: 'https://musicbrainz.org/recording/hit-mbid',
+          source: 'musicbrainz',
+          providerId: 'hit-mbid',
+        },
+      ],
+      provenance: {
+        sourceUrls: ['https://musicbrainz.org/recording/orphan-mbid'],
+        matchStatus: 'matched',
+        confidence: 0.7,
+        reason: TRACK_LEVEL_REASON,
+        checkedAt: '2026-10-06T08:00:00.000Z',
+        refreshAfter: '2026-11-05T08:00:00.000Z',
+        lastError: null,
+        verifiedAt: '2026-10-06T08:00:00.000Z',
+        lastAttemptAt: '2026-10-06T08:00:00.000Z',
+      },
+    }
+    const emptyForceMap: Record<string, StoredRecording> = {}
+    assert.equal(Object.keys(emptyForceMap).length, 0)
+    const kept = carryPriorRecordings({ [orphan.mbid]: orphan }, emptyForceMap)
+    assert.equal(kept[orphan.mbid]?.sampledIn.length, 1)
+  })
+
+  it('forced rematch keeps sidecar recording sample links that are not the current pick', async () => {
+    const releaseId = 9107701
+    const pickMbid = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+    const orphanMbid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+    const nowIso = '2026-10-06T08:00:00.000Z'
+    const detail = nTrackDetail(releaseId, 1)
+    const tracks = occurrencesFromDetail(detail)
+    const first = tracks[0]
+    assert.ok(first)
+    first.recording = {
+      matchStatus: 'matched',
+      confidence: 0.7,
+      reason: TRACK_LEVEL_REASON,
+      mbid: pickMbid,
+      recordingUrl: `https://musicbrainz.org/recording/${pickMbid}`,
+    }
+    const sample: SampleLink = {
+      title: 'The Hit',
+      artist: 'Later Artist',
+      mbid: 'cccccccccccccccc-cccc-cccc-cccc-cccccccccccc',
+      sourceUrl: 'https://musicbrainz.org/recording/cccccccccccccccc-cccc-cccc-cccc-cccccccccccc',
+      source: 'musicbrainz',
+      providerId: 'cccccccccccccccc-cccc-cccc-cccc-cccccccccccc',
+    }
+    const recordingDoc = (
+      mbid: string,
+      sampledIn: StoredRecording['sampledIn']
+    ): StoredRecording => ({
+      mbid,
+      title: 'Song 1',
+      artist: 'Lecturer',
+      credits: [],
+      samplesFrom: [],
+      sampledIn,
+      provenance: {
+        sourceUrls: [`https://musicbrainz.org/recording/${mbid}`],
+        matchStatus: 'matched',
+        confidence: 0.7,
+        reason: TRACK_LEVEL_REASON,
+        checkedAt: nowIso,
+        refreshAfter: '2026-11-05T08:00:00.000Z',
+        lastError: null,
+        verifiedAt: nowIso,
+        lastAttemptAt: nowIso,
+      },
+    })
+    const previous = hydratePressing({
+      ...pressingStub({
+        releaseId,
+        facts: {
+          ...pressingStub().facts,
+          releaseId,
+          title: detail.title,
+          artist: detail.artist,
+          catno: detail.catno,
+          discogsUrl: detail.discogsUrl,
+        },
+        tracks,
+        mbRelease: {
+          mbid: null,
+          url: null,
+          matchStatus: 'unmatched',
+          confidence: 0,
+          reason: 'no musicbrainz release',
+        },
+      }),
+      recordings: {
+        [pickMbid]: recordingDoc(pickMbid, []),
+        [orphanMbid]: recordingDoc(orphanMbid, [sample]),
+      },
+    })
+    const mapLinks = (recordings: Record<string, StoredRecording>) =>
+      Object.values(recordings).reduce(
+        (count, recording) =>
+          count +
+          recording.samplesFrom.filter(isRecordingOrReleaseSampleLink).length +
+          recording.sampledIn.filter(isRecordingOrReleaseSampleLink).length,
+        0
+      )
+    assert.equal(mapLinks(previous.recordings), 1)
+    const store = createMemoryCrateStore({ pressings: { [releaseId]: previous } })
+    const mb = createMusicBrainzClientForTests()
+    mb.searchRecordingsByArtistTitle = async () => [
+      {
+        mbid: pickMbid,
+        title: 'Song 1',
+        artist: 'Lecturer',
+        lengthMs: 180000,
+        score: 100,
+      },
+    ]
+    mb.getRecording = async (id) => ({
+      mbid: id,
+      title: 'Song 1',
+      artist: 'Lecturer',
+      credits: [],
+      samplesFrom: [],
+      sampledIn: [],
+    })
+    const retried = await enrichPressing(releaseId, {
+      store,
+      now: () => Date.parse('2026-10-07T08:00:00.000Z'),
+      fetchDiscogs: async () => detail,
+      fetchWikidata: async () => [],
+      mb,
+      forceRefresh: true,
+    })
+    assert.equal(retried.tracks[0]?.recording.mbid, pickMbid)
+    assert.equal(retried.recordings[orphanMbid]?.sampledIn[0]?.title, 'The Hit')
+    assert.equal(mapLinks(retried.recordings), 1)
   })
 
   it('does not reuse store.getRecording for a forced pick missing from memory', async () => {

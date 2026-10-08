@@ -128,6 +128,15 @@ export function createForceSeriesId(): string {
   return randomUUID()
 }
 
+/** This-run docs overlay prior map entries. Unused sidecar sample docs stay. */
+export function carryPriorRecordings(
+  previous: Record<string, StoredRecording> | null | undefined,
+  next: Record<string, StoredRecording>
+): Record<string, StoredRecording> {
+  if (!previous || Object.keys(previous).length === 0) return { ...next }
+  return { ...previous, ...next }
+}
+
 export function overlayTrackLevelProgress(
   base: StoredPressing,
   overlay:
@@ -155,7 +164,7 @@ export function overlayTrackLevelProgress(
       }),
     })
   }
-  const recordings = { ...base.recordings, ...overlayRecordings }
+  const recordings = carryPriorRecordings(base.recordings, overlayRecordings)
   const baseByKey = new Map(
     base.tracks.map((track) => [track.identityKey ?? trackIdentityKey(track), track])
   )
@@ -1496,7 +1505,7 @@ export async function enrichPressing(
               confidence: 0,
               reason: 'queued for matching',
             },
-        recordings: previous ? { ...previous.recordings } : {},
+        recordings: carryPriorRecordings(previous?.recordings, {}),
         researchFacts: discogsFacts,
         provenance: {
           sourceUrls: [facts.discogsUrl],
@@ -1551,7 +1560,7 @@ export async function enrichPressing(
 
     tracks = pressingDraft.tracks
     let mbRelease = pressingDraft.mbRelease
-    const recordings = { ...pressingDraft.recordings }
+    const recordings = carryPriorRecordings(previous?.recordings, pressingDraft.recordings)
     let matchCycle = priorCycles.match
     let researchCycle = priorCycles.research
     let researchCursor = pressingDraft.checkpoint?.researchCursor ?? 0
@@ -1889,7 +1898,7 @@ export async function enrichPressing(
       description: pressingDraft.description,
       tracks,
       mbRelease,
-      recordings,
+      recordings: carryPriorRecordings(previous?.recordings, recordings),
       researchFacts,
       provenance: {
         sourceUrls,
