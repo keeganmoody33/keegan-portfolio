@@ -2,11 +2,13 @@ import { collectionReleaseIds } from './sync.ts'
 export { parseIdList, parsePositiveId } from './ids.ts'
 import { fetchDiscogsReleaseDetail } from './discogs-release.ts'
 import {
+  CLI_BACKFILL_BUDGET_MS,
   ENRICH_BUDGET_MS,
   ENRICH_LOCK_SECONDS,
   ENRICH_TAKE_FLOOR_MS,
   applyDeadlineStop,
   classifyQueueOutcome,
+  createEnrichLockHeartbeat,
   enrichPressing,
   isBackfillSettled,
   isWorkerDeadlineError,
@@ -23,6 +25,16 @@ import type { DiscogsCollection } from '../discogs.ts'
 import { wikidataClientFor } from './wikidata.ts'
 
 export const INSPECT_PRESSING_IDS = [573292, 240128, 567894] as const
+
+export function parseBackfillBudgetMs(
+  raw: string | undefined,
+  fallback = CLI_BACKFILL_BUDGET_MS
+): number {
+  if (!raw) return fallback
+  const parsed = Number.parseInt(raw, 10)
+  if (!Number.isInteger(parsed) || parsed <= 0) return fallback
+  return parsed
+}
 
 export type InspectPressingDump = {
   releaseId: number
@@ -338,6 +350,7 @@ export async function runBackfill(
   }
 
   const takeFloorMs = deps.takeFloorMs ?? ENRICH_TAKE_FLOOR_MS
+  const heartbeat = createEnrichLockHeartbeat(store, token, lockTtl, now)
   const deadlineMs = deps.deadlineMs ?? started + (deps.budgetMs ?? ENRICH_BUDGET_MS)
   const mb = deps.mb ?? createMusicBrainzClient({ now: deps.now, deadlineMs })
   const wikidataClient =
@@ -390,6 +403,7 @@ export async function runBackfill(
       }
 
       try {
+        await heartbeat()
         const pressing = await enrichPressing(releaseId, {
           ...deps,
           mb,
@@ -397,6 +411,7 @@ export async function runBackfill(
           fetchDiscogs: wrappedFetch,
           deadlineMs,
           forceRefresh: Boolean(options.retry || deps.forceRefresh),
+          onLockHeartbeat: heartbeat,
         })
         processed.push(releaseId)
         const kind = pressing.provenance.lastError?.kind

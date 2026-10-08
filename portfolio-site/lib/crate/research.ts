@@ -58,14 +58,24 @@ export function splitCreditRoles(role: string): string[] {
 
 export function presentSampleArtist(name: string | undefined | null): string {
   let trimmed = (name ?? '').trim()
-  trimmed = trimmed.replace(/(?:^|(?<=[&,])|(?<=\s))\[unknown\](?=$|(?=[&,])|(?=\s))/gi, '')
+  const unknownToken = /(?:^|(?<=[&,])|(?<=\s))\[unknown\](?=$|(?=[&,])|(?=\s))/gi
+  const hadUnknown = unknownToken.test(trimmed)
+  unknownToken.lastIndex = 0
+  const hadLeadingUnknown = /^\[unknown\](?=$|(?=[&,])|(?=\s))/i.test(trimmed)
+  const hadTrailingUnknownJoiner = /\sx\s+\[[Uu]nknown\](?=$|(?=[&,])|(?=\s))/.test(trimmed)
+  trimmed = trimmed.replace(unknownToken, '')
   trimmed = trimmed.replace(/\s+/g, ' ').trim()
   trimmed = trimmed.replace(/(?:\s*[&,]\s*){2,}/g, (chunk) => (chunk.includes('&') ? ' & ' : ', '))
-  trimmed = trimmed.replace(/^(?:[&,]\s+)+/g, '')
+  if (hadLeadingUnknown) {
+    trimmed = trimmed.replace(/^(?:x\s+|[&,]\s*)/, '')
+  }
   trimmed = trimmed.replace(/(?:\s*[&,])+\s*$/g, '')
   trimmed = trimmed.replace(/\s+(?:feat|ft)\.\s*$/i, '')
-  trimmed = trimmed.replace(/\s+x\s*$/g, '')
+  if (hadTrailingUnknownJoiner) {
+    trimmed = trimmed.replace(/\s+x\s*$/g, '')
+  }
   trimmed = trimmed.replace(/\s+/g, ' ').trim()
+  if (hadUnknown && /^(?:mr|mrs|ms|dr|prof)\.?$/i.test(trimmed)) return ''
   if (!trimmed || isMusicBrainzUnknownArtist(trimmed)) return ''
   return trimmed
 }

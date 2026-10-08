@@ -100,8 +100,10 @@ import {
 export { sentencesFrom } from './description.ts'
 
 export const ENRICH_LOCK_SECONDS = 90
+export const ENRICH_LOCK_HEARTBEAT_MS = 30_000
 export const ENRICH_BATCH_DEFAULT = 1
 export const ENRICH_BUDGET_MS = 45_000
+export const CLI_BACKFILL_BUDGET_MS = 600_000
 export const ENRICH_TAKE_FLOOR_MS = 8_000
 export const WORKER_MAX_DURATION_MS = 60_000
 export const WORKER_DEADLINE_MARGIN_MS = 8_000
@@ -185,6 +187,31 @@ export function remainingBelowTakeFloor(remainingMs: number, takeFloorMs: number
   return remainingMs < takeFloorMs
 }
 
+export function isForceRunStampFresh(
+  forceRunAt: string | undefined,
+  nowMs: number
+): boolean {
+  if (!forceRunAt) return false
+  const at = Date.parse(forceRunAt)
+  if (!Number.isFinite(at)) return false
+  return nowMs - at <= DRAFT_TTL_SECONDS * 1000
+}
+
+export function createEnrichLockHeartbeat(
+  store: CrateStore,
+  token: string,
+  lockTtlSeconds: number,
+  now: () => number
+): () => Promise<void> {
+  let lastHeartbeatAt = 0
+  return async () => {
+    const at = now()
+    if (lastHeartbeatAt > 0 && at - lastHeartbeatAt < ENRICH_LOCK_HEARTBEAT_MS) return
+    lastHeartbeatAt = at
+    await store.acquireEnrichLock(lockTtlSeconds, token)
+  }
+}
+
 export function shouldReuseDraft(
   draft: StoredPressing | null,
   committed: StoredPressing | null,
@@ -195,7 +222,12 @@ export function shouldReuseDraft(
   const draftAt = Date.parse(draft.provenance.lastAttemptAt ?? draft.provenance.checkedAt)
   if (!Number.isFinite(draftAt)) return false
   if (nowMs - draftAt > DRAFT_TTL_SECONDS * 1000) return false
-  if (forceRefresh) return Boolean(draft.checkpoint?.forceRun)
+  if (forceRefresh) {
+    return (
+      Boolean(draft.checkpoint?.forceRun) &&
+      isForceRunStampFresh(draft.checkpoint?.forceRunAt, nowMs)
+    )
+  }
   if (committed) {
     const committedAt = Date.parse(
       committed.provenance.lastAttemptAt ?? committed.provenance.checkedAt
@@ -297,10 +329,12 @@ export function isWikidataOnlyLastError(
 export function resumeForceRefreshTrackCursor(
   previous: StoredPressing | null,
   forceRefresh: boolean,
-  identityShifted = false
+  identityShifted = false,
+  nowMs = Date.now()
 ): number {
   if (!forceRefresh || !previous || identityShifted) return 0
   if (!previous.checkpoint?.forceRun) return 0
+  if (!isForceRunStampFresh(previous.checkpoint?.forceRunAt, nowMs)) return 0
   const kind = previous.provenance.lastError?.kind
   if (!kind || !RESUME_FORCE_REFRESH_ERROR_KINDS.has(kind)) return 0
   if (isWikidataOnlyLastError(previous.provenance.lastError)) return 0
@@ -315,9 +349,11 @@ function stampCheckpoint(
 ): CrateCheckpoint {
   const next = copyCheckpoint(base, patch)
   if (!deps.forceRefresh) return next
+  const stampMs = Date.parse(nowIso)
+  const nowMs = Number.isFinite(stampMs) ? stampMs : Date.now()
   return copyCheckpoint(next, {
     forceRun: true,
-    forceRunAt: next.forceRunAt ?? nowIso,
+    forceRunAt: isForceRunStampFresh(next.forceRunAt, nowMs) ? next.forceRunAt : nowIso,
   })
 }
 
@@ -353,6 +389,7 @@ export type EnrichDeps = {
   inflightTtlSeconds?: number
   deadlineMs?: number
   forceRefresh?: boolean
+  onLockHeartbeat?: () => Promise<void>
   fetchWikidata?: (input: WikidataLookupInput, fetchedAt: string) => Promise<ResearchFact[]>
   wikidata?: WikidataClientOptions
   wikidataClient?: WikidataClient
@@ -756,7 +793,8 @@ function storedRecordingFromLookup(
     sampledIn: StoredRecording['sampledIn']
   },
   nowIso: string,
-  nowMs: number
+  nowMs: number,
+  incomplete = false
 ): StoredRecording {
   return {
     mbid: doc.mbid,
@@ -765,17 +803,34 @@ function storedRecordingFromLookup(
     credits: doc.credits,
     samplesFrom: doc.samplesFrom,
     sampledIn: doc.sampledIn,
-    provenance: {
-      sourceUrls: [musicbrainzRecordingUrl(doc.mbid)],
-      matchStatus: 'matched',
-      confidence: 0.7,
-      reason: TRACK_LEVEL_REASON,
-      checkedAt: nowIso,
-      refreshAfter: isoFromMs(nowMs + SUCCESS_REFRESH_MS),
-      lastError: null,
-      verifiedAt: nowIso,
-      lastAttemptAt: nowIso,
-    },
+    provenance: incomplete
+      ? {
+          sourceUrls: [musicbrainzRecordingUrl(doc.mbid)],
+          matchStatus: 'matched',
+          confidence: 0.7,
+          reason: TRACK_LEVEL_REASON,
+          checkedAt: nowIso,
+          refreshAfter: isoFromMs(nowMs + AUTH_RETRY_MS),
+          lastError: {
+            at: nowIso,
+            kind: 'unavailable',
+            message: 'incomplete recording probe',
+            attempts: 0,
+          },
+          verifiedAt: null,
+          lastAttemptAt: nowIso,
+        }
+      : {
+          sourceUrls: [musicbrainzRecordingUrl(doc.mbid)],
+          matchStatus: 'matched',
+          confidence: 0.7,
+          reason: TRACK_LEVEL_REASON,
+          checkedAt: nowIso,
+          refreshAfter: isoFromMs(nowMs + SUCCESS_REFRESH_MS),
+          lastError: null,
+          verifiedAt: nowIso,
+          lastAttemptAt: nowIso,
+        },
   }
 }
 
@@ -845,7 +900,7 @@ async function annotateTrackLevelHits(
       if (isMusicBrainzRateLimitError(error) || isMusicBrainzTimeoutError(error)) {
         if (error.partialRecording) {
           const partial = error.partialRecording
-          const recording = storedRecordingFromLookup(partial, nowIso, nowMs)
+          const recording = storedRecordingFromLookup(partial, nowIso, nowMs, true)
           probeCache[partial.mbid] = recording
           hit.hasSamples = recordingHasSampleMaterial(recording)
         }
@@ -883,6 +938,7 @@ async function applyTrackLevelSamples(
     if (remainingBelowTakeFloor(remaining, takeFloorMs)) {
       return { cursor, incomplete: true }
     }
+    await deps.onLockHeartbeat?.()
     assertWithinWorkerDeadline(deps)
     const track = playable[index]
     if (!track) {
@@ -958,7 +1014,8 @@ async function applyTrackLevelSamples(
         continue
       }
       const previousRecording =
-        recordings[hit.mbid] ?? (await deps.store.getRecording(hit.mbid))
+        recordings[hit.mbid] ??
+        (deps.forceRefresh ? null : await deps.store.getRecording(hit.mbid))
       if (
         previousRecording &&
         (deps.forceRefresh || researchIsFresh(previousRecording, nowMs))
@@ -972,25 +1029,7 @@ async function applyTrackLevelSamples(
         assertWithinWorkerDeadline(deps)
         const doc = await mb.getRecording(hit.mbid)
         if (!doc) continue
-        const recording: StoredRecording = {
-          mbid: doc.mbid,
-          title: doc.title,
-          artist: doc.artist,
-          credits: doc.credits,
-          samplesFrom: doc.samplesFrom,
-          sampledIn: doc.sampledIn,
-          provenance: {
-            sourceUrls: [musicbrainzRecordingUrl(doc.mbid)],
-            matchStatus: 'matched',
-            confidence: 0.7,
-            reason: TRACK_LEVEL_REASON,
-            checkedAt: nowIso,
-            refreshAfter: isoFromMs(nowMs + SUCCESS_REFRESH_MS),
-            lastError: null,
-            verifiedAt: nowIso,
-            lastAttemptAt: nowIso,
-          },
-        }
+        const recording = storedRecordingFromLookup(doc, nowIso, nowMs)
         recordings[hit.mbid] = recording
         docs.push(recording)
       } catch (error) {
@@ -999,25 +1038,7 @@ async function applyTrackLevelSamples(
           error.partialRecording
         ) {
           const partial = error.partialRecording
-          const recording: StoredRecording = {
-            mbid: partial.mbid,
-            title: partial.title,
-            artist: partial.artist,
-            credits: partial.credits,
-            samplesFrom: partial.samplesFrom,
-            sampledIn: partial.sampledIn,
-            provenance: {
-              sourceUrls: [musicbrainzRecordingUrl(partial.mbid)],
-              matchStatus: 'matched',
-              confidence: 0.7,
-              reason: TRACK_LEVEL_REASON,
-              checkedAt: nowIso,
-              refreshAfter: isoFromMs(nowMs + SUCCESS_REFRESH_MS),
-              lastError: null,
-              verifiedAt: nowIso,
-              lastAttemptAt: nowIso,
-            },
-          }
+          const recording = storedRecordingFromLookup(partial, nowIso, nowMs, true)
           recordings[partial.mbid] = recording
           docs.push(recording)
         }
@@ -1156,7 +1177,12 @@ export async function enrichPressing(
           (hydratedDraft.mbRelease.matchStatus !== 'pending' &&
             hydratedDraft.checkpoint?.stage === 'match')
       } else {
-        resumeCursor = resumeForceRefreshTrackCursor(previous, Boolean(deps.forceRefresh), false)
+        resumeCursor = resumeForceRefreshTrackCursor(
+          previous,
+          Boolean(deps.forceRefresh),
+          false,
+          nowMs
+        )
         skipReleaseRematch = skipMatch || resumeCursor > 0
       }
       discogsFacts = (pressingDraft.researchFacts ?? []).filter((fact) => fact.source === 'discogs')
@@ -1171,7 +1197,8 @@ export async function enrichPressing(
       resumeCursor = resumeForceRefreshTrackCursor(
         previous,
         Boolean(deps.forceRefresh),
-        identityShifted
+        identityShifted,
+        nowMs
       )
       skipReleaseRematch = skipMatch || resumeCursor > 0
       discogsFacts = researchFactsFromDiscogs(detail, tracks, nowIso)
@@ -1332,6 +1359,7 @@ export async function enrichPressing(
         continue
       }
       try {
+        await deps.onLockHeartbeat?.()
         assertWithinWorkerDeadline(deps)
         const doc = await mb.getRecording(mbid)
         if (!doc) {
@@ -1433,6 +1461,10 @@ export async function enrichPressing(
     trackSampleCursor = trackLevel.cursor
     if (trackLevel.cursor > (pressingDraft.checkpoint?.trackSampleCursor ?? 0)) {
       await checkpointTrackLevel(trackSampleCursor)
+    }
+    if (trackLevel.incomplete && deps.forceRefresh) {
+      await checkpointTrackLevel(trackSampleCursor)
+      throw new WorkerDeadlineError()
     }
 
     const mbUrl = mbRelease.url
@@ -1740,6 +1772,7 @@ export async function processEnrichmentQueue(
 
   const now = deps.now ?? Date.now
   const started = now()
+  const heartbeat = createEnrichLockHeartbeat(deps.store, token, lockTtl, now)
   const takeFloorMs = deps.takeFloorMs ?? ENRICH_TAKE_FLOOR_MS
   const deadlineMs =
     deps.deadlineMs ?? started + (deps.budgetMs ?? ENRICH_BUDGET_MS)
@@ -1777,11 +1810,13 @@ export async function processEnrichmentQueue(
         break
       }
       try {
+        await heartbeat()
         const pressing = await enrichPressing(releaseId, {
           ...deps,
           mb,
           wikidataClient,
           deadlineMs,
+          onLockHeartbeat: heartbeat,
         })
         const kind = pressing.provenance.lastError?.kind
         const outcome = classifyQueueOutcome(pressing)
