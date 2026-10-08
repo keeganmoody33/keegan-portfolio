@@ -27,11 +27,11 @@ import {
   classifyReleaseMatch,
   matchDiscogsTrackToMb,
   parseDurationToMs,
-  compareTrackLevelRecordings,
   compareTrackLevelProbeOrder,
   filterTrackLevelRecordings,
+  hitFromStoredRecording,
   isSamePerformanceSibling,
-  NEAR_TOP_SCORE_SLACK,
+  mergeRecalledRecordingHits,
   pickTrackLevelRecordings,
   recordingHasSampleMaterial,
   songTitle,
@@ -1041,20 +1041,13 @@ async function annotateTrackLevelHits(
   priorMbid: string | null
 ): Promise<TrackLevelRecordingHit[]> {
   const annotated: TrackLevelRecordingHit[] = hits.map((hit) => ({ ...hit }))
-  const ranked = annotated
-    .slice()
-    .sort((left, right) => compareTrackLevelRecordings(left, right, discogsDurationMs))
-  const topScore = ranked[0]?.score ?? 0
-  const nearTop = ranked.filter(
-    (hit) => topScore - (hit.score ?? 0) <= NEAR_TOP_SCORE_SLACK
-  )
   const remainingNow = () =>
     deps.deadlineMs == null
       ? Number.POSITIVE_INFINITY
       : remainingBudgetMs(deps.deadlineMs, (deps.now ?? Date.now)())
-  // Redis hasSamples fill over ALL near-top same-song hits, including under force.
+  // Redis hasSamples fill keys on hit.mbid for every filtered hit, not the pressing map.
   // Cheap; not an MB request. Cap only the probes below.
-  for (const hit of nearTop) {
+  for (const hit of annotated) {
     if (hit.hasSamples != null) continue
     const memory = recordings[hit.mbid] ?? probeCache[hit.mbid]
     if (memory) {
@@ -1129,6 +1122,34 @@ async function annotateTrackLevelHits(
   return annotated
 }
 
+const sampledRecordingLists = new WeakMap<CrateStore, StoredRecording[]>()
+
+async function listSampledRecordings(store: CrateStore): Promise<StoredRecording[]> {
+  const cached = sampledRecordingLists.get(store)
+  if (cached) return cached
+  if (typeof store.listRecordings !== 'function') {
+    sampledRecordingLists.set(store, [])
+    return []
+  }
+  const sampled = (await store.listRecordings()).filter(recordingHasSampleMaterial)
+  sampledRecordingLists.set(store, sampled)
+  return sampled
+}
+
+export function rehydrateSameSongRecordings(
+  discogs: { artist: string; title: string; durationMs: number | null },
+  recordings: Record<string, StoredRecording>,
+  candidates: StoredRecording[]
+): Record<string, StoredRecording> {
+  const next = { ...recordings }
+  for (const doc of candidates) {
+    const hit = hitFromStoredRecording(doc, 100)
+    if (filterTrackLevelRecordings([hit], discogs).length === 0) continue
+    next[doc.mbid] = next[doc.mbid] ?? doc
+  }
+  return next
+}
+
 async function applyTrackLevelSamples(
   tracks: TrackOccurrence[],
   recordings: Record<string, StoredRecording>,
@@ -1144,6 +1165,7 @@ async function applyTrackLevelSamples(
 ): Promise<{ cursor: number; incomplete: boolean }> {
   const playable = tracks.filter((track) => isPlayableOccurrence(track))
   const probeCache: Record<string, StoredRecording> = {}
+  let sampledIndex: StoredRecording[] | null = null
   let cursor = startCursor
   for (let index = 0; index < playable.length; index++) {
     if (index < startCursor) continue
@@ -1182,8 +1204,23 @@ async function applyTrackLevelSamples(
     const filtered = filterTrackLevelRecordings(hits, discogs)
     const savedMbid = priorTrackLevelMbid(track, previousTracks)
     const priorMbid = savedMbid
-    const annotated = await annotateTrackLevelHits(
+    if (savedMbid && !recordings[savedMbid]) {
+      const storedPrior = await deps.store.getRecording(savedMbid)
+      if (storedPrior) recordings[savedMbid] = storedPrior
+    }
+    if (deps.forceRefresh) {
+      if (!sampledIndex) sampledIndex = await listSampledRecordings(deps.store)
+      const hydrated = rehydrateSameSongRecordings(discogs, recordings, sampledIndex)
+      for (const [mbid, doc] of Object.entries(hydrated)) recordings[mbid] = doc
+    }
+    const topScore = Math.max(100, ...filtered.map((hit) => hit.score ?? 0))
+    const recalled = Object.values(recordings).map((doc) => hitFromStoredRecording(doc, topScore))
+    const merged = mergeRecalledRecordingHits(
       filtered,
+      filterTrackLevelRecordings(recalled, discogs)
+    )
+    const annotated = await annotateTrackLevelHits(
+      merged,
       recordings,
       deps.store,
       mb,
@@ -1231,19 +1268,24 @@ async function applyTrackLevelSamples(
         docs.push(probed)
         continue
       }
-      if (!deps.forceRefresh) {
-        const previousRecording =
-          recordings[hit.mbid] ?? (await deps.store.getRecording(hit.mbid))
-        if (
-          previousRecording &&
-          (researchIsFresh(previousRecording, nowMs) ||
-            incompleteProbeStillCooling(previousRecording, nowMs))
-        ) {
-          recordings[hit.mbid] = previousRecording
-          probeCache[hit.mbid] = previousRecording
-          docs.push(previousRecording)
-          continue
-        }
+      const previousRecording =
+        recordings[hit.mbid] ?? (await deps.store.getRecording(hit.mbid))
+      if (previousRecording && recordingHasSampleMaterial(previousRecording)) {
+        recordings[hit.mbid] = previousRecording
+        probeCache[hit.mbid] = previousRecording
+        docs.push(previousRecording)
+        continue
+      }
+      if (
+        !deps.forceRefresh &&
+        previousRecording &&
+        (researchIsFresh(previousRecording, nowMs) ||
+          incompleteProbeStillCooling(previousRecording, nowMs))
+      ) {
+        recordings[hit.mbid] = previousRecording
+        probeCache[hit.mbid] = previousRecording
+        docs.push(previousRecording)
+        continue
       }
       try {
         assertWithinWorkerDeadline(deps)

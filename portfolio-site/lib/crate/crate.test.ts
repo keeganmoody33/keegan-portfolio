@@ -23,12 +23,14 @@ import {
   artistsMatch,
   stripFeaturingCredits,
   trackLevelHitOutranksPrior,
+  hitFromStoredRecording,
+  mergeRecalledRecordingHits,
   NEAR_TOP_SCORE_SLACK,
 } from './match.ts'
 import { AUTH_RETRY_MS, isoFromMs, keepPriorMatch, nextBackoffMs, preferCompleteRecording, preservePressingOnFailure, shouldRefreshPressing, SUCCESS_REFRESH_MS, TERMINAL_REFRESH_MS, withClearedDeadlineStops } from './preserve.ts'
 import { createMemoryCrateStore, crateRedisKeys, DRAFT_TTL_SECONDS, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA, RELEASE_LOCK_LUA, REFRESH_LOCK_LUA, selectEnrichLockToken, type CrateStore } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
-import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, resumeForceRefreshTrackCursor, isForceRunStampFresh, isWikidataOnlyLastError, WorkerDeadlineError, EnrichLockLostError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, DEADLINE_STOP_MESSAGE, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, CLI_BACKFILL_BUDGET_MS, ENRICH_LOCK_SECONDS, ENRICH_LOCK_HEARTBEAT_MS, ENRICH_LOCK_HEARTBEAT_REQUESTS, INCOMPLETE_RECORDING_MESSAGE, TRACK_LEVEL_ANNOTATE_CAP, TRACK_LEVEL_FETCH_CAP, TRACK_LEVEL_REASON, overlayTrackLevelProgress, applyDeadlineStop, persistTrackLevelDocs, shouldStopWalkOnRateLimit, createEnrichLockHeartbeat, isEnrichLockLostError, createForceSeriesId, carryPriorRecordings } from './enrich.ts'
+import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, resumeForceRefreshTrackCursor, isForceRunStampFresh, isWikidataOnlyLastError, WorkerDeadlineError, EnrichLockLostError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, DEADLINE_STOP_MESSAGE, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, CLI_BACKFILL_BUDGET_MS, ENRICH_LOCK_SECONDS, ENRICH_LOCK_HEARTBEAT_MS, ENRICH_LOCK_HEARTBEAT_REQUESTS, INCOMPLETE_RECORDING_MESSAGE, TRACK_LEVEL_ANNOTATE_CAP, TRACK_LEVEL_FETCH_CAP, TRACK_LEVEL_REASON, overlayTrackLevelProgress, applyDeadlineStop, persistTrackLevelDocs, shouldStopWalkOnRateLimit, createEnrichLockHeartbeat, isEnrichLockLostError, createForceSeriesId, carryPriorRecordings, rehydrateSameSongRecordings } from './enrich.ts'
 import { isUnusableDiscogsNotes, resolveDescription, withReadableDescription } from './description.ts'
 import { COLLECTION_KEEP_PATH, scheduleKeepPing } from './keep-ping.ts'
 import { runCrateEnrichCron } from './keep.ts'
@@ -270,6 +272,77 @@ describe('duration and title helpers', () => {
       priorMbid: withRels.mbid,
     })
     assert.equal(kept[0]?.mbid, withRels.mbid)
+    const outsideSlack = pickTrackLevelRecordings(
+      [
+        { ...withoutRels, score: 100 },
+        { ...withRels, score: 90 },
+      ],
+      discogs
+    )
+    assert.equal(outsideSlack[0]?.mbid, withRels.mbid)
+  })
+
+  it('mergeRecalledRecordingHits lets a stored same-song recording compete', () => {
+    const empty = {
+      mbid: '028bcc87-6f22-4f4a-a197-52fbce2346ea',
+      title: 'Brazilian Rhyme',
+      artist: 'Earth, Wind & Fire',
+      lengthMs: 79000,
+      score: 100,
+      hasSamples: false,
+    }
+    const stored = {
+      mbid: '5461c08e-3b9d-4da0-96cd-ade17b241654',
+      title: 'Brazilian Rhyme (interlude)',
+      artist: 'Earth, Wind & Fire',
+      samplesFrom: [],
+      sampledIn: [{ title: 'The Hit' }],
+    }
+    const merged = mergeRecalledRecordingHits(
+      [empty],
+      [hitFromStoredRecording(stored, 100)]
+    )
+    const picked = pickTrackLevelRecordings(merged, {
+      artist: 'Earth, Wind & Fire',
+      title: 'Brazilian Rhyme (Interlude)',
+      durationMs: 80000,
+    })
+    assert.equal(picked[0]?.mbid, stored.mbid)
+  })
+
+  it('rehydrateSameSongRecordings skips a wrong-song orphan', () => {
+    const jam = {
+      mbid: '755ea925-c364-4e59-b21f-8d0f4f73f821',
+      title: 'Jamming',
+      artist: 'Bob Marley & The Wailers',
+      credits: [],
+      samplesFrom: [],
+      sampledIn: [{ title: 'Later' }],
+      provenance: {
+        sourceUrls: [],
+        matchStatus: 'matched' as const,
+        confidence: 0.7,
+        reason: TRACK_LEVEL_REASON,
+        checkedAt: '2026-10-06T08:00:00.000Z',
+        refreshAfter: '2026-11-05T08:00:00.000Z',
+        lastError: null,
+        verifiedAt: '2026-10-06T08:00:00.000Z',
+        lastAttemptAt: '2026-10-06T08:00:00.000Z',
+      },
+    }
+    const anteUp = {
+      ...jam,
+      mbid: 'cfb7ade7-0000-0000-0000-000000000001',
+      title: 'Ante Up (instrumental)',
+      artist: 'M.O.P.',
+    }
+    const hydrated = rehydrateSameSongRecordings(
+      { artist: 'Bob Marley & The Wailers', title: 'Jamming', durationMs: 197000 },
+      {},
+      [jam, anteUp]
+    )
+    assert.equal(hydrated[jam.mbid]?.title, 'Jamming')
+    assert.equal(hydrated[anteUp.mbid], undefined)
   })
 
   it('drops an old wrong-song pick even when it has sample rels', () => {
@@ -5677,7 +5750,6 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
       forceRefresh: true,
     })
     assert.ok(fetched.length <= TRACK_LEVEL_ANNOTATE_CAP)
-    assert.ok(fetched.includes(savedMbid))
     const juicy = (retried.researchFacts ?? []).find(
       (fact) => fact.kind === 'sampled_by' && /juicy/i.test(fact.relatedTitle)
     )
@@ -5745,10 +5817,11 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     }
     const recordingDoc = (
       mbid: string,
-      sampledIn: StoredRecording['sampledIn']
+      sampledIn: StoredRecording['sampledIn'],
+      title = 'Song 1'
     ): StoredRecording => ({
       mbid,
-      title: 'Song 1',
+      title,
       artist: 'Lecturer',
       credits: [],
       samplesFrom: [],
@@ -5787,7 +5860,7 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
       }),
       recordings: {
         [pickMbid]: recordingDoc(pickMbid, []),
-        [orphanMbid]: recordingDoc(orphanMbid, [sample]),
+        [orphanMbid]: recordingDoc(orphanMbid, [sample], 'Song 2'),
       },
     })
     const mapLinks = (recordings: Record<string, StoredRecording>) =>
@@ -5830,6 +5903,183 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     assert.equal(retried.recordings[orphanMbid]?.sampledIn[0]?.title, 'The Hit')
     assert.equal(mapLinks(retried.recordings), 1)
   })
+
+  const classBRecallFixtures = [
+    {
+      id: 1311185,
+      artist: 'Mary J. Blige',
+      recordTitle: 'Share My World',
+      trackTitle: 'Message In Our Music (Interlude)',
+      duration: '1:49',
+      emptyMbid: 'e9758f53-54a6-4ae6-ab6f-88d1980760cb',
+      emptyTitle: 'Message in Our Music',
+      sampledMbid: 'c5d12a87-f4a8-4b69-a010-d2a0cd261ac8',
+      sampledTitle: 'Message in Our Music (interlude)',
+      sampledArtist: 'Mary J. Blige',
+      kind: 'samplesFrom' as const,
+    },
+    {
+      id: 1679157,
+      artist: 'The Beatnuts',
+      recordTitle: 'Stone Crazy',
+      trackTitle: 'Props Over Here',
+      duration: null,
+      emptyMbid: '2d2752c8-f13d-4997-b45a-6b979218f9ef',
+      emptyTitle: 'Props Over Here',
+      sampledMbid: '9cb859c8-284d-4433-8a3a-6f083533e004',
+      sampledTitle: 'Props Over Here',
+      sampledArtist: 'The Beatnuts',
+      kind: 'samplesFrom' as const,
+    },
+    {
+      id: 10416361,
+      artist: 'Earth, Wind & Fire',
+      recordTitle: "All 'N All",
+      trackTitle: 'Brazilian Rhyme (Interlude)',
+      duration: '1:20',
+      emptyMbid: '028bcc87-6f22-4f4a-a197-52fbce2346ea',
+      emptyTitle: 'Brazilian Rhyme',
+      sampledMbid: '5461c08e-3b9d-4da0-96cd-ade17b241654',
+      sampledTitle: 'Brazilian Rhyme (interlude)',
+      sampledArtist: 'Earth, Wind & Fire',
+      kind: 'sampledIn' as const,
+    },
+    {
+      id: 12563641,
+      artist: 'Black Eyed Peas',
+      recordTitle: 'The E.N.D.',
+      trackTitle: 'Imma Be',
+      duration: '4:16',
+      emptyMbid: '67156be2-2402-4a55-83b2-5ed99c89c16d',
+      emptyTitle: 'Imma Be',
+      sampledMbid: '9ac15b6e-fdc7-4c54-9ed8-a161412d9f8b',
+      sampledTitle: 'Imma Be',
+      sampledArtist: 'The Black Eyed Peas',
+      kind: 'samplesFrom' as const,
+    },
+    {
+      id: 13694938,
+      artist: 'Bob Marley & The Wailers',
+      recordTitle: 'Kaya',
+      trackTitle: 'Jamming',
+      duration: '3:17',
+      emptyMbid: 'cecbc264-b3a0-4160-9e63-8b9bf1798820',
+      emptyTitle: 'Jamming',
+      sampledMbid: '755ea925-c364-4e59-b21f-8d0f4f73f821',
+      sampledTitle: 'Jamming',
+      sampledArtist: 'Bob Marley & The Wailers',
+      kind: 'sampledIn' as const,
+    },
+  ]
+
+  for (const fixture of classBRecallFixtures) {
+    it(`recalls sampled ${fixture.trackTitle} when search omits it`, async () => {
+      const link: SampleLink = {
+        title: 'The Hit',
+        artist: 'Later Artist',
+        mbid: `hit-${fixture.id}`,
+        sourceUrl: `https://musicbrainz.org/recording/hit-${fixture.id}`,
+        source: 'musicbrainz',
+        providerId: `hit-${fixture.id}`,
+      }
+      const provenance = (mbid: string) => ({
+        sourceUrls: [`https://musicbrainz.org/recording/${mbid}`],
+        matchStatus: 'matched' as const,
+        confidence: 0.7,
+        reason: TRACK_LEVEL_REASON,
+        checkedAt: '2026-10-06T08:00:00.000Z',
+        refreshAfter: '2026-11-05T08:00:00.000Z',
+        lastError: null,
+        verifiedAt: '2026-10-06T08:00:00.000Z',
+        lastAttemptAt: '2026-10-06T08:00:00.000Z',
+      })
+      const sampledDoc: StoredRecording = {
+        mbid: fixture.sampledMbid,
+        title: fixture.sampledTitle,
+        artist: fixture.sampledArtist,
+        credits: [],
+        samplesFrom: fixture.kind === 'samplesFrom' ? [link] : [],
+        sampledIn: fixture.kind === 'sampledIn' ? [link] : [],
+        provenance: provenance(fixture.sampledMbid),
+      }
+      const store = createMemoryCrateStore({ recordings: { [fixture.sampledMbid]: sampledDoc } })
+      const detail = {
+        ...nTrackDetail(fixture.id, 1, fixture.artist, fixture.recordTitle),
+        tracklist: [
+          {
+            position: '1',
+            title: fixture.trackTitle,
+            duration: fixture.duration ?? '',
+            type_: 'track' as const,
+          },
+        ],
+      }
+      const lengthMs = parseDurationToMs(fixture.duration)
+      const emptyHit = {
+        mbid: fixture.emptyMbid,
+        title: fixture.emptyTitle,
+        artist: fixture.artist,
+        lengthMs,
+        score: 100,
+      }
+      const firstMb = createMusicBrainzClientForTests()
+      firstMb.searchRecordingsByArtistTitle = async () => [emptyHit]
+      firstMb.getRecording = async (id) => ({
+        mbid: id,
+        title: fixture.emptyTitle,
+        artist: fixture.artist,
+        credits: [],
+        samplesFrom: [],
+        sampledIn: [],
+      })
+      const first = await enrichPressing(fixture.id, {
+        store,
+        now: () => Date.parse('2026-10-06T08:00:00.000Z'),
+        fetchDiscogs: async () => detail,
+        fetchWikidata: async () => [],
+        mb: firstMb,
+      })
+      assert.equal(first.tracks[0]?.recording.mbid, fixture.emptyMbid)
+      assert.equal(first.recordings[fixture.sampledMbid], undefined)
+      const stored = await store.getPressing(fixture.id)
+      assert.ok(stored)
+      await store.setPressing(
+        hydratePressing({
+          ...stored,
+          checkpoint: {
+            stage: stored.checkpoint?.stage ?? 'research',
+            researchCursor: stored.checkpoint?.researchCursor ?? 0,
+            trackSampleCursor: 0,
+            deadlineStops: stored.checkpoint?.deadlineStops,
+          },
+        })
+      )
+      const retryMb = createMusicBrainzClientForTests()
+      retryMb.searchRecordingsByArtistTitle = async () => [emptyHit]
+      retryMb.getRecording = async (id) => ({
+        mbid: id,
+        title: fixture.emptyTitle,
+        artist: fixture.artist,
+        credits: [],
+        samplesFrom: [],
+        sampledIn: [],
+      })
+      const retried = await enrichPressing(fixture.id, {
+        store,
+        now: () => Date.parse('2026-10-07T08:00:00.000Z'),
+        fetchDiscogs: async () => detail,
+        fetchWikidata: async () => [],
+        mb: retryMb,
+        forceRefresh: true,
+      })
+      assert.equal(retried.tracks[0]?.recording.mbid, fixture.sampledMbid)
+      assert.equal(
+        (retried.recordings[fixture.sampledMbid]?.samplesFrom.length ?? 0) +
+          (retried.recordings[fixture.sampledMbid]?.sampledIn.length ?? 0),
+        1
+      )
+    })
+  }
 
   it('does not reuse store.getRecording for a forced pick missing from memory', async () => {
     const savedMbid = '1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc'

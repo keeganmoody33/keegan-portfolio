@@ -1,3 +1,9 @@
+COMPLETED (2026-10-08 — class (b) prior-pick vote + same-song orphan recall):
+- Class (b) five lost because the sampled MBID was **not in search hits** (off the map, so Redis fill never saw it). Fill already keys on `hit.mbid`; it does not iterate the pressing map. Empty sibling stayed the pick.
+- `--retry` now rehydrates same-song sampled Redis docs (title + raw artist, duration sane) onto the map and merges them into the candidate set so a prior sampled pick always gets a vote. Wrong-song orphans stay off. Persist reuses a sampled stored doc under force (no extra MB getRecording that would clobber rels).
+- Fixtures for Message In Our Music (Interlude), Props Over Here, Brazilian Rhyme (Interlude), Imma Be, Jamming: search omits the sampled MBID → empty wins first run; force retry recalls the Redis sampled doc. Same-song samples beat a higher-score empty sibling outside slack 5.
+- Preview `--retry` walk only the five + orphan-owner ids (not 276). Never prod. Do not merge.
+
 COMPLETED (2026-10-08 — class (d) sidecar recordings map + preview walk):
 - `--retry` used to start `pressing.recordings` empty whenever release rematch ran. Persist only writes the picked recording, so unused map docs (old sibling picks with sample rels) dropped. Snapshot totals count every map entry — that was ~19 orphaned / 34 of the 332→304 gap, the largest slice. Not a rematch that forgot unchanged tracks: a forced rematch that rebuilt the map from this-run persists only.
 - `carryPriorRecordings` overlays this-run docs on the prior map at draft, walk, and commit. Forced rematch of an unchanged pick keeps a sidecar sample. Test goes red on the old empty-map seed.

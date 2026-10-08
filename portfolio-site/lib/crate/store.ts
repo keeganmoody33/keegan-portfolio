@@ -149,6 +149,7 @@ export type CrateStore = {
   getDraftPressing(releaseId: number): Promise<StoredPressing | null>
   discardDraftPressing(releaseId: number): Promise<void>
   getRecording(mbid: string): Promise<StoredRecording | null>
+  listRecordings?(): Promise<StoredRecording[]>
   setRecording(recording: StoredRecording): Promise<void>
   getQueue(): Promise<number[]>
   enqueue(releaseIds: number[], options?: EnqueueOptions): Promise<number[]>
@@ -243,6 +244,7 @@ class RedisCrateStore implements CrateStore {
   private readonly readRedis: Redis
   private readonly writeRedis: Redis
   private readonly pressingReadRedis: Redis
+  private recordingList: StoredRecording[] | null = null
 
   constructor(
     keys: CrateRedisKeys,
@@ -312,6 +314,35 @@ class RedisCrateStore implements CrateStore {
     if (process.env.NEXT_PHASE === 'phase-production-build') return null
     const value = await this.readRedis.get<unknown>(this.keys.recording(mbid))
     return isStoredRecording(value) ? value : null
+  }
+
+  async listRecordings(): Promise<StoredRecording[]> {
+    if (process.env.NEXT_PHASE === 'phase-production-build') return []
+    if (this.recordingList) return this.recordingList
+    const match = this.keys.recording('*')
+    const keys: string[] = []
+    let cursor = '0'
+    do {
+      const scanned = await this.readRedis.scan(cursor, { match, count: 100 })
+      const next = Array.isArray(scanned) ? scanned[0] : 0
+      const batch = Array.isArray(scanned) ? scanned[1] ?? [] : []
+      cursor = String(next)
+      for (const key of batch) {
+        if (typeof key === 'string') keys.push(key)
+      }
+    } while (cursor !== '0')
+    const docs: StoredRecording[] = []
+    const chunkSize = 20
+    for (let i = 0; i < keys.length; i += chunkSize) {
+      const chunk = keys.slice(i, i + chunkSize)
+      const values = await this.readRedis.mget<(unknown | null)[]>(...chunk)
+      const rows = Array.isArray(values) ? values : []
+      for (const value of rows) {
+        if (isStoredRecording(value)) docs.push(value)
+      }
+    }
+    this.recordingList = docs
+    return docs
   }
 
   async setRecording(recording: StoredRecording): Promise<void> {
@@ -574,6 +605,9 @@ export function createMemoryCrateStore(
     },
     async getRecording(mbid: string) {
       return store.recordings[mbid] ?? null
+    },
+    async listRecordings() {
+      return Object.values(store.recordings)
     },
     async setRecording(recording: StoredRecording) {
       store.recordings[recording.mbid] = preferCompleteRecording(

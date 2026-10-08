@@ -161,6 +161,44 @@ export function isSamePerformanceSibling(
   return delta <= SAME_PERFORMANCE_DURATION_MS
 }
 
+export function hitFromStoredRecording(
+  recording: {
+    mbid: string
+    title: string
+    artist: string
+    samplesFrom?: unknown[]
+    sampledIn?: unknown[]
+  },
+  score = 0
+): TrackLevelRecordingHit {
+  return {
+    mbid: recording.mbid,
+    title: recording.title,
+    artist: recording.artist,
+    lengthMs: null,
+    score,
+    hasSamples: recordingHasSampleMaterial(recording),
+  }
+}
+
+export function mergeRecalledRecordingHits(
+  hits: TrackLevelRecordingHit[],
+  recalled: TrackLevelRecordingHit[]
+): TrackLevelRecordingHit[] {
+  const byMbid = new Map(hits.map((hit) => [hit.mbid, { ...hit }]))
+  for (const hit of recalled) {
+    const existing = byMbid.get(hit.mbid)
+    if (!existing) {
+      byMbid.set(hit.mbid, { ...hit })
+      continue
+    }
+    if (existing.hasSamples == null && hit.hasSamples != null) {
+      existing.hasSamples = hit.hasSamples
+    }
+  }
+  return [...byMbid.values()]
+}
+
 export function compareTrackLevelRecordings(
   left: TrackLevelRecordingHit,
   right: TrackLevelRecordingHit,
@@ -168,11 +206,11 @@ export function compareTrackLevelRecordings(
 ): number {
   const scoreDelta = (right.score ?? 0) - (left.score ?? 0)
   const sameSong = isSameSongCandidate(left, right, discogsDurationMs)
-  const nearTop = sameSong && Math.abs(scoreDelta) <= NEAR_TOP_SCORE_SLACK
-  if (!nearTop && scoreDelta !== 0) return scoreDelta
   const leftSamples = left.hasSamples ? 1 : 0
   const rightSamples = right.hasSamples ? 1 : 0
-  if (leftSamples !== rightSamples) return rightSamples - leftSamples
+  if (sameSong && leftSamples !== rightSamples) return rightSamples - leftSamples
+  const nearTop = sameSong && Math.abs(scoreDelta) <= NEAR_TOP_SCORE_SLACK
+  if (!nearTop && scoreDelta !== 0) return scoreDelta
   if (scoreDelta !== 0) return scoreDelta
   const leftDelta = durationTieDelta(discogsDurationMs, left.lengthMs)
   const rightDelta = durationTieDelta(discogsDurationMs, right.lengthMs)
