@@ -63,6 +63,7 @@ import {
   nextBackoffMs,
   preferCompleteRecording,
   preservePressingOnFailure,
+  withRecordingLength,
   storedPressingHasVisitorFacts,
   TERMINAL_REFRESH_MS,
   withClearedDeadlineStops,
@@ -548,6 +549,22 @@ async function forceSeriesDeadlineStops(
   return priorForceDeadlineStops(draft, inspectDeadlineStops(inspect))
 }
 
+function stampRecordingLength(
+  recording: StoredRecording,
+  lengthMs: number | null | undefined
+): StoredRecording {
+  return withRecordingLength(recording, lengthMs)
+}
+
+function applyStoredLengthToHit(
+  hit: TrackLevelRecordingHit,
+  recording: StoredRecording | undefined
+): void {
+  if (hit.lengthMs == null && recording?.lengthMs != null) {
+    hit.lengthMs = recording.lengthMs
+  }
+}
+
 async function persistStoredRecording(
   store: CrateStore,
   incoming: StoredRecording,
@@ -997,6 +1014,7 @@ function storedRecordingFromLookup(
     mbid: string
     title: string
     artist: string
+    lengthMs?: number | null
     credits: StoredRecording['credits']
     samplesFrom: StoredRecording['samplesFrom']
     sampledIn: StoredRecording['sampledIn']
@@ -1009,6 +1027,9 @@ function storedRecordingFromLookup(
     mbid: doc.mbid,
     title: doc.title,
     artist: doc.artist,
+    lengthMs: typeof doc.lengthMs === 'number' && Number.isFinite(doc.lengthMs) && doc.lengthMs > 0
+      ? doc.lengthMs
+      : null,
     credits: doc.credits,
     samplesFrom: doc.samplesFrom,
     sampledIn: doc.sampledIn,
@@ -1067,6 +1088,7 @@ async function annotateTrackLevelHits(
     if (hit.hasSamples != null) continue
     const memory = recordings[hit.mbid] ?? probeCache[hit.mbid]
     if (memory) {
+      applyStoredLengthToHit(hit, memory)
       if (
         !recordingHasIncompleteProbe(memory) ||
         incompleteProbeStillCooling(memory, nowMs)
@@ -1084,12 +1106,13 @@ async function annotateTrackLevelHits(
     }
     const stored = await store.getRecording(hit.mbid)
     if (stored) {
-      recordings[hit.mbid] = stored
+      recordings[hit.mbid] = stampRecordingLength(stored, hit.lengthMs)
+      applyStoredLengthToHit(hit, recordings[hit.mbid])
       if (
         !recordingHasIncompleteProbe(stored) ||
         incompleteProbeStillCooling(stored, nowMs)
       ) {
-        hit.hasSamples = recordingHasSampleMaterial(stored)
+        hit.hasSamples = recordingHasSampleMaterial(recordings[hit.mbid] ?? stored)
       }
     }
   }
@@ -1113,8 +1136,12 @@ async function annotateTrackLevelHits(
       await pulseLock(deps.onLockHeartbeat)
       const doc = await mb.getRecording(hit.mbid)
       if (!doc) continue
-      const recording = storedRecordingFromLookup(doc, nowIso, nowMs)
+      const recording = stampRecordingLength(
+        storedRecordingFromLookup(doc, nowIso, nowMs),
+        hit.lengthMs
+      )
       probeCache[hit.mbid] = recording
+      applyStoredLengthToHit(hit, recording)
       hit.hasSamples = recordingHasSampleMaterial(recording)
     } catch (error) {
       throwIfDeadlineExceededTimeout(error)
@@ -1123,10 +1150,14 @@ async function annotateTrackLevelHits(
           const partial = error.partialRecording
           const recording = await persistStoredRecording(
             store,
-            storedRecordingFromLookup(partial, nowIso, nowMs, true),
+            stampRecordingLength(
+              storedRecordingFromLookup(partial, nowIso, nowMs, true),
+              hit.lengthMs
+            ),
             recordings
           )
           probeCache[partial.mbid] = recording
+          applyStoredLengthToHit(hit, recording)
           hit.hasSamples = recordingHasSampleMaterial(recording)
         }
         if (isMusicBrainzRateLimitError(error)) throw error
@@ -1418,16 +1449,21 @@ async function applyTrackLevelSamples(
       }
       const probed = probeCache[hit.mbid]
       if (probed) {
-        recordings[hit.mbid] = probed
-        docs.push(probed)
+        const stamped = stampRecordingLength(probed, hit.lengthMs)
+        recordings[hit.mbid] = stamped
+        probeCache[hit.mbid] = stamped
+        applyStoredLengthToHit(hit, stamped)
+        docs.push(stamped)
         continue
       }
       const previousRecording =
         recordings[hit.mbid] ?? (await deps.store.getRecording(hit.mbid))
       if (previousRecording && recordingHasSampleMaterial(previousRecording)) {
-        recordings[hit.mbid] = previousRecording
-        probeCache[hit.mbid] = previousRecording
-        docs.push(previousRecording)
+        const stamped = stampRecordingLength(previousRecording, hit.lengthMs)
+        recordings[hit.mbid] = stamped
+        probeCache[hit.mbid] = stamped
+        applyStoredLengthToHit(hit, stamped)
+        docs.push(stamped)
         continue
       }
       if (
@@ -1436,9 +1472,11 @@ async function applyTrackLevelSamples(
         (researchIsFresh(previousRecording, nowMs) ||
           incompleteProbeStillCooling(previousRecording, nowMs))
       ) {
-        recordings[hit.mbid] = previousRecording
-        probeCache[hit.mbid] = previousRecording
-        docs.push(previousRecording)
+        const stamped = stampRecordingLength(previousRecording, hit.lengthMs)
+        recordings[hit.mbid] = stamped
+        probeCache[hit.mbid] = stamped
+        applyStoredLengthToHit(hit, stamped)
+        docs.push(stamped)
         continue
       }
       try {
@@ -1446,8 +1484,12 @@ async function applyTrackLevelSamples(
         await pulseLock(deps.onLockHeartbeat)
         const doc = await mb.getRecording(hit.mbid)
         if (!doc) continue
-        const recording = storedRecordingFromLookup(doc, nowIso, nowMs)
+        const recording = stampRecordingLength(
+          storedRecordingFromLookup(doc, nowIso, nowMs),
+          hit.lengthMs
+        )
         recordings[hit.mbid] = recording
+        applyStoredLengthToHit(hit, recording)
         docs.push(recording)
       } catch (error) {
         throwIfDeadlineExceededTimeout(error)
@@ -1458,10 +1500,14 @@ async function applyTrackLevelSamples(
           const partial = error.partialRecording
           const recording = await persistStoredRecording(
             deps.store,
-            storedRecordingFromLookup(partial, nowIso, nowMs, true),
+            stampRecordingLength(
+              storedRecordingFromLookup(partial, nowIso, nowMs, true),
+              hit.lengthMs
+            ),
             recordings
           )
           probeCache[partial.mbid] = recording
+          applyStoredLengthToHit(hit, recording)
           docs.push(recording)
         }
         if (isMusicBrainzRateLimitError(error) && docs.length > 0) {
@@ -1861,6 +1907,10 @@ export async function enrichPressing(
           mbid: doc.mbid,
           title: doc.title,
           artist: doc.artist,
+          lengthMs:
+            typeof doc.lengthMs === 'number' && Number.isFinite(doc.lengthMs) && doc.lengthMs > 0
+              ? doc.lengthMs
+              : previousRecording?.lengthMs ?? null,
           credits: doc.credits,
           samplesFrom: doc.samplesFrom,
           sampledIn: doc.sampledIn,

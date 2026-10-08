@@ -30,7 +30,7 @@ import {
   NEAR_TOP_SCORE_SLACK,
   DURATION_SIDECAR_MS,
 } from './match.ts'
-import { AUTH_RETRY_MS, isoFromMs, keepPriorMatch, nextBackoffMs, preferCompleteRecording, preservePressingOnFailure, shouldRefreshPressing, SUCCESS_REFRESH_MS, TERMINAL_REFRESH_MS, withClearedDeadlineStops } from './preserve.ts'
+import { AUTH_RETRY_MS, isoFromMs, keepPriorMatch, nextBackoffMs, preferCompleteRecording, preservePressingOnFailure, shouldRefreshPressing, SUCCESS_REFRESH_MS, TERMINAL_REFRESH_MS, withClearedDeadlineStops, withRecordingLength } from './preserve.ts'
 import { createMemoryCrateStore, crateRedisKeys, DRAFT_TTL_SECONDS, FORCE_SERIES_TTL_SECONDS, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA, RELEASE_LOCK_LUA, REFRESH_LOCK_LUA, selectEnrichLockToken, type CrateStore } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
 import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, resumeForceRefreshTrackCursor, isForceRunStampFresh, isWikidataOnlyLastError, WorkerDeadlineError, EnrichLockLostError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, DEADLINE_STOP_MESSAGE, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, CLI_BACKFILL_BUDGET_MS, ENRICH_LOCK_SECONDS, ENRICH_LOCK_HEARTBEAT_MS, ENRICH_LOCK_HEARTBEAT_REQUESTS, INCOMPLETE_RECORDING_MESSAGE, TRACK_LEVEL_ANNOTATE_CAP, TRACK_LEVEL_FETCH_CAP, TRACK_LEVEL_REASON, overlayTrackLevelProgress, applyDeadlineStop, persistTrackLevelDocs, shouldStopWalkOnRateLimit, createEnrichLockHeartbeat, isEnrichLockLostError, carryPriorRecordings, rehydrateSameSongRecordings, sameSongSampledRecordings, overrideEmptyPickWithSampled, recordingIsCompleteSidecar, resetSampledRecordingIndex } from './enrich.ts'
@@ -509,6 +509,104 @@ describe('duration and title helpers', () => {
       overrideEmptyPickWithSampled([empty], discogs, [feat])[0]?.mbid,
       empty.mbid
     )
+  })
+
+  it('sidecar missing lengthMs still needs exact title and version markers', () => {
+    const discogs = {
+      artist: 'Lecturer',
+      title: 'Song',
+      durationMs: 180000,
+    }
+    const storedExact: StoredRecording = {
+      mbid: 'stored-exact',
+      title: 'Song',
+      artist: 'Lecturer',
+      credits: [],
+      samplesFrom: [{ title: 'The Hit', artist: 'Later', mbid: 'hit', sourceUrl: 'https://musicbrainz.org/recording/hit', source: 'musicbrainz', providerId: 'hit' }],
+      sampledIn: [],
+      provenance: {
+        sourceUrls: [],
+        matchStatus: 'matched',
+        confidence: 0.7,
+        reason: TRACK_LEVEL_REASON,
+        checkedAt: '2026-10-06T08:00:00.000Z',
+        refreshAfter: '2026-11-05T08:00:00.000Z',
+        lastError: null,
+        verifiedAt: '2026-10-06T08:00:00.000Z',
+        lastAttemptAt: '2026-10-06T08:00:00.000Z',
+      },
+    }
+    const storedRemix = { ...storedExact, mbid: 'stored-remix', title: 'Song (Remix)' }
+    assert.equal(storedExact.lengthMs, undefined)
+    assert.equal(hitFromStoredRecording(storedExact, 100).lengthMs, null)
+    assert.equal(isStrictSidecarMatch(discogs, hitFromStoredRecording(storedExact, 100)), true)
+    assert.equal(isStrictSidecarMatch(discogs, hitFromStoredRecording(storedRemix, 100)), false)
+    const empty = {
+      mbid: 'empty-song',
+      title: 'Song',
+      artist: 'Lecturer',
+      lengthMs: 180000,
+      score: 100,
+      hasSamples: false,
+    }
+    assert.equal(
+      overrideEmptyPickWithSampled([empty], discogs, [storedExact])[0]?.mbid,
+      storedExact.mbid
+    )
+    assert.equal(
+      overrideEmptyPickWithSampled([empty], discogs, [storedRemix])[0]?.mbid,
+      empty.mbid
+    )
+  })
+
+  it('sidecar duration 8s off with exact title cannot override', () => {
+    const discogs = {
+      artist: 'Lecturer',
+      title: 'Song',
+      durationMs: 180000,
+    }
+    const empty = {
+      mbid: 'empty-song',
+      title: 'Song',
+      artist: 'Lecturer',
+      lengthMs: 180000,
+      score: 100,
+      hasSamples: false,
+    }
+    const far = {
+      mbid: 'far-song',
+      title: 'Song',
+      artist: 'Lecturer',
+      lengthMs: 188000,
+      samplesFrom: [{ title: 'The Hit' }],
+      sampledIn: [] as StoredRecording['sampledIn'],
+    }
+    assert.equal(isStrictSidecarMatch(discogs, hitFromStoredRecording(far, 100)), false)
+    assert.equal(overrideEmptyPickWithSampled([empty], discogs, [far])[0]?.mbid, empty.mbid)
+    const stamped = withRecordingLength(
+      {
+        mbid: far.mbid,
+        title: far.title,
+        artist: far.artist,
+        credits: [],
+        samplesFrom: [{ title: 'The Hit', artist: 'Later', mbid: 'hit', sourceUrl: 'https://musicbrainz.org/recording/hit', source: 'musicbrainz', providerId: 'hit' }],
+        sampledIn: [],
+        provenance: {
+          sourceUrls: [],
+          matchStatus: 'matched',
+          confidence: 0.7,
+          reason: TRACK_LEVEL_REASON,
+          checkedAt: '2026-10-06T08:00:00.000Z',
+          refreshAfter: '2026-11-05T08:00:00.000Z',
+          lastError: null,
+          verifiedAt: '2026-10-06T08:00:00.000Z',
+          lastAttemptAt: '2026-10-06T08:00:00.000Z',
+        },
+      },
+      188000
+    )
+    assert.equal(stamped.lengthMs, 188000)
+    assert.equal(isStrictSidecarMatch(discogs, hitFromStoredRecording(stamped, 100)), false)
   })
 
   it('under force an MBID missing from this-run search cannot override', () => {
@@ -7048,6 +7146,14 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     }
     assert.equal(preferCompleteRecording(verified, incoming).provenance.verifiedAt, verifiedAt)
     assert.equal(preferCompleteRecording(verified, incoming).sampledIn.length, 1)
+    assert.equal(
+      preferCompleteRecording(verified, { ...incoming, lengthMs: 355000 }).lengthMs,
+      355000
+    )
+    assert.equal(
+      preferCompleteRecording({ ...verified, lengthMs: 355000 }, incoming).lengthMs,
+      355000
+    )
     const mb = createMusicBrainzClientForTests()
     mb.searchRecordingsByArtistTitle = async () => [
       {
@@ -8951,6 +9057,7 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
         mbid: 'primary',
         title: 'Song',
         artist: 'Artist',
+        lengthMs: 180000,
         credits: [],
         samplesFrom: [linkFromA],
         sampledIn: [],
@@ -8996,6 +9103,43 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     )
     assert.equal(stored?.sampledIn[0]?.mbid, 'sampled-in')
     assert.equal(track.recording.mbid, 'primary')
+    assert.equal(stored?.lengthMs, 180000)
+  })
+
+  it('persists recording lengthMs from MusicBrainz lookup', async () => {
+    const releaseId = 9107709
+    const mbid = 'length-mbid-0000-0000-000000000001'
+    const store = createMemoryCrateStore()
+    const mb = createMusicBrainzClientForTests()
+    mb.searchRecordingsByArtistTitle = async () => [
+      {
+        mbid,
+        title: 'Song 1',
+        artist: 'Lecturer',
+        lengthMs: null,
+        score: 100,
+      },
+    ]
+    mb.getRecording = async (id) => ({
+      mbid: id,
+      title: 'Song 1',
+      artist: 'Lecturer',
+      lengthMs: 181000,
+      credits: [],
+      samplesFrom: [],
+      sampledIn: [],
+    })
+    const pressing = await enrichPressing(releaseId, {
+      store,
+      now: () => Date.parse('2026-10-06T08:00:00.000Z'),
+      fetchDiscogs: async () => nTrackDetail(releaseId, 1),
+      fetchWikidata: async () => [],
+      mb,
+    })
+    assert.equal(pressing.tracks[0]?.recording.mbid, mbid)
+    assert.equal(pressing.recordings[mbid]?.lengthMs, 181000)
+    const stored = await store.getRecording(mbid)
+    assert.equal(stored?.lengthMs, 181000)
   })
 
   it('aborts MusicBrainz requests at min(timeout, deadline remaining)', async () => {
@@ -9077,6 +9221,22 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     assert.equal(urls.some((url) => url.includes('/work/')), false)
     assert.equal(doc?.samplesFrom.length, 0)
     assert.equal(doc?.sampledIn.length, 0)
+  })
+
+  it('stores MusicBrainz recording length as lengthMs', async () => {
+    const client = createMusicBrainzClient({
+      minIntervalMs: 0,
+      fetchImpl: async () =>
+        Response.json({
+          id: 'rec-len',
+          title: 'Song',
+          length: 181000,
+          'artist-credit': [{ name: 'Lecturer' }],
+          relations: [],
+        }),
+    })
+    const doc = await client.getRecording('rec-len')
+    assert.equal(doc?.lengthMs, 181000)
   })
 
   it('produces zero sample facts from work rels and never stores a /work/ sourceUrl', async () => {

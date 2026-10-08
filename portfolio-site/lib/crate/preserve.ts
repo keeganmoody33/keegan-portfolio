@@ -44,6 +44,25 @@ export function recordingDocIsComplete(
   return sampleCount > 0 && recording.provenance.lastError == null
 }
 
+export function coalesceRecordingLengthMs(
+  ...values: Array<number | null | undefined>
+): number | null {
+  for (const value of values) {
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) return value
+  }
+  return null
+}
+
+export function withRecordingLength(
+  recording: StoredRecording,
+  lengthMs: number | null | undefined
+): StoredRecording {
+  const next = coalesceRecordingLengthMs(recording.lengthMs, lengthMs)
+  if (next == null) return recording
+  if (recording.lengthMs === next) return recording
+  return { ...recording, lengthMs: next }
+}
+
 /** Never replace a verified Redis recording with an incomplete timeout/429 stub. */
 export function preferCompleteRecording(
   existing: StoredRecording | null | undefined,
@@ -51,9 +70,9 @@ export function preferCompleteRecording(
 ): StoredRecording {
   if (!existing) return incoming
   if (recordingDocIsIncomplete(incoming) && recordingDocIsComplete(existing)) {
-    return existing
+    return withRecordingLength(existing, incoming.lengthMs)
   }
-  return incoming
+  return withRecordingLength(incoming, existing.lengthMs)
 }
 
 export function isoFromMs(ms: number): string {

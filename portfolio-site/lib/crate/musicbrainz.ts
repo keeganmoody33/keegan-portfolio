@@ -44,6 +44,7 @@ export type MbRecordingFacts = {
   mbid: string
   title: string
   artist: string
+  lengthMs?: number | null
   credits: Credit[]
   samplesFrom: SampleLink[]
   sampledIn: SampleLink[]
@@ -163,6 +164,7 @@ type MbReleaseSearch = {
 type MbRecordingDoc = {
   id?: string
   title?: string
+  length?: number
   'artist-credit'?: MbArtistCredit
   relations?: MbRelation[]
 }
@@ -632,6 +634,7 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
         mbid: data.id!,
         title: data.title ?? '',
         artist: artistCreditName(data['artist-credit']),
+        lengthMs: typeof data.length === 'number' ? data.length : null,
         credits,
         samplesFrom,
         sampledIn,

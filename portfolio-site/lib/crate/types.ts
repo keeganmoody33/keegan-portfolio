@@ -210,6 +210,8 @@ export type StoredRecording = {
   mbid: string
   title: string
   artist: string
+  /** MusicBrainz recording length. Missing on older Redis docs is unknown. */
+  lengthMs?: number | null
   credits: Credit[]
   samplesFrom: SampleLink[]
   sampledIn: SampleLink[]

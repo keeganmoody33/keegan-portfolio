@@ -1,9 +1,9 @@
 COMPLETED (2026-10-08 — Integrations BLOCK abcda21: persist series, strict sidecar, force score):
 - P1: `runBackfill` minted a fresh `randomUUID()` every invocation, so CLI/cron `--retry` reset `deadlineStops` and `too_slow` never stuck (sim: 40-track still running after 12 ticks / 6489 MB). Persist `forceSeriesId` per record at `crate:force-series:{id}:v1` (24h TTL, refresh on each stop write). CLI mints if missing and reuses across `--retry`. `--new-series` or a done/`too_slow` record resets. Cron never mints or resets. After 24h Redis expiry, reuse `inspect.forceSeriesId` and re-SET 24h. 40- and 60-track CLI + cron entry points with 16m and 3-day gaps reach `too_slow` within 3 invocations without an injected id.
 - P2a: under force a fresh sampled hit in this-run search outranks a stale sampled prior on score (`1d890c2b` 100 beats `1aaf2f49` 90). Keep the prior only when no fresh hit has samples.
-- P2b: sidecar/prior override needs exact `normalizeTitle`, matching version markers (remix/live/mix/edit/instrumental/acapella/version/demo/dub/feat.), and duration within 5s when both known. An MBID not in this-run search cannot override under force. Remix 8s off, Live 10s off, feat. Guest, and orphan MBIDs no longer win.
+- P2b: sidecar/prior override needs exact `normalizeTitle`, matching version markers (remix/live/mix/edit/instrumental/acapella/version/demo/dub/feat.), and duration within 5s when both known. Persist `lengthMs` on the recording doc (missing on older Redis docs is unknown). Unknown duration still requires exact title + version markers. An MBID not in this-run search cannot override under force. Remix 8s off, Live 10s off, feat. Guest, orphan MBIDs, and exact-title 8s-off no longer win.
 - P3: sidecar sort is samples → score → MBID (not SCAN order). Incomplete docs are never sidecars. Sampled index loads once per process.
-- Crate tests 257. Preview wrong-version audit next (`lf:preview:` only). Never prod. Do not merge.
+- Crate tests 261. Preview wrong-version audit next (`lf:preview:` only). Never prod. Do not merge.
 
 COMPLETED (2026-10-08 — class (b) prior-pick vote + same-song orphan recall):
 - Class (b) five lost because the sampled MBID was **not in search hits** (off the map, so Redis fill never saw it). Fill already keys on `hit.mbid`; it does not iterate the pressing map. Empty sibling stayed the pick.

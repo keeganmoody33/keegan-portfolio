@@ -197,6 +197,9 @@ export function mergeRecalledRecordingHits(
     if (existing.hasSamples == null && hit.hasSamples != null) {
       existing.hasSamples = hit.hasSamples
     }
+    if (existing.lengthMs == null && hit.lengthMs != null) {
+      existing.lengthMs = hit.lengthMs
+    }
   }
   return [...byMbid.values()]
 }
