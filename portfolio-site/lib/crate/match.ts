@@ -22,6 +22,48 @@ export const DURATION_SIDECAR_MS = SAME_PERFORMANCE_DURATION_MS
 export const NEAR_TOP_SCORE_SLACK = 5
 export const UNIQUE_SEARCH_SCORE = 95
 
+/** Search-level mix markers. Vocal/album/interlude stay unmarked so recall is not lost. */
+const SEARCH_VERSION_TOKENS = new Set<string>([
+  'remix',
+  'radio',
+  'edit',
+  'club',
+  'live',
+  'instrumental',
+  'inst',
+  'acapella',
+  'cappella',
+  'dub',
+  'demo',
+  'mix',
+])
+
+export type SearchVersionFit = 'aligned' | 'unmarked_fallback' | 'wrong'
+
+export function searchVersionFit(discogsTitle: string, hitTitle: string): SearchVersionFit {
+  const want = tokensFrom(discogsTitle, SEARCH_VERSION_TOKENS)
+  const got = tokensFrom(hitTitle, SEARCH_VERSION_TOKENS)
+  if (want.size === got.size) {
+    let same = true
+    for (const token of want) {
+      if (!got.has(token)) {
+        same = false
+        break
+      }
+    }
+    if (same) return 'aligned'
+  }
+  if (want.size > 0 && got.size === 0) return 'unmarked_fallback'
+  return 'wrong'
+}
+
+function searchVersionRank(discogsTitle: string, hitTitle: string): number {
+  const fit = searchVersionFit(discogsTitle, hitTitle)
+  if (fit === 'aligned') return 0
+  if (fit === 'unmarked_fallback') return 1
+  return 2
+}
+
 export function parseDurationToMs(value: string | null | undefined): number | null {
   if (value == null) return null
   const trimmed = value.trim()
@@ -207,10 +249,16 @@ export function mergeRecalledRecordingHits(
 export function compareTrackLevelRecordings(
   left: TrackLevelRecordingHit,
   right: TrackLevelRecordingHit,
-  discogsDurationMs: number | null = null
+  discogsDurationMs: number | null = null,
+  discogsTitle?: string
 ): number {
-  const scoreDelta = (right.score ?? 0) - (left.score ?? 0)
   const sameSong = isSameSongCandidate(left, right, discogsDurationMs)
+  if (sameSong && discogsTitle) {
+    const leftFit = searchVersionRank(discogsTitle, left.title)
+    const rightFit = searchVersionRank(discogsTitle, right.title)
+    if (leftFit !== rightFit) return leftFit - rightFit
+  }
+  const scoreDelta = (right.score ?? 0) - (left.score ?? 0)
   const leftSamples = left.hasSamples ? 1 : 0
   const rightSamples = right.hasSamples ? 1 : 0
   if (sameSong && leftSamples !== rightSamples) return rightSamples - leftSamples
@@ -223,12 +271,18 @@ export function compareTrackLevelRecordings(
   return left.mbid.localeCompare(right.mbid)
 }
 
-/** Probe known-sample and null-length hits before exact-duration duplicates. */
+/** Probe version-aligned hits first, then known-sample and null-length duplicates. */
 export function compareTrackLevelProbeOrder(
   left: TrackLevelRecordingHit,
   right: TrackLevelRecordingHit,
-  discogsDurationMs: number | null = null
+  discogsDurationMs: number | null = null,
+  discogsTitle?: string
 ): number {
+  if (discogsTitle) {
+    const leftFit = searchVersionRank(discogsTitle, left.title)
+    const rightFit = searchVersionRank(discogsTitle, right.title)
+    if (leftFit !== rightFit) return leftFit - rightFit
+  }
   const leftKnownSamples = left.hasSamples === true ? 0 : 1
   const rightKnownSamples = right.hasSamples === true ? 0 : 1
   if (leftKnownSamples !== rightKnownSamples) return leftKnownSamples - rightKnownSamples
@@ -238,15 +292,21 @@ export function compareTrackLevelProbeOrder(
   const leftUnknown = left.hasSamples == null ? 0 : 1
   const rightUnknown = right.hasSamples == null ? 0 : 1
   if (leftUnknown !== rightUnknown) return leftUnknown - rightUnknown
-  return compareTrackLevelRecordings(left, right, discogsDurationMs)
+  return compareTrackLevelRecordings(left, right, discogsDurationMs, discogsTitle)
 }
 
 export function trackLevelHitOutranksPrior(
   hit: TrackLevelRecordingHit,
   prior: TrackLevelRecordingHit,
   discogsDurationMs: number | null = null,
-  options?: { forceRefresh?: boolean }
+  options?: { forceRefresh?: boolean; discogsTitle?: string }
 ): boolean {
+  const discogsTitle = options?.discogsTitle
+  if (discogsTitle && isSameSongCandidate(hit, prior, discogsDurationMs)) {
+    const hitFit = searchVersionRank(discogsTitle, hit.title)
+    const priorFit = searchVersionRank(discogsTitle, prior.title)
+    if (hitFit !== priorFit) return hitFit < priorFit
+  }
   const hitScore = hit.score ?? 0
   const priorScore = prior.score ?? 0
   if (options?.forceRefresh && isSameSongCandidate(hit, prior, discogsDurationMs)) {
@@ -279,6 +339,7 @@ export function priorTrackIsWrongSong(
   if (!titleOk) return true
   const delta = durationDeltaMs(discogs.durationMs, prior.lengthMs)
   if (delta != null && delta > DURATION_FAR_MS) return true
+  if (searchVersionFit(discogs.title, prior.title) === 'wrong') return true
   return versionContradicts(discogs.title, prior.title)
 }
 
@@ -293,6 +354,7 @@ export function filterTrackLevelRecordings(
       titlesSimilar(discogs.title, hit.title) ||
       Boolean(discogsSong && songTitle(hit.title) && discogsSong === songTitle(hit.title))
     if (!titleOk) return false
+    if (searchVersionFit(discogs.title, hit.title) === 'wrong') return false
     const delta = durationDeltaMs(discogs.durationMs, hit.lengthMs)
     if (delta == null) return true
     return delta <= DURATION_FAR_MS
@@ -369,7 +431,9 @@ export function pickTrackLevelRecordings(
       : matched
   const ranked = rankedPool
     .slice()
-    .sort((left, right) => compareTrackLevelRecordings(left, right, discogs.durationMs))
+    .sort((left, right) =>
+      compareTrackLevelRecordings(left, right, discogs.durationMs, discogs.title)
+    )
   const priorMbid = options?.priorMbid
   if (!priorMbid) return ranked
   if (forceRefresh && searchMbids && !searchMbids.has(priorMbid)) return ranked
@@ -378,8 +442,13 @@ export function pickTrackLevelRecordings(
   if (priorTrackIsWrongSong(prior, discogs)) return ranked
   if (forceRefresh && !isStrictSidecarMatch(discogs, prior)) return ranked
   const best = ranked[0]
-  if (!best) return [prior]
-  if (trackLevelHitOutranksPrior(best, prior, discogs.durationMs, { forceRefresh })) {
+  if (!best) return forceRefresh ? ranked : [prior]
+  if (
+    trackLevelHitOutranksPrior(best, prior, discogs.durationMs, {
+      forceRefresh,
+      discogsTitle: discogs.title,
+    })
+  ) {
     return ranked
   }
   return [prior, ...ranked.filter((hit) => hit.mbid !== prior.mbid)]

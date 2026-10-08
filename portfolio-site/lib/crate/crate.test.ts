@@ -27,13 +27,14 @@ import {
   mergeRecalledRecordingHits,
   isStrictSidecarMatch,
   compareSidecarHits,
+  searchVersionFit,
   NEAR_TOP_SCORE_SLACK,
   DURATION_SIDECAR_MS,
 } from './match.ts'
 import { AUTH_RETRY_MS, isoFromMs, keepPriorMatch, nextBackoffMs, preferCompleteRecording, preservePressingOnFailure, shouldRefreshPressing, SUCCESS_REFRESH_MS, TERMINAL_REFRESH_MS, withClearedDeadlineStops, withRecordingLength } from './preserve.ts'
 import { createMemoryCrateStore, crateRedisKeys, DRAFT_TTL_SECONDS, FORCE_SERIES_TTL_SECONDS, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA, RELEASE_LOCK_LUA, REFRESH_LOCK_LUA, selectEnrichLockToken, type CrateStore } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
-import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, resumeForceRefreshTrackCursor, isForceRunStampFresh, isWikidataOnlyLastError, WorkerDeadlineError, EnrichLockLostError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, DEADLINE_STOP_MESSAGE, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, CLI_BACKFILL_BUDGET_MS, ENRICH_LOCK_SECONDS, ENRICH_LOCK_HEARTBEAT_MS, ENRICH_LOCK_HEARTBEAT_REQUESTS, INCOMPLETE_RECORDING_MESSAGE, TRACK_LEVEL_ANNOTATE_CAP, TRACK_LEVEL_FETCH_CAP, TRACK_LEVEL_REASON, overlayTrackLevelProgress, applyDeadlineStop, persistTrackLevelDocs, shouldStopWalkOnRateLimit, createEnrichLockHeartbeat, isEnrichLockLostError, carryPriorRecordings, rehydrateSameSongRecordings, sameSongSampledRecordings, overrideEmptyPickWithSampled, recordingIsCompleteSidecar, resetSampledRecordingIndex } from './enrich.ts'
+import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, resumeForceRefreshTrackCursor, isForceRunStampFresh, isWikidataOnlyLastError, WorkerDeadlineError, EnrichLockLostError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, DEADLINE_STOP_MESSAGE, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, CLI_BACKFILL_BUDGET_MS, ENRICH_LOCK_SECONDS, ENRICH_LOCK_HEARTBEAT_MS, ENRICH_LOCK_HEARTBEAT_REQUESTS, INCOMPLETE_RECORDING_MESSAGE, TRACK_LEVEL_ANNOTATE_CAP, TRACK_LEVEL_FETCH_CAP, TRACK_LEVEL_REASON, overlayTrackLevelProgress, applyDeadlineStop, persistTrackLevelDocs, shouldStopWalkOnRateLimit, createEnrichLockHeartbeat, isEnrichLockLostError, carryPriorRecordings, rehydrateSameSongRecordings, sameSongSampledRecordings, overrideEmptyPickWithSampled, sampledSidecarPriorMbid, recordingIsCompleteSidecar, resetSampledRecordingIndex } from './enrich.ts'
 import { isUnusableDiscogsNotes, resolveDescription, withReadableDescription } from './description.ts'
 import { COLLECTION_KEEP_PATH, scheduleKeepPing } from './keep-ping.ts'
 import { runCrateEnrichCron } from './keep.ts'
@@ -643,6 +644,213 @@ describe('duration and title helpers', () => {
       { priorMbid: orphan.mbid, forceRefresh: true, searchMbids }
     )
     assert.equal(ranked[0]?.mbid, empty.mbid)
+  })
+
+  it('search version fit aligns remix/radio/edit and falls back unmarked', () => {
+    assert.equal(searchVersionFit("Cha-Cha Slide (Radio Edit)", 'Cha-Cha Slide (Radio Edit)'), 'aligned')
+    assert.equal(searchVersionFit("Cha-Cha Slide (Radio Edit)", 'Cha Cha Slide (Clubstar Remix)'), 'wrong')
+    assert.equal(searchVersionFit("Grindin' (Remix)", 'Grindin\' (Remix)'), 'aligned')
+    assert.equal(searchVersionFit("Grindin' (Remix)", 'Grindin\''), 'unmarked_fallback')
+    assert.equal(searchVersionFit('Colour My World', 'Colour My World'), 'aligned')
+    assert.equal(searchVersionFit('Colour My World', 'Colour My World (Remix)'), 'wrong')
+    assert.equal(searchVersionFit('Juicy Fruit (Vocal)', 'Juicy Fruit'), 'aligned')
+    assert.equal(searchVersionFit('Brazilian Rhyme (Interlude)', 'Brazilian Rhyme'), 'aligned')
+  })
+
+  it('378994 B1 Radio Edit never lands on a Clubstar remix', () => {
+    const discogs = {
+      artist: 'DJ Casper',
+      title: 'Cha-Cha Slide (Radio Edit)',
+      durationMs: 220000,
+    }
+    const clubstar = {
+      mbid: '67350ade-0000-4000-8000-000000000001',
+      title: 'Cha Cha Slide (Clubstar Remix)',
+      artist: 'DJ Casper',
+      lengthMs: 221000,
+      score: 100,
+      hasSamples: true,
+    }
+    const radio = {
+      mbid: 'radio-edit-378994',
+      title: 'Cha-Cha Slide (Radio Edit)',
+      artist: 'DJ Casper',
+      lengthMs: 232000,
+      score: 90,
+      hasSamples: false,
+    }
+    const unmarked = {
+      mbid: 'unmarked-chacha',
+      title: 'Cha-Cha Slide',
+      artist: 'DJ Casper',
+      lengthMs: 220000,
+      score: 99,
+      hasSamples: true,
+    }
+    assert.equal(searchVersionFit(discogs.title, clubstar.title), 'wrong')
+    const radioWins = pickTrackLevelRecordings([clubstar, radio, unmarked], discogs)
+    assert.equal(radioWins[0]?.mbid, radio.mbid)
+    assert.equal(radioWins.some((hit) => hit.mbid === clubstar.mbid), false)
+    const fallback = pickTrackLevelRecordings([clubstar, unmarked], discogs)
+    assert.equal(fallback[0]?.mbid, unmarked.mbid)
+    const onlyClubstar = pickTrackLevelRecordings([clubstar], discogs)
+    assert.equal(onlyClubstar.length, 0)
+    assert.ok(
+      compareTrackLevelProbeOrder(radio, clubstar, discogs.durationMs, discogs.title) < 0
+    )
+  })
+
+  it("21093352 Grindin' (Remix) prefers the remix-aligned hit over unmarked samples", () => {
+    const discogs = {
+      artist: 'Clipse',
+      title: "Grindin' (Remix)",
+      durationMs: 260000,
+    }
+    const unmarked = {
+      mbid: '69b90abb-0000-4000-8000-000000000001',
+      title: "Grindin'",
+      artist: 'Clipse',
+      lengthMs: 259000,
+      score: 100,
+      hasSamples: true,
+    }
+    const remix = {
+      mbid: 'grindin-remix-aligned',
+      title: "Grindin' (Remix)",
+      artist: 'Clipse',
+      lengthMs: 268000,
+      score: 90,
+      hasSamples: false,
+    }
+    const picked = pickTrackLevelRecordings([unmarked, remix], discogs)
+    assert.equal(picked[0]?.mbid, remix.mbid)
+    const fallback = pickTrackLevelRecordings([unmarked], discogs)
+    assert.equal(fallback[0]?.mbid, unmarked.mbid)
+    assert.equal(
+      trackLevelHitOutranksPrior(remix, unmarked, discogs.durationMs, {
+        discogsTitle: discogs.title,
+      }),
+      true
+    )
+  })
+
+  it('1921824 No More Drama remix prefers the remix-aligned hit over unmarked samples', () => {
+    const discogs = {
+      artist: 'Mary J. Blige',
+      title: 'No More Drama (Remix)',
+      durationMs: 250000,
+    }
+    const unmarked = {
+      mbid: '1aad05ec-0000-4000-8000-000000000001',
+      title: 'No More Drama',
+      artist: 'Mary J. Blige',
+      lengthMs: 249000,
+      score: 100,
+      hasSamples: true,
+    }
+    const remix = {
+      mbid: 'nmd-remix-aligned',
+      title: 'No More Drama (Remix)',
+      artist: 'Mary J. Blige',
+      lengthMs: 255000,
+      score: 88,
+      hasSamples: false,
+    }
+    const picked = pickTrackLevelRecordings([unmarked, remix], discogs)
+    assert.equal(picked[0]?.mbid, remix.mbid)
+    const fallback = pickTrackLevelRecordings([unmarked], discogs)
+    assert.equal(fallback[0]?.mbid, unmarked.mbid)
+  })
+
+  it('14851267 Scenario (Remix) prefers the remix-aligned hit over unmarked samples', () => {
+    const discogs = {
+      artist: 'A Tribe Called Quest',
+      title: 'Scenario (Remix)',
+      durationMs: 320000,
+    }
+    const unmarked = {
+      mbid: '5bd8736d-0000-4000-8000-000000000001',
+      title: 'Scenario',
+      artist: 'A Tribe Called Quest',
+      lengthMs: 318000,
+      score: 100,
+      hasSamples: true,
+    }
+    const remix = {
+      mbid: 'scenario-remix-aligned',
+      title: 'Scenario (Remix)',
+      artist: 'A Tribe Called Quest',
+      lengthMs: 325000,
+      score: 91,
+      hasSamples: false,
+    }
+    const picked = pickTrackLevelRecordings([unmarked, remix], discogs)
+    assert.equal(picked[0]?.mbid, remix.mbid)
+    const fallback = pickTrackLevelRecordings([unmarked], discogs)
+    assert.equal(fallback[0]?.mbid, unmarked.mbid)
+  })
+
+  it('28896664 Colour My World cannot keep a pick missing from this-run filtered search', () => {
+    const discogs = {
+      artist: 'Chicago',
+      title: 'Colour My World',
+      durationMs: 185000,
+    }
+    const searchHit = {
+      mbid: 'colour-search-hit',
+      title: 'Colour My World',
+      artist: 'Chicago',
+      lengthMs: 184000,
+      score: 100,
+      hasSamples: false,
+    }
+    const recalled = {
+      mbid: '68da9a31-0000-4000-8000-000000000001',
+      title: 'Colour My World',
+      artist: 'Chicago',
+      lengthMs: 185000,
+      score: 100,
+      hasSamples: true,
+    }
+    const remix = {
+      mbid: 'colour-remix',
+      title: 'Colour My World (Remix)',
+      artist: 'Chicago',
+      lengthMs: 185000,
+      score: 99,
+      hasSamples: true,
+    }
+    const searchMbids = new Set([searchHit.mbid])
+    const merged = mergeRecalledRecordingHits([searchHit], [recalled])
+    const picked = pickTrackLevelRecordings(merged, discogs, {
+      priorMbid: recalled.mbid,
+      forceRefresh: true,
+      searchMbids,
+    })
+    assert.equal(picked[0]?.mbid, searchHit.mbid)
+    assert.equal(picked.some((hit) => hit.mbid === recalled.mbid), false)
+    const recalledDoc = {
+      mbid: recalled.mbid,
+      title: recalled.title,
+      artist: recalled.artist,
+      credits: [] as StoredRecording['credits'],
+      samplesFrom: [{ title: 'The Hit' }],
+      sampledIn: [] as StoredRecording['sampledIn'],
+    }
+    assert.equal(
+      sampledSidecarPriorMbid(recalled.mbid, [recalledDoc], {
+        forceRefresh: true,
+        searchMbids,
+      }),
+      null
+    )
+    const remixOnly = pickTrackLevelRecordings([remix, recalled], discogs, {
+      priorMbid: recalled.mbid,
+      forceRefresh: true,
+      searchMbids: new Set(),
+    })
+    assert.equal(remixOnly.length, 0)
+    assert.equal(searchVersionFit(discogs.title, remix.title), 'wrong')
   })
 
   it('skips incomplete sidecars and sorts sampled docs by samples, score, then mbid', () => {
@@ -6566,6 +6774,109 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
       assert.equal(retried.tracks[0]?.recording.mbid, fixture.emptyMbid)
     })
   }
+
+  it('28896664 Colour My World force retry drops a pick missing from this-run search', async () => {
+    const releaseId = 28896664
+    const recalledMbid = '68da9a31-0000-4000-8000-000000000001'
+    const searchMbid = 'colour-search-hit-0000-0000-000000000001'
+    const link: SampleLink = {
+      title: 'The Hit',
+      artist: 'Later Artist',
+      mbid: 'hit-colour',
+      sourceUrl: 'https://musicbrainz.org/recording/hit-colour',
+      source: 'musicbrainz',
+      providerId: 'hit-colour',
+    }
+    const provenance = (mbid: string) => ({
+      sourceUrls: [`https://musicbrainz.org/recording/${mbid}`],
+      matchStatus: 'matched' as const,
+      confidence: 0.7,
+      reason: TRACK_LEVEL_REASON,
+      checkedAt: '2026-10-06T08:00:00.000Z',
+      refreshAfter: '2026-11-05T08:00:00.000Z',
+      lastError: null,
+      verifiedAt: '2026-10-06T08:00:00.000Z',
+      lastAttemptAt: '2026-10-06T08:00:00.000Z',
+    })
+    const recalledDoc: StoredRecording = {
+      mbid: recalledMbid,
+      title: 'Colour My World',
+      artist: 'Chicago',
+      credits: [],
+      samplesFrom: [link],
+      sampledIn: [],
+      provenance: provenance(recalledMbid),
+    }
+    const store = createMemoryCrateStore({ recordings: { [recalledMbid]: recalledDoc } })
+    const detail = {
+      ...nTrackDetail(releaseId, 1, 'Chicago', 'Chicago II'),
+      tracklist: [
+        {
+          position: '1',
+          title: 'Colour My World',
+          duration: '3:05',
+          type_: 'track' as const,
+        },
+      ],
+    }
+    const firstMb = createMusicBrainzClientForTests()
+    firstMb.searchRecordingsByArtistTitle = async () => [
+      {
+        mbid: recalledMbid,
+        title: 'Colour My World',
+        artist: 'Chicago',
+        lengthMs: 185000,
+        score: 100,
+      },
+    ]
+    firstMb.getRecording = async (id) =>
+      id === recalledMbid
+        ? {
+            mbid: id,
+            title: 'Colour My World',
+            artist: 'Chicago',
+            credits: [],
+            samplesFrom: [link],
+            sampledIn: [],
+          }
+        : null
+    const first = await enrichPressing(releaseId, {
+      store,
+      now: () => Date.parse('2026-10-06T08:00:00.000Z'),
+      fetchDiscogs: async () => detail,
+      fetchWikidata: async () => [],
+      mb: firstMb,
+    })
+    assert.equal(first.tracks[0]?.recording.mbid, recalledMbid)
+    const retryMb = createMusicBrainzClientForTests()
+    retryMb.searchRecordingsByArtistTitle = async () => [
+      {
+        mbid: searchMbid,
+        title: 'Colour My World',
+        artist: 'Chicago',
+        lengthMs: 184000,
+        score: 100,
+      },
+    ]
+    retryMb.getRecording = async (id) => ({
+      mbid: id,
+      title: 'Colour My World',
+      artist: 'Chicago',
+      credits: [],
+      samplesFrom: [],
+      sampledIn: [],
+    })
+    const retried = await enrichPressing(releaseId, {
+      store,
+      now: () => Date.parse('2026-10-07T08:00:00.000Z'),
+      fetchDiscogs: async () => detail,
+      fetchWikidata: async () => [],
+      mb: retryMb,
+      forceRefresh: true,
+    })
+    assert.equal(retried.tracks[0]?.recording.mbid, searchMbid)
+    assert.notEqual(retried.tracks[0]?.recording.mbid, recalledMbid)
+  })
 
   it('recalls a same-song sampled sidecar past the resume cursor without searching', async () => {
     const releaseId = 1679157

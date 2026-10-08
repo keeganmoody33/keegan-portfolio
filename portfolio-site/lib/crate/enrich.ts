@@ -1075,7 +1075,8 @@ async function annotateTrackLevelHits(
   takeFloorMs: number,
   probeCache: Record<string, StoredRecording>,
   discogsDurationMs: number | null,
-  priorMbid: string | null
+  priorMbid: string | null,
+  discogsTitle?: string
 ): Promise<TrackLevelRecordingHit[]> {
   const annotated: TrackLevelRecordingHit[] = hits.map((hit) => ({ ...hit }))
   const remainingNow = () =>
@@ -1122,7 +1123,9 @@ async function annotateTrackLevelHits(
   }
   const probeOrder = annotated
     .slice()
-    .sort((left, right) => compareTrackLevelProbeOrder(left, right, discogsDurationMs))
+    .sort((left, right) =>
+      compareTrackLevelProbeOrder(left, right, discogsDurationMs, discogsTitle)
+    )
   const cap = probeOrder.slice(0, TRACK_LEVEL_ANNOTATE_CAP)
   const toProbe = cap.filter((hit) => hit.hasSamples == null)
   for (const hit of toProbe) {
@@ -1252,7 +1255,16 @@ export function sampledSidecarPriorMbid(
     options?.forceRefresh && options.searchMbids
       ? sidecars.filter((doc) => options.searchMbids?.has(doc.mbid))
       : sidecars
-  return eligible[0]?.mbid ?? savedMbid
+  if (eligible[0]?.mbid) return eligible[0].mbid
+  if (
+    options?.forceRefresh &&
+    options.searchMbids &&
+    savedMbid &&
+    !options.searchMbids.has(savedMbid)
+  ) {
+    return null
+  }
+  return savedMbid
 }
 
 /** Empty sibling stays the pick only when a strict sidecar is in this run's search hits. */
@@ -1386,17 +1398,20 @@ async function applyTrackLevelSamples(
       artist: queryArtist,
       title: queryTitle,
     })
-    const searchMbids = new Set(hits.map((hit) => hit.mbid))
+    const filtered = filterTrackLevelRecordings(hits, discogs)
+    // Force ranking may only use hits that survived this-run filter. A raw
+    // search MBID that failed version/duration must not re-enter via Redis recall.
+    const searchMbids = new Set(filtered.map((hit) => hit.mbid))
     const priorMbid = sampledSidecarPriorMbid(savedMbid, sidecars, {
       forceRefresh: Boolean(deps.forceRefresh),
       searchMbids,
     })
-    const filtered = filterTrackLevelRecordings(hits, discogs)
     const topScore = Math.max(100, ...filtered.map((hit) => hit.score ?? 0))
     const recalled = [...Object.values(recordings), ...sampledIndex]
       .filter((doc) => recordingIsCompleteSidecar(doc))
       .map((doc) => hitFromStoredRecording(doc, topScore))
       .filter((hit) => isStrictSidecarMatch(discogs, hit))
+      .filter((hit) => !deps.forceRefresh || searchMbids.has(hit.mbid))
     const merged = mergeRecalledRecordingHits(filtered, recalled)
     const annotated = await annotateTrackLevelHits(
       merged,
@@ -1409,7 +1424,8 @@ async function applyTrackLevelSamples(
       takeFloorMs,
       probeCache,
       track.durationMs,
-      priorMbid
+      priorMbid,
+      track.title
     )
     const picked = overrideEmptyPickWithSampled(
       pickTrackLevelRecordings(annotated, discogs, {
@@ -1422,7 +1438,29 @@ async function applyTrackLevelSamples(
       { forceRefresh: Boolean(deps.forceRefresh), searchMbids }
     ).slice(0, TRACK_LEVEL_FETCH_CAP)
     if (picked.length === 0) {
-      if (
+      if (deps.forceRefresh && track.recording.reason === TRACK_LEVEL_REASON) {
+        const saved = track.recording.mbid
+        const savedDoc = saved ? recordings[saved] : undefined
+        const savedOk =
+          Boolean(saved) &&
+          saved != null &&
+          searchMbids.has(saved) &&
+          savedDoc &&
+          filterTrackLevelRecordings([hitFromStoredRecording(savedDoc, 100)], discogs)
+            .length > 0
+        if (!savedOk) {
+          track.recording = {
+            matchStatus: hits.length > 0 ? 'ambiguous' : 'unmatched',
+            confidence: 0,
+            reason:
+              hits.length > 0
+                ? 'recording-level search had no version-aligned hit'
+                : 'recording-level artist+title was unmatched',
+            mbid: null,
+            recordingUrl: null,
+          }
+        }
+      } else if (
         hits.length > 0 &&
         (track.recording.matchStatus === 'unmatched' || track.recording.matchStatus === 'pending')
       ) {

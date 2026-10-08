@@ -1,3 +1,8 @@
+COMPLETED (2026-10-08 — search-level version leftovers before gates):
+- Among same-song search hits, `searchVersionFit` ranks aligned mix markers (remix, radio/edit, club, live, instrumental, acapella, dub, demo, named mix) before samples, score, or duration, including inside the 15s window. Unmarked Discogs prefers unmarked recordings; a marked title may fall back to the unmarked original and must never land on a differently marked version (Radio Edit vs Clubstar). Vocal/album/interlude stay unmarked so Mtume Vocal and Brazilian Rhyme Interlude keep recall.
+- Force ranking uses this-run *filtered* search MBIDs (version/duration-ok), not raw search or Redis recall. A recalled exact-title sidecar missing from that set cannot win (Colour My World `68da9a31`). Empty force rematch clears a stale track-level pick.
+- Tests: 378994 B1 Radio Edit vs Clubstar; 21093352 Grindin' (Remix); 1921824 No More Drama remix; 14851267 Scenario (Remix); 28896664 Colour My World search-log. Crate 269. Never prod. Do not merge.
+
 COMPLETED (2026-10-08 — StoredRecording lengthMs add-on on the same head):
 - Persist MusicBrainz `lengthMs` on the recording doc so the P2b 5s sidecar check can run from stored hits. Missing on older Redis docs is unknown. Unknown duration still requires exact `normalizeTitle` and matching version markers. Force `--retry` stamps search-hit length onto a legacy sampled doc without refetching. Never prod. Do not merge.
 
