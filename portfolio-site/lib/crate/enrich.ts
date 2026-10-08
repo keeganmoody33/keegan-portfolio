@@ -31,7 +31,6 @@ import {
   pickTrackLevelRecordings,
   recordingHasSampleMaterial,
   songTitle,
-  trackLevelHitOutranksPrior,
   type ReleaseMatchCandidate,
   type TrackLevelRecordingHit,
 } from './match.ts'
@@ -48,6 +47,7 @@ import {
 } from './musicbrainz.ts'
 import {
   AUTH_RETRY_MS,
+  copyCheckpoint,
   countsTowardAttempts,
   hasPriorVerifiedRecord,
   isoFromMs,
@@ -83,6 +83,7 @@ import {
 } from './wikidata.ts'
 import {
   CRATE_SCHEMA_VERSION,
+  type CrateCheckpoint,
   type DeadLetter,
   type DurableErrorKind,
   type FetchState,
@@ -127,12 +128,13 @@ export function overlayTrackLevelProgress(
     if (overlayCursor == null) return base
     return hydratePressing({
       ...base,
-      checkpoint: {
+      checkpoint: copyCheckpoint(base.checkpoint, {
         stage: overlay.checkpoint?.stage ?? base.checkpoint?.stage ?? 'research',
         researchCursor: overlay.checkpoint?.researchCursor ?? base.checkpoint?.researchCursor ?? 0,
         trackSampleCursor: overlayCursor,
-        deadlineStops: base.checkpoint?.deadlineStops,
-      },
+        forceRun: overlay.checkpoint?.forceRun,
+        forceRunAt: overlay.checkpoint?.forceRunAt,
+      }),
     })
   }
   const recordings = { ...base.recordings, ...overlayRecordings }
@@ -154,13 +156,14 @@ export function overlayTrackLevelProgress(
     ...base,
     tracks,
     recordings,
-    checkpoint: {
+    checkpoint: copyCheckpoint(base.checkpoint, {
       stage: overlay.checkpoint?.stage ?? base.checkpoint?.stage ?? 'research',
       researchCursor: overlay.checkpoint?.researchCursor ?? base.checkpoint?.researchCursor ?? 0,
       trackSampleCursor:
-        overlayCursor !== undefined ? overlayCursor : (base.checkpoint?.trackSampleCursor ?? 0),
-      deadlineStops: base.checkpoint?.deadlineStops,
-    },
+        overlayCursor !== undefined ? overlayCursor : overlay.checkpoint?.trackSampleCursor,
+      forceRun: overlay.checkpoint?.forceRun,
+      forceRunAt: overlay.checkpoint?.forceRunAt,
+    }),
   })
 }
 export const TRACK_LEVEL_REASON = 'recording-level artist+title'
@@ -188,10 +191,11 @@ export function shouldReuseDraft(
   nowMs: number,
   forceRefresh = false
 ): boolean {
-  if (forceRefresh || !draft || !storedPressingHasVisitorFacts(draft)) return false
+  if (!draft || !storedPressingHasVisitorFacts(draft)) return false
   const draftAt = Date.parse(draft.provenance.lastAttemptAt ?? draft.provenance.checkedAt)
   if (!Number.isFinite(draftAt)) return false
   if (nowMs - draftAt > DRAFT_TTL_SECONDS * 1000) return false
+  if (forceRefresh) return Boolean(draft.checkpoint?.forceRun)
   if (committed) {
     const committedAt = Date.parse(
       committed.provenance.lastAttemptAt ?? committed.provenance.checkedAt
@@ -231,12 +235,12 @@ export async function applyDeadlineStop(
     await store.setDraftPressing(
       hydratePressing({
         ...live,
-        checkpoint: {
+        checkpoint: copyCheckpoint(live.checkpoint, {
           stage: live.checkpoint?.stage ?? 'pressing',
           researchCursor: live.checkpoint?.researchCursor ?? 0,
           trackSampleCursor: live.checkpoint?.trackSampleCursor,
           deadlineStops: stops,
-        },
+        }),
       })
     )
   }
@@ -282,16 +286,57 @@ export function shouldSkipMatch(
 
 const RESUME_FORCE_REFRESH_ERROR_KINDS = new Set(['rate_limit', 'unavailable', 'too_slow'])
 
-/** Incomplete --retry: keep already-rematched tracks and continue after the checkpoint. */
+export function isWikidataOnlyLastError(
+  error: Pick<ProvenanceError, 'message'> | null | undefined
+): boolean {
+  if (!error?.message) return false
+  return /wikidata/i.test(error.message)
+}
+
+/** Incomplete --retry: resume only a cursor written by this forced run, never Wikidata-only. */
 export function resumeForceRefreshTrackCursor(
   previous: StoredPressing | null,
   forceRefresh: boolean,
   identityShifted = false
 ): number {
   if (!forceRefresh || !previous || identityShifted) return 0
+  if (!previous.checkpoint?.forceRun) return 0
   const kind = previous.provenance.lastError?.kind
   if (!kind || !RESUME_FORCE_REFRESH_ERROR_KINDS.has(kind)) return 0
+  if (isWikidataOnlyLastError(previous.provenance.lastError)) return 0
   return Math.max(0, previous.checkpoint?.trackSampleCursor ?? 0)
+}
+
+function stampCheckpoint(
+  deps: EnrichDeps,
+  base: CrateCheckpoint | null | undefined,
+  patch: Partial<CrateCheckpoint>,
+  nowIso: string
+): CrateCheckpoint {
+  const next = copyCheckpoint(base, patch)
+  if (!deps.forceRefresh) return next
+  return copyCheckpoint(next, {
+    forceRun: true,
+    forceRunAt: next.forceRunAt ?? nowIso,
+  })
+}
+
+function shouldSkipTrackLevelProbes(
+  annotated: TrackLevelRecordingHit[],
+  prior: TrackLevelRecordingHit | undefined,
+  forceRefresh: boolean
+): boolean {
+  if (forceRefresh || !prior) return false
+  const priorScore = prior.score ?? 0
+  if (annotated.some((hit) => hit.mbid !== prior.mbid && (hit.score ?? 0) > priorScore)) {
+    return false
+  }
+  if (prior.hasSamples === true) return true
+  const equalScoreRivals = annotated.filter(
+    (hit) => hit.mbid !== prior.mbid && (hit.score ?? 0) === priorScore
+  )
+  if (equalScoreRivals.length === 0) return true
+  return equalScoreRivals.every((hit) => hit.hasSamples === false)
 }
 
 export type EnrichDeps = {
@@ -748,25 +793,41 @@ async function annotateTrackLevelHits(
   priorMbid: string | null
 ): Promise<TrackLevelRecordingHit[]> {
   const annotated: TrackLevelRecordingHit[] = hits.map((hit) => ({ ...hit }))
-  for (const hit of annotated) {
+  const ranked = annotated
+    .slice()
+    .sort((left, right) => compareTrackLevelRecordings(left, right, discogsDurationMs))
+  const cap = ranked.slice(0, TRACK_LEVEL_ANNOTATE_CAP)
+  const remainingNow = () =>
+    deps.deadlineMs == null
+      ? Number.POSITIVE_INFINITY
+      : remainingBudgetMs(deps.deadlineMs, (deps.now ?? Date.now)())
+  for (const hit of cap) {
     if (hit.hasSamples != null) continue
-    const stored = recordings[hit.mbid] ?? probeCache[hit.mbid] ?? (await store.getRecording(hit.mbid))
+    const memory = recordings[hit.mbid] ?? probeCache[hit.mbid]
+    if (memory) {
+      hit.hasSamples = recordingHasSampleMaterial(memory)
+      continue
+    }
+    if (deps.forceRefresh) continue
+    if (remainingBelowTakeFloor(remainingNow(), takeFloorMs)) break
+    try {
+      assertWithinWorkerDeadline(deps)
+    } catch (error) {
+      if (isWorkerDeadlineError(error)) break
+      throw error
+    }
+    const stored = await store.getRecording(hit.mbid)
     if (stored) {
       hit.hasSamples = recordingHasSampleMaterial(stored)
+      recordings[hit.mbid] = stored
+      probeCache[hit.mbid] = stored
     }
   }
   const prior = priorMbid ? annotated.find((hit) => hit.mbid === priorMbid) : undefined
-  if (prior && !deps.forceRefresh) {
-    const challenger = annotated.some(
-      (hit) => hit.mbid !== prior.mbid && trackLevelHitOutranksPrior(hit, prior)
-    )
-    if (!challenger) return annotated
+  if (shouldSkipTrackLevelProbes(annotated, prior, Boolean(deps.forceRefresh))) {
+    return annotated
   }
-  const toProbe = annotated
-    .filter((hit) => hit.hasSamples == null)
-    .slice()
-    .sort((left, right) => compareTrackLevelRecordings(left, right, discogsDurationMs))
-    .slice(0, TRACK_LEVEL_ANNOTATE_CAP)
+  const toProbe = cap.filter((hit) => hit.hasSamples == null)
   for (const hit of toProbe) {
     const remaining =
       deps.deadlineMs == null
@@ -840,15 +901,16 @@ async function applyTrackLevelSamples(
       artist: queryArtist,
       title: queryTitle,
     })
-    const priorMbid = deps.forceRefresh
-      ? null
-      : priorTrackLevelMbid(track, previousTracks)
+    const discogs = {
+      artist: queryArtist,
+      title: track.title,
+      durationMs: track.durationMs,
+    }
+    const filtered = filterTrackLevelRecordings(hits, discogs)
+    const savedMbid = priorTrackLevelMbid(track, previousTracks)
+    const priorMbid = deps.forceRefresh ? null : savedMbid
     const annotated = await annotateTrackLevelHits(
-      filterTrackLevelRecordings(hits, {
-        artist: queryArtist,
-        title: track.title,
-        durationMs: track.durationMs,
-      }),
+      filtered,
       recordings,
       deps.store,
       mb,
@@ -860,15 +922,10 @@ async function applyTrackLevelSamples(
       track.durationMs,
       priorMbid
     )
-    const picked = pickTrackLevelRecordings(
-      annotated,
-      {
-        artist: queryArtist,
-        title: track.title,
-        durationMs: track.durationMs,
-      },
-      { priorMbid }
-    ).slice(0, TRACK_LEVEL_FETCH_CAP)
+    const picked = pickTrackLevelRecordings(annotated, discogs, { priorMbid }).slice(
+      0,
+      TRACK_LEVEL_FETCH_CAP
+    )
     if (picked.length === 0) {
       if (
         hits.length > 0 &&
@@ -902,8 +959,12 @@ async function applyTrackLevelSamples(
       }
       const previousRecording =
         recordings[hit.mbid] ?? (await deps.store.getRecording(hit.mbid))
-      if (previousRecording && researchIsFresh(previousRecording, nowMs) && !deps.forceRefresh) {
+      if (
+        previousRecording &&
+        (deps.forceRefresh || researchIsFresh(previousRecording, nowMs))
+      ) {
         recordings[hit.mbid] = previousRecording
+        probeCache[hit.mbid] = previousRecording
         docs.push(previousRecording)
         continue
       }
@@ -1086,8 +1147,18 @@ export async function enrichPressing(
       tracks = pressingDraft.tracks
       playable = tracks.filter(isPlayableOccurrence)
       skipMatch = shouldSkipMatch(previous, false, Boolean(deps.forceRefresh))
-      resumeCursor = resumeForceRefreshTrackCursor(previous, Boolean(deps.forceRefresh), false)
-      skipReleaseRematch = skipMatch || resumeCursor > 0
+      if (deps.forceRefresh && hydratedDraft.checkpoint?.forceRun) {
+        resumeCursor = Math.max(0, hydratedDraft.checkpoint?.trackSampleCursor ?? 0)
+        skipReleaseRematch =
+          skipMatch ||
+          resumeCursor > 0 ||
+          hydratedDraft.checkpoint?.stage === 'research' ||
+          (hydratedDraft.mbRelease.matchStatus !== 'pending' &&
+            hydratedDraft.checkpoint?.stage === 'match')
+      } else {
+        resumeCursor = resumeForceRefreshTrackCursor(previous, Boolean(deps.forceRefresh), false)
+        skipReleaseRematch = skipMatch || resumeCursor > 0
+      }
       discogsFacts = (pressingDraft.researchFacts ?? []).filter((fact) => fact.source === 'discogs')
     } else {
       assertWithinWorkerDeadline(deps)
@@ -1155,14 +1226,19 @@ export async function enrichPressing(
           withReleaseCredits: false,
           withReleaseSamples: false,
         },
-        checkpoint: {
-          stage: skipReleaseRematch ? 'research' : 'match',
-          researchCursor: previous?.checkpoint?.researchCursor ?? 0,
-          trackSampleCursor: skipReleaseRematch
-            ? previous?.checkpoint?.trackSampleCursor ?? 0
-            : 0,
-          deadlineStops: 0,
-        },
+        checkpoint: stampCheckpoint(
+          deps,
+          skipReleaseRematch ? previous?.checkpoint : null,
+          {
+            stage: skipReleaseRematch ? 'research' : 'match',
+            researchCursor: skipReleaseRematch ? previous?.checkpoint?.researchCursor ?? 0 : 0,
+            trackSampleCursor: skipReleaseRematch
+              ? previous?.checkpoint?.trackSampleCursor ?? 0
+              : 0,
+            deadlineStops: skipReleaseRematch ? previous?.checkpoint?.deadlineStops ?? 0 : 0,
+          },
+          nowIso
+        ),
       })
       await deps.store.setDraftPressing(pressingDraft)
     }
@@ -1214,7 +1290,12 @@ export async function enrichPressing(
             match: matchCycle,
             research: researchCycle,
           },
-          checkpoint: { stage: 'research', researchCursor: 0, trackSampleCursor: 0 },
+          checkpoint: stampCheckpoint(
+            deps,
+            pressingDraft.checkpoint,
+            { stage: 'research', researchCursor: 0, trackSampleCursor: 0 },
+            nowIso
+          ),
         })
       )
     } else if (mbRelease.mbid && mbRelease.releaseGroupMbid === undefined) {
@@ -1292,7 +1373,12 @@ export async function enrichPressing(
               match: matchCycle,
               research: researchCycle,
             },
-            checkpoint: { stage: 'research', researchCursor, trackSampleCursor },
+            checkpoint: stampCheckpoint(
+              deps,
+              pressingDraft.checkpoint,
+              { stage: 'research', researchCursor, trackSampleCursor },
+              nowIso
+            ),
           })
         )
       } catch (error) {
@@ -1322,7 +1408,12 @@ export async function enrichPressing(
             match: matchCycle,
             research: researchCycle,
           },
-          checkpoint: { stage: 'research', researchCursor, trackSampleCursor: cursor },
+          checkpoint: stampCheckpoint(
+            deps,
+            pressingDraft.checkpoint,
+            { stage: 'research', researchCursor, trackSampleCursor: cursor },
+            nowIso
+          ),
         })
       )
     }
@@ -1468,11 +1559,16 @@ export async function enrichPressing(
         research: researched,
       },
       coverage: coverageOf({ tracks, recordings, researchFacts }),
-      checkpoint: {
-        stage: 'research',
-        researchCursor: acceptedMbids.length,
-        trackSampleCursor,
-      },
+      checkpoint: stampCheckpoint(
+        deps,
+        pressingDraft.checkpoint,
+        {
+          stage: 'research',
+          researchCursor: acceptedMbids.length,
+          trackSampleCursor,
+        },
+        nowIso
+      ),
     })
     const pressing = hydratePressing(keepPriorMatch(previous, nextPressing))
     if (wikiTemporary && wikiError) {
@@ -1533,11 +1629,11 @@ export async function enrichPressing(
         ? {
             tracks: progressTracks,
             recordings: progressRecordings,
-            checkpoint: {
+            checkpoint: copyCheckpoint((draft ?? previous)?.checkpoint, {
               stage: 'research' as const,
               researchCursor: preserved.checkpoint?.researchCursor ?? 0,
               trackSampleCursor: progressTrackSampleCursor ?? 0,
-            },
+            }),
           }
         : draft
     const withProgress = overlayTrackLevelProgress(preserved, overlay)

@@ -1,4 +1,8 @@
-IN PROGRESS (2026-10-07 — track search pagination + duration tie-break, off main `dae37a5`):
+IN PROGRESS (2026-10-07 — #64 Integrations/QA: force-run, duration, unknown samples):
+- Keep one recording search at `limit=100`; page only on a full-page top-score tie. Drop unique-top skip. Cap Redis fills and MB probes at `TRACK_LEVEL_ANNOTATE_CAP` 3 after score / samples / known-duration-then-missing / MBID, with a deadline check. Skip probes only when the saved pick has samples or every equal-score rival is known `hasSamples=false`. `--retry` stamps `checkpoint.forceRun`, reuses that draft, honors Retry-After, ignores Wikidata-only cursors, and still reaches `too_slow`. `presentSampleArtist`: `&ME` stays; `Alpha [Unknown] Beta` collapses; `Alpha x [unknown]` → `Alpha`.
+- tsc / eslint / `npm test`. Tests ran with KV unset. Preview `--retry` remaining ids, single walker (`lf:preview:` only). Never prod. Do not merge.
+
+COMPLETED (2026-10-07 — track search pagination + duration tie-break, off main `dae37a5`):
 - MusicBrainz recording search `limit=100`, page while the page min score stays at the top score (`RECORDING_SEARCH_MAX_PAGES` 3, existing 1 req/s client). Tie-break: score, samples-material, Discogs duration closeness, lowest MBID. `TRACK_LEVEL_ANNOTATE_CAP` 3 after that order. Sticky saved-match unchanged (duration does not unstick). Skip annotate probes when a saved match still wins and `forceRefresh` is false.
 - `presentSampleArtist` / `artistCreditName`: drop `[unknown]` tokens, repeated trailing `&`/commas, trailing `feat.`/`ft.` (dot required). Keep `Simon & Garfunkel`, `Malcolm X`, `Little Feat`, `Earth, Wind & Fire`.
 - `--retry` after `rate_limit` / `unavailable` / `too_slow` resumes `trackSampleCursor` so a 429 tick does not rematch from track 0. Successful stored matches still rematch from 0.

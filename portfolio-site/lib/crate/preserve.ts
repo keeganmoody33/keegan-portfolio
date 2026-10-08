@@ -30,7 +30,7 @@ export function isoFromMs(ms: number): string {
   return new Date(ms).toISOString()
 }
 
-function copyCheckpoint(
+export function copyCheckpoint(
   checkpoint: CrateCheckpoint | null | undefined,
   patch: Partial<CrateCheckpoint> = {}
 ): CrateCheckpoint {
@@ -39,6 +39,8 @@ function copyCheckpoint(
     researchCursor: patch.researchCursor ?? checkpoint?.researchCursor ?? 0,
     trackSampleCursor: patch.trackSampleCursor ?? checkpoint?.trackSampleCursor,
     deadlineStops: patch.deadlineStops ?? checkpoint?.deadlineStops,
+    forceRun: patch.forceRun ?? checkpoint?.forceRun,
+    forceRunAt: patch.forceRunAt ?? checkpoint?.forceRunAt,
   }
 }
 
@@ -246,10 +248,16 @@ export function preservePressingOnFailure(
 }
 
 export function withClearedDeadlineStops(pressing: StoredPressing): StoredPressing {
-  if ((pressing.checkpoint?.deadlineStops ?? 0) === 0) return pressing
+  if ((pressing.checkpoint?.deadlineStops ?? 0) === 0 && !pressing.checkpoint?.forceRun) {
+    return pressing
+  }
   return {
     ...pressing,
-    checkpoint: copyCheckpoint(pressing.checkpoint, { deadlineStops: 0 }),
+    checkpoint: {
+      ...copyCheckpoint(pressing.checkpoint, { deadlineStops: 0 }),
+      forceRun: undefined,
+      forceRunAt: undefined,
+    },
   }
 }
 

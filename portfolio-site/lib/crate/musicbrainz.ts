@@ -1,4 +1,5 @@
 import {
+  MUSICBRAINZ_INTERVAL_JITTER_MS,
   MUSICBRAINZ_MIN_INTERVAL_MS,
   MUSICBRAINZ_RETRY_AFTER_CAP_MS,
   MUSICBRAINZ_TIMEOUT_MS,
@@ -12,7 +13,7 @@ import { presentSampleArtist } from './research.ts'
 export const RECORDING_SEARCH_LIMIT = 100
 export const RECORDING_SEARCH_MAX_PAGES = 3
 
-export { MUSICBRAINZ_RETRY_AFTER_CAP_MS }
+export { MUSICBRAINZ_INTERVAL_JITTER_MS, MUSICBRAINZ_RETRY_AFTER_CAP_MS, MUSICBRAINZ_MIN_INTERVAL_MS }
 
 export const MUSICBRAINZ_RATE_LIMIT_MESSAGE = 'MusicBrainz rate limited'
 
@@ -25,6 +26,8 @@ export type MbClientOptions = {
   now?: () => number
   sleep?: (ms: number) => Promise<void>
   minIntervalMs?: number
+  jitterMs?: number
+  random?: () => number
   timeoutMs?: number
   deadlineMs?: number
 }
@@ -307,6 +310,9 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
   const now = options.now ?? Date.now
   const sleep = options.sleep ?? defaultSleep
   const minInterval = options.minIntervalMs ?? MUSICBRAINZ_MIN_INTERVAL_MS
+  const jitterMs =
+    options.jitterMs ?? (minInterval > 0 ? MUSICBRAINZ_INTERVAL_JITTER_MS : 0)
+  const random = options.random ?? Math.random
   const timeoutMs = options.timeoutMs ?? MUSICBRAINZ_TIMEOUT_MS
   const deadlineMs = options.deadlineMs
   let lastAt = 0
@@ -316,7 +322,8 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
     deadlineMs == null ? Number.POSITIVE_INFINITY : Math.max(0, deadlineMs - now())
 
   async function getJson<T>(url: string): Promise<T> {
-    const wait = lastAt + minInterval - now()
+    const jitter = jitterMs > 0 ? Math.floor(random() * (jitterMs + 1)) : 0
+    const wait = lastAt + minInterval + jitter - now()
     const remaining = remainingMs()
     if (deadlineMs != null && remaining <= 0) {
       throw new MusicBrainzTimeoutError(true)
@@ -485,8 +492,11 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
             score: typeof recording.score === 'number' ? recording.score : 0,
           })
         }
-        if (pageHits.length < RECORDING_SEARCH_LIMIT) break
-        if (pageMin < (topScore ?? 0)) break
+        const allTiedAtTop =
+          pageHits.length === RECORDING_SEARCH_LIMIT &&
+          pageMin === pageMax &&
+          pageMax === (topScore ?? pageMax)
+        if (!allTiedAtTop) break
         offset += RECORDING_SEARCH_LIMIT
       }
       return hits

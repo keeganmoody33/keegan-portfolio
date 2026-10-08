@@ -378,7 +378,6 @@ export async function runBackfill(
       if (remainingBelowTakeFloor(remainingBudgetMs(deadlineMs, now()), takeFloorMs)) break
       const retryAt = refreshAfterMs(stored)
       if (
-        !options.retry &&
         stored?.provenance.lastError &&
         Number.isFinite(retryAt) &&
         retryAt > now()

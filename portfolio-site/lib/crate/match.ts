@@ -115,11 +115,9 @@ export function compareTrackLevelRecordings(
   const leftSamples = left.hasSamples ? 1 : 0
   const rightSamples = right.hasSamples ? 1 : 0
   if (leftSamples !== rightSamples) return rightSamples - leftSamples
-  const leftDelta = durationDeltaMs(discogsDurationMs, left.lengthMs)
-  const rightDelta = durationDeltaMs(discogsDurationMs, right.lengthMs)
-  if (leftDelta != null && rightDelta != null && leftDelta !== rightDelta) {
-    return leftDelta - rightDelta
-  }
+  const leftDelta = durationTieDelta(discogsDurationMs, left.lengthMs)
+  const rightDelta = durationTieDelta(discogsDurationMs, right.lengthMs)
+  if (leftDelta !== rightDelta) return leftDelta - rightDelta
   return left.mbid.localeCompare(right.mbid)
 }
 
@@ -193,6 +191,13 @@ function titleEquals(a: string, b: string): boolean {
 function durationDeltaMs(a: number | null, b: number | null): number | null {
   if (a == null || b == null) return null
   return Math.abs(a - b)
+}
+
+/** Missing lengths rank after any known duration so the comparator stays transitive. */
+function durationTieDelta(discogsDurationMs: number | null, lengthMs: number | null): number {
+  const delta = durationDeltaMs(discogsDurationMs, lengthMs)
+  if (delta == null) return Number.POSITIVE_INFINITY
+  return delta
 }
 
 function versionTokens(value: string): Set<string> {
