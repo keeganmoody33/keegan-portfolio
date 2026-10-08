@@ -10,6 +10,7 @@ import {
   type RedisRestConfig,
   type UpstashFetch,
 } from '../discogs-store.ts'
+import { preferCompleteRecording } from './preserve.ts'
 import type { BackfillState, CollectionEntry, DeadLetter, StoredPressing, StoredRecording } from './types.ts'
 
 export const VISIT_THROTTLE_SECONDS = 300
@@ -86,6 +87,8 @@ redis.call('SET', KEYS[1], ARGV[1], 'EX', ARGV[2])
 return 1
 `
 
+export const FORCE_SERIES_TTL_SECONDS = 24 * 60 * 60
+
 export type CrateRedisKeys = {
   prefix: string
   queue: string
@@ -98,6 +101,7 @@ export type CrateRedisKeys = {
   recording: (mbid: string) => string
   inflight: (releaseId: number) => string
   pressingDraft: (releaseId: number) => string
+  forceSeries: (releaseId: number) => string
   dead: string
   unresolved: string
     inspect: string
@@ -123,6 +127,8 @@ export function crateRedisKeys(env: Record<string, string | undefined> = process
       assertPrefixedRedisKey(`${prefix}crate:inflight:${releaseId}:v1`, env),
     pressingDraft: (releaseId: number) =>
       assertPrefixedRedisKey(`${prefix}crate:pressing:${releaseId}:draft:v1`, env),
+    forceSeries: (releaseId: number) =>
+      assertPrefixedRedisKey(`${prefix}crate:force-series:${releaseId}:v1`, env),
     dead: assertPrefixedRedisKey(`${prefix}crate:dead:v1`, env),
     unresolved: assertPrefixedRedisKey(`${prefix}crate:unresolved:v1`, env),
     inspect: assertPrefixedRedisKey(`${prefix}crate:inspect:v1`, env),
@@ -147,7 +153,11 @@ export type CrateStore = {
   setDraftPressing(pressing: StoredPressing): Promise<void>
   getDraftPressing(releaseId: number): Promise<StoredPressing | null>
   discardDraftPressing(releaseId: number): Promise<void>
+  getForceSeriesId(releaseId: number): Promise<string | null>
+  setForceSeriesId(releaseId: number, seriesId: string, ttlSeconds?: number): Promise<void>
+  clearForceSeriesId(releaseId: number): Promise<void>
   getRecording(mbid: string): Promise<StoredRecording | null>
+  listRecordings?(): Promise<StoredRecording[]>
   setRecording(recording: StoredRecording): Promise<void>
   getQueue(): Promise<number[]>
   enqueue(releaseIds: number[], options?: EnqueueOptions): Promise<number[]>
@@ -242,6 +252,7 @@ class RedisCrateStore implements CrateStore {
   private readonly readRedis: Redis
   private readonly writeRedis: Redis
   private readonly pressingReadRedis: Redis
+  private recordingList: StoredRecording[] | null = null
 
   constructor(
     keys: CrateRedisKeys,
@@ -307,14 +318,67 @@ class RedisCrateStore implements CrateStore {
     await this.writeRedis.del(this.keys.pressingDraft(releaseId))
   }
 
+  async getForceSeriesId(releaseId: number): Promise<string | null> {
+    if (process.env.NEXT_PHASE === 'phase-production-build') return null
+    const value = await this.writeRedis.get<unknown>(this.keys.forceSeries(releaseId))
+    return typeof value === 'string' && value.length > 0 ? value : null
+  }
+
+  async setForceSeriesId(
+    releaseId: number,
+    seriesId: string,
+    ttlSeconds = FORCE_SERIES_TTL_SECONDS
+  ): Promise<void> {
+    await this.writeRedis.set(this.keys.forceSeries(releaseId), seriesId, {
+      ex: ttlSeconds,
+    })
+  }
+
+  async clearForceSeriesId(releaseId: number): Promise<void> {
+    await this.writeRedis.del(this.keys.forceSeries(releaseId))
+  }
+
   async getRecording(mbid: string): Promise<StoredRecording | null> {
     if (process.env.NEXT_PHASE === 'phase-production-build') return null
     const value = await this.readRedis.get<unknown>(this.keys.recording(mbid))
     return isStoredRecording(value) ? value : null
   }
 
+  async listRecordings(): Promise<StoredRecording[]> {
+    if (process.env.NEXT_PHASE === 'phase-production-build') return []
+    if (this.recordingList) return this.recordingList
+    const match = this.keys.recording('*')
+    const keys: string[] = []
+    let cursor = '0'
+    do {
+      const scanned = await this.readRedis.scan(cursor, { match, count: 100 })
+      const next = Array.isArray(scanned) ? scanned[0] : 0
+      const batch = Array.isArray(scanned) ? scanned[1] ?? [] : []
+      cursor = String(next)
+      for (const key of batch) {
+        if (typeof key === 'string') keys.push(key)
+      }
+    } while (cursor !== '0')
+    const docs: StoredRecording[] = []
+    const chunkSize = 20
+    for (let i = 0; i < keys.length; i += chunkSize) {
+      const chunk = keys.slice(i, i + chunkSize)
+      const values = await this.readRedis.mget<(unknown | null)[]>(...chunk)
+      const rows = Array.isArray(values) ? values : []
+      for (const value of rows) {
+        if (isStoredRecording(value)) docs.push(value)
+      }
+    }
+    this.recordingList = docs
+    return docs
+  }
+
   async setRecording(recording: StoredRecording): Promise<void> {
-    await this.writeRedis.set(this.keys.recording(recording.mbid), recording)
+    const existing = await this.getRecording(recording.mbid)
+    await this.writeRedis.set(
+      this.keys.recording(recording.mbid),
+      preferCompleteRecording(existing, recording)
+    )
   }
 
   async getQueue(): Promise<number[]> {
@@ -473,7 +537,11 @@ class RedisCrateStore implements CrateStore {
 
   async purgePressing(releaseId: number): Promise<void> {
     await this.ack(releaseId)
-    await this.writeRedis.del(this.keys.pressing(releaseId), this.keys.pressingDraft(releaseId))
+    await this.writeRedis.del(
+      this.keys.pressing(releaseId),
+      this.keys.pressingDraft(releaseId),
+      this.keys.forceSeries(releaseId)
+    )
     const pipeline = this.writeRedis.pipeline()
     pipeline.srem(this.keys.dead, String(releaseId))
     pipeline.srem(this.keys.unresolved, String(releaseId))
@@ -498,6 +566,7 @@ export type MemoryCrateStore = CrateStore & {
   unresolved: Set<number>
   inspect: Map<number, DeadLetter>
   backfill: BackfillState | null
+  forceSeries: Record<number, { id: string; expires: number }>
   now: () => number
 }
 
@@ -531,6 +600,7 @@ export function createMemoryCrateStore(
     unresolved: new Set<number>(),
     inspect: new Map<number, DeadLetter>(),
     backfill: null,
+    forceSeries: {},
     now: initial.now ?? Date.now,
     async getPressing(releaseId: number) {
       return store.pressings[releaseId] ?? null
@@ -567,11 +637,35 @@ export function createMemoryCrateStore(
       delete store.drafts[releaseId]
       delete store.draftExpires[releaseId]
     },
+    async getForceSeriesId(releaseId: number) {
+      const row = store.forceSeries[releaseId]
+      if (!row) return null
+      if (row.expires <= store.now()) {
+        delete store.forceSeries[releaseId]
+        return null
+      }
+      return row.id
+    },
+    async setForceSeriesId(releaseId: number, seriesId: string, ttlSeconds = FORCE_SERIES_TTL_SECONDS) {
+      store.forceSeries[releaseId] = {
+        id: seriesId,
+        expires: store.now() + ttlSeconds * 1000,
+      }
+    },
+    async clearForceSeriesId(releaseId: number) {
+      delete store.forceSeries[releaseId]
+    },
     async getRecording(mbid: string) {
       return store.recordings[mbid] ?? null
     },
+    async listRecordings() {
+      return Object.values(store.recordings)
+    },
     async setRecording(recording: StoredRecording) {
-      store.recordings[recording.mbid] = recording
+      store.recordings[recording.mbid] = preferCompleteRecording(
+        store.recordings[recording.mbid],
+        recording
+      )
     },
     async getQueue() {
       return [...store.queue]
@@ -693,6 +787,7 @@ export function createMemoryCrateStore(
       delete store.pressings[releaseId]
       delete store.drafts[releaseId]
       delete store.draftExpires[releaseId]
+      delete store.forceSeries[releaseId]
       store.dead.delete(releaseId)
       store.unresolved.delete(releaseId)
       store.inspect.delete(releaseId)

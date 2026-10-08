@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cronGate } from '@/lib/crate/cron-auth'
-import { parseIdList, runBackfill } from '@/lib/crate/backfill'
+import { cronBackfillRunOptions, parseIdList, runBackfill } from '@/lib/crate/backfill'
 import { getDefaultCrateStore } from '@/lib/crate/store'
 import { readCachedCollection } from '@/lib/discogs'
 
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
   try {
     const result = await runBackfill(
       { store, collection, forceRefresh: Boolean(retry) },
-      { retry, ids: ids.length > 0 ? ids : undefined, limit }
+      cronBackfillRunOptions(retry, ids.length > 0 ? ids : undefined, limit)
     )
     return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store' } })
   } catch {

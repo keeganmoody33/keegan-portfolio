@@ -5,6 +5,7 @@ import type {
   PressingFacts,
   Provenance,
   StoredPressing,
+  StoredRecording,
   TrackOccurrence,
 } from './types.ts'
 import { CRATE_MAX_ATTEMPTS, CRATE_RESEARCH_REFRESH_MS, CRATE_SCHEMA_VERSION } from './types.ts'
@@ -24,13 +25,61 @@ const BACKOFF_MS = [
 ] as const
 export const TERMINAL_REFRESH_MS = 30 * 24 * 60 * 60 * 1000
 export const AUTH_RETRY_MS = 15 * 60 * 1000
+export const INCOMPLETE_RECORDING_MESSAGE = 'incomplete recording probe'
 export { CRATE_MAX_ATTEMPTS }
+
+export function recordingDocIsIncomplete(
+  recording: StoredRecording | null | undefined
+): boolean {
+  return recording?.provenance.lastError?.message === INCOMPLETE_RECORDING_MESSAGE
+}
+
+export function recordingDocIsComplete(
+  recording: StoredRecording | null | undefined
+): boolean {
+  if (!recording || recordingDocIsIncomplete(recording)) return false
+  if (recording.provenance.verifiedAt) return true
+  const sampleCount =
+    (recording.samplesFrom?.length ?? 0) + (recording.sampledIn?.length ?? 0)
+  return sampleCount > 0 && recording.provenance.lastError == null
+}
+
+export function coalesceRecordingLengthMs(
+  ...values: Array<number | null | undefined>
+): number | null {
+  for (const value of values) {
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) return value
+  }
+  return null
+}
+
+export function withRecordingLength(
+  recording: StoredRecording,
+  lengthMs: number | null | undefined
+): StoredRecording {
+  const next = coalesceRecordingLengthMs(recording.lengthMs, lengthMs)
+  if (next == null) return recording
+  if (recording.lengthMs === next) return recording
+  return { ...recording, lengthMs: next }
+}
+
+/** Never replace a verified Redis recording with an incomplete timeout/429 stub. */
+export function preferCompleteRecording(
+  existing: StoredRecording | null | undefined,
+  incoming: StoredRecording
+): StoredRecording {
+  if (!existing) return incoming
+  if (recordingDocIsIncomplete(incoming) && recordingDocIsComplete(existing)) {
+    return withRecordingLength(existing, incoming.lengthMs)
+  }
+  return withRecordingLength(incoming, existing.lengthMs)
+}
 
 export function isoFromMs(ms: number): string {
   return new Date(ms).toISOString()
 }
 
-function copyCheckpoint(
+export function copyCheckpoint(
   checkpoint: CrateCheckpoint | null | undefined,
   patch: Partial<CrateCheckpoint> = {}
 ): CrateCheckpoint {
@@ -39,6 +88,9 @@ function copyCheckpoint(
     researchCursor: patch.researchCursor ?? checkpoint?.researchCursor ?? 0,
     trackSampleCursor: patch.trackSampleCursor ?? checkpoint?.trackSampleCursor,
     deadlineStops: patch.deadlineStops ?? checkpoint?.deadlineStops,
+    forceRun: patch.forceRun ?? checkpoint?.forceRun,
+    forceRunAt: patch.forceRunAt ?? checkpoint?.forceRunAt,
+    forceSeriesId: patch.forceSeriesId ?? checkpoint?.forceSeriesId,
   }
 }
 
@@ -246,10 +298,16 @@ export function preservePressingOnFailure(
 }
 
 export function withClearedDeadlineStops(pressing: StoredPressing): StoredPressing {
-  if ((pressing.checkpoint?.deadlineStops ?? 0) === 0) return pressing
+  if ((pressing.checkpoint?.deadlineStops ?? 0) === 0 && !pressing.checkpoint?.forceRun) {
+    return pressing
+  }
   return {
     ...pressing,
-    checkpoint: copyCheckpoint(pressing.checkpoint, { deadlineStops: 0 }),
+    checkpoint: {
+      ...copyCheckpoint(pressing.checkpoint, { deadlineStops: 0 }),
+      forceRun: undefined,
+      forceRunAt: undefined,
+    },
   }
 }
 

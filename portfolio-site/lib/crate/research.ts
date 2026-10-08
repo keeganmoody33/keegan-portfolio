@@ -57,11 +57,29 @@ export function splitCreditRoles(role: string): string[] {
 }
 
 export function presentSampleArtist(name: string | undefined | null): string {
-  const trimmed = (name ?? '')
-    .trim()
-    .replace(/\s*&\s*\[unknown\]\s*$/i, '')
-    .replace(/\s*[&,]\s*$/, '')
-    .trim()
+  let trimmed = (name ?? '').trim()
+  const unknownToken = /(?:^|(?<=[&,])|(?<=\s))\[unknown\](?=$|(?=[&,])|(?=\s))/gi
+  const hadUnknown = unknownToken.test(trimmed)
+  unknownToken.lastIndex = 0
+  const hadLeadingUnknown = /^\[unknown\](?=$|(?=[&,])|(?=\s))/i.test(trimmed)
+  const hadTrailingUnknownJoiner = /(?<!x)\sx\s+\[[Uu]nknown\](?=$|(?=[&,])|(?=\s))/i.test(trimmed)
+  trimmed = trimmed.replace(unknownToken, '')
+  trimmed = trimmed.replace(/\s+/g, ' ').trim()
+  trimmed = trimmed.replace(/(?:\s*[&,]\s*){2,}/g, (chunk) => (chunk.includes('&') ? ' & ' : ', '))
+  if (hadLeadingUnknown) {
+    trimmed = trimmed.replace(/^(?:x\s+|[&,]\s*)/, '')
+  }
+  trimmed = trimmed.replace(/(?:\s*[&,])+\s*$/g, '')
+  trimmed = trimmed.replace(/\s+(?:feat|ft)\.\s*$/i, '')
+  if (hadTrailingUnknownJoiner) {
+    trimmed = trimmed.replace(/\s+x\s*$/, '')
+  }
+  trimmed = trimmed.replace(/\s+/g, ' ').trim()
+  if (hadUnknown) {
+    trimmed = trimmed.replace(/^(mr|mrs|ms|dr|prof)\.\s*(?:x|&|,)\s+/i, '$1. ')
+    trimmed = trimmed.replace(/\s+/g, ' ').trim()
+  }
+  if (hadUnknown && /^(?:mr|mrs|ms|dr|prof)\.?$/i.test(trimmed)) return ''
   if (!trimmed || isMusicBrainzUnknownArtist(trimmed)) return ''
   return trimmed
 }
@@ -299,6 +317,13 @@ function matchTracksByPositions(
   return tracks.filter((track) => picked.has(track))
 }
 
+function discogsSampleKind(role: string): 'sample_of' | 'sampled_by' | null {
+  const normalized = normalizeFactText(role).replace(/[_-]+/g, ' ')
+  if (normalized === 'sampled by' || normalized === 'sampledby') return 'sampled_by'
+  if (normalized === 'samples' || normalized === 'sample') return 'sample_of'
+  return null
+}
+
 function pushDiscogsCredit(
   facts: ResearchFact[],
   input: {
@@ -313,6 +338,27 @@ function pushDiscogsCredit(
   const person = input.name.trim()
   if (!person) return
   for (const role of splitCreditRoles(input.role || 'credit')) {
+    const sampleKind = discogsSampleKind(role)
+    if (sampleKind) {
+      const relatedArtist = presentSampleArtist(person)
+      if (!relatedArtist) continue
+      facts.push({
+        kind: sampleKind,
+        trackKey: input.track?.identityKey ?? '',
+        track: input.track
+          ? { position: input.track.position, title: input.track.title }
+          : null,
+        role: sampleKind === 'sample_of' ? 'samples' : 'sampled in',
+        person: '',
+        relatedTitle: '',
+        relatedArtist,
+        source: 'discogs',
+        sourceId: input.id != null ? String(input.id) : person,
+        sourceUrl: input.url,
+        fetchedAt: input.fetchedAt,
+      })
+      continue
+    }
     facts.push({
       kind: 'credit',
       trackKey: input.track?.identityKey ?? '',

@@ -166,6 +166,11 @@ Only surface when directly asked. Frame constructively.
 
 ## Recent Sessions
 
+**2026-10-08:** #64 forced 600s draft freshness + lock heartbeat (preview only)
+
+- `forceRunAt` is the last forced checkpoint write. Forced `--retry` ignores stale `lastAttemptAt` and carries `deadlineStops`. Heartbeat false → stop immediately; pulse every 30s or 8 MB requests (including inside a long track). `Mr. [unknown] & Foo` → `Mr. Foo`. Timeout picks leave the pressing incomplete, not 180-day success.
+- Do not merge. No prod Redis / crons / visitor research.
+
 **2026-10-06:** Collection record detail (preview only)
 
 - `/collection/[releaseId]` + intercepting overlay. Covers use the grid thumbnail. OVERVIEW / TRACKS per LF Direction brief.

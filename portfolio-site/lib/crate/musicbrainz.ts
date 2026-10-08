@@ -1,4 +1,5 @@
 import {
+  MUSICBRAINZ_INTERVAL_JITTER_MS,
   MUSICBRAINZ_MIN_INTERVAL_MS,
   MUSICBRAINZ_RETRY_AFTER_CAP_MS,
   MUSICBRAINZ_TIMEOUT_MS,
@@ -7,8 +8,12 @@ import {
   type Credit,
   type SampleLink,
 } from './types.ts'
+import { presentSampleArtist } from './research.ts'
 
-export { MUSICBRAINZ_RETRY_AFTER_CAP_MS }
+export const RECORDING_SEARCH_LIMIT = 100
+export const RECORDING_SEARCH_MAX_PAGES = 3
+
+export { MUSICBRAINZ_INTERVAL_JITTER_MS, MUSICBRAINZ_RETRY_AFTER_CAP_MS, MUSICBRAINZ_MIN_INTERVAL_MS }
 
 export const MUSICBRAINZ_RATE_LIMIT_MESSAGE = 'MusicBrainz rate limited'
 
@@ -21,8 +26,11 @@ export type MbClientOptions = {
   now?: () => number
   sleep?: (ms: number) => Promise<void>
   minIntervalMs?: number
+  jitterMs?: number
+  random?: () => number
   timeoutMs?: number
   deadlineMs?: number
+  onRequest?: () => Promise<boolean | void> | boolean | void
 }
 
 export type MbSearchHit = {
@@ -36,6 +44,7 @@ export type MbRecordingFacts = {
   mbid: string
   title: string
   artist: string
+  lengthMs?: number | null
   credits: Credit[]
   samplesFrom: SampleLink[]
   sampledIn: SampleLink[]
@@ -155,6 +164,7 @@ type MbReleaseSearch = {
 type MbRecordingDoc = {
   id?: string
   title?: string
+  length?: number
   'artist-credit'?: MbArtistCredit
   relations?: MbRelation[]
 }
@@ -165,7 +175,7 @@ function defaultSleep(ms: number): Promise<void> {
   })
 }
 
-export function artistCreditName(credit: MbArtistCredit | undefined): string {
+function joinArtistCredit(credit: MbArtistCredit | undefined): string {
   if (!credit || credit.length === 0) return ''
   const kept: MbArtistCredit = []
   for (const part of credit) {
@@ -187,6 +197,26 @@ export function artistCreditName(credit: MbArtistCredit | undefined): string {
       return `${name}${part.joinphrase ?? ''}`
     })
     .join('')
+}
+
+function joinArtistCreditRaw(credit: MbArtistCredit | undefined): string {
+  if (!credit || credit.length === 0) return ''
+  return credit
+    .map((part, index) => {
+      const name = part.name ?? part.artist?.name ?? ''
+      if (index === credit.length - 1) return name
+      return `${name}${part.joinphrase ?? ''}`
+    })
+    .join('')
+}
+
+/** Raw MB credit for matching. Do not drop `[unknown]` parts or run `presentSampleArtist`. */
+export function rawArtistCreditName(credit: MbArtistCredit | undefined): string {
+  return joinArtistCreditRaw(credit)
+}
+
+export function artistCreditName(credit: MbArtistCredit | undefined): string {
+  return presentSampleArtist(joinArtistCredit(credit))
 }
 
 export function musicbrainzRecordingUrl(mbid: string): string {
@@ -217,9 +247,7 @@ function rememberArtist(
 }
 
 function presentLinkArtist(name: string | undefined): string {
-  const trimmed = (name ?? '').trim()
-  if (!trimmed || isMusicBrainzUnknownArtist(trimmed)) return ''
-  return trimmed
+  return presentSampleArtist(name)
 }
 
 function sampleLinkFromRelation(rel: MbRelation, fallbackArtist = ''): SampleLink | null {
@@ -303,6 +331,9 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
   const now = options.now ?? Date.now
   const sleep = options.sleep ?? defaultSleep
   const minInterval = options.minIntervalMs ?? MUSICBRAINZ_MIN_INTERVAL_MS
+  const jitterMs =
+    options.jitterMs ?? (minInterval > 0 ? MUSICBRAINZ_INTERVAL_JITTER_MS : 0)
+  const random = options.random ?? Math.random
   const timeoutMs = options.timeoutMs ?? MUSICBRAINZ_TIMEOUT_MS
   const deadlineMs = options.deadlineMs
   let lastAt = 0
@@ -312,7 +343,8 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
     deadlineMs == null ? Number.POSITIVE_INFINITY : Math.max(0, deadlineMs - now())
 
   async function getJson<T>(url: string): Promise<T> {
-    const wait = lastAt + minInterval - now()
+    const jitter = jitterMs > 0 ? Math.floor(random() * (jitterMs + 1)) : 0
+    const wait = lastAt + minInterval + jitter - now()
     const remaining = remainingMs()
     if (deadlineMs != null && remaining <= 0) {
       throw new MusicBrainzTimeoutError(true)
@@ -325,6 +357,12 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
     }
     lastAt = now()
     requestCount += 1
+    const held = await options.onRequest?.()
+    if (held === false) {
+      const error = new Error('enrich lock lost')
+      error.name = 'EnrichLockLostError'
+      throw error
+    }
     const requestTimeout = Math.min(timeoutMs, remainingMs())
     if (requestTimeout <= 0) {
       throw new MusicBrainzTimeoutError(deadlineMs != null)
@@ -442,36 +480,51 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
       const title = input.title.trim()
       if (!artist || !title) return []
       const query = `artist:"${escapeLucene(artist)}" AND recording:"${escapeLucene(title)}"`
-      const params = new URLSearchParams({
-        query,
-        fmt: 'json',
-        limit: '25',
-      })
-      const data = await getJson<{
-        recordings?: Array<{
-          id?: string
-          title?: string
-          score?: number
-          length?: number
-          'artist-credit'?: Array<{
-            name?: string
-            artist?: { name?: string }
-            joinphrase?: string
-          }>
-        }>
-      }>(`${MUSICBRAINZ_API}/recording?${params.toString()}`)
       const hits: MbRecordingSearchHit[] = []
       const seen = new Set<string>()
-      for (const recording of data.recordings ?? []) {
-        if (!recording.id || seen.has(recording.id)) continue
-        seen.add(recording.id)
-        hits.push({
-          mbid: recording.id,
-          title: recording.title ?? '',
-          artist: artistCreditName(recording['artist-credit']),
-          lengthMs: typeof recording.length === 'number' ? recording.length : null,
-          score: typeof recording.score === 'number' ? recording.score : 0,
+      let offset = 0
+      let topScore: number | null = null
+      for (let page = 0; page < RECORDING_SEARCH_MAX_PAGES; page += 1) {
+        const params = new URLSearchParams({
+          query,
+          fmt: 'json',
+          limit: String(RECORDING_SEARCH_LIMIT),
+          offset: String(offset),
         })
+        const data = await getJson<{
+          recordings?: Array<{
+            id?: string
+            title?: string
+            score?: number
+            length?: number
+            'artist-credit'?: MbArtistCredit
+          }>
+        }>(`${MUSICBRAINZ_API}/recording?${params.toString()}`)
+        const pageHits = data.recordings ?? []
+        if (pageHits.length === 0) break
+        const pageScores = pageHits.map((recording) =>
+          typeof recording.score === 'number' ? recording.score : 0
+        )
+        const pageMax = Math.max(...pageScores)
+        const pageMin = Math.min(...pageScores)
+        if (topScore == null) topScore = pageMax
+        for (const recording of pageHits) {
+          if (!recording.id || seen.has(recording.id)) continue
+          seen.add(recording.id)
+          hits.push({
+            mbid: recording.id,
+            title: recording.title ?? '',
+            artist: rawArtistCreditName(recording['artist-credit']),
+            lengthMs: typeof recording.length === 'number' ? recording.length : null,
+            score: typeof recording.score === 'number' ? recording.score : 0,
+          })
+        }
+        const allTiedAtTop =
+          pageHits.length === RECORDING_SEARCH_LIMIT &&
+          pageMin === pageMax &&
+          pageMax === (topScore ?? pageMax)
+        if (!allTiedAtTop) break
+        offset += RECORDING_SEARCH_LIMIT
       }
       return hits
     },
@@ -581,6 +634,7 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
         mbid: data.id!,
         title: data.title ?? '',
         artist: artistCreditName(data['artist-credit']),
+        lengthMs: typeof data.length === 'number' ? data.length : null,
         credits,
         samplesFrom,
         sampledIn,
