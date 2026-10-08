@@ -30,6 +30,7 @@ export type MbClientOptions = {
   random?: () => number
   timeoutMs?: number
   deadlineMs?: number
+  onRequest?: () => Promise<boolean | void> | boolean | void
 }
 
 export type MbSearchHit = {
@@ -336,6 +337,12 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
     }
     lastAt = now()
     requestCount += 1
+    const held = await options.onRequest?.()
+    if (held === false) {
+      const error = new Error('enrich lock lost')
+      error.name = 'EnrichLockLostError'
+      throw error
+    }
     const requestTimeout = Math.min(timeoutMs, remainingMs())
     if (requestTimeout <= 0) {
       throw new MusicBrainzTimeoutError(deadlineMs != null)

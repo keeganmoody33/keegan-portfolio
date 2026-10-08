@@ -11,6 +11,7 @@ import {
   createEnrichLockHeartbeat,
   enrichPressing,
   isBackfillSettled,
+  isEnrichLockLostError,
   isWorkerDeadlineError,
   remainingBelowTakeFloor,
   remainingBudgetMs,
@@ -352,7 +353,7 @@ export async function runBackfill(
   const takeFloorMs = deps.takeFloorMs ?? ENRICH_TAKE_FLOOR_MS
   const heartbeat = createEnrichLockHeartbeat(store, token, lockTtl, now)
   const deadlineMs = deps.deadlineMs ?? started + (deps.budgetMs ?? ENRICH_BUDGET_MS)
-  const mb = deps.mb ?? createMusicBrainzClient({ now: deps.now, deadlineMs })
+  const mb = deps.mb ?? createMusicBrainzClient({ now: deps.now, deadlineMs, onRequest: heartbeat })
   const wikidataClient =
     deps.wikidataClient ??
     (deps.wikidata ? wikidataClientFor({ now: deps.now, ...deps.wikidata }) : undefined)
@@ -446,6 +447,10 @@ export async function runBackfill(
         }
         settled.add(releaseId)
       } catch (error) {
+        if (isEnrichLockLostError(error)) {
+          await store.nack(releaseId, now())
+          break
+        }
         if (isWorkerDeadlineError(error)) {
           const stop = await applyDeadlineStop(store, releaseId, now())
           if (stop.tooSlow) {

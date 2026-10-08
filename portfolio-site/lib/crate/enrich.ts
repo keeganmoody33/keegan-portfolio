@@ -101,6 +101,8 @@ export { sentencesFrom } from './description.ts'
 
 export const ENRICH_LOCK_SECONDS = 90
 export const ENRICH_LOCK_HEARTBEAT_MS = 30_000
+export const ENRICH_LOCK_HEARTBEAT_REQUESTS = 8
+export const INCOMPLETE_RECORDING_MESSAGE = 'incomplete recording probe'
 export const ENRICH_BATCH_DEFAULT = 1
 export const ENRICH_BUDGET_MS = 45_000
 export const CLI_BACKFILL_BUDGET_MS = 600_000
@@ -197,18 +199,49 @@ export function isForceRunStampFresh(
   return nowMs - at <= DRAFT_TTL_SECONDS * 1000
 }
 
+export class EnrichLockLostError extends Error {
+  readonly kind = 'lock_lost' as const
+
+  constructor() {
+    super('enrich lock lost')
+    this.name = 'EnrichLockLostError'
+  }
+}
+
+export function isEnrichLockLostError(error: unknown): error is EnrichLockLostError {
+  return (
+    error instanceof EnrichLockLostError ||
+    (error instanceof Error && error.name === 'EnrichLockLostError')
+  )
+}
+
+async function pulseLock(
+  heartbeat?: () => Promise<boolean | void>
+): Promise<void> {
+  if (!heartbeat) return
+  const held = await heartbeat()
+  if (held === false) throw new EnrichLockLostError()
+}
+
 export function createEnrichLockHeartbeat(
   store: CrateStore,
   token: string,
   lockTtlSeconds: number,
   now: () => number
-): () => Promise<void> {
+): () => Promise<boolean> {
   let lastHeartbeatAt = 0
+  let callsSinceHeartbeat = 0
   return async () => {
     const at = now()
-    if (lastHeartbeatAt > 0 && at - lastHeartbeatAt < ENRICH_LOCK_HEARTBEAT_MS) return
+    callsSinceHeartbeat += 1
+    const dueByTime = lastHeartbeatAt === 0 || at - lastHeartbeatAt >= ENRICH_LOCK_HEARTBEAT_MS
+    const dueByRequests = callsSinceHeartbeat >= ENRICH_LOCK_HEARTBEAT_REQUESTS
+    if (lastHeartbeatAt > 0 && !dueByTime && !dueByRequests) return true
     lastHeartbeatAt = at
-    await store.acquireEnrichLock(lockTtlSeconds, token)
+    callsSinceHeartbeat = 0
+    const held = await store.acquireEnrichLock(lockTtlSeconds, token)
+    if (!held) throw new EnrichLockLostError()
+    return true
   }
 }
 
@@ -219,15 +252,15 @@ export function shouldReuseDraft(
   forceRefresh = false
 ): boolean {
   if (!draft || !storedPressingHasVisitorFacts(draft)) return false
-  const draftAt = Date.parse(draft.provenance.lastAttemptAt ?? draft.provenance.checkedAt)
-  if (!Number.isFinite(draftAt)) return false
-  if (nowMs - draftAt > DRAFT_TTL_SECONDS * 1000) return false
   if (forceRefresh) {
     return (
       Boolean(draft.checkpoint?.forceRun) &&
       isForceRunStampFresh(draft.checkpoint?.forceRunAt, nowMs)
     )
   }
+  const draftAt = Date.parse(draft.provenance.lastAttemptAt ?? draft.provenance.checkedAt)
+  if (!Number.isFinite(draftAt)) return false
+  if (nowMs - draftAt > DRAFT_TTL_SECONDS * 1000) return false
   if (committed) {
     const committedAt = Date.parse(
       committed.provenance.lastAttemptAt ?? committed.provenance.checkedAt
@@ -264,6 +297,7 @@ export async function applyDeadlineStop(
     return { tooSlow: true, stops, retryAtMs }
   }
   if (live) {
+    const forceRun = Boolean(live.checkpoint?.forceRun)
     await store.setDraftPressing(
       hydratePressing({
         ...live,
@@ -272,6 +306,8 @@ export async function applyDeadlineStop(
           researchCursor: live.checkpoint?.researchCursor ?? 0,
           trackSampleCursor: live.checkpoint?.trackSampleCursor,
           deadlineStops: stops,
+          forceRun: forceRun || undefined,
+          forceRunAt: forceRun ? isoFromMs(nowMs) : live.checkpoint?.forceRunAt,
         }),
       })
     )
@@ -349,12 +385,26 @@ function stampCheckpoint(
 ): CrateCheckpoint {
   const next = copyCheckpoint(base, patch)
   if (!deps.forceRefresh) return next
-  const stampMs = Date.parse(nowIso)
-  const nowMs = Number.isFinite(stampMs) ? stampMs : Date.now()
+  const liveMs = (deps.now ?? Date.now)()
+  const liveIso = Number.isFinite(liveMs) ? isoFromMs(liveMs) : nowIso
   return copyCheckpoint(next, {
     forceRun: true,
-    forceRunAt: isForceRunStampFresh(next.forceRunAt, nowMs) ? next.forceRunAt : nowIso,
+    forceRunAt: liveIso,
   })
+}
+
+function recordingHasIncompleteProbe(recording: StoredRecording | undefined): boolean {
+  return recording?.provenance.lastError?.message === INCOMPLETE_RECORDING_MESSAGE
+}
+
+function priorForceDeadlineStops(
+  draft: StoredPressing | null | undefined,
+  committed: StoredPressing | null | undefined
+): number {
+  return Math.max(
+    draft?.checkpoint?.deadlineStops ?? 0,
+    committed?.checkpoint?.deadlineStops ?? 0
+  )
 }
 
 function shouldSkipTrackLevelProbes(
@@ -389,7 +439,7 @@ export type EnrichDeps = {
   inflightTtlSeconds?: number
   deadlineMs?: number
   forceRefresh?: boolean
-  onLockHeartbeat?: () => Promise<void>
+  onLockHeartbeat?: () => Promise<boolean | void>
   fetchWikidata?: (input: WikidataLookupInput, fetchedAt: string) => Promise<ResearchFact[]>
   wikidata?: WikidataClientOptions
   wikidataClient?: WikidataClient
@@ -814,7 +864,7 @@ function storedRecordingFromLookup(
           lastError: {
             at: nowIso,
             kind: 'unavailable',
-            message: 'incomplete recording probe',
+            message: INCOMPLETE_RECORDING_MESSAGE,
             attempts: 0,
           },
           verifiedAt: null,
@@ -891,6 +941,7 @@ async function annotateTrackLevelHits(
     if (remainingBelowTakeFloor(remaining, takeFloorMs)) break
     try {
       assertWithinWorkerDeadline(deps)
+      await pulseLock(deps.onLockHeartbeat)
       const doc = await mb.getRecording(hit.mbid)
       if (!doc) continue
       const recording = storedRecordingFromLookup(doc, nowIso, nowMs)
@@ -902,7 +953,9 @@ async function annotateTrackLevelHits(
           const partial = error.partialRecording
           const recording = storedRecordingFromLookup(partial, nowIso, nowMs, true)
           probeCache[partial.mbid] = recording
+          recordings[partial.mbid] = recording
           hit.hasSamples = recordingHasSampleMaterial(recording)
+          await store.setRecording(structuredClone(recording))
         }
         if (isMusicBrainzRateLimitError(error)) throw error
         continue
@@ -938,7 +991,7 @@ async function applyTrackLevelSamples(
     if (remainingBelowTakeFloor(remaining, takeFloorMs)) {
       return { cursor, incomplete: true }
     }
-    await deps.onLockHeartbeat?.()
+    await pulseLock(deps.onLockHeartbeat)
     assertWithinWorkerDeadline(deps)
     const track = playable[index]
     if (!track) {
@@ -953,6 +1006,7 @@ async function applyTrackLevelSamples(
       await onProgress?.(cursor)
       continue
     }
+    await pulseLock(deps.onLockHeartbeat)
     const hits = await mb.searchRecordingsByArtistTitle({
       artist: queryArtist,
       title: queryTitle,
@@ -1027,6 +1081,7 @@ async function applyTrackLevelSamples(
       }
       try {
         assertWithinWorkerDeadline(deps)
+        await pulseLock(deps.onLockHeartbeat)
         const doc = await mb.getRecording(hit.mbid)
         if (!doc) continue
         const recording = storedRecordingFromLookup(doc, nowIso, nowMs)
@@ -1045,6 +1100,9 @@ async function applyTrackLevelSamples(
         if (isMusicBrainzRateLimitError(error) && docs.length > 0) {
           rateLimitError = error
           break
+        }
+        if (isMusicBrainzTimeoutError(error) && docs.length > 0 && !error.deadlineExceeded) {
+          continue
         }
         throw error
       }
@@ -1125,7 +1183,13 @@ export async function enrichPressing(
     storedPrevious && storedPressingHasVisitorFacts(storedPrevious)
       ? storedPrevious
       : fixturePressing(releaseId) ?? storedPrevious
-  const mb = deps.mb ?? createMusicBrainzClient({ now: deps.now, deadlineMs: deps.deadlineMs })
+  const mb =
+    deps.mb ??
+    createMusicBrainzClient({
+      now: deps.now,
+      deadlineMs: deps.deadlineMs,
+      onRequest: deps.onLockHeartbeat,
+    })
   const fetchDetail = deps.fetchDiscogs ?? ((id: number) => fetchDiscogsReleaseDetail(id))
   const shouldFail = deps.failRefresh ?? ((id: number) => failRefreshFromEnv(id))
   const entryInstanceIds =
@@ -1262,7 +1326,11 @@ export async function enrichPressing(
             trackSampleCursor: skipReleaseRematch
               ? previous?.checkpoint?.trackSampleCursor ?? 0
               : 0,
-            deadlineStops: skipReleaseRematch ? previous?.checkpoint?.deadlineStops ?? 0 : 0,
+            deadlineStops: deps.forceRefresh
+              ? priorForceDeadlineStops(hydratedDraft, previous)
+              : skipReleaseRematch
+                ? previous?.checkpoint?.deadlineStops ?? 0
+                : 0,
           },
           nowIso
         ),
@@ -1359,7 +1427,7 @@ export async function enrichPressing(
         continue
       }
       try {
-        await deps.onLockHeartbeat?.()
+        await pulseLock(deps.onLockHeartbeat)
         assertWithinWorkerDeadline(deps)
         const doc = await mb.getRecording(mbid)
         if (!doc) {
@@ -1529,6 +1597,9 @@ export async function enrichPressing(
       const wikiUrl = wikiFacts.find((fact) => fact.sourceUrl.includes('wikidata.org'))?.sourceUrl
       sourceUrls.push(wikiUrl ?? 'https://www.wikidata.org/')
     }
+    const incompletePick = Object.values(recordings).some((recording) =>
+      recordingHasIncompleteProbe(recording)
+    )
     let researched: FetchState
     if (wikiTemporary) {
       researched = touchAttempt(
@@ -1549,8 +1620,20 @@ export async function enrichPressing(
       researched = priorCycles.research
     }
     assertWithinWorkerDeadline(deps)
-    const provenanceRefreshMs = wikiTemporary ? wikiRetryMs : SUCCESS_REFRESH_MS
-    const provenanceError = wikiTemporary ? wikiError : null
+    const incompleteError: ProvenanceError | null = incompletePick
+      ? {
+          at: nowIso,
+          kind: 'unavailable',
+          message: INCOMPLETE_RECORDING_MESSAGE,
+          attempts: 0,
+        }
+      : null
+    const provenanceRefreshMs = incompletePick
+      ? AUTH_RETRY_MS
+      : wikiTemporary
+        ? wikiRetryMs
+        : SUCCESS_REFRESH_MS
+    const provenanceError = incompleteError ?? (wikiTemporary ? wikiError : null)
     const nextPressing: StoredPressing = hydratePressing({
       schemaVersion: CRATE_SCHEMA_VERSION,
       releaseId,
@@ -1580,7 +1663,11 @@ export async function enrichPressing(
           nowMs + (wikiBudgetSkipped ? DEADLINE_BACKOFF_MS : provenanceRefreshMs)
         ),
         lastError: provenanceError,
-        verifiedAt: skipMatch ? previous?.provenance.verifiedAt ?? null : nowIso,
+        verifiedAt: incompletePick
+          ? null
+          : skipMatch
+            ? previous?.provenance.verifiedAt ?? null
+            : nowIso,
         lastAttemptAt: nowIso,
       },
       lifecycles: {
@@ -1603,7 +1690,16 @@ export async function enrichPressing(
       ),
     })
     const pressing = hydratePressing(keepPriorMatch(previous, nextPressing))
-    if (wikiTemporary && wikiError) {
+    if (incompletePick && incompleteError) {
+      await deps.store.markUnresolved({
+        releaseId,
+        kind: incompleteError.kind,
+        message: incompleteError.message,
+        attempts: 0,
+        at: nowIso,
+        stage: 'research',
+      })
+    } else if (wikiTemporary && wikiError) {
       await deps.store.markUnresolved({
         releaseId,
         kind: wikiError.kind,
@@ -1628,7 +1724,7 @@ export async function enrichPressing(
     await deps.store.setPressing(committed)
     return committed
   } catch (error) {
-    if (isWorkerDeadlineError(error)) throw error
+    if (isWorkerDeadlineError(error) || isEnrichLockLostError(error)) throw error
     if (isMusicBrainzTimeoutError(error) && error.deadlineExceeded) {
       throw new WorkerDeadlineError()
     }
@@ -1772,13 +1868,15 @@ export async function processEnrichmentQueue(
 
   const now = deps.now ?? Date.now
   const started = now()
-  const heartbeat = createEnrichLockHeartbeat(deps.store, token, lockTtl, now)
   const takeFloorMs = deps.takeFloorMs ?? ENRICH_TAKE_FLOOR_MS
   const deadlineMs =
     deps.deadlineMs ?? started + (deps.budgetMs ?? ENRICH_BUDGET_MS)
   const inflightTtl = deps.inflightTtlSeconds ?? INFLIGHT_TTL_SECONDS
   const cap = limit ?? Number.POSITIVE_INFINITY
-  const mb = deps.mb ?? createMusicBrainzClient({ now: deps.now, deadlineMs })
+  const heartbeat = createEnrichLockHeartbeat(deps.store, token, lockTtl, now)
+  const mb =
+    deps.mb ??
+    createMusicBrainzClient({ now: deps.now, deadlineMs, onRequest: heartbeat })
   const wikidataClient =
     deps.wikidataClient ??
     (deps.wikidata ? wikidataClientFor({ now: deps.now, ...deps.wikidata }) : undefined)
@@ -1856,6 +1954,10 @@ export async function processEnrichmentQueue(
           record(releaseId, outcome)
         }
       } catch (error) {
+        if (isEnrichLockLostError(error)) {
+          await deps.store.nack(releaseId, now())
+          break
+        }
         if (isWorkerDeadlineError(error)) {
           await applyDeadlineStop(deps.store, releaseId, now())
           break

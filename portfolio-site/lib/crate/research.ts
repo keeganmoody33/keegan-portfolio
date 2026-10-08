@@ -75,6 +75,10 @@ export function presentSampleArtist(name: string | undefined | null): string {
     trimmed = trimmed.replace(/\s+x\s*$/g, '')
   }
   trimmed = trimmed.replace(/\s+/g, ' ').trim()
+  if (hadUnknown) {
+    trimmed = trimmed.replace(/^(mr|mrs|ms|dr|prof)\.\s*(?:x|&|,)\s+/i, '$1. ')
+    trimmed = trimmed.replace(/\s+/g, ' ').trim()
+  }
   if (hadUnknown && /^(?:mr|mrs|ms|dr|prof)\.?$/i.test(trimmed)) return ''
   if (!trimmed || isMusicBrainzUnknownArtist(trimmed)) return ''
   return trimmed
