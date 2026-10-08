@@ -1,3 +1,11 @@
+COMPLETED (2026-10-08 — leftover preview re-walk of 5 ids on lf:preview:):
+- Serialized `--retry --ids` on 378994, 21093352, 1921824, 14851267, 28896664. Back-to-back. One real invocation each. 429 / 0-MB did not burn the 3-invocation budget. Prefix `lf:preview:`. DISCOGS unset. Never prod.
+- Totals **389 / 75 / 101 / 288** vs #54 360/72/111/249 and vs P2b 389 (unchanged: `carryPriorRecordings` kept old sampled docs as sidecars). Unknown 0, work URLs 0.
+- Five cases: 378994 B1 Radio Edit Clubstar `67350ade` → Radio Disney edit `c3a6d11a`; 21093352 Grindin' (Remix) unmarked `69b90abb` → remix `84264a99`; 1921824 No More Drama remix unmarked `1aad05ec` → remix `d34be008`; 14851267 Scenario (Remix) unmarked `5bd8736d` → remix `241383d7`; 28896664 Colour My World stayed `68da9a31` (unmarked aligned, in this-run filtered search).
+- Link re-audit: Sorry Enough left the remix/unmarked Grindin' picks and stays on sidecar `66811528`. Act Like You Know left the Scenario remix pick and stays on sidecar `5bd8736d`. Same song, 0 wrong-song.
+- Class (b) **5/5**. Mtume vocal `1d890c2b` → Juicy `181c0a32`. Benchmark **30/30** (Eye Know and Payback present on current maps; this walk did not touch those ids).
+- Crate 269, tsc/eslint pass, `npm test` 457/0 (84 suites, KV unset), `next build` 28/28 dummy supabase. Never prod. Do not merge.
+
 COMPLETED (2026-10-08 — search-level version leftovers before gates):
 - Among same-song search hits, `searchVersionFit` ranks aligned mix markers (remix, radio/edit, club, live, instrumental, acapella, dub, demo, named mix) before samples, score, or duration, including inside the 15s window. Unmarked Discogs prefers unmarked recordings; a marked title may fall back to the unmarked original and must never land on a differently marked version (Radio Edit vs Clubstar). Vocal/album/interlude stay unmarked so Mtume Vocal and Brazilian Rhyme Interlude keep recall.
 - Force ranking uses this-run *filtered* search MBIDs (version/duration-ok), not raw search or Redis recall. A recalled exact-title sidecar missing from that set cannot win (Colour My World `68da9a31`). Empty force rematch clears a stale track-level pick.
