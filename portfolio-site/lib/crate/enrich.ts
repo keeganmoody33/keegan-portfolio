@@ -297,11 +297,9 @@ function inspectDeadlineStops(letter: DeadLetter | undefined): number {
 
 async function durableDeadlineStops(store: CrateStore, releaseId: number): Promise<number> {
   const draft = await store.getDraftPressing(releaseId)
-  const committed = await store.getPressing(releaseId)
   const inspect = (await store.getInspect()).find((row) => row.releaseId === releaseId)
   return Math.max(
     draft?.checkpoint?.deadlineStops ?? 0,
-    committed?.checkpoint?.deadlineStops ?? 0,
     inspectDeadlineStops(inspect)
   )
 }
@@ -355,23 +353,8 @@ export async function applyDeadlineStop(
         refreshAfter: isoFromMs(retryAtMs),
       },
     })
-    const committedBase = committed
-      ? overlayTrackLevelProgress(committed, patched)
-      : patched
-    await store.setPressing(
-      hydratePressing({
-        ...committedBase,
-        checkpoint,
-        provenance: {
-          ...committedBase.provenance,
-          lastAttemptAt: nowIso,
-          lastError: committedBase.provenance.lastError ?? durableError,
-          refreshAfter: isoFromMs(retryAtMs),
-        },
-      })
-    )
-    // Stamp the restored draft 1ms later so shouldReuseDraft sees it as current
-    // after setPressing copies the same lastAttemptAt onto committed.
+    // Stops stay on the draft + inspect row. The committed visitor-facing
+    // pressing changes only on a successful enrich commit.
     await store.setDraftPressing(
       hydratePressing({
         ...patched,
@@ -405,6 +388,12 @@ export class WorkerDeadlineError extends Error {
 
 export function isWorkerDeadlineError(error: unknown): error is WorkerDeadlineError {
   return error instanceof WorkerDeadlineError
+}
+
+function throwIfDeadlineExceededTimeout(error: unknown): void {
+  if (isMusicBrainzTimeoutError(error) && error.deadlineExceeded) {
+    throw new WorkerDeadlineError()
+  }
 }
 
 function assertWithinWorkerDeadline(deps: EnrichDeps): void {
@@ -475,16 +464,37 @@ function recordingHasIncompleteProbe(recording: StoredRecording | undefined): bo
   return recording?.provenance.lastError?.message === INCOMPLETE_RECORDING_MESSAGE
 }
 
+function incompleteProbeStillCooling(
+  recording: StoredRecording | undefined,
+  nowMs: number
+): boolean {
+  if (!recording || !recordingHasIncompleteProbe(recording)) return false
+  const retryAt = Date.parse(recording.provenance.refreshAfter)
+  return Number.isFinite(retryAt) && nowMs < retryAt
+}
+
 function priorForceDeadlineStops(
   draft: StoredPressing | null | undefined,
-  committed: StoredPressing | null | undefined,
   inspectStops = 0
 ): number {
-  return Math.max(
-    draft?.checkpoint?.deadlineStops ?? 0,
-    committed?.checkpoint?.deadlineStops ?? 0,
-    inspectStops
-  )
+  return Math.max(draft?.checkpoint?.deadlineStops ?? 0, inspectStops)
+}
+
+async function forceSeriesDeadlineStops(
+  store: CrateStore,
+  releaseId: number,
+  draft: StoredPressing | null | undefined,
+  forceRefresh: boolean
+): Promise<number> {
+  const inspect = (await store.getInspect()).find((row) => row.releaseId === releaseId)
+  // A new operator --retry/--ids after too_slow is a new series. Reset stops
+  // so an abandoned forced run cannot poison the next one. Mid-series
+  // DEADLINE_STOP_MESSAGE still accumulates across gaps (P2-1).
+  if (forceRefresh && inspect?.kind === 'too_slow') {
+    await store.unmarkUnresolved(releaseId)
+    return 0
+  }
+  return priorForceDeadlineStops(draft, inspectDeadlineStops(inspect))
 }
 
 async function persistStoredRecording(
@@ -510,6 +520,7 @@ function shouldSkipTrackLevelProbes(
   if (annotated.some((hit) => hit.mbid !== prior.mbid && (hit.score ?? 0) > priorScore)) {
     return false
   }
+  if (prior.hasSamples == null) return false
   if (prior.hasSamples === true) return true
   const equalScoreRivals = annotated.filter(
     (hit) => hit.mbid !== prior.mbid && (hit.score ?? 0) === priorScore
@@ -1003,7 +1014,12 @@ async function annotateTrackLevelHits(
     if (hit.hasSamples != null) continue
     const memory = recordings[hit.mbid] ?? probeCache[hit.mbid]
     if (memory) {
-      hit.hasSamples = recordingHasSampleMaterial(memory)
+      if (
+        !recordingHasIncompleteProbe(memory) ||
+        incompleteProbeStillCooling(memory, nowMs)
+      ) {
+        hit.hasSamples = recordingHasSampleMaterial(memory)
+      }
       continue
     }
     if (deps.forceRefresh) continue
@@ -1016,9 +1032,14 @@ async function annotateTrackLevelHits(
     }
     const stored = await store.getRecording(hit.mbid)
     if (stored) {
-      hit.hasSamples = recordingHasSampleMaterial(stored)
       recordings[hit.mbid] = stored
       probeCache[hit.mbid] = stored
+      if (
+        !recordingHasIncompleteProbe(stored) ||
+        incompleteProbeStillCooling(stored, nowMs)
+      ) {
+        hit.hasSamples = recordingHasSampleMaterial(stored)
+      }
     }
   }
   const prior = priorMbid ? annotated.find((hit) => hit.mbid === priorMbid) : undefined
@@ -1041,6 +1062,7 @@ async function annotateTrackLevelHits(
       probeCache[hit.mbid] = recording
       hit.hasSamples = recordingHasSampleMaterial(recording)
     } catch (error) {
+      throwIfDeadlineExceededTimeout(error)
       if (isMusicBrainzRateLimitError(error) || isMusicBrainzTimeoutError(error)) {
         if (error.partialRecording) {
           const partial = error.partialRecording
@@ -1167,7 +1189,9 @@ async function applyTrackLevelSamples(
         (deps.forceRefresh ? null : await deps.store.getRecording(hit.mbid))
       if (
         previousRecording &&
-        (deps.forceRefresh || researchIsFresh(previousRecording, nowMs))
+        (deps.forceRefresh ||
+          researchIsFresh(previousRecording, nowMs) ||
+          incompleteProbeStillCooling(previousRecording, nowMs))
       ) {
         recordings[hit.mbid] = previousRecording
         probeCache[hit.mbid] = previousRecording
@@ -1183,6 +1207,7 @@ async function applyTrackLevelSamples(
         recordings[hit.mbid] = recording
         docs.push(recording)
       } catch (error) {
+        throwIfDeadlineExceededTimeout(error)
         if (
           (isMusicBrainzRateLimitError(error) || isMusicBrainzTimeoutError(error)) &&
           error.partialRecording
@@ -1426,12 +1451,11 @@ export async function enrichPressing(
               ? previous?.checkpoint?.trackSampleCursor ?? 0
               : 0,
             deadlineStops: deps.forceRefresh
-              ? priorForceDeadlineStops(
+              ? await forceSeriesDeadlineStops(
+                  deps.store,
+                  releaseId,
                   hydratedDraft,
-                  previous,
-                  inspectDeadlineStops(
-                    (await deps.store.getInspect()).find((row) => row.releaseId === releaseId)
-                  )
+                  true
                 )
               : skipReleaseRematch
                 ? previous?.checkpoint?.deadlineStops ?? 0
@@ -1526,7 +1550,11 @@ export async function enrichPressing(
       const mbid = acceptedMbids[index]
       if (!mbid) continue
       const previousRecording = recordings[mbid] ?? previous?.recordings[mbid] ?? (await deps.store.getRecording(mbid))
-      if (!deps.forceRefresh && researchIsFresh(previousRecording, nowMs)) {
+      if (
+        !deps.forceRefresh &&
+        (researchIsFresh(previousRecording, nowMs) ||
+          incompleteProbeStillCooling(previousRecording, nowMs))
+      ) {
         if (previousRecording) recordings[mbid] = previousRecording
         researchCursor = index + 1
         continue
@@ -1593,11 +1621,14 @@ export async function enrichPressing(
       }
     }
 
+    let lastTrackCheckpoint = pressingDraft.checkpoint?.trackSampleCursor ?? 0
     const checkpointTrackLevel = async (cursor: number) => {
       progressTracks = tracks
       progressRecordings = recordings
       progressTrackSampleCursor = cursor
       researchCycle = touchVerified(researchCycle, nowIso)
+      const advanced = cursor > lastTrackCheckpoint
+      lastTrackCheckpoint = Math.max(lastTrackCheckpoint, cursor)
       await deps.store.setDraftPressing(
         hydratePressing({
           ...pressingDraft,
@@ -1612,7 +1643,12 @@ export async function enrichPressing(
           checkpoint: stampCheckpoint(
             deps,
             pressingDraft.checkpoint,
-            { stage: 'research', researchCursor, trackSampleCursor: cursor },
+            {
+              stage: 'research',
+              researchCursor,
+              trackSampleCursor: cursor,
+              ...(advanced ? { deadlineStops: 0 } : {}),
+            },
             nowIso
           ),
         })
@@ -1729,7 +1765,14 @@ export async function enrichPressing(
       previous?.provenance.lastError?.message === INCOMPLETE_RECORDING_MESSAGE
         ? previous.provenance.lastError.attempts ?? 0
         : 0
-    const incompleteAttempts = priorIncompleteAttempts + 1
+    const probedIncompleteThisRun = Object.values(recordings).some(
+      (recording) =>
+        recordingHasIncompleteProbe(recording) &&
+        recording.provenance.lastAttemptAt === nowIso
+    )
+    const incompleteAttempts = probedIncompleteThisRun
+      ? priorIncompleteAttempts + 1
+      : priorIncompleteAttempts
     const incompleteExhausted = incompleteAttempts >= CRATE_MAX_ATTEMPTS
     const incompleteError: ProvenanceError | null = incompletePick
       ? {
