@@ -93,6 +93,8 @@ export type CrateCheckpoint = {
   /** Same `--retry` / forceRefresh run; drafts and cursors resume only with this marker. */
   forceRun?: boolean
   forceRunAt?: string
+  /** One operator `--retry`/`--ids` invocation. A new id resets deadlineStops. */
+  forceSeriesId?: string
 }
 
 export type SourcedRef = {
@@ -120,6 +122,8 @@ export type DeadLetter = {
   attempts: number
   at: string
   stage: LifecycleName | 'queue'
+  /** Survives draft TTL so the same `--retry` series can still accumulate stops. */
+  forceSeriesId?: string
 }
 
 export type BackfillState = {

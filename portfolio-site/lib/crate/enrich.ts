@@ -22,12 +22,16 @@ import {
   touchAttempt,
   touchVerified,
 } from './lifecycle.ts'
+import { randomUUID } from 'node:crypto'
 import {
   classifyReleaseMatch,
   matchDiscogsTrackToMb,
   parseDurationToMs,
   compareTrackLevelRecordings,
+  compareTrackLevelProbeOrder,
   filterTrackLevelRecordings,
+  isSamePerformanceSibling,
+  NEAR_TOP_SCORE_SLACK,
   pickTrackLevelRecordings,
   recordingHasSampleMaterial,
   songTitle,
@@ -119,6 +123,10 @@ export const DEADLINE_STOP_LIMIT = 3
 export const DEADLINE_BACKOFF_MS = ENRICH_TAKE_FLOOR_MS
 export const TRACK_LEVEL_FETCH_CAP = 1
 export const TRACK_LEVEL_ANNOTATE_CAP = 3
+
+export function createForceSeriesId(): string {
+  return randomUUID()
+}
 
 export function overlayTrackLevelProgress(
   base: StoredPressing,
@@ -372,6 +380,7 @@ export async function applyDeadlineStop(
     attempts: stops,
     at: nowIso,
     stage: 'queue',
+    forceSeriesId: live?.checkpoint?.forceSeriesId,
   })
   await store.nack(releaseId, retryAtMs)
   return { tooSlow: false, stops, retryAtMs }
@@ -457,7 +466,16 @@ function stampCheckpoint(
   return copyCheckpoint(next, {
     forceRun: true,
     forceRunAt: liveIso,
+    forceSeriesId: deps.forceSeriesId ?? next.forceSeriesId,
   })
+}
+
+async function resetInspectDeadlineStops(store: CrateStore, releaseId: number): Promise<void> {
+  const inspect = (await store.getInspect()).find((row) => row.releaseId === releaseId)
+  if (!inspect) return
+  if (inspect.message === DEADLINE_STOP_MESSAGE || inspect.kind === 'too_slow') {
+    await store.unmarkUnresolved(releaseId)
+  }
 }
 
 function recordingHasIncompleteProbe(recording: StoredRecording | undefined): boolean {
@@ -484,13 +502,23 @@ async function forceSeriesDeadlineStops(
   store: CrateStore,
   releaseId: number,
   draft: StoredPressing | null | undefined,
-  forceRefresh: boolean
+  forceRefresh: boolean,
+  incomingSeriesId?: string
 ): Promise<number> {
   const inspect = (await store.getInspect()).find((row) => row.releaseId === releaseId)
-  // A new operator --retry/--ids after too_slow is a new series. Reset stops
-  // so an abandoned forced run cannot poison the next one. Mid-series
-  // DEADLINE_STOP_MESSAGE still accumulates across gaps (P2-1).
-  if (forceRefresh && inspect?.kind === 'too_slow') {
+  if (!forceRefresh) return priorForceDeadlineStops(draft, inspectDeadlineStops(inspect))
+  const storedSeries = draft?.checkpoint?.forceSeriesId ?? inspect?.forceSeriesId
+  // Every new operator `--retry`/`--ids` series gets a full stop budget, not
+  // only after inspect too_slow. Same seriesId still accumulates across gaps,
+  // including after the 900s draft TTL, via inspect.forceSeriesId.
+  if (inspect?.kind === 'too_slow') {
+    await store.unmarkUnresolved(releaseId)
+    return 0
+  }
+  if (incomingSeriesId) {
+    if (storedSeries === incomingSeriesId) {
+      return priorForceDeadlineStops(draft, inspectDeadlineStops(inspect))
+    }
     await store.unmarkUnresolved(releaseId)
     return 0
   }
@@ -543,6 +571,8 @@ export type EnrichDeps = {
   inflightTtlSeconds?: number
   deadlineMs?: number
   forceRefresh?: boolean
+  /** One operator `--retry`/`--ids` invocation. A new id resets deadlineStops. */
+  forceSeriesId?: string
   onLockHeartbeat?: () => Promise<boolean | void>
   fetchWikidata?: (input: WikidataLookupInput, fetchedAt: string) => Promise<ResearchFact[]>
   wikidata?: WikidataClientOptions
@@ -1005,12 +1035,17 @@ async function annotateTrackLevelHits(
   const ranked = annotated
     .slice()
     .sort((left, right) => compareTrackLevelRecordings(left, right, discogsDurationMs))
-  const cap = ranked.slice(0, TRACK_LEVEL_ANNOTATE_CAP)
+  const topScore = ranked[0]?.score ?? 0
+  const nearTop = ranked.filter(
+    (hit) => topScore - (hit.score ?? 0) <= NEAR_TOP_SCORE_SLACK
+  )
   const remainingNow = () =>
     deps.deadlineMs == null
       ? Number.POSITIVE_INFINITY
       : remainingBudgetMs(deps.deadlineMs, (deps.now ?? Date.now)())
-  for (const hit of cap) {
+  // Redis hasSamples fill over ALL near-top same-song hits, including under force.
+  // Cheap; not an MB request. Cap only the probes below.
+  for (const hit of nearTop) {
     if (hit.hasSamples != null) continue
     const memory = recordings[hit.mbid] ?? probeCache[hit.mbid]
     if (memory) {
@@ -1022,7 +1057,6 @@ async function annotateTrackLevelHits(
       }
       continue
     }
-    if (deps.forceRefresh) continue
     if (remainingBelowTakeFloor(remainingNow(), takeFloorMs)) break
     try {
       assertWithinWorkerDeadline(deps)
@@ -1033,7 +1067,6 @@ async function annotateTrackLevelHits(
     const stored = await store.getRecording(hit.mbid)
     if (stored) {
       recordings[hit.mbid] = stored
-      probeCache[hit.mbid] = stored
       if (
         !recordingHasIncompleteProbe(stored) ||
         incompleteProbeStillCooling(stored, nowMs)
@@ -1046,6 +1079,10 @@ async function annotateTrackLevelHits(
   if (shouldSkipTrackLevelProbes(annotated, prior, Boolean(deps.forceRefresh))) {
     return annotated
   }
+  const probeOrder = annotated
+    .slice()
+    .sort((left, right) => compareTrackLevelProbeOrder(left, right, discogsDurationMs))
+  const cap = probeOrder.slice(0, TRACK_LEVEL_ANNOTATE_CAP)
   const toProbe = cap.filter((hit) => hit.hasSamples == null)
   for (const hit of toProbe) {
     const remaining =
@@ -1135,7 +1172,7 @@ async function applyTrackLevelSamples(
     }
     const filtered = filterTrackLevelRecordings(hits, discogs)
     const savedMbid = priorTrackLevelMbid(track, previousTracks)
-    const priorMbid = deps.forceRefresh ? null : savedMbid
+    const priorMbid = savedMbid
     const annotated = await annotateTrackLevelHits(
       filtered,
       recordings,
@@ -1174,7 +1211,8 @@ async function applyTrackLevelSamples(
           : remainingBudgetMs(deps.deadlineMs, (deps.now ?? Date.now)())
       if (remainingBelowTakeFloor(remainingHit, takeFloorMs)) {
         if (docs.length > 0) {
-          await persistTrackLevelDocs(deps.store, track, recordings, docs)
+          const siblings = siblingRecordingsForPick(picked[0], annotated, recordings)
+          await persistTrackLevelDocs(deps.store, track, recordings, docs, siblings)
         }
         return { cursor, incomplete: true }
       }
@@ -1184,19 +1222,19 @@ async function applyTrackLevelSamples(
         docs.push(probed)
         continue
       }
-      const previousRecording =
-        recordings[hit.mbid] ??
-        (deps.forceRefresh ? null : await deps.store.getRecording(hit.mbid))
-      if (
-        previousRecording &&
-        (deps.forceRefresh ||
-          researchIsFresh(previousRecording, nowMs) ||
-          incompleteProbeStillCooling(previousRecording, nowMs))
-      ) {
-        recordings[hit.mbid] = previousRecording
-        probeCache[hit.mbid] = previousRecording
-        docs.push(previousRecording)
-        continue
+      if (!deps.forceRefresh) {
+        const previousRecording =
+          recordings[hit.mbid] ?? (await deps.store.getRecording(hit.mbid))
+        if (
+          previousRecording &&
+          (researchIsFresh(previousRecording, nowMs) ||
+            incompleteProbeStillCooling(previousRecording, nowMs))
+        ) {
+          recordings[hit.mbid] = previousRecording
+          probeCache[hit.mbid] = previousRecording
+          docs.push(previousRecording)
+          continue
+        }
       }
       try {
         assertWithinWorkerDeadline(deps)
@@ -1237,7 +1275,8 @@ async function applyTrackLevelSamples(
       await onProgress?.(cursor)
       continue
     }
-    await persistTrackLevelDocs(deps.store, track, recordings, docs)
+    const siblings = siblingRecordingsForPick(picked[0], annotated, recordings)
+    await persistTrackLevelDocs(deps.store, track, recordings, docs, siblings)
     if (rateLimitError) {
       await onProgress?.(cursor)
       throw rateLimitError
@@ -1248,13 +1287,31 @@ async function applyTrackLevelSamples(
   return { cursor, incomplete: false }
 }
 
+function siblingRecordingsForPick(
+  pick: TrackLevelRecordingHit | undefined,
+  annotated: TrackLevelRecordingHit[],
+  recordings: Record<string, StoredRecording>
+): StoredRecording[] {
+  if (!pick) return []
+  const siblings: StoredRecording[] = []
+  for (const hit of annotated) {
+    if (hit.mbid === pick.mbid) continue
+    if (!isSamePerformanceSibling(pick, hit)) continue
+    const doc = recordings[hit.mbid]
+    if (!doc || !recordingHasSampleMaterial(doc)) continue
+    siblings.push(doc)
+  }
+  return siblings
+}
+
 export async function persistTrackLevelDocs(
   store: CrateStore,
   track: TrackOccurrence,
   recordings: Record<string, StoredRecording>,
-  docs: StoredRecording[]
+  docs: StoredRecording[],
+  siblings: StoredRecording[] = []
 ): Promise<void> {
-  attachTrackLevelDocs(track, recordings, docs)
+  attachTrackLevelDocs(track, recordings, docs, siblings)
   const pickedIds = new Set(docs.map((doc) => doc.mbid))
   if (track.recording.mbid) pickedIds.add(track.recording.mbid)
   for (const mbid of pickedIds) {
@@ -1266,10 +1323,16 @@ export async function persistTrackLevelDocs(
 function attachTrackLevelDocs(
   track: TrackOccurrence,
   recordings: Record<string, StoredRecording>,
-  docs: StoredRecording[]
+  docs: StoredRecording[],
+  siblings: StoredRecording[] = []
 ): void {
-  const mergedFrom = mergeSampleLinks(...docs.map((doc) => doc.samplesFrom))
-  const mergedIn = mergeSampleLinks(...docs.map((doc) => doc.sampledIn))
+  // Merge sample rels across same-performance siblings (same artist/title, duration
+  // within ~5s, version tokens align). Risk: two mixes with no version tokens and
+  // lengths within 5s could share a false link — versionsAlign plus known durations
+  // are the guard; do not merge when either length is null.
+  const pool = [...docs, ...siblings]
+  const mergedFrom = mergeSampleLinks(...pool.map((doc) => doc.samplesFrom))
+  const mergedIn = mergeSampleLinks(...pool.map((doc) => doc.sampledIn))
   const primary = docs[0]
   if (!primary) return
   primary.samplesFrom = mergedFrom
@@ -1352,6 +1415,24 @@ export async function enrichPressing(
 
     if (reuseDraft && hydratedDraft) {
       pressingDraft = hydratedDraft
+      if (deps.forceRefresh) {
+        const stops = await forceSeriesDeadlineStops(
+          deps.store,
+          releaseId,
+          hydratedDraft,
+          true,
+          deps.forceSeriesId
+        )
+        pressingDraft = hydratePressing({
+          ...pressingDraft,
+          checkpoint: stampCheckpoint(
+            deps,
+            pressingDraft.checkpoint,
+            { deadlineStops: stops },
+            nowIso
+          ),
+        })
+      }
       facts = pressingDraft.facts
       tracks = pressingDraft.tracks
       playable = tracks.filter(isPlayableOccurrence)
@@ -1415,7 +1496,7 @@ export async function enrichPressing(
               confidence: 0,
               reason: 'queued for matching',
             },
-        recordings: skipReleaseRematch && previous ? { ...previous.recordings } : {},
+        recordings: previous ? { ...previous.recordings } : {},
         researchFacts: discogsFacts,
         provenance: {
           sourceUrls: [facts.discogsUrl],
@@ -1455,7 +1536,8 @@ export async function enrichPressing(
                   deps.store,
                   releaseId,
                   hydratedDraft,
-                  true
+                  true,
+                  deps.forceSeriesId
                 )
               : skipReleaseRematch
                 ? previous?.checkpoint?.deadlineStops ?? 0
@@ -1610,6 +1692,7 @@ export async function enrichPressing(
           })
         )
       } catch (error) {
+        throwIfDeadlineExceededTimeout(error)
         if (isMusicBrainzRateLimitError(error) || isMusicBrainzAuthError(error)) throw error
         if (isEnrichLockLostError(error) || isWorkerDeadlineError(error)) throw error
         if (previousRecording) {
@@ -1629,6 +1712,9 @@ export async function enrichPressing(
       researchCycle = touchVerified(researchCycle, nowIso)
       const advanced = cursor > lastTrackCheckpoint
       lastTrackCheckpoint = Math.max(lastTrackCheckpoint, cursor)
+      if (advanced) {
+        await resetInspectDeadlineStops(deps.store, releaseId)
+      }
       await deps.store.setDraftPressing(
         hydratePressing({
           ...pressingDraft,
@@ -2038,6 +2124,8 @@ export async function processEnrichmentQueue(
 
   const now = deps.now ?? Date.now
   const started = now()
+  // Queue ticks reuse the draft series. Only CLI `--retry` mints a new id.
+  const forceSeriesId = deps.forceSeriesId
   const takeFloorMs = deps.takeFloorMs ?? ENRICH_TAKE_FLOOR_MS
   const deadlineMs =
     deps.deadlineMs ?? started + (deps.budgetMs ?? ENRICH_BUDGET_MS)
@@ -2084,6 +2172,7 @@ export async function processEnrichmentQueue(
           mb,
           wikidataClient,
           deadlineMs,
+          forceSeriesId,
           onLockHeartbeat: heartbeat,
         })
         const kind = pressing.provenance.lastError?.kind

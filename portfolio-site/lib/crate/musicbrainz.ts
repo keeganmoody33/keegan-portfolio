@@ -173,7 +173,7 @@ function defaultSleep(ms: number): Promise<void> {
   })
 }
 
-export function artistCreditName(credit: MbArtistCredit | undefined): string {
+function joinArtistCredit(credit: MbArtistCredit | undefined): string {
   if (!credit || credit.length === 0) return ''
   const kept: MbArtistCredit = []
   for (const part of credit) {
@@ -188,15 +188,33 @@ export function artistCreditName(credit: MbArtistCredit | undefined): string {
     kept.push(part)
   }
   if (kept.length === 0) return ''
-  return presentSampleArtist(
-    kept
-      .map((part, index) => {
-        const name = part.name ?? part.artist?.name ?? ''
-        if (index === kept.length - 1) return name
-        return `${name}${part.joinphrase ?? ''}`
-      })
-      .join('')
-  )
+  return kept
+    .map((part, index) => {
+      const name = part.name ?? part.artist?.name ?? ''
+      if (index === kept.length - 1) return name
+      return `${name}${part.joinphrase ?? ''}`
+    })
+    .join('')
+}
+
+function joinArtistCreditRaw(credit: MbArtistCredit | undefined): string {
+  if (!credit || credit.length === 0) return ''
+  return credit
+    .map((part, index) => {
+      const name = part.name ?? part.artist?.name ?? ''
+      if (index === credit.length - 1) return name
+      return `${name}${part.joinphrase ?? ''}`
+    })
+    .join('')
+}
+
+/** Raw MB credit for matching. Do not drop `[unknown]` parts or run `presentSampleArtist`. */
+export function rawArtistCreditName(credit: MbArtistCredit | undefined): string {
+  return joinArtistCreditRaw(credit)
+}
+
+export function artistCreditName(credit: MbArtistCredit | undefined): string {
+  return presentSampleArtist(joinArtistCredit(credit))
 }
 
 export function musicbrainzRecordingUrl(mbid: string): string {
@@ -494,7 +512,7 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
           hits.push({
             mbid: recording.id,
             title: recording.title ?? '',
-            artist: artistCreditName(recording['artist-credit']),
+            artist: rawArtistCreditName(recording['artist-credit']),
             lengthMs: typeof recording.length === 'number' ? recording.length : null,
             score: typeof recording.score === 'number' ? recording.score : 0,
           })

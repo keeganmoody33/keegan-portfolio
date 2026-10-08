@@ -317,6 +317,13 @@ function matchTracksByPositions(
   return tracks.filter((track) => picked.has(track))
 }
 
+function discogsSampleKind(role: string): 'sample_of' | 'sampled_by' | null {
+  const normalized = normalizeFactText(role).replace(/[_-]+/g, ' ')
+  if (normalized === 'sampled by' || normalized === 'sampledby') return 'sampled_by'
+  if (normalized === 'samples' || normalized === 'sample') return 'sample_of'
+  return null
+}
+
 function pushDiscogsCredit(
   facts: ResearchFact[],
   input: {
@@ -331,6 +338,27 @@ function pushDiscogsCredit(
   const person = input.name.trim()
   if (!person) return
   for (const role of splitCreditRoles(input.role || 'credit')) {
+    const sampleKind = discogsSampleKind(role)
+    if (sampleKind) {
+      const relatedArtist = presentSampleArtist(person)
+      if (!relatedArtist) continue
+      facts.push({
+        kind: sampleKind,
+        trackKey: input.track?.identityKey ?? '',
+        track: input.track
+          ? { position: input.track.position, title: input.track.title }
+          : null,
+        role: sampleKind === 'sample_of' ? 'samples' : 'sampled in',
+        person: '',
+        relatedTitle: '',
+        relatedArtist,
+        source: 'discogs',
+        sourceId: input.id != null ? String(input.id) : person,
+        sourceUrl: input.url,
+        fetchedAt: input.fetchedAt,
+      })
+      continue
+    }
     facts.push({
       kind: 'credit',
       trackKey: input.track?.identityKey ?? '',

@@ -1,10 +1,18 @@
-IN PROGRESS (2026-10-08 — #64 P1 worker deadline + P2a/P2b/P2c):
-- P1: `deadlineExceeded` (and track-level take-floor incomplete) throw `WorkerDeadlineError` instead of committing an incomplete probe that counted toward dead. A 12-track 45s cron finishes and never goes dead. Cursor-advancing checkpoints reset `deadlineStops` so progress is not `too_slow`.
+COMPLETED (2026-10-08 — recall-first picks + Redis hasSamples + series reset):
+- Loss audit vs 05:21Z: 5 unique class (b) same-song sibling swaps (0 wrong-song, 0 x-collab/`presentSampleArtist`). Main cause: annotate cap 3 + duration ranking left a 4th-ranked sampled hit unfetched (Integrations 1). Causes 1–4 real; 5 unconfirmed; 6 possible; 7 not these 56 links. Artists: Blige, Beatnuts, EWF, BEP, Marley.
+- Matching uses `rawArtistCreditName` (keeps `[unknown]` parts). `artistsMatch` strips `[unknown]` only — display `'Alpha x x'` must not decide hits. `presentSampleArtist('Alpha x x [unknown]')` stays `'Alpha x x'`.
+- Pick: near-top same-song prefers samples before score/duration; keep sampled prior unless rival has more or score beyond slack 5; drop prior only for wrong song / vocal-vs-instrumental / >15s. Probe order: known samples, null length, unknown hasSamples. Redis fill walks every near-top hit including under force; MB probes still capped at 3.
+- Discogs `Samples` / `Sampled By` extraartists → sample facts. Same-performance siblings (≤5s, version tokens align) may merge rels.
+- P1: cursor advance unmarks inspect deadline stops. P2b: `forceSeriesId` per operator `--retry` (inspect carries it past draft TTL; new series resets; same series still too_slow across 16min/3-day). P3: research catch rethrows deadline timeouts.
+- tsc / eslint / `npm test` (421 pass, KV unset). Walker later: preview `--retry --budget-ms=600000` on the 38 05:21-changed ids. Target ≥360, no wrong-song. Never prod. Do not merge.
+
+COMPLETED (2026-10-08 — #64 P1 worker deadline + P2a/P2b/P2c + preview walker):
+- P1: `deadlineExceeded` throws `WorkerDeadlineError` instead of committing an incomplete probe that counted toward dead. A 12-track 45s cron finishes and never goes dead. Cursor-advancing checkpoints reset `deadlineStops` so progress is not `too_slow`.
 - P2a: incomplete attempts increment only when this run re-probed (`lastAttemptAt === nowIso`). Reused cooling incompletes (0 MB `getRecording`) keep the prior count.
 - P2b: a new operator `--retry`/`--ids` after inspect `too_slow` resets stops (`unmarkUnresolved`). Mid-series `DEADLINE_STOP_MESSAGE` still accumulates across 16min/3-day gaps (P2-1). Chose reset-on-new-series over sticky `too_slow`.
 - P2c: `applyDeadlineStop` writes draft + inspect only. Committed pressing is unchanged until a successful commit. Forced stop on a verified 20-track is byte-identical on committed.
 - Rate-limit still overwrites lastError (429/503s cannot reach dead). `Alpha x x [unknown]` stays `Alpha x x`.
-- tsc / eslint / `npm test` (411 pass). Tests ran with KV unset. Preview walker still running `lf:preview:` `--retry`. Never prod. Do not merge.
+- Head `3a1855d`. tsc / eslint / `npm test` (411 pass, KV unset). Preview walker finished remaining=0 done=276 ticks=105 on `3a1855d` (ticks 102–105). `lf:preview:` only. too_slow 0, dead 0. Mtume vocal `1d890c2b` → Juicy `181c0a32`. Wipe-scan 0. Final samples 304/70/84/220 vs #54 360/72/111/249. Never prod. Do not merge.
 
 COMPLETED (2026-10-07 — track search pagination + duration tie-break, off main `dae37a5`):
 - MusicBrainz recording search `limit=100`, page while the page min score stays at the top score (`RECORDING_SEARCH_MAX_PAGES` 3, existing 1 req/s client). Tie-break: score, samples-material, Discogs duration closeness, lowest MBID. `TRACK_LEVEL_ANNOTATE_CAP` 3 after that order. Sticky saved-match unchanged (duration does not unstick). Skip annotate probes when a saved match still wins and `forceRefresh` is false.

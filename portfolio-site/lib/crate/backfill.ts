@@ -9,6 +9,7 @@ import {
   applyDeadlineStop,
   classifyQueueOutcome,
   createEnrichLockHeartbeat,
+  createForceSeriesId,
   enrichPressing,
   isBackfillSettled,
   isEnrichLockLostError,
@@ -365,6 +366,10 @@ export async function runBackfill(
   }
   const mbStart = mb.requestCount
   const cap = options.limit ?? Number.POSITIVE_INFINITY
+  const forceSeriesId =
+    options.retry || deps.forceRefresh
+      ? (deps.forceSeriesId ?? createForceSeriesId())
+      : deps.forceSeriesId
   const processed: number[] = []
   let completedThis = 0
   let failedThis = 0
@@ -412,6 +417,7 @@ export async function runBackfill(
           fetchDiscogs: wrappedFetch,
           deadlineMs,
           forceRefresh: Boolean(options.retry || deps.forceRefresh),
+          forceSeriesId,
           onLockHeartbeat: heartbeat,
         })
         processed.push(releaseId)

@@ -71,6 +71,7 @@ export function copyCheckpoint(
     deadlineStops: patch.deadlineStops ?? checkpoint?.deadlineStops,
     forceRun: patch.forceRun ?? checkpoint?.forceRun,
     forceRunAt: patch.forceRunAt ?? checkpoint?.forceRunAt,
+    forceSeriesId: patch.forceSeriesId ?? checkpoint?.forceSeriesId,
   }
 }
 

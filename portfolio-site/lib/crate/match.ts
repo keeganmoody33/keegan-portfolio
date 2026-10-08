@@ -17,6 +17,8 @@ const VERSION_TOKENS = [
 
 export const DURATION_CLOSE_MS = 5000
 export const DURATION_FAR_MS = 15000
+export const SAME_PERFORMANCE_DURATION_MS = 5000
+export const NEAR_TOP_SCORE_SLACK = 5
 export const UNIQUE_SEARCH_SCORE = 95
 
 export function parseDurationToMs(value: string | null | undefined): number | null {
@@ -82,11 +84,17 @@ export function songTitle(value: string): string {
 }
 
 export function artistsMatch(left: string, right: string): boolean {
-  const a = normalizeTitle(stripFeaturingCredits(left).replace(/\s+\(\d+\)$/u, ''))
-  const b = normalizeTitle(stripFeaturingCredits(right).replace(/\s+\(\d+\)$/u, ''))
+  const a = artistMatchKey(left)
+  const b = artistMatchKey(right)
   if (!a || !b) return false
   if (a === b) return true
   return a.replace(/^the /, '') === b.replace(/^the /, '')
+}
+
+/** Match key strips `[unknown]` only. Display cleanup (`presentSampleArtist`) must not decide hits. */
+function artistMatchKey(value: string): string {
+  const withoutUnknown = value.replace(/\[unknown\]/gi, ' ')
+  return normalizeTitle(stripFeaturingCredits(withoutUnknown).replace(/\s+\(\d+\)$/u, ''))
 }
 
 export type TrackLevelRecordingHit = {
@@ -105,31 +113,126 @@ export function recordingHasSampleMaterial(
   return (recording.samplesFrom?.length ?? 0) > 0 || (recording.sampledIn?.length ?? 0) > 0
 }
 
+export function isSameSongCandidate(
+  left: Pick<TrackLevelRecordingHit, 'title' | 'artist' | 'lengthMs'>,
+  right: Pick<TrackLevelRecordingHit, 'title' | 'artist' | 'lengthMs'>,
+  discogsDurationMs: number | null = null
+): boolean {
+  if (!artistsMatch(left.artist, right.artist)) return false
+  const leftSong = songTitle(left.title)
+  const rightSong = songTitle(right.title)
+  const titleOk =
+    titlesSimilar(left.title, right.title) ||
+    Boolean(leftSong && rightSong && leftSong === rightSong)
+  if (!titleOk) return false
+  const siblingDelta = durationDeltaMs(left.lengthMs, right.lengthMs)
+  if (siblingDelta != null && siblingDelta > DURATION_FAR_MS) return false
+  if (discogsDurationMs != null) {
+    const leftOff = durationDeltaMs(discogsDurationMs, left.lengthMs)
+    const rightOff = durationDeltaMs(discogsDurationMs, right.lengthMs)
+    if (leftOff != null && leftOff > DURATION_FAR_MS) return false
+    if (rightOff != null && rightOff > DURATION_FAR_MS) return false
+  }
+  return true
+}
+
+export function versionsAlign(leftTitle: string, rightTitle: string): boolean {
+  const left = mergeVersionTokens(leftTitle)
+  const right = mergeVersionTokens(rightTitle)
+  if (left.size === 0 && right.size === 0) return true
+  if (left.size !== right.size) return false
+  for (const token of left) {
+    if (!right.has(token)) return false
+  }
+  return true
+}
+
+export function isSamePerformanceSibling(
+  left: Pick<TrackLevelRecordingHit, 'title' | 'artist' | 'lengthMs'>,
+  right: Pick<TrackLevelRecordingHit, 'title' | 'artist' | 'lengthMs'>
+): boolean {
+  if (!artistsMatch(left.artist, right.artist)) return false
+  const leftSong = songTitle(left.title)
+  const rightSong = songTitle(right.title)
+  if (!leftSong || leftSong !== rightSong) return false
+  if (!versionsAlign(left.title, right.title)) return false
+  const delta = durationDeltaMs(left.lengthMs, right.lengthMs)
+  if (delta == null) return false
+  return delta <= SAME_PERFORMANCE_DURATION_MS
+}
+
 export function compareTrackLevelRecordings(
   left: TrackLevelRecordingHit,
   right: TrackLevelRecordingHit,
   discogsDurationMs: number | null = null
 ): number {
   const scoreDelta = (right.score ?? 0) - (left.score ?? 0)
-  if (scoreDelta !== 0) return scoreDelta
+  const sameSong = isSameSongCandidate(left, right, discogsDurationMs)
+  const nearTop = sameSong && Math.abs(scoreDelta) <= NEAR_TOP_SCORE_SLACK
+  if (!nearTop && scoreDelta !== 0) return scoreDelta
   const leftSamples = left.hasSamples ? 1 : 0
   const rightSamples = right.hasSamples ? 1 : 0
   if (leftSamples !== rightSamples) return rightSamples - leftSamples
+  if (scoreDelta !== 0) return scoreDelta
   const leftDelta = durationTieDelta(discogsDurationMs, left.lengthMs)
   const rightDelta = durationTieDelta(discogsDurationMs, right.lengthMs)
   if (leftDelta !== rightDelta) return leftDelta - rightDelta
   return left.mbid.localeCompare(right.mbid)
 }
 
+/** Probe known-sample and null-length hits before exact-duration duplicates. */
+export function compareTrackLevelProbeOrder(
+  left: TrackLevelRecordingHit,
+  right: TrackLevelRecordingHit,
+  discogsDurationMs: number | null = null
+): number {
+  const leftKnownSamples = left.hasSamples === true ? 0 : 1
+  const rightKnownSamples = right.hasSamples === true ? 0 : 1
+  if (leftKnownSamples !== rightKnownSamples) return leftKnownSamples - rightKnownSamples
+  const leftNull = left.lengthMs == null ? 0 : 1
+  const rightNull = right.lengthMs == null ? 0 : 1
+  if (leftNull !== rightNull) return leftNull - rightNull
+  const leftUnknown = left.hasSamples == null ? 0 : 1
+  const rightUnknown = right.hasSamples == null ? 0 : 1
+  if (leftUnknown !== rightUnknown) return leftUnknown - rightUnknown
+  return compareTrackLevelRecordings(left, right, discogsDurationMs)
+}
+
 export function trackLevelHitOutranksPrior(
   hit: TrackLevelRecordingHit,
-  prior: TrackLevelRecordingHit
+  prior: TrackLevelRecordingHit,
+  discogsDurationMs: number | null = null
 ): boolean {
+  if (isSameSongCandidate(hit, prior, discogsDurationMs)) {
+    const hitSamples = hit.hasSamples ? 1 : 0
+    const priorSamples = prior.hasSamples ? 1 : 0
+    if (priorSamples > 0 && hitSamples <= priorSamples) return false
+    if (hitSamples > priorSamples) return true
+    const hitScore = hit.score ?? 0
+    const priorScore = prior.score ?? 0
+    return hitScore - priorScore > NEAR_TOP_SCORE_SLACK
+  }
   const hitScore = hit.score ?? 0
   const priorScore = prior.score ?? 0
   if (hitScore > priorScore) return true
   if (hitScore === priorScore && Boolean(hit.hasSamples) && !prior.hasSamples) return true
   return false
+}
+
+export function priorTrackIsWrongSong(
+  prior: Pick<TrackLevelRecordingHit, 'title' | 'artist' | 'lengthMs'>,
+  discogs: { artist: string; title: string; durationMs: number | null }
+): boolean {
+  if (!artistsMatch(discogs.artist, prior.artist)) return true
+  const discogsSong = songTitle(discogs.title)
+  const priorSong = songTitle(prior.title)
+  const titleOk =
+    titlesSimilar(discogs.title, prior.title) ||
+    Boolean(discogsSong && priorSong && discogsSong === priorSong)
+  if (!titleOk) return true
+  const delta = durationDeltaMs(discogs.durationMs, prior.lengthMs)
+  if (delta != null && delta > DURATION_FAR_MS) return true
+  return versionContradicts(discogs.title, prior.title)
 }
 
 export function filterTrackLevelRecordings(
@@ -162,9 +265,10 @@ export function pickTrackLevelRecordings(
   if (!priorMbid) return ranked
   const prior = matched.find((hit) => hit.mbid === priorMbid)
   if (!prior) return ranked
+  if (priorTrackIsWrongSong(prior, discogs)) return ranked
   const best = ranked[0]
   if (!best) return [prior]
-  if (trackLevelHitOutranksPrior(best, prior)) return ranked
+  if (trackLevelHitOutranksPrior(best, prior, discogs.durationMs)) return ranked
   return [prior, ...ranked.filter((hit) => hit.mbid !== prior.mbid)]
 }
 
@@ -201,13 +305,36 @@ function durationTieDelta(discogsDurationMs: number | null, lengthMs: number | n
 }
 
 function versionTokens(value: string): Set<string> {
+  return tokensFrom(value, VERSION_TOKEN_SET)
+}
+
+const MERGE_VERSION_TOKEN_SET = new Set<string>([...VERSION_TOKENS, 'interlude'])
+
+function mergeVersionTokens(value: string): Set<string> {
+  return tokensFrom(value, MERGE_VERSION_TOKEN_SET)
+}
+
+function tokensFrom(value: string, allowed: Set<string>): Set<string> {
   const haystack = normalizeTitle(value)
   const words = haystack.split(/\s+/).filter(Boolean)
   const found = new Set<string>()
-  for (const token of VERSION_TOKENS) {
-    if (words.includes(token)) found.add(token)
+  for (const token of words) {
+    if (allowed.has(token)) found.add(token)
   }
   return found
+}
+
+/** Vocal vs instrumental is a different version. Bare vs "(Vocal)" is the same song. */
+function versionContradicts(leftTitle: string, rightTitle: string): boolean {
+  const left = versionTokens(leftTitle)
+  const right = versionTokens(rightTitle)
+  const leftInst = left.has('instrumental') || left.has('inst')
+  const rightInst = right.has('instrumental') || right.has('inst')
+  const leftVocal = left.has('vocal')
+  const rightVocal = right.has('vocal')
+  if (leftInst && rightVocal) return true
+  if (leftVocal && rightInst) return true
+  return false
 }
 
 function versionCompatible(discogsTitle: string, mbTitle: string, disambiguation: string): boolean {
