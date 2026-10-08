@@ -68,11 +68,22 @@ redis.call('DEL', KEYS[3])
 return 1
 `
 
+function lockTokenMatchesLua(): string {
+  return `
+local current = redis.call('GET', KEYS[1])
+if current ~= ARGV[1] then return 0 end
+`
+}
+
 export const RELEASE_LOCK_LUA = `
-if redis.call('GET', KEYS[1]) == ARGV[1] then
-  return redis.call('DEL', KEYS[1])
-end
-return 0
+${lockTokenMatchesLua().trim()}
+return redis.call('DEL', KEYS[1])
+`
+
+export const REFRESH_LOCK_LUA = `
+${lockTokenMatchesLua().trim()}
+redis.call('SET', KEYS[1], ARGV[1], 'EX', ARGV[2])
+return 1
 `
 
 export type CrateRedisKeys = {
@@ -81,7 +92,6 @@ export type CrateRedisKeys = {
   queued: string
   seen: string
   enrichLock: string
-  enrichMeta: string
   visitThrottle: string
   inflightPrefix: string
   pressing: (releaseId: number) => string
@@ -103,7 +113,6 @@ export function crateRedisKeys(env: Record<string, string | undefined> = process
     queued: assertPrefixedRedisKey(`${prefix}crate:queued:v1`, env),
     seen: assertPrefixedRedisKey(`${prefix}crate:seen:v1`, env),
     enrichLock: assertPrefixedRedisKey(`${prefix}crate:enrich:lock:v1`, env),
-    enrichMeta: assertPrefixedRedisKey(`${prefix}crate:enrich:meta:v1`, env),
     visitThrottle: assertPrefixedRedisKey(`${prefix}crate:visit:v1`, env),
     inflightPrefix: assertPrefixedRedisKey(`${prefix}crate:inflight:`, env),
     pressing: (releaseId: number) =>
@@ -166,6 +175,10 @@ export type CrateStore = {
 
 export function randomLockToken(): string {
   return randomUUID()
+}
+
+export function selectEnrichLockToken(explicit?: string): string {
+  return explicit || randomLockToken()
 }
 
 function asNumberArray(value: unknown): number[] {
@@ -375,35 +388,26 @@ class RedisCrateStore implements CrateStore {
   }
 
   async acquireEnrichLock(ttlSeconds: number, token: string): Promise<boolean> {
-    const current = await this.writeRedis.get<string>(this.keys.enrichLock)
-    if (current === token) {
-      const refreshed = await this.writeRedis.set(this.keys.enrichLock, token, {
-        ex: ttlSeconds,
-      })
-      return refreshed === 'OK'
-    }
-    const result = await this.writeRedis.set(this.keys.enrichLock, token, {
+    const created = await this.writeRedis.set(this.keys.enrichLock, token, {
       nx: true,
       ex: ttlSeconds,
     })
-    return result === 'OK'
+    if (created === 'OK') return true
+    const refreshed = await this.writeRedis.eval<string[], number>(
+      REFRESH_LOCK_LUA,
+      [this.keys.enrichLock],
+      [token, String(ttlSeconds)]
+    )
+    return Number(refreshed) === 1
   }
 
   async releaseEnrichLock(token: string): Promise<boolean> {
-    try {
-      const result = await this.writeRedis.eval<string[], number>(
-        RELEASE_LOCK_LUA,
-        [this.keys.enrichLock],
-        [token]
-      )
-      if (Number(result) === 1) return true
-    } catch {
-      // REST Lua can fail or miss JSON-encoded GET values; fall through.
-    }
-    const current = await this.writeRedis.get<string>(this.keys.enrichLock)
-    if (current !== token) return false
-    await this.writeRedis.del(this.keys.enrichLock)
-    return true
+    const result = await this.writeRedis.eval<string[], number>(
+      RELEASE_LOCK_LUA,
+      [this.keys.enrichLock],
+      [token]
+    )
+    return Number(result) === 1
   }
 
   async acquireVisitThrottle(ttlSeconds: number): Promise<boolean> {

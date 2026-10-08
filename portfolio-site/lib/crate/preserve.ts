@@ -270,6 +270,23 @@ export function isDiscogsUrlMatch(reason: string): boolean {
   return /discogs url/i.test(reason)
 }
 
+function inheritReleaseGroupMbid(
+  previous: StoredPressing,
+  next: StoredPressing
+): string | null | undefined {
+  if (previous.mbRelease.releaseGroupMbid !== undefined) {
+    return previous.mbRelease.releaseGroupMbid
+  }
+  if (
+    previous.mbRelease.mbid &&
+    next.mbRelease.mbid &&
+    previous.mbRelease.mbid === next.mbRelease.mbid
+  ) {
+    return next.mbRelease.releaseGroupMbid
+  }
+  return previous.mbRelease.releaseGroupMbid
+}
+
 export function keepPriorMatch(
   previous: StoredPressing | null,
   next: StoredPressing
@@ -296,12 +313,7 @@ export function keepPriorMatch(
     tracks: mergeTracksKeepRecordings(next.tracks, previous.tracks),
     mbRelease: {
       ...previous.mbRelease,
-      releaseGroupMbid:
-        previous.mbRelease.releaseGroupMbid !== undefined
-          ? previous.mbRelease.releaseGroupMbid
-          : next.mbRelease.releaseGroupMbid !== undefined
-            ? next.mbRelease.releaseGroupMbid
-            : null,
+      releaseGroupMbid: inheritReleaseGroupMbid(previous, next),
     },
     recordings: previous.recordings,
     lifecycles: {

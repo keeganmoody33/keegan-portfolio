@@ -8,12 +8,12 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test lib/discogs.test.ts lib/discogs-notice.test.ts lib/shuffle.test.ts lib/crate/crate.test.ts lib/crate/cover.test.ts lib/youtube-service.test.ts lib/youtube-playback-errors.test.ts hooks/use-reduced-motion.test.ts",
+    "test": "node --experimental-strip-types --test lib/discogs.test.ts lib/discogs-notice.test.ts lib/shuffle.test.ts lib/crate/crate.test.ts lib/crate/cover.test.ts lib/tally.test.ts lib/tally-store.test.ts lib/redis-env.test.ts lib/youtube-service.test.ts lib/youtube-playback-errors.test.ts hooks/use-reduced-motion.test.ts",
     "crate:inspect": "node --experimental-strip-types scripts/crate-inspect.ts",
     "crate:backfill": "node --experimental-strip-types scripts/crate-backfill.ts",
     "covers:sync": "node --experimental-strip-types scripts/covers-sync.ts",
     "covers:proof": "node --experimental-strip-types scripts/covers-proof.ts",
-    "generate:brand": "node scripts/generate-brand-assets.mjs"
+    "generate:brand": "python3 scripts/brand/render.py && node scripts/brand/manifest.mjs && node scripts/generate-brand-assets.mjs"
   },
   "dependencies": {
     "@jam.dev/sdk": "^1.0.1",

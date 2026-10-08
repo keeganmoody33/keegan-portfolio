@@ -1,14 +1,69 @@
-IN PROGRESS (2026-10-07 — integrations + QA Gate, merged main `f396637`):
+COMPLETED (2026-10-07 — PR #54 joiner strip: trailing `&`/comma only):
+- `presentSampleArtist` strips only a leftover trailing `\s*[&,]\s*$` after `& [unknown]`. Do not strip `feat.` or `x` (`Malcolm X`, `Little Feat`, `Lowell George & Little Feat`, `Generation X`, `Brand X`, `Mr. X`, `Earth, Wind & Fire`, `Tyler, The Creator` stay). `Alpha &` / `Alpha,` still become `Alpha`. Dropped unused `enrichMeta` from `crateRedisKeys`.
+- tsc / eslint / `npm test` (372 pass) / `next build` (28/28 dummy supabase). Tests ran with KV unset. Never prod. `652b21d` still ancestor. Do not merge.
+
+COMPLETED (2026-10-07 — PR #54 P2 forceRefresh lock-in + annotate cap):
+- `--retry` / `forceRefresh` ignores the saved track-level MBID. Equal-score hits with samples-material beat a saved match without them. Store holding `1aaf2f49` then forced retry at score 100 ends on `1d890c2b`.
+- `annotateTrackLevelHits` probes at most `TRACK_LEVEL_ANNOTATE_CAP` 3 hits (score, then MBID) into a probe cache; persist only the picked recording. Ten tied hits → 3 `getRecording`, 1 saved.
+- `presentSampleArtist` strips a trailing joiner (`&`, comma, `feat.`, ` x`) at read time (`Alpha &` → `Alpha`). Removed unused `getEnrichLockToken` / `setEnrichLockToken`.
+- tsc / eslint / `npm test` (372 pass) / `next build` (28/28 dummy supabase). Tests ran with KV unset. Never prod. `652b21d` still ancestor. Do not merge.
+
+COMPLETED (2026-10-07 — PR #54 UX pick determinism + docs nits):
+- Track-level recording pick is deterministic: score desc, then samples-material, then lowest MBID. Keep a prior stored match unless a new hit scores strictly higher. Shuffled Mtume 567894 vocal search still yields `1d890c2b` (Juicy) over `1aaf2f49`. `presentSampleArtist` strips a trailing `& [unknown]` (`MC Real & [unknown]` → `MC Real`). FRONTEND_GUIDELINES / APP_FLOW wrap lists include sample rows and credit lines; FG never a placeholder `Unknown`/`[unknown]` (real artists named Unknown kept).
+- tsc: narrow `track.recording.mbid` before indexing `recordings` in `attachTrackLevelDocs`. BACKEND_STRUCTURE recording-level path matches the stable pick (15s duration reject, `TRACK_LEVEL_FETCH_CAP` 1).
+- Integrations leftovers already on this branch: per-process lock tokens (`selectEnrichLockToken`, never persist `crate:enrich:meta:v1`); Discogs abort through `json()`; Lua no quote strip; P5707 work-URL filter keeps Wikidata; OVERVIEW wrap.
+- Preview Redis DEL of `lf:preview:crate:enrich:meta:v1` skipped this VM (Upstash MCP `redis_list_databases` `[]`; Vercel CLI env pull needs login). Tests ran with KV unset. Never prod. `652b21d` still ancestor.
+- tsc / eslint / `npm test` (370 pass) / `next build` (28/28). Never prod. Do not merge.
+
+COMPLETED (2026-10-07 — PR #54 UX overlay dedupe + [unknown] + wrap):
+- P1-1: sample facts dedupe on `kind + trackKey + sourceId` (not artist). A 429 overlay keeps stored facts and swaps recordings; `hydratePressing` keeps the artist-filled row. Test: Sir Duke 266650 Footprints blank + filled collapses to one ATCQ row.
+- P1-2: MusicBrainz artist id `125ec42a-7229-4250-afc5-e057484327fe` and the literal `[unknown]` are empty in `artistCreditName` / artist fill. Rows render title-only — never `Unknown` or a stray dash.
+- P2-1: FactSampleList link and credit `<p>` use `[overflow-wrap:anywhere] min-w-0`.
+- P2-2: FRONTEND_GUIDELINES sample-list sentence: `Artist — Title`, title-only when blank or `[unknown]`, lists not truncated.
+- Preview Redis `lf:preview:` hydrate rewrite (278 pressings, 0 prod writes, 3 pressings / 1 recording written). Recording sample links **360**, `/work/` **0**, `[unknown]` **1 → 0**, title-only blank-artist **1** (266650 Tout le monde), records with samples **72**, sample_of **111**, sampled_by **249**. ResearchFacts work rows **0**. Sir Duke research Footprints is one ATCQ row; Tout le monde is title-only. Mtume 567894 vocal `1d890c2b-…c0dc` still sampled-in Biggie Juicy `https://musicbrainz.org/recording/181c0a32-6e3f-4680-8a7d-1daf0b42e43b`. Artifact `/opt/cursor/artifacts/preview-overlay-hydrate.json`.
+- Landed on `cursor/collection-research-trackmatch-7382` (#54) `c1b4ca135633eacd47c6cf7cbbc57561cc26f4a8`, including `cursor/crate-research-cleanup-3033` at `652b21d` (PR #61 merged). tsc / eslint / `npm test` (366 pass) / `next build` (28/28 dummy supabase). Never prod.
+
+COMPLETED (2026-10-07 — PR #54 samples graph + lock/429 + a11y):
+- Sample facts are MusicBrainz `samples material` on recordings/releases only (type-ids `9efd9ce9-…fe62` / `967746f9-…7fc`). `direction` maps forward → `sample_of`, backward → `sampled_by`. Work-to-work (`based on`, parody, etc.) is out of samples; `getRecording` no longer fetches `/work/` or `work-rels`. Read-time filter drops leftover `/work/` `sourceUrl`s. Cap MB Retry-After at 120s.
+- P2: Discogs 429 stops the walk like MB 429. Enrich lock is Lua compare-and-delete / compare-and-extend only (strip JSON quotes in Lua; no GET+DEL / GET+SET). CLI Discogs timeout 15s; CLI re-entry passes persisted `lockToken`.
+- A11y (WCAG 2.5.8): OVERVIEW connection titles `mt-1 inline-flex min-h-6 items-center`, matching FactSampleList.
+- Preview Redis `lf:preview:` cleaned (278 pressings, 0 prod writes). Recording sample links **794 → 360**, `/work/` **434 → 0**, blank-artist **434 → 0**, records with samples **97 → 72**, sample_of **484 → 111**, sampled_by **310 → 249**. ResearchFacts work rows **132 → 0**. Mtume 567894 vocal `1d890c2b-…c0dc` still sampled-in Biggie Juicy `https://musicbrainz.org/recording/181c0a32-6e3f-4680-8a7d-1daf0b42e43b`.
+- Landed on `cursor/collection-research-trackmatch-7382` (#54) HEAD `966c657802178fe6325ece63fc0c537d5046f802`, including `cursor/crate-research-cleanup-3033` at `652b21d` (PR #61 merged/superseded). tsc / eslint / `npm test` (363 pass) / `next build` (28/28 dummy supabase). Vercel preview READY. Never prod.
+
+COMPLETED (2026-10-07 — PR #54 cleanup pass, preview leftover ids):
+- `--retry` without `--ids` also picks stored pressings whose lastError is still retryable (pending provenance like 1323531), not only dead ∪ inspect.
+- Sample `relatedArtist` fills from the related MusicBrainz recording or work artist-credit when the relation omits it. Rows with no artist render title only. Preview crate blank-artist sample rows: **132 / 433 before**, **132 / 432 after** (stored facts on the rest of the crate were not rewritten; fill applies on new `getRecording` fetches).
+- Mix-version / song-level track matches stay as-is (Keegan accepted). Copilot threads on #54: 8 real bugs fixed with tests; 2 accepted; 3 already correct — all replied and resolved.
+- Preview only (`lf:preview:`, `VERCEL_ENV=preview`). Reset 1409283 / 5328923 / 8404354 to retryable. Six leftovers all settled: 1409283 matched 17/18; 5328923 unmatched 0/11; 8404354 unmatched 0/19; 11287168 ambiguous 17/20; 1406290 unmatched recording-level 10/10 (Steel Pulse Reggae Fever); 1323531 matched 12/12. Dead set empty. Never prod.
+- HEAD `ef035f81d7c7d056cb7ced08e305f8b6d0caa7f7`. tsc / eslint / `npm test` (349 pass) / `next build` (28/28 dummy supabase). Vercel preview READY.
+
+COMPLETED (2026-10-07 — merge origin/main `3c6106f` into PR #54):
+- Merge commit of #60 official brand logo and #51 footer request tally. Kept both `progress.txt` sides. `source-map-js` stays 1.2.2. Tailwind stays v3.
+
+COMPLETED (2026-10-07 — four leftover preview ids, official `--retry` once):
+- No walker running. Pulled `5846b22`, pushed lock fix `1567fc6` (no force). Preview Redis `lf:preview:` only. `VERCEL_ENV=preview`. Never prod.
+- `npm run crate:backfill -- --ids=5150579,11287168,1406290,1323531 --retry` once (45s `ENRICH_BUDGET_MS`). Processed Kiss 5150579 only (41 MB requests). Did not start the other three.
+- 5150579 Kiss Alive II: **matched** (MB `fe12c2ab-8ce4-4d20-9c7f-0526b5859684`, 20/20 tracks). Residual inspect `unavailable` (`wikidata skipped: worker budget below floor`, attempts 0).
+- 11287168 Method Man & Redman Blackout!: unchanged this tick. Stored. MB release **ambiguous** (shared catno). Recording-level samples present. `lastError` rate_limit attempts 0 from 08:04Z.
+- 1406290 Steel Pulse Reggae Fever (listing; not Method Man): unchanged. Discogs facts blank (`artist`/`title` empty), 10 tracks with recording-level matches. `lastError` rate_limit attempts 1. Inspect `not_found`.
+- 1323531 Tim Weisberg Night-Rider!: unchanged. MB release matched, 12/12 tracks matched, provenance still `pending` with rate_limit attempts 1. **Not in inspect**, so bare `--retry` without `--ids` would miss it.
+- Dead still 1409283 / 5328923 / 8404354: exhausted attempts 5 `Too many requests` on 2026-10-06 17:40–17:47Z, before rate_limit stopped counting toward `CRATE_MAX_ATTEMPTS`. Not retried.
+- Official 45s tick cannot rematch a 20-track live album and three more ids. Next leftover pass needs `--ids=11287168,1406290,1323531 --retry` (and optionally Kiss again for Wikidata).
+
+COMPLETED (2026-10-07 — full preview collection backfill):
+- Preview Redis `lf:preview:` only. Never prod. `prodTouched: false`. 276 unique ids, all stored. Coverage: `/opt/cursor/artifacts/preview-full-backfill.json` (started 2026-10-06T17:54:56Z, finished 2026-10-07T09:15:00Z, ~15.3h wall-clock).
+- Totals: matched MB release 144; recording-level only 74; recording-level any 119; unmatched 56; missing 0; ambiguous 79; temporary 4 (Kiss 5150579 unavailable, Method Man 11287168 / 1406290 / Tim Weisberg 1323531 rate_limit); too_slow 0.
+- Credits by source (records with ≥1 credit fact): MusicBrainz 144, Discogs 255, Wikidata 135, any 262.
+- Samples by source: MusicBrainz 95 (sample-of 51, sampled-by 67). Discogs 0. Wikidata 0. Discogs extraartists and Wikidata already fill credits; they do not carry sample-of / sampled-by. No WhoSampled, no scraping.
+- Mtume 567894: MB release unmatched; recording-level matched. Vocal `1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc` sampled-in The Notorious B.I.G. Juicy `181c0a32-6e3f-4680-8a7d-1daf0b42e43b`.
+- Top sample counts: Marley Legend 25, Freddie Gibbs Piñata 21, Mahalia Stille Nacht 19, ATCQ Love Movement 18, Stevie Songs In The Key Of Life 17.
+- MusicBrainz 429s do not count toward `CRATE_MAX_ATTEMPTS`. After a global MB 429 wait, defer that id and walk other remaining ids. Do not merge, mark ready, or push to #53.
+
+COMPLETED (2026-10-07 — integrations + QA Gate, merged main `f396637`):
 - MusicBrainz 429s do not count toward `CRATE_MAX_ATTEMPTS`. SPARQL/MB abort timers are `min(timeout, remaining)`. Only MB 429 (`MUSICBRAINZ_RATE_LIMIT_MESSAGE`) stops the walk.
 - Track-level: preserve `trackSampleCursor` in `applyDeadlineStop`; strip feat/ft/featuring; reject duration >15s off; `TRACK_LEVEL_FETCH_CAP` 1; `based on` is not a sample; persist merged samples then `setRecording`; HTTP-date Retry-After.
 - Enrich lock: 90s TTL; owner token may re-acquire/refresh; Lua release plus GET+DEL fallback; release on exit. Do not use a 3700s lock.
 - Kept `#57` lockfile pin `source-map-js` 1.2.2 (CVE-2026-93749). Tailwind stays v3. `package.json` unchanged.
-- Next: full preview backfill `lf:preview:` only.
-
-SKIPPED (2026-10-07 — full preview collection backfill on this rebase VM):
-- This Cloud Agent environment has no preview Upstash Redis credentials (`KV_REST_API_*` / `UPSTASH_REDIS_REST_*` absent from `printenv`; Upstash MCP `redis_list_databases` returned `[]`). Did not decrypt Vercel Preview env, did not touch prod, did not write `lf:` keys.
-- Coverage numbers, Juicy live Redis check, 10 sample-hit examples, and `--retry` counts are not invented. Re-run `npm run crate:backfill` then `npm run crate:backfill -- --retry` where preview Redis is present (`lf:preview:` only).
-- Skip log: `/opt/cursor/artifacts/preview-full-backfill.log`.
 
 COMPLETED (2026-10-07 — PR #54 rebase onto main `#56` `7317a89`):
 - Branch `cursor/collection-research-trackmatch-7382` HEAD `d0cc837`. Dropped `22d1edf`..`e407a88` (#53 pre-squash), `494a1c9` (creditLine), `72b8679` (unmatched facts). Kept `13b0670`..`1c6b449` replayed as `baa6496`..`d0cc837`.
@@ -25,10 +80,36 @@ COMPLETED (2026-10-06 — collection research follow-up: P2s + track-level sampl
 - Fixture: Mtume 567894 Juicy Fruit (Vocal) → sampled in The Notorious B.I.G. - Juicy.
 - Preview Redis `lf:preview:` 567894: MusicBrainz recording `1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc` has sampled-in The Notorious B.I.G. - Juicy (`181c0a32-6e3f-4680-8a7d-1daf0b42e43b`). Skip-match retry after 429 reused stored recordings (2 MB searches). `lastError` null. No prod writes.
 
+COMPLETED (2026-10-07 — footer tally UX + QA follow-ups):
+- Focus-visible is 2px solid `--house-ink` (`outline` + `outline-2`, offset 2px) on humans / not humans, breakdown/close, and category rows. Tailwind v3 has no `outline-solid`. Orange stays hover. LCD chip dropped `rounded-[2px]`. Breakdown is `inline-flex min-h-11 items-center sm:min-h-8`. `motion-reduce:duration-0` next to `transition-none`.
+- Tally production keys use `isProductionRedisNamespace` (`VERCEL_ENV=production` and ref `main`) via `discogsKeyPrefix` / `assertPrefixedRedisKey` from `lib/redis-env.ts`. `vercel --prod` off main writes `lf:preview:tally:v1`.
+- `recordHit` / `readTally` resolve the default Redis client inside try. `readTally` times out at 1.5s. 503s send `Cache-Control: public, s-maxage=10, stale-while-revalidate=30`. Client fetch dropped `cache: 'no-store'`.
+- Split `resolveRedisRestConfig` + prefix helpers into `lib/redis-env.ts` (no Discogs/crate). `discogs-store` re-exports; crate research paths unchanged. Visitor writes still only `*:tally:v1` / `*:tally:v1:since`.
+- Tests: `lib/redis-env.test.ts`, tally-store prefix / timeout / swallow / cache-header cases.
+
+COMPLETED (2026-10-07 — footer request tally, remaining fixes):
+- Merged origin/main (`7317a89`, #56 Copilot fixes on research/covers) into `feat/request-tally`. Footer stayed main's nav plus `<RequestTally/>`. No vercel.json crons. Preview Redis `lf:preview:tally:v1`; prod `lf:tally:v1`.
+- Bar track/fill use `--house-line` / `--house-ink` / `--house-dim` (no `#1a1a1a` / `#4a4a4a`). Fonts `--house-font-mono` / `--house-font-lcd` / `--house-font-sans`. LCD chip keeps `--house-lcd` tokens.
+- `recordHit` pipelines HINCRBY + SETNX into one Upstash round trip; still fire-and-forget in `event.waitUntil`, never throws.
+- Collapsed-row height reserved from first paint (`invisible` + `inert` until `/api/tally` 200) so loading/errors do not CLS.
+- Category select is click/Enter/Space only. Disclosure `aria-expanded`; humans/not humans `aria-pressed` with visible label = name. `motion-reduce:transition-none`.
+- Tests: `lib/tally.test.ts`, `lib/tally-store.test.ts` (includes single pipeline-exec assertion).
+
+COMPLETED (2026-10-06 — footer request tally):
+- House footer shows a running count of page requests served to presumed humans vs automated clients, since the first counted hit. Counted server side in proxy.ts, classified by User-Agent (lib/tally.ts), stored in Upstash Redis, read via GET /api/tally. Breakdown opens inline below the row. Tests: node --experimental-strip-types --test lib/tally.test.ts.
+
+COMPLETED (2026-10-07 — official logo: /brand, stable + hashed URLs, R2 mirror script):
+- Official mark is the 2026-09-26 master (bold 0.0625, ellipse at 60°, core NOT scaled). The old app/icon.svg and brand/lecturesfrom-mark.svg used `scale(0.74)` on the core; app icons now use the master.
+- public/brand: logo.svg (canonical), logo-white.svg, 512/1024 PNGs, favicon.svg (simplified: no flag, stroke 0.095, auto dark mode), favicon.ico, apple-touch-icon, icon-192/512. Re-render: `python3 scripts/brand/render.py`, then `node scripts/brand/manifest.mjs`.
+- public/brand/v/<name>.<sha256:10>.<ext> are immutable copies; manifest.json lists every file with sha256, size, stable URL, immutable URL, R2 mirror URL, canonical flag.
+- next.config headers: /brand/* (not v/) max-age=3600 + SWR; /brand/v/* 1y immutable; CORS * on both. Organization JSON-LD now has `logo` (logo-1024.png). app/manifest.ts added. /brand page added to sitemap.
+- R2 mirror: `bash scripts/brand/publish-r2.sh` (wrangler, bucket lecturesfrom-assets, served at assets.lecturesfrom.com). Blocked until R2 is enabled. manifest.json carries no `mirror` URLs until `BRAND_MIRROR_LIVE=1 node scripts/brand/manifest.mjs` after the domain is live.
+- One generator: `npm run generate:brand` (render.py writes public/brand + the three app/ icons; generate-brand-assets.mjs now writes only brand/house-share.png). APP_FLOW, BACKEND_STRUCTURE, TECH_STACK updated.
+- brand/lecturesfrom-mark.svg (scaled core) left untouched; it may feed the animated site logo. Decide separately.
+
 COMPLETED (2026-10-07 — source-map-js 1.2.2, replaces Dependabot #52):
 - Transitive lockfile bump only: `source-map-js` 1.2.1 → 1.2.2 (CVE-2026-93749). `npm update source-map-js` in `portfolio-site/`. `package.json` unchanged. `tailwindcss` stays `^3.3.0` / 3.4.19. `postcss-selector-parser` stays (Tailwind v3 needs it).
-- Do not merge Dependabot #52: it also jumps `tailwindcss` `^3.3.0` → `^4.3.3` and the Vercel preview fails (Turbopack: tailwindcss used directly as PostCSS plugin).
-
+- Do not merge Dependabot #52: it also jumps `tailwindcss` `^3.3.0` → `^4.3.3` and the Vercel preview fails (Turbopack: tailwindcss used directly as PostCSS plugin). #52 is closed.
 
 COMPLETED (2026-10-06 — rebase covers onto main 65de54e / #53):
 - Rebased `cursor/collection-covers-blob-5ece` onto `65de54e`. Merge-base is `65de54e`, not `41416d1`. Kept CAA Blob + Discogs hotlink and #53 research (`extraartists`, `research.ts`/`wikidata`, SourceLine sr-only `source `, SampleList `inline-flex min-h-6 items-center`).
@@ -82,7 +163,7 @@ COMPLETED (2026-10-06 — collection record detail, preview prototype):
 - LF Direction brief: house tokens only, OVERVIEW/TRACKS tabs, hairline rows, sourced lines, empty copy (`nothing on file yet` / `pick a track for credits and samples` / `{reason} · checked YYYY-MM-DD`). `.house-fade` reuses `houseLockup`. Cover 1px `#242424` frame.
 - Preview Redis (`lf:preview:`) holds last-good for 573292 / 240128 / 567894. Mtume stays unmatched with vocal vs Fruity Instrumental Mix both `ambiguous`. Bootsy description is the stored Winchester/gatefold paraphrase. Attribution is lowercase `discogs` plus exact-case `Data provided by Discogs.` to the pressing URL (grid credit links the collection page). Keep PR #50 in draft. Do not merge, promote the preview, or change paid plans. Detail cover uses stored full-res (CAA Blob when provisioned, else Discogs hotlink) with the listing thumb as a blur placeholder.
 
-
+COMPLETED (2026-09-28 — pivot (−4, −3); ring contrast sampled on the ring):
 - Pivot is (−4, −3) viewBox units from the ring centre (`−4/248`, `−3/248`). Drawing ~−3.95, −3.07. Blue −32.339552° (ellipse ∩ inner-arc from the new pivot), horiz 0° ends on the arc, green 30.27366° (arc ∩ ring). Ellipse, hairline, line-only, transparent `--lf-mark-*`, favicon / og unchanged.
 - Ring contrast is polar samples on the outer-ring annulus (pivot excluded). Recapture vs `#0a0a0a`: 375 DPR1 ring brightest `#8c8c8c` 5.89:1 (top-of-ring AA hotspot; also the mark-wide peak), typical/median `#373737` 1.66:1; pivot overlap `#8a8a8a` 5.73:1. 40px box ring brightest `#9a9a9a` 7.04:1 (green∩ring; also the mark-wide peak), typical `#494949` 2.20:1; pivot overlap `#898989` 5.66:1. 512 overlay Hausdorff 4.24px, median 1.00, p95 2.83.
 

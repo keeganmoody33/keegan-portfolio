@@ -256,24 +256,45 @@ export async function probeDiscogsIdentity(
   }
 }
 
+export const DISCOGS_RELEASE_TIMEOUT_MS = 15_000
+
 export async function fetchDiscogsReleaseDetail(
   releaseId: number,
-  options: { fetchImpl?: DiscogsFetch; token?: string } = {}
+  options: { fetchImpl?: DiscogsFetch; token?: string; timeoutMs?: number } = {}
 ): Promise<DiscogsReleaseDetail> {
   const fetchImpl = options.fetchImpl ?? fetch
   const token = options.token !== undefined ? options.token : getDiscogsToken()
-  const response = await fetchImpl(`https://api.discogs.com/releases/${releaseId}`, {
-    headers: discogsHeaders(token),
-    cache: 'no-store',
-  })
-  throwForDiscogsStatus(response)
-  let raw: unknown
+  const timeoutMs = options.timeoutMs ?? DISCOGS_RELEASE_TIMEOUT_MS
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
-    raw = await response.json()
-  } catch {
-    throw new DiscogsUnavailableError()
+    let response: Response
+    try {
+      response = await fetchImpl(`https://api.discogs.com/releases/${releaseId}`, {
+        headers: discogsHeaders(token),
+        cache: 'no-store',
+        signal: controller.signal,
+      })
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new DiscogsUnavailableError()
+      }
+      throw error
+    }
+    throwForDiscogsStatus(response)
+    let raw: unknown
+    try {
+      raw = await response.json()
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new DiscogsUnavailableError()
+      }
+      throw new DiscogsUnavailableError()
+    }
+    const mapped = mapDiscogsReleaseDetail(raw as Parameters<typeof mapDiscogsReleaseDetail>[0])
+    if (!mapped) throw new DiscogsUnavailableError()
+    return mapped
+  } finally {
+    clearTimeout(timer)
   }
-  const mapped = mapDiscogsReleaseDetail(raw as Parameters<typeof mapDiscogsReleaseDetail>[0])
-  if (!mapped) throw new DiscogsUnavailableError()
-  return mapped
 }

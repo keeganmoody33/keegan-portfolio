@@ -1,6 +1,6 @@
 # Backend Structure — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-10-06
+**Last Updated:** 2026-10-07
 **Database:** Supabase (PostgreSQL)
 **Edge Functions Runtime:** Deno
 **API Layer:** Next.js Route Handlers (proxy pattern)
@@ -265,7 +265,7 @@ Full paginated Discogs crate for `/collection`. Paginates `per_page=100` until `
 
 **PostHog events:** `api_discogs_collection_request`, `api_discogs_error`, `api_rate_limited`
 
-A complete collection crawl from a **gated** keep/enrich/backfill run queues new and stale release ids (`queueNewAndMissing`). Visitors never enqueue. Research facts are a standard schema (`track`, `role`, `person`, `sample_of`/`sampled_by`) with `source`, `sourceId`/`sourceUrl`, and `fetchedAt`. Precedence: MusicBrainz, then Discogs extraartists, then Wikidata (Discogs master `P1954`, then MusicBrainz release group `P436`, then Discogs release `P2206` / MusicBrainz release `P5813`; more than one item is ambiguous and is not merged). Samples use `P5707` inbound and outbound, plus a **primary** recording-level path (artist + song title, mix suffixes stripped; duration is a tiebreak; merge rels across recordings of the same song). Matched-track counts stay separate from per-track credit/sample coverage; release-level facts are reported separately (`withReleaseCredits` / `withReleaseSamples`). Per-fact source labels use `.house-source` (no new colors).
+A complete collection crawl from a **gated** keep/enrich/backfill run queues new and stale release ids (`queueNewAndMissing`). Visitors never enqueue. Research facts are a standard schema (`track`, `role`, `person`, `sample_of`/`sampled_by`) with `source`, `sourceId`/`sourceUrl`, and `fetchedAt`. Precedence: MusicBrainz, then Discogs extraartists, then Wikidata (Discogs master `P1954`, then MusicBrainz release group `P436`, then Discogs release `P2206` / MusicBrainz release `P5813`; more than one item is ambiguous and is not merged). Samples use `P5707` inbound and outbound, plus a **primary** recording-level path (artist + song title, mix suffixes and `feat.` / `ft.` / `featuring` stripped; reject duration more than 15s off; pick one hit — `TRACK_LEVEL_FETCH_CAP` 1 — sorted by score, then samples-material, then lowest MBID; keep a prior stored match unless a new hit scores strictly higher, or scores equal and has samples-material the prior lacks; `--retry` / `forceRefresh` ignores the saved MBID; annotate at most `TRACK_LEVEL_ANNOTATE_CAP` 3 hits ranked by score then MBID and persist only the picked recording). MusicBrainz sample facts come only from `samples material` on recordings or releases (type-ids `9efd9ce9-e702-448b-8e76-641515e8fe62` / `967746f9-9d79-456c-9d1e-50116f0b27fc`); `direction` maps forward → `sample_of` and backward → `sampled_by`. Work-to-work rels are not samples — drop only MusicBrainz `musicbrainz.org/work/` `sourceUrl`s. Wikidata P5707 `wikidata.org/wiki/Q*` sample URLs stay. Matched-track counts stay separate from per-track credit/sample coverage; release-level facts are reported separately (`withReleaseCredits` / `withReleaseSamples`). Per-fact source labels use `.house-source` (no new colors).
 
 ---
 
@@ -275,7 +275,7 @@ Manual budgeted drain of the crate enrichment queue. No Vercel schedule (`vercel
 
 **Auth:** `Authorization: Bearer $CRON_SECRET` compared with `timingSafeEqual`. Missing `CRON_SECRET` → HTTP 404 (route is not public). Wrong bearer → 401.
 
-**Behavior:** If the collection listing is stale (24h), crawl and store last-good. Collection 401/403 maps to `DiscogsAuthError`, records `auth` on meta, and returns `{ skipped: true, stoppedOnAuth: true }` without `processEnrichmentQueue`. Otherwise read last-good collection, enqueue new/missing ids (dead ids stay dead unless `{ retry: true }`), `processEnrichmentQueue` until the shared deadline. MusicBrainz ~1.1s, Discogs extraartists from the already-fetched release, Wikidata SPARQL (User-Agent `lecturesfrom/1.0 +https://lecturesfrom.com ( 33@lecturesfrom.com )`, one module-level client — `lookupWikidataReleaseFacts` / `wikidataFactsFor` do not `createWikidataClient` per call, 1.1s interval, 5s timeout, honors `Retry-After`; lookup by `P1954` / `P436` / `P2206` / `P5813`). A temporary Wikidata failure (429/5xx/timeout) keeps prior Wikidata facts, sets `research.lastError`, and does not move `research.verifiedAt`. Failed refresh preserves the prior verified pressing when one exists. Worker 401/403 are `auth`: stop the run, do not increment attempts, nack `AUTH_RETRY_MS` (15 minutes). Exhausted retries (`CRATE_MAX_ATTEMPTS` 5) move to `lf:crate:dead:v1`. A worker deadline throws `WorkerDeadlineError`, nacks with backoff, and after 3 consecutive stops marks unresolved `too_slow` and **drops + discards the draft**. `too_slow` recovery is a manual `--retry`, not a visit re-queue. Draft SET uses `EX` 900s; reuse only if visitor-facts, within TTL, and `draft.lastAttemptAt` is newer than the committed pressing. Floor comparisons use `remainingBelowTakeFloor` (`remaining <= 0` or `remaining < takeFloor`). After `takeDue`, the drain re-checks the floor and nacks without a deadline stop if remaining dropped below the floor; `enrichPressing` still re-checks as a safety net. Proof drains use `ENRICH_BUDGET_MS` (45s), not the 8s take floor. Lock and inflight TTL 90s.
+**Behavior:** If the collection listing is stale (24h), crawl and store last-good. Collection 401/403 maps to `DiscogsAuthError`, records `auth` on meta, and returns `{ skipped: true, stoppedOnAuth: true }` without `processEnrichmentQueue`. Otherwise read last-good collection, enqueue new/missing ids (dead ids stay dead unless `{ retry: true }`), `processEnrichmentQueue` until the shared deadline. MusicBrainz ~1.1s, Discogs extraartists from the already-fetched release, Wikidata SPARQL (User-Agent `lecturesfrom/1.0 +https://lecturesfrom.com ( 33@lecturesfrom.com )`, one module-level client — `lookupWikidataReleaseFacts` / `wikidataFactsFor` do not `createWikidataClient` per call, 1.1s interval, 5s timeout, honors `Retry-After`; lookup by `P1954` / `P436` / `P2206` / `P5813`). A temporary Wikidata failure (429/5xx/timeout) keeps prior Wikidata facts, sets `research.lastError`, and does not move `research.verifiedAt`. Failed refresh preserves the prior verified pressing when one exists. Worker 401/403 are `auth`: stop the run, do not increment attempts, nack `AUTH_RETRY_MS` (15 minutes). Exhausted retries (`CRATE_MAX_ATTEMPTS` 5) move to `lf:crate:dead:v1`. A worker deadline throws `WorkerDeadlineError`, nacks with backoff, and after 3 consecutive stops marks unresolved `too_slow` and **drops + discards the draft**. `too_slow` recovery is a manual `--retry`, not a visit re-queue. Draft SET uses `EX` 900s; reuse only if visitor-facts, within TTL, and `draft.lastAttemptAt` is newer than the committed pressing. Floor comparisons use `remainingBelowTakeFloor` (`remaining <= 0` or `remaining < takeFloor`). After `takeDue`, the drain re-checks the floor and nacks without a deadline stop if remaining dropped below the floor; `enrichPressing` still re-checks as a safety net. Proof drains use `ENRICH_BUDGET_MS` (45s), not the 8s take floor. Lock and inflight TTL 90s. Each enrich/backfill/keep/CLI run picks a fresh lock token and never persists it on `crate:enrich:meta:v1`. Lua compare-and-delete / compare-and-extend uses the raw GET value (no JSON-quote strip). Discogs release fetch keeps the abort timer armed through `response.json()`.
 
 **Response:** `{ processed: number[], skipped: boolean, stoppedOnRateLimit: boolean, stoppedOnAuth: boolean, mbRequests: number }` or `{ processed: [], skipped: true, reason: 'no store' }` when Redis env is absent.
 
@@ -295,7 +295,7 @@ Preview-only proof actions (`action=inspect|overlap|kill|recover|exhausted|resyn
 
 ### GET /api/cron/crate-backfill
 
-Resumable research backfill independent of visitor traffic. Same Bearer `CRON_SECRET` gate (missing → 404). Walks collection ids via `enrichPressing`. Query: `?ids=567894,573292&retry=1&limit=10`. `retry=1` with `ids` also `forceRefresh`. Without `ids`, `--retry` / `retry=1` retries dead and inspect `too_slow` / `rate_limit` / `unavailable` (does not re-walk settled ids). Checkpoints a settled-id set; a missing `settled` array does **not** treat `cursor` as an index into the current id list (returns `[]`). Dead ids are skipped unless `{ retry: true }`. `remaining` is exact. Shares the enrich lock with crate-enrich.
+Resumable research backfill independent of visitor traffic. Same Bearer `CRON_SECRET` gate (missing → 404). Walks collection ids via `enrichPressing`. Query: `?ids=567894,573292&retry=1&limit=10`. `retry=1` with `ids` also `forceRefresh`. Without `ids`, `--retry` / `retry=1` retries dead, inspect `too_slow` / `rate_limit` / `unavailable`, and stored pressings whose lastError is still retryable (including pending provenance). It does not re-walk settled ids. Checkpoints a settled-id set; a missing `settled` array does **not** treat `cursor` as an index into the current id list (returns `[]`). Dead ids are skipped unless `{ retry: true }`. `remaining` is exact. Shares the enrich lock with crate-enrich.
 
 Also: `npm run crate:backfill` (`scripts/crate-backfill.ts`) with `--ids=`, `--retry`, `--limit=`.
 
@@ -376,6 +376,16 @@ Proxies to GitHub public events API. Returns aggregated activity stats for keega
 
 ---
 
+### GET /api/tally
+
+Public running totals for the house footer tally (`components/house/RequestTally.tsx`).
+
+- **Counting:** `proxy.ts` records one hit per page request (GET, not `/api/*`, not `/_next/*`, not `/.well-known/*`, not prefetch or RSC data fetches), classified by User-Agent in `lib/tally.ts`, and writes it with `event.waitUntil` so the page is never delayed. `recordHit` pipelines `HINCRBY` + `SETNX` into one Upstash round trip and never throws (Redis client construction sits inside the try). Bots that never run JavaScript are counted too; they are not blocked or slowed. Edge Redis config comes from `lib/redis-env.ts`, not `discogs-store.ts`.
+- **Storage:** the existing Upstash Redis store (`KV_REST_API_URL` / `KV_REST_API_TOKEN`). Same production check as Discogs: `VERCEL_ENV=production` *and* git ref `main` (`isProductionRedisNamespace`). Hash `lf:tally:v1` (that production namespace) or `lf:preview:tally:v1` (everything else, including `vercel --prod` from another branch), one field per category; `lf:tally:v1:since` / `lf:preview:tally:v1:since` holds the first hit's ISO time. Visitor writes are only `*:tally:v1` / `*:tally:v1:since`. Deploys do not reset it. Preview never writes production keys.
+- **Response 200:** `{ since: string | null, presumedHuman: number, automated: number, byCategory: Record<category, number> }`, `Cache-Control: public, s-maxage=60, stale-while-revalidate=300`. The footer fetch does not send `cache: 'no-store'`, so the CDN cache applies.
+- **Response 503:** `{ error: "tally unavailable" }` when Redis is not configured, unreachable, or `readTally` exceeds ~1.5s. `Cache-Control: public, s-maxage=10, stale-while-revalidate=30`. The footer keeps the collapsed-row height reserved (no CLS); content stays hidden until a 200 snapshot arrives.
+- **Limits:** identity is self declared (User-Agent only). Nothing is network or cryptographically verified yet.
+
 ### POST /api/jd-analyzer
 
 Proxies to Supabase `jd-analyzer` Edge Function.
@@ -417,16 +427,19 @@ House share images live in the `(house)` route group so they do **not** inherit 
 
 | File | URL | Notes |
 |------|-----|--------|
-| `app/icon.svg` | `/icon.svg` | Stroke via `prefers-color-scheme` (`#20262b` light / `#ececec` dark). No `currentColor`. |
-| `app/favicon.ico` | `/favicon.ico` | 16 / 32 / 48 on a `#ececec` rounded plate, mark `#20262b`. |
-| `app/apple-icon.png` | `/apple-icon.png` | 180×180, solid `#ececec` ground, mark `#20262b`. |
+| `app/icon.svg` | `/icon.svg` | Simplified official mark (no flag, stroke 0.095). Stroke via `prefers-color-scheme` (`#20262b` light / `#ffffff` dark). No `currentColor`. |
+| `app/favicon.ico` | `/favicon.ico` | 16 / 32 / 48, simplified official mark `#20262b`, transparent. |
+| `app/apple-icon.png` | `/apple-icon.png` | 180×180, white ground, full official mark `#20262b`. |
+| `app/manifest.ts` | `/manifest.webmanifest` | Icons `/brand/icon-192.png`, `/brand/icon-512.png`. |
+| `public/brand/*` | `/brand/*` | Official logo files + `manifest.json`. `Cache-Control: max-age=3600, stale-while-revalidate=86400`, CORS `*` (next.config `headers()`). |
+| `public/brand/v/*` | `/brand/v/*` | Content-hashed copies. `max-age=31536000, immutable`, CORS `*`. |
 | `app/(house)/opengraph-image.tsx` | hashed `/opengraph-image-*` | Injects house `og:image`. |
 | `app/opengraph-image/route.ts` | `/opengraph-image` | Stable 1200×630 PNG from `brand/house-share.png`. |
 | `app/(house)/twitter-image.tsx` | hashed `/twitter-image-*` | Injects house `twitter:image`. |
 | `app/twitter-image/route.ts` | `/twitter-image` | Same still as OG. |
 | `public/og.jpg` | `/og.jpg` | GTM certificate. Person metadata only (`personMetadata()`). |
 
-Regenerate rasters with `npm run generate:brand`. Canonical vector: `brand/lecturesfrom-mark.svg`.
+Regenerate with `npm run generate:brand`: `scripts/brand/render.py` writes `public/brand/*` and the three `app/` icons from the official 2026-09-26 master (paths live in the script); `scripts/brand/manifest.mjs` writes hashed copies + `manifest.json`; `scripts/generate-brand-assets.mjs` writes only `brand/house-share.png` from `brand/lecturesfrom-mark.svg` (scaled-core line mark used by the site logo components; OG follow-up). R2 mirror: `scripts/brand/publish-r2.sh`; add mirror URLs with `BRAND_MIRROR_LIVE=1` only after `assets.lecturesfrom.com` is live.
 
 ---
 
@@ -483,9 +496,9 @@ Both deployed via `supabase functions deploy <name>`. Source in `supabase/functi
 | `NEXT_PUBLIC_SUPABASE_URL` | Public (client + server) | Yes | `/api/chat`, `/api/jd-analyzer`, `lib/supabase.ts` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public (client + server) | Yes | `/api/chat`, `/api/jd-analyzer`, `lib/supabase.ts` |
 | `NEXT_PUBLIC_POSTHOG_KEY` | Public (client + server) | No | `providers.tsx`, `lib/posthog-server.ts` |
-| `NEXT_PUBLIC_POSTHOG_HOST` | Public (client only) | No | Browser ingest host (`lib/posthog-client.ts`). Defaults to `https://us.i.posthog.com`; set to `https://flow.lecturesfrom.com` once the managed proxy is live. Server analytics (`lib/posthog-server.ts`) always send to `https://us.i.posthog.com`. |
+| `NEXT_PUBLIC_POSTHOG_HOST` | Public (client only) | No | Browser ingest host (`lib/posthog-client.ts`). Defaults to `https://us.i.posthog.com`; production uses the managed proxy `https://flow.lecturesfrom.com`. Server analytics (`lib/posthog-server.ts`) always send to `https://us.i.posthog.com`. |
 | `DISCOGS_TOKEN` | Server-only | No | `/api/discogs/collection` (sent when present; public collection works without it) |
-| `KV_REST_API_URL` | Server-only | No | Durable Discogs snapshot (Vercel Marketplace Upstash for Redis). Preferred over UPSTASH_*. |
+| `KV_REST_API_URL` | Server-only | No | Durable Discogs snapshot and the footer request tally (`lib/tally-store.ts`, `/api/tally`). Vercel Marketplace Upstash for Redis. Preferred over UPSTASH_*. |
 | `KV_REST_API_TOKEN` | Server-only | No | Pair with `KV_REST_API_URL`. Read-write token; do not use `KV_REST_API_READ_ONLY_TOKEN`. |
 | `UPSTASH_REDIS_REST_URL` | Server-only | No | Fallback if KV_* pair is missing. |
 | `UPSTASH_REDIS_REST_TOKEN` | Server-only | No | Fallback if KV_* pair is missing. |

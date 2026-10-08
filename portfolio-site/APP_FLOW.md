@@ -1,6 +1,6 @@
 # App Flow — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-10-06
+**Last Updated:** 2026-10-07
 **Framework:** Next.js (App Router)
 **Deployment:** Vercel (auto-deploy on push to main)
 
@@ -18,9 +18,10 @@
 | `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate (ISR 300s; durable last-good in Redis when configured). Cover click opens `/collection/[releaseId]`. Under the `{n} releases` line: **shuffle** (client Fisher-Yates of the whole grid; reload restores ISR order; no server cost) and **pull one** (random listed id → existing overlay/route). Grid `next/image` uses a stored CAA Blob URL when the cover manifest has one; otherwise the current Discogs hotlink. |
 | `/collection/[releaseId]` | `app/(house)/collection/[releaseId]/page.tsx` | Record detail (overview / tracks). Intercepting overlay at `@detail/(.)[releaseId]` when opened from the grid; full page on direct visit / refresh. |
 | `/legal`         | `app/(house)/legal/page.tsx`         | Entity + long about + Data sources (Discogs API non-affiliation). Markdown twin `/legal.md`. Organization JSON-LD is not a /legal twin. |
-| `/icon.svg`      | `app/icon.svg`                       | Site icon; `prefers-color-scheme` stroke. Older line-mark — left untouched this pass (follow-up). Applies to house and person. |
-| `/favicon.ico`   | `app/favicon.ico`                    | 16/32/48 ico: `#ececec` rounded plate, mark `#20262b` (matches apple-icon). Older line-mark — left untouched this pass (follow-up). |
-| `/apple-icon.png`| `app/apple-icon.png`                 | 180px, light ground, mark `#20262b`. Older line-mark — left untouched this pass (follow-up). |
+| `/brand`        | `app/(house)/brand/page.tsx`         | Official mark: light/dark preview, downloads, stable URLs, usage rules. Files live in `public/brand/` (`logo.svg` is canonical; hashed immutable copies in `public/brand/v/`; `manifest.json`). |
+| `/icon.svg`      | `app/icon.svg`                       | Site icon. Simplified official mark (2026-09-26 master minus flag, stroke 0.095); `prefers-color-scheme` stroke `#20262b` / `#ffffff`. Copy of `public/brand/favicon.svg`. Applies to house and person. |
+| `/favicon.ico`   | `app/favicon.ico`                    | 16/32/48 ico, simplified official mark `#20262b` on transparent. Copy of `public/brand/favicon.ico`. |
+| `/apple-icon.png`| `app/apple-icon.png`                 | 180px, full official mark `#20262b` on white. Copy of `public/brand/apple-touch-icon.png`. |
 | `/opengraph-image` | `app/(house)/opengraph-image.tsx`  | House share image 1200×630 (older line-mark — left untouched this pass; follow-up). Person page keeps `/og.jpg`. |
 | `/keeganmoody33` | `app/keeganmoody33/page.tsx` | Principal / person page (Ask AI, JD Fit Analyzer, timeline)     |
 | `/keegan`        | next.config + vercel.json    | 301 → `/keeganmoody33`                                          |
@@ -33,7 +34,7 @@
 | Redirect (301) | `/keeganMoody33` | `/keeganmoody33` | Case normalization  |
 | Redirect (301) | `/keegan`        | `/keeganmoody33` | Short alias         |
 
-**Result:** Visitors land on `lecturesfrom.com` and see the house title card + crate. `/` never redirects to the person page. The person page is at `/keeganmoody33`. House ↔ person crossings use `SignalCut` (not a global layout animation). Ask AI and JD Fit Analyzer stay on the person page only. The hero wordmark's last `o` is the static `LogoMark` (owner line-only PNG geometry; `variant="line"`; no spin). Favicon / og stay the older line-mark (untouched). `LogoGlobe` is kept on disk and is not mounted. `HouseFooter` is shared on `/`, `/catalog`, `/collection`, `/legal` (Motion switch not rendered). `/keeganmoody33` has its own footer.
+**Result:** Visitors land on `lecturesfrom.com` and see the house title card + crate. `/` never redirects to the person page. The person page is at `/keeganmoody33`. House ↔ person crossings use `SignalCut` (not a global layout animation). Ask AI and JD Fit Analyzer stay on the person page only. The hero wordmark's last `o` is the static `LogoMark` (owner line-only PNG geometry; `variant="line"`; no spin). Favicon and app icons use the official 2026-09-26 master (see `/brand`); og stays the older line-mark (follow-up). `LogoGlobe` is kept on disk and is not mounted. `HouseFooter` is shared on `/`, `/catalog`, `/collection`, `/legal`, `/brand` (Motion switch not rendered). `/keeganmoody33` has its own footer.
 
 ### API Routes
 
@@ -47,6 +48,7 @@
 | `/api/cron/crate-inspect` | GET | `app/api/cron/crate-inspect/route.ts` | Read-only queue / dead / unresolved / backfill snapshot. Same auth. |
 | `/api/github` | GET | `app/api/github/route.ts` | Proxy to GitHub public events API |
 | `/api/jd-analyzer` | POST | `app/api/jd-analyzer/route.ts` | Proxy to Supabase `jd-analyzer` Edge Function |
+| `/api/tally` | GET | `app/api/tally/route.ts` | Running totals for the house footer tally (Upstash Redis, `s-maxage=60`; 503s `s-maxage=10`). Hits are recorded in `proxy.ts` via one Redis pipeline in `waitUntil`. |
 
 ---
 
@@ -304,7 +306,7 @@ Land on /keeganmoody33
 
 1. Grid link saves scroll/focus in sessionStorage (`lf:collection:scroll`, `lf:collection:focus` as a DOM id — `#crate-cover-{id}` or `#crate-pull-one`) and routes to `/collection/{releaseId}` with `scroll={false}`.
 2. From the grid, the intercepting overlay (`@detail/(.)[releaseId]`) covers the crate. Direct visit or refresh renders the full page.
-3. Overview is the default tab: sourced description (omit if none), fact rows (label, catno, format, country, released — drop a missing field), a few stored sample/credit connections.
+3. Overview is the default tab: sourced description (omit if none), fact rows (label, catno, format, country, released — drop a missing field), a few stored sample/credit connections. Connection title links are `mt-1 inline-flex min-h-6 items-center [overflow-wrap:anywhere] min-w-0 max-w-full` (24px, WCAG 2.5.8; wrap at 320, WCAG 1.4.10), matching FactSampleList.
 4. Tracks tab lists the owned pressing in Discogs order (headings are labels, not buttons; mix titles stay distinct). Both tab panels stay mounted; the inactive one is `hidden` with `tabIndex={0}` on each panel and the house 2px ink focus outline (not Chrome’s default rounded ring). A house-meta coverage line reports matched-track / credit / sample-relationship counts separately. Selecting a playable track paints that title ink (others muted) and expands stored credits, samples from, and sampled in (`aria-expanded` / `aria-controls` on the row). The extras block is headed by the track title as an `h2`, then `h3` section labels.
 5. Overlay keyboard: first Escape clears a selected track; the second Escape (or close / collection) calls `router.back()`. Overlay unmount restores focus to the saved element (`#crate-cover-{id}` from a cover, `#crate-pull-one` from pull one) after dropping `inert` on the grid. While the overlay is open, the skip link, header, footer, and `[data-collection-root]` are `inert` so Tab cannot leave the dialog through `.house-skip`. Overlay autofocuses `collection`. Page mode (direct visit / refresh): do not autofocus `collection`; Escape (after clearing a selected track) and close always `router.push('/collection')` — never `history.back()` — then focus `main#house-content` (`tabIndex={-1}`; `#house-content:focus-visible { outline: none }`). Grid covers use `alt=""`; the detail cover keeps the meaningful alt. HouseShell has a visually hidden skip-to-content link (`#house-content`). Track rows use `aria-expanded` / `aria-controls` only (no `aria-pressed`).
 
@@ -312,7 +314,7 @@ Land on /keeganmoody33
 
 **Error state:** Dim mono `couldn't reach discogs` plus a retry text link (orange on hover). Never red. Last-good stored data is preferred over this. When there is no last-good (no Redis / store down), fill the h1 from catno or id, put that catno in the `#242424` square, and render **only** that line plus retry — no tabs, no `nothing on file yet`.
 
-**Empty states:** Missing field drops its row (never `N/A` / `Unknown` / `—`). Empty section: `nothing on file yet`. No track picked: `pick a track for credits and samples`. Checked, no MusicBrainz pressing match: dim mono lowercase `{reason} · checked YYYY-MM-DD` (example: `no musicbrainz release for this pressing · checked 2026-10-05`). Unmatched may still show Discogs and Wikidata credit and sample facts with `.house-source` labels under that line — do not gate facts until matched (Mtume extraartists fallback). If there are no such facts, do not add `nothing on file yet` under credits/samples or Overview connections. No guessing in the reason. Missing cover: `#242424` square with catno centered in house ink `#ececec` (13.1:1 on that square, not dim `#7a7a7a`). Title, artist, fact values, and placeholder catno use `overflow-wrap: anywhere`. Layout holds with hairlines; content fades in (`.house-fade`; instant under reduced motion). After the fact rows: lowercase `.house-source` `discogs` plus exact-case `.house-credit` `Data provided by Discogs.`, both linking the pressing URL (not discogs.com, no `nofollow`). `/collection` repeats the credit on the `{n} releases` line and again at the bottom of the grid, both to the lecturesfrom Discogs collection page. Source lines are lowercase 0.16em; the TOU credit is not lowercased; section labels stay uppercase `.house-meta`. The Discogs API non-affiliation / Zink Media trademark sentence lives on `/legal` Data sources (`/legal.md` twin), not in HouseFooter. Tab panels use the house 2px ink focus outline.
+**Empty states:** Missing field drops its row (never `N/A` / `Unknown` / `—`). Empty section: `nothing on file yet`. No track picked: `pick a track for credits and samples`. Checked, no MusicBrainz pressing match: dim mono lowercase `{reason} · checked YYYY-MM-DD` (example: `no musicbrainz release for this pressing · checked 2026-10-05`). Unmatched may still show Discogs and Wikidata credit and sample facts with `.house-source` labels under that line — do not gate facts until matched (Mtume extraartists fallback). If there are no such facts, do not add `nothing on file yet` under credits/samples or Overview connections. No guessing in the reason. Missing cover: `#242424` square with catno centered in house ink `#ececec` (13.1:1 on that square, not dim `#7a7a7a`). Title, artist, fact values, placeholder catno, sample rows, and credit lines use `overflow-wrap: anywhere`. Layout holds with hairlines; content fades in (`.house-fade`; instant under reduced motion). After the fact rows: lowercase `.house-source` `discogs` plus exact-case `.house-credit` `Data provided by Discogs.`, both linking the pressing URL (not discogs.com, no `nofollow`). `/collection` repeats the credit on the `{n} releases` line and again at the bottom of the grid, both to the lecturesfrom Discogs collection page. Source lines are lowercase 0.16em; the TOU credit is not lowercased; section labels stay uppercase `.house-meta`. The Discogs API non-affiliation / Zink Media trademark sentence lives on `/legal` Data sources (`/legal.md` twin), not in HouseFooter. Tab panels use the house 2px ink focus outline.
 
 **PostHog events:** `collection_record_open`, `collection_record_tab`, `collection_record_track`, `collection_record_close`
 
@@ -367,7 +369,7 @@ Discogs API
 
 MusicBrainz / Discogs extraartists / Wikidata SPARQL (manual research only)
             └── crate enrich via CRON_SECRET routes and `npm run crate:backfill` (`--ids` `--retry` `--limit`)
-            └── `--retry` without `--ids` retries dead / inspect too_slow, rate_limit, unavailable
+            └── `--retry` without `--ids` retries dead, inspect too_slow/rate_limit/unavailable, and pending-provenance retryable lastError
             └── Wikidata: P1954 (master) then P436 (MB release group) then P2206 / P5813 (MB release id, not catno); P5707 samples; shared client
             └── samples primary path: recording-level artist+song title (mix suffixes stripped); duration is a tiebreak only
             └── Redis zset `lf:crate:queue:v1` + queued set; lock token compare-and-delete; dead/unresolved inspect sets
@@ -415,6 +417,27 @@ All interactions ──→ PostHog (client + server events)
 **Error / abort state:** One idempotent `teardown()` (Copilot review comment 4111027402). It stops snow, cancels every timeout and rAF, reverts `document.documentElement` transform/classes, and removes the overlay. Called from completion, hard-cap fallback (`setTimeout(1500 + fade + 80)`), slow-destination hold, popstate, pagehide, `visibilitychange` hidden, thrown errors, and a second click (swallowed so no second loop). The triggering Link's React unmount is **not** a teardown path — that unmount is the route swap. Hidden-tab abort does not navigate if `router.push` has not already run.
 
 **PostHog events:** `signal_cut_started` (`direction`, `href`)
+
+---
+
+### 10. Footer request tally
+
+**Trigger:** House footer on `/`, `/catalog`, `/collection`, `/legal`. `proxy.ts` records the page request; the row reads `GET /api/tally`.
+
+**Steps:**
+
+1. The collapsed row is in the layout from first paint (`min-h-11` under the footer hairline) so loading and errors do not shift layout. Until a 200 snapshot arrives the controls stay `invisible` + `inert`.
+2. Humans / not humans is a two-button switch (`aria-pressed`; visible label is the accessible name). The LCD chip is visual only (`aria-hidden`); a polite live region announces the count.
+3. **breakdown** / **close** is a disclosure (`aria-expanded`, `aria-controls`). The chip is not part of that button's name.
+4. The breakdown opens inline below the row (never an overlay). Category rows select on click / Enter / Space only — hover and focus do not re-select. Color transitions are instant under `prefers-reduced-motion` (`motion-reduce:transition-none motion-reduce:duration-0`). Focus-visible is a 2px solid ink outline (`outline-offset: 2px`); orange is hover only.
+
+**Success state:** Count for the selected mode, since date, percent of traffic. Breakdown lists categories (bar track `--house-line`, fill `--house-ink` / `--house-dim`) and the method note.
+
+**Error state:** `/api/tally` 503 (short CDN cache) or network failure. Reserved height stays; content stays hidden. No spinner.
+
+**Empty state:** Redis zeros. Row still renders the count `0`.
+
+**PostHog events:** `tally_mode_changed`, `tally_breakdown_toggled`, `tally_category_selected`
 
 ---
 
