@@ -62,7 +62,7 @@ export function presentSampleArtist(name: string | undefined | null): string {
   const hadUnknown = unknownToken.test(trimmed)
   unknownToken.lastIndex = 0
   const hadLeadingUnknown = /^\[unknown\](?=$|(?=[&,])|(?=\s))/i.test(trimmed)
-  const hadTrailingUnknownJoiner = /\sx\s+\[[Uu]nknown\](?=$|(?=[&,])|(?=\s))/.test(trimmed)
+  const hadTrailingUnknownJoiner = /(?<!x)\sx\s+\[[Uu]nknown\](?=$|(?=[&,])|(?=\s))/i.test(trimmed)
   trimmed = trimmed.replace(unknownToken, '')
   trimmed = trimmed.replace(/\s+/g, ' ').trim()
   trimmed = trimmed.replace(/(?:\s*[&,]\s*){2,}/g, (chunk) => (chunk.includes('&') ? ' & ' : ', '))
@@ -72,7 +72,7 @@ export function presentSampleArtist(name: string | undefined | null): string {
   trimmed = trimmed.replace(/(?:\s*[&,])+\s*$/g, '')
   trimmed = trimmed.replace(/\s+(?:feat|ft)\.\s*$/i, '')
   if (hadTrailingUnknownJoiner) {
-    trimmed = trimmed.replace(/\s+x\s*$/g, '')
+    trimmed = trimmed.replace(/\s+x\s*$/, '')
   }
   trimmed = trimmed.replace(/\s+/g, ' ').trim()
   if (hadUnknown) {

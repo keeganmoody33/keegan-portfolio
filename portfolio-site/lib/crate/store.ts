@@ -10,6 +10,7 @@ import {
   type RedisRestConfig,
   type UpstashFetch,
 } from '../discogs-store.ts'
+import { preferCompleteRecording } from './preserve.ts'
 import type { BackfillState, CollectionEntry, DeadLetter, StoredPressing, StoredRecording } from './types.ts'
 
 export const VISIT_THROTTLE_SECONDS = 300
@@ -314,7 +315,11 @@ class RedisCrateStore implements CrateStore {
   }
 
   async setRecording(recording: StoredRecording): Promise<void> {
-    await this.writeRedis.set(this.keys.recording(recording.mbid), recording)
+    const existing = await this.getRecording(recording.mbid)
+    await this.writeRedis.set(
+      this.keys.recording(recording.mbid),
+      preferCompleteRecording(existing, recording)
+    )
   }
 
   async getQueue(): Promise<number[]> {
@@ -571,7 +576,10 @@ export function createMemoryCrateStore(
       return store.recordings[mbid] ?? null
     },
     async setRecording(recording: StoredRecording) {
-      store.recordings[recording.mbid] = recording
+      store.recordings[recording.mbid] = preferCompleteRecording(
+        store.recordings[recording.mbid],
+        recording
+      )
     },
     async getQueue() {
       return [...store.queue]

@@ -5,6 +5,7 @@ import type {
   PressingFacts,
   Provenance,
   StoredPressing,
+  StoredRecording,
   TrackOccurrence,
 } from './types.ts'
 import { CRATE_MAX_ATTEMPTS, CRATE_RESEARCH_REFRESH_MS, CRATE_SCHEMA_VERSION } from './types.ts'
@@ -24,7 +25,36 @@ const BACKOFF_MS = [
 ] as const
 export const TERMINAL_REFRESH_MS = 30 * 24 * 60 * 60 * 1000
 export const AUTH_RETRY_MS = 15 * 60 * 1000
+export const INCOMPLETE_RECORDING_MESSAGE = 'incomplete recording probe'
 export { CRATE_MAX_ATTEMPTS }
+
+export function recordingDocIsIncomplete(
+  recording: StoredRecording | null | undefined
+): boolean {
+  return recording?.provenance.lastError?.message === INCOMPLETE_RECORDING_MESSAGE
+}
+
+export function recordingDocIsComplete(
+  recording: StoredRecording | null | undefined
+): boolean {
+  if (!recording || recordingDocIsIncomplete(recording)) return false
+  if (recording.provenance.verifiedAt) return true
+  const sampleCount =
+    (recording.samplesFrom?.length ?? 0) + (recording.sampledIn?.length ?? 0)
+  return sampleCount > 0 && recording.provenance.lastError == null
+}
+
+/** Never replace a verified Redis recording with an incomplete timeout/429 stub. */
+export function preferCompleteRecording(
+  existing: StoredRecording | null | undefined,
+  incoming: StoredRecording
+): StoredRecording {
+  if (!existing) return incoming
+  if (recordingDocIsIncomplete(incoming) && recordingDocIsComplete(existing)) {
+    return existing
+  }
+  return incoming
+}
 
 export function isoFromMs(ms: number): string {
   return new Date(ms).toISOString()

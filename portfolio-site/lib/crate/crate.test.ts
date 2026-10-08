@@ -23,10 +23,10 @@ import {
   stripFeaturingCredits,
   trackLevelHitOutranksPrior,
 } from './match.ts'
-import { AUTH_RETRY_MS, isoFromMs, keepPriorMatch, nextBackoffMs, preservePressingOnFailure, shouldRefreshPressing, SUCCESS_REFRESH_MS, withClearedDeadlineStops } from './preserve.ts'
+import { AUTH_RETRY_MS, isoFromMs, keepPriorMatch, nextBackoffMs, preferCompleteRecording, preservePressingOnFailure, shouldRefreshPressing, SUCCESS_REFRESH_MS, TERMINAL_REFRESH_MS, withClearedDeadlineStops } from './preserve.ts'
 import { createMemoryCrateStore, crateRedisKeys, DRAFT_TTL_SECONDS, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA, RELEASE_LOCK_LUA, REFRESH_LOCK_LUA, selectEnrichLockToken, type CrateStore } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
-import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, resumeForceRefreshTrackCursor, isForceRunStampFresh, isWikidataOnlyLastError, WorkerDeadlineError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, CLI_BACKFILL_BUDGET_MS, ENRICH_LOCK_SECONDS, ENRICH_LOCK_HEARTBEAT_MS, ENRICH_LOCK_HEARTBEAT_REQUESTS, INCOMPLETE_RECORDING_MESSAGE, TRACK_LEVEL_ANNOTATE_CAP, TRACK_LEVEL_FETCH_CAP, TRACK_LEVEL_REASON, overlayTrackLevelProgress, applyDeadlineStop, persistTrackLevelDocs, shouldStopWalkOnRateLimit, createEnrichLockHeartbeat, isEnrichLockLostError } from './enrich.ts'
+import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, resumeForceRefreshTrackCursor, isForceRunStampFresh, isWikidataOnlyLastError, WorkerDeadlineError, EnrichLockLostError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, DEADLINE_STOP_MESSAGE, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, CLI_BACKFILL_BUDGET_MS, ENRICH_LOCK_SECONDS, ENRICH_LOCK_HEARTBEAT_MS, ENRICH_LOCK_HEARTBEAT_REQUESTS, INCOMPLETE_RECORDING_MESSAGE, TRACK_LEVEL_ANNOTATE_CAP, TRACK_LEVEL_FETCH_CAP, TRACK_LEVEL_REASON, overlayTrackLevelProgress, applyDeadlineStop, persistTrackLevelDocs, shouldStopWalkOnRateLimit, createEnrichLockHeartbeat, isEnrichLockLostError } from './enrich.ts'
 import { isUnusableDiscogsNotes, resolveDescription, withReadableDescription } from './description.ts'
 import { COLLECTION_KEEP_PATH, scheduleKeepPing } from './keep-ping.ts'
 import { runCrateEnrichCron } from './keep.ts'
@@ -1704,6 +1704,75 @@ function nTrackDetail(
   }
 }
 
+async function forcedCliGapHitsTooSlow(releaseId: number, gapMs: number) {
+  let clock = Date.parse('2026-10-08T08:00:00.000Z')
+  const store = createMemoryCrateStore({ now: () => clock })
+  const collection = collectionOf([
+    {
+      id: releaseId,
+      title: 'Gap',
+      year: 1977,
+      artist: 'Lecturer',
+      label: 'lf',
+      catno: `lf-${releaseId}`,
+    },
+  ])
+  let tooSlow = false
+  for (let tick = 0; tick < DEADLINE_STOP_LIMIT + 2 && !tooSlow; tick += 1) {
+    if (tick > 0) clock += gapMs
+    const mb = createMusicBrainzClientForTests()
+    mb.searchRecordingsByArtistTitle = async () => {
+      clock += CLI_BACKFILL_BUDGET_MS + 1
+      return [
+        {
+          mbid: 'rec-one',
+          title: 'Song 1',
+          artist: 'Lecturer',
+          lengthMs: 180000,
+          score: 100,
+        },
+      ]
+    }
+    mb.getRecording = async (id) => ({
+      mbid: id,
+      title: 'Song 1',
+      artist: 'Lecturer',
+      credits: [],
+      samplesFrom: [],
+      sampledIn: [],
+    })
+    await runBackfill(
+      {
+        store,
+        collection,
+        now: () => clock,
+        takeFloorMs: 0,
+        budgetMs: CLI_BACKFILL_BUDGET_MS,
+        fetchDiscogs: async () => nTrackDetail(releaseId, 40),
+        fetchWikidata: async () => [],
+        mb,
+      },
+      { retry: true, ids: [releaseId], limit: 1 }
+    )
+    tooSlow = (await store.getInspect()).some(
+      (row) => row.releaseId === releaseId && row.kind === 'too_slow'
+    )
+  }
+  assert.equal(tooSlow, true)
+  assert.ok(gapMs > DRAFT_TTL_SECONDS * 1000)
+}
+
+async function clockPastPressingRetry(
+  store: CrateStore,
+  releaseId: number,
+  clock: number
+): Promise<number> {
+  const live = (await store.getDraftPressing(releaseId)) ?? (await store.getPressing(releaseId))
+  const retryAt = Date.parse(live?.provenance.refreshAfter ?? '')
+  if (Number.isFinite(retryAt) && retryAt > clock) return retryAt
+  return clock
+}
+
 function twelveTrackDetail(releaseId: number, artist = 'Lecturer', title = 'Twelve') {
   return {
     id: releaseId,
@@ -2202,8 +2271,9 @@ describe('independent lifecycles (direction change)', () => {
       assert.deepEqual(result.processed, [])
       assert.deepEqual(result.failed, [])
       const live = await store.getPressing(9107339)
-      assert.equal(live, null)
       if (i < DEADLINE_STOP_LIMIT - 1) {
+        assert.ok(live === null || live.provenance.lastError?.message === DEADLINE_STOP_MESSAGE)
+        assert.notEqual(live?.provenance.lastError?.kind, 'too_slow')
         const queued = store.queue.find((row) => row.id === 9107339)
         assert.ok(queued)
         assert.ok(queued.score > clock)
@@ -2327,10 +2397,14 @@ describe('independent lifecycles (direction change)', () => {
       1
     )
     assert.deepEqual(third.processed, [])
-    assert.equal((await store.getUnresolved()).includes(9107339), false)
     assert.equal(
       (await store.getInspect()).some((row) => row.releaseId === 9107339 && row.kind === 'too_slow'),
       false
+    )
+    const inspectAfter = (await store.getInspect()).find((row) => row.releaseId === 9107339)
+    assert.ok(
+      inspectAfter == null ||
+        (inspectAfter.kind === 'unavailable' && inspectAfter.message === DEADLINE_STOP_MESSAGE)
     )
     const draft = await store.getDraftPressing(9107339)
     const live = await store.getPressing(9107339)
@@ -4345,6 +4419,16 @@ describe('draft reuse, TTL, and cycle guard', () => {
     assert.equal(shouldReuseDraft(draft, null, nowMs), true)
     assert.equal(shouldReuseDraft(draft, committed, nowMs), false)
     assert.equal(shouldReuseDraft(draft, null, nowMs, true), false)
+    const sameStampDraft = hydratePressing(
+      pressingStub({
+        provenance: {
+          ...pressingStub().provenance,
+          lastAttemptAt: '2026-10-06T06:00:00.000Z',
+          checkedAt: '2026-10-06T06:00:00.000Z',
+        },
+      })
+    )
+    assert.equal(shouldReuseDraft(sameStampDraft, committed, nowMs), true)
     const forceDraft = hydratePressing(
       pressingStub({
         checkpoint: {
@@ -5331,20 +5415,6 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     assert.equal(firstVocal?.recording.mbid, savedMbid)
     const stored = await store.getPressing(567894)
     assert.ok(stored)
-    await store.setRecording({
-      ...emptyDoc(rivalMbid),
-      provenance: {
-        sourceUrls: [`https://musicbrainz.org/recording/${rivalMbid}`],
-        matchStatus: 'matched',
-        confidence: 0.7,
-        reason: TRACK_LEVEL_REASON,
-        checkedAt: '2026-10-06T08:00:00.000Z',
-        refreshAfter: '2026-11-05T08:00:00.000Z',
-        lastError: null,
-        verifiedAt: '2026-10-06T08:00:00.000Z',
-        lastAttemptAt: '2026-10-06T08:00:00.000Z',
-      },
-    })
     await store.setPressing(
       hydratePressing({
         ...stored,
@@ -5358,10 +5428,32 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     )
 
     const fetched: string[] = []
+    const extraMbid = 'c0000000-0000-0000-0000-000000000099'
     const retryMb = createMusicBrainzClientForTests()
     retryMb.searchRecordingsByArtistTitle = async () => [
-      { mbid: savedMbid, title: 'Juicy Fruit', artist: 'Mtume', lengthMs: 355000, score: 100 },
-      { mbid: rivalMbid, title: 'Juicy Fruit', artist: 'Mtume', lengthMs: 355000, score: 100 },
+      {
+        mbid: savedMbid,
+        title: 'Juicy Fruit',
+        artist: 'Mtume',
+        lengthMs: 355000,
+        score: 100,
+        hasSamples: false,
+      },
+      {
+        mbid: rivalMbid,
+        title: 'Juicy Fruit',
+        artist: 'Mtume',
+        lengthMs: 355000,
+        score: 100,
+        hasSamples: false,
+      },
+      {
+        mbid: extraMbid,
+        title: 'Juicy Fruit',
+        artist: 'Mtume',
+        lengthMs: 355000,
+        score: 99,
+      },
     ]
     retryMb.getRecording = async (id) => {
       fetched.push(id)
@@ -5735,12 +5827,222 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     assert.equal(result.provenance.lastError?.kind, 'unavailable')
     assert.equal(result.provenance.lastError?.message, INCOMPLETE_RECORDING_MESSAGE)
     assert.equal(result.provenance.verifiedAt, null)
-    assert.equal(result.provenance.refreshAfter, isoFromMs(nowMs + AUTH_RETRY_MS))
+    assert.equal(result.provenance.lastError?.attempts, 1)
+    assert.equal(result.provenance.refreshAfter, isoFromMs(nowMs + nextBackoffMs(1)))
     assert.notEqual(result.provenance.refreshAfter, isoFromMs(nowMs + SUCCESS_REFRESH_MS))
     const stored = await store.getRecording(juicyMbid)
     assert.ok(stored)
     assert.equal(stored.provenance.verifiedAt, null)
     assert.equal(stored.provenance.lastError?.message, INCOMPLETE_RECORDING_MESSAGE)
+  })
+
+  it('does not overwrite a verified recording with an incomplete timeout persist', async () => {
+    const juicyMbid = '1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc'
+    const biggieMbid = '181c0a32-6e3f-4680-8a7d-1daf0b42e43b'
+    const verifiedAt = '2026-10-06T08:00:00.000Z'
+    const juicySample = {
+      title: 'Juicy',
+      artist: 'The Notorious B.I.G.',
+      mbid: biggieMbid,
+      sourceUrl: `https://musicbrainz.org/recording/${biggieMbid}`,
+      source: 'musicbrainz' as const,
+      providerId: biggieMbid,
+    }
+    const store = createMemoryCrateStore()
+    const verified = {
+      mbid: juicyMbid,
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      credits: [],
+      samplesFrom: [] as StoredRecording['samplesFrom'],
+      sampledIn: [juicySample],
+      provenance: {
+        sourceUrls: [`https://musicbrainz.org/recording/${juicyMbid}`],
+        matchStatus: 'matched' as const,
+        confidence: 0.7,
+        reason: TRACK_LEVEL_REASON,
+        checkedAt: verifiedAt,
+        refreshAfter: '2026-11-05T08:00:00.000Z',
+        lastError: null,
+        verifiedAt,
+        lastAttemptAt: verifiedAt,
+      },
+    }
+    await store.setRecording(verified)
+    const incoming = {
+      ...verified,
+      sampledIn: [],
+      provenance: {
+        ...verified.provenance,
+        refreshAfter: isoFromMs(Date.parse('2026-10-08T08:00:00.000Z') + AUTH_RETRY_MS),
+        lastError: {
+          at: '2026-10-08T08:00:00.000Z',
+          kind: 'unavailable' as const,
+          message: INCOMPLETE_RECORDING_MESSAGE,
+          attempts: 0,
+        },
+        verifiedAt: null,
+        lastAttemptAt: '2026-10-08T08:00:00.000Z',
+      },
+    }
+    assert.equal(preferCompleteRecording(verified, incoming).provenance.verifiedAt, verifiedAt)
+    assert.equal(preferCompleteRecording(verified, incoming).sampledIn.length, 1)
+    const mb = createMusicBrainzClientForTests()
+    mb.searchRecordingsByArtistTitle = async () => [
+      {
+        mbid: juicyMbid,
+        title: 'Juicy Fruit',
+        artist: 'Mtume',
+        lengthMs: 355000,
+        score: 100,
+      },
+    ]
+    mb.getRecording = async () => {
+      const error = new MusicBrainzTimeoutError(false)
+      error.partialRecording = {
+        mbid: juicyMbid,
+        title: 'Juicy Fruit',
+        artist: 'Mtume',
+        credits: [],
+        samplesFrom: [],
+        sampledIn: [],
+      }
+      throw error
+    }
+    await enrichPressing(567894, {
+      store,
+      now: () => Date.parse('2026-10-08T08:00:00.000Z'),
+      fetchDiscogs: async () => mtumeDetail(),
+      fetchWikidata: async () => [],
+      mb,
+      forceRefresh: true,
+    })
+    const stored = await store.getRecording(juicyMbid)
+    assert.ok(stored)
+    assert.equal(stored.provenance.verifiedAt, verifiedAt)
+    assert.equal(stored.sampledIn.length, 1)
+    assert.equal(stored.sampledIn[0]?.mbid, biggieMbid)
+    assert.equal(stored.provenance.lastError, null)
+  })
+
+  it('sets verifiedAt when an incomplete probe later recovers on skip-match', async () => {
+    const juicyMbid = '1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc'
+    const nowMs = Date.parse('2026-10-06T08:00:00.000Z')
+    const laterMs = Date.parse('2026-10-06T10:00:00.000Z')
+    const store = createMemoryCrateStore()
+    const timeoutMb = createMusicBrainzClientForTests()
+    timeoutMb.searchRecordingsByArtistTitle = async () => [
+      {
+        mbid: juicyMbid,
+        title: 'Juicy Fruit',
+        artist: 'Mtume',
+        lengthMs: 355000,
+        score: 100,
+      },
+    ]
+    timeoutMb.getRecording = async () => {
+      const error = new MusicBrainzTimeoutError(false)
+      error.partialRecording = {
+        mbid: juicyMbid,
+        title: 'Juicy Fruit',
+        artist: 'Mtume',
+        credits: [],
+        samplesFrom: [],
+        sampledIn: [],
+      }
+      throw error
+    }
+    const first = await enrichPressing(567894, {
+      store,
+      now: () => nowMs,
+      fetchDiscogs: async () => mtumeDetail(),
+      fetchWikidata: async () => [],
+      mb: timeoutMb,
+    })
+    assert.equal(first.provenance.verifiedAt, null)
+    const okMb = createMusicBrainzClientForTests()
+    okMb.searchRecordingsByArtistTitle = async () => [
+      {
+        mbid: juicyMbid,
+        title: 'Juicy Fruit',
+        artist: 'Mtume',
+        lengthMs: 355000,
+        score: 100,
+      },
+    ]
+    okMb.getRecording = async (id) => ({
+      mbid: id,
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      credits: [],
+      samplesFrom: [],
+      sampledIn: [],
+    })
+    const recovered = await enrichPressing(567894, {
+      store,
+      now: () => laterMs,
+      fetchDiscogs: async () => mtumeDetail(),
+      fetchWikidata: async () => [],
+      mb: okMb,
+    })
+    assert.equal(recovered.provenance.lastError, null)
+    assert.equal(recovered.provenance.verifiedAt, isoFromMs(laterMs))
+  })
+
+  it('counts incomplete pressing attempts and marks dead at CRATE_MAX_ATTEMPTS', async () => {
+    const juicyMbid = '1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc'
+    let nowMs = Date.parse('2026-10-06T08:00:00.000Z')
+    const store = createMemoryCrateStore()
+    const timeoutMb = () => {
+      const mb = createMusicBrainzClientForTests()
+      mb.searchRecordingsByArtistTitle = async () => [
+        {
+          mbid: juicyMbid,
+          title: 'Juicy Fruit',
+          artist: 'Mtume',
+          lengthMs: 355000,
+          score: 100,
+        },
+      ]
+      mb.getRecording = async () => {
+        const error = new MusicBrainzTimeoutError(false)
+        error.partialRecording = {
+          mbid: juicyMbid,
+          title: 'Juicy Fruit',
+          artist: 'Mtume',
+          credits: [],
+          samplesFrom: [],
+          sampledIn: [],
+        }
+        throw error
+      }
+      return mb
+    }
+    let last = await enrichPressing(567894, {
+      store,
+      now: () => nowMs,
+      fetchDiscogs: async () => mtumeDetail(),
+      fetchWikidata: async () => [],
+      mb: timeoutMb(),
+    })
+    for (let attempt = 2; attempt <= CRATE_MAX_ATTEMPTS; attempt += 1) {
+      nowMs += nextBackoffMs(attempt - 1)
+      last = await enrichPressing(567894, {
+        store,
+        now: () => nowMs,
+        fetchDiscogs: async () => mtumeDetail(),
+        fetchWikidata: async () => [],
+        mb: timeoutMb(),
+      })
+      assert.equal(last.provenance.lastError?.attempts, attempt)
+      if (attempt < CRATE_MAX_ATTEMPTS) {
+        assert.equal(last.provenance.lastError?.kind, 'unavailable')
+        assert.equal(last.provenance.refreshAfter, isoFromMs(nowMs + nextBackoffMs(attempt)))
+      }
+    }
+    assert.equal(last.provenance.lastError?.kind, 'exhausted')
+    assert.equal(last.provenance.refreshAfter, isoFromMs(nowMs + TERMINAL_REFRESH_MS))
+    assert.equal((await store.getDead()).includes(567894), true)
   })
 
   it('second forced --retry resumes a 12-track unmatched LP instead of restarting at track 0', async () => {
@@ -5761,6 +6063,7 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     let settled = false
     let tooSlow = false
     for (let tick = 0; tick < 6 && !settled && !tooSlow; tick += 1) {
+      if (tick > 0) clock = await clockPastPressingRetry(store, releaseId, clock)
       const titles: string[] = []
       const mb = createMusicBrainzClientForTests()
       mb.searchRecordingsByArtistTitle = async ({ title }) => {
@@ -5789,7 +6092,7 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
           store,
           collection,
           now: () => clock,
-          takeFloorMs: 0,
+          takeFloorMs: ENRICH_TAKE_FLOOR_MS,
           budgetMs: ENRICH_BUDGET_MS,
           fetchDiscogs: async () => twelveTrackDetail(releaseId),
           fetchWikidata: async () => [],
@@ -5799,12 +6102,13 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
       )
       searchedByTick.push(titles)
       if (tick === 0) {
-        const draft = (await store.getDraftPressing(releaseId)) ?? (await store.getPressing(releaseId))
-        assert.equal(draft?.checkpoint?.forceRun, true)
-        assert.ok((draft?.checkpoint?.trackSampleCursor ?? 0) > 0)
-        assert.equal(await store.getPressing(releaseId), null)
+        const live = (await store.getDraftPressing(releaseId)) ?? (await store.getPressing(releaseId))
+        assert.equal(live?.checkpoint?.forceRun, true)
+        assert.ok((live?.checkpoint?.trackSampleCursor ?? 0) > 0)
+        assert.equal(isWikidataOnlyLastError(live?.provenance.lastError), false)
       }
       if (tick === 1) {
+        assert.ok(titles.length > 0)
         assert.equal(titles.includes('Song 1'), false)
         assert.ok(titles[0] !== 'Song 1')
       }
@@ -5834,6 +6138,7 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     let settled = false
     let tooSlow = false
     for (let tick = 0; tick < 6 && !settled && !tooSlow; tick += 1) {
+      if (tick > 0) clock = await clockPastPressingRetry(store, releaseId, clock)
       const mb = createMusicBrainzClientForTests()
       mb.lookupDiscogsReleaseUrl = async () => ['rel-twelve']
       mb.getRelease = async () => ({
@@ -5910,6 +6215,7 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     let settled = false
     let tooSlow = false
     for (let tick = 0; tick < DEADLINE_STOP_LIMIT + 1 && !settled && !tooSlow; tick += 1) {
+      if (tick > 0) clock = await clockPastPressingRetry(store, 9107339, clock)
       const mb = createMusicBrainzClientForTests()
       mb.searchRecordingsByArtistTitle = async () => {
         clock += ENRICH_BUDGET_MS + 1
@@ -6032,7 +6338,10 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     let tooSlow = false
     let ticks = 0
     for (; ticks < 12 && !settled && !tooSlow; ticks += 1) {
-      if (ticks > 0) clock += 1_000
+      if (ticks > 0) {
+        clock += 1_000
+        clock = await clockPastPressingRetry(store, releaseId, clock)
+      }
       const mb = createMusicBrainzClientForTests()
       mb.searchRecordingsByArtistTitle = async ({ title }) => {
         clock += 50_000
@@ -6137,6 +6446,14 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     }
     assert.equal(tooSlow, true)
     assert.equal(settled, false)
+  })
+
+  it('forced CLI budget with a 16-minute operator gap still reaches too_slow', async () => {
+    await forcedCliGapHitsTooSlow(9107516, 16 * 60 * 1000)
+  })
+
+  it('forced CLI budget with a 3-day operator gap still reaches too_slow', async () => {
+    await forcedCliGapHitsTooSlow(9107517, 3 * 24 * 60 * 60 * 1000)
   })
 
   it('stops immediately when a lock heartbeat returns false and keeps draft progress', async () => {
@@ -6255,6 +6572,189 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     assert.ok(fetches < 20)
     assert.ok(ENRICH_LOCK_HEARTBEAT_REQUESTS < ENRICH_LOCK_SECONDS)
     assert.ok(ENRICH_LOCK_HEARTBEAT_MS < ENRICH_LOCK_SECONDS * 1000)
+  })
+
+  it('keeps lock-lost sticky so later heartbeats throw even if acquire would succeed', async () => {
+    let clock = Date.parse('2026-10-08T09:00:00.000Z')
+    const store = createMemoryCrateStore({ now: () => clock })
+    await store.acquireEnrichLock(ENRICH_LOCK_SECONDS, 'owner')
+    let lockCalls = 0
+    const innerAcquire = store.acquireEnrichLock.bind(store)
+    store.acquireEnrichLock = async (ttlSeconds, token) => {
+      lockCalls += 1
+      if (lockCalls === 2) return false
+      return innerAcquire(ttlSeconds, token)
+    }
+    const heartbeat = createEnrichLockHeartbeat(store, 'owner', ENRICH_LOCK_SECONDS, () => clock)
+    assert.equal(await heartbeat(), true)
+    clock += ENRICH_LOCK_HEARTBEAT_MS
+    await assert.rejects(heartbeat, (error: unknown) => isEnrichLockLostError(error))
+    store.acquireEnrichLock = async () => true
+    await assert.rejects(heartbeat, (error: unknown) => isEnrichLockLostError(error))
+    assert.equal(lockCalls, 2)
+  })
+
+  it('forced research loop rethrows lock loss instead of fetching remaining recordings', async () => {
+    const releaseId = 9107520
+    const store = createMemoryCrateStore()
+    const nowMs = Date.parse('2026-10-08T09:30:00.000Z')
+    const trackCount = 20
+    const previous = hydratePressing({
+      schemaVersion: CRATE_SCHEMA_VERSION,
+      releaseId,
+      entryInstanceIds: [1],
+      facts: {
+        releaseId,
+        title: 'Twenty',
+        artist: 'Lecturer',
+        label: 'lf',
+        catno: `lf-${releaseId}`,
+        format: 'Vinyl, LP',
+        country: 'US',
+        released: '1977',
+        year: 1977,
+        cover: '',
+        thumbnail: '',
+        discogsUrl: `https://www.discogs.com/release/${releaseId}`,
+        barcode: null,
+        masterId: null,
+      },
+      description: null,
+      tracks: Array.from({ length: trackCount }, (_, index) => ({
+        position: String(index + 1),
+        title: `Song ${index + 1}`,
+        duration: '3:00',
+        durationMs: 180000,
+        artist: 'Lecturer',
+        extraartists: [],
+        identityKey: `${index + 1}|song ${index + 1}|180000`,
+        recording: {
+          matchStatus: 'matched' as const,
+          confidence: 0.9,
+          reason: 'musicbrainz recording lookup',
+          mbid: `rec-${index + 1}`,
+          recordingUrl: `https://musicbrainz.org/recording/rec-${index + 1}`,
+        },
+      })),
+      mbRelease: {
+        mbid: 'rel-twenty',
+        url: 'https://musicbrainz.org/release/rel-twenty',
+        matchStatus: 'matched',
+        confidence: 0.9,
+        reason: 'discogs url',
+        releaseGroupMbid: 'rg-twenty',
+      },
+      recordings: Object.fromEntries(
+        Array.from({ length: trackCount }, (_, index) => [
+          `rec-${index + 1}`,
+          {
+            mbid: `rec-${index + 1}`,
+            title: `Song ${index + 1}`,
+            artist: 'Lecturer',
+            credits: [],
+            samplesFrom: [],
+            sampledIn: [],
+            provenance: {
+              sourceUrls: [`https://musicbrainz.org/recording/rec-${index + 1}`],
+              matchStatus: 'matched' as const,
+              confidence: 0.9,
+              reason: 'musicbrainz recording lookup',
+              checkedAt: '2026-10-06T08:00:00.000Z',
+              refreshAfter: '2026-11-05T08:00:00.000Z',
+              lastError: null,
+              verifiedAt: '2026-10-06T08:00:00.000Z',
+              lastAttemptAt: '2026-10-06T08:00:00.000Z',
+            },
+          },
+        ])
+      ),
+      researchFacts: [],
+      provenance: {
+        sourceUrls: [`https://www.discogs.com/release/${releaseId}`],
+        matchStatus: 'matched',
+        confidence: 0.9,
+        reason: 'discogs url',
+        checkedAt: '2026-10-06T08:00:00.000Z',
+        refreshAfter: '2026-10-06T08:01:00.000Z',
+        lastError: {
+          at: '2026-10-06T08:01:00.000Z',
+          kind: 'unavailable',
+          message: 'incomplete recording probe',
+          attempts: 0,
+        },
+        verifiedAt: '2026-10-06T08:00:00.000Z',
+        lastAttemptAt: '2026-10-06T08:01:00.000Z',
+      },
+      lifecycles: {
+        pressing: {
+          verifiedAt: '2026-10-06T08:00:00.000Z',
+          lastAttemptAt: '2026-10-06T08:01:00.000Z',
+          lastError: null,
+          attempts: 0,
+        },
+        match: {
+          verifiedAt: '2026-10-06T08:00:00.000Z',
+          lastAttemptAt: '2026-10-06T08:01:00.000Z',
+          lastError: null,
+          attempts: 0,
+        },
+        research: {
+          verifiedAt: '2026-10-06T08:00:00.000Z',
+          lastAttemptAt: '2026-10-06T08:01:00.000Z',
+          lastError: null,
+          attempts: 0,
+        },
+      },
+      coverage: {
+        tracks: trackCount,
+        matched: trackCount,
+        withCredits: 0,
+        withSamples: 0,
+        withReleaseCredits: false,
+        withReleaseSamples: false,
+      },
+      checkpoint: {
+        stage: 'research',
+        researchCursor: 0,
+        trackSampleCursor: trackCount,
+        forceRun: true,
+        forceRunAt: isoFromMs(nowMs),
+      },
+    })
+    await store.setPressing(previous)
+    let fetches = 0
+    let pulses = 0
+    const mb = createMusicBrainzClientForTests()
+    mb.getRecording = async (id) => {
+      fetches += 1
+      return {
+        mbid: id,
+        title: id,
+        artist: 'Lecturer',
+        credits: [],
+        samplesFrom: [],
+        sampledIn: [],
+      }
+    }
+    await assert.rejects(
+      () =>
+        enrichPressing(releaseId, {
+          store,
+          now: () => nowMs,
+          forceRefresh: true,
+          fetchDiscogs: async () => nTrackDetail(releaseId, trackCount, 'Lecturer', 'Twenty'),
+          fetchWikidata: async () => [],
+          mb,
+          onLockHeartbeat: async () => {
+            pulses += 1
+            if (pulses === 2) throw new EnrichLockLostError()
+            return true
+          },
+        }),
+      (error: unknown) => isEnrichLockLostError(error)
+    )
+    assert.ok(fetches < trackCount)
+    assert.ok(fetches <= 2)
   })
 
   it('reuses a stored recording-level match instead of refetching after 429', async () => {
@@ -7319,6 +7819,7 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     assert.equal(presentSampleArtist('[unknown] x Beta'), 'Beta')
     assert.equal(presentSampleArtist('Alpha [Unknown] Beta'), 'Alpha Beta')
     assert.equal(presentSampleArtist('Alpha x [unknown]'), 'Alpha')
+    assert.equal(presentSampleArtist('Alpha x x [unknown]'), 'Alpha x x')
     assert.equal(
       artistCreditName([
         { name: 'Simon', joinphrase: ' & ', artist: { id: 'simon', name: 'Simon' } },

@@ -1,8 +1,10 @@
-IN PROGRESS (2026-10-08 — #64 P1 600s draft freshness + P2 lock heartbeat):
-- Forced CLI 600s: `forceRunAt` is the last checkpoint write (`deps.now()`), not draft create. `shouldReuseDraft` under `--retry` ignores stale `lastAttemptAt`. Restarted forced rematch carries `deadlineStops`. 20-track + 6-minute gap and 30-track 3+ invocations reach done or `too_slow`; 40-track budget-burn hits `too_slow`.
-- Lock heartbeat: `acquireEnrichLock` false throws `EnrichLockLostError` and the run nacks immediately (no more MB requests, draft kept). Heartbeat every 30s **or** 8 MB requests, including inside a long track via MusicBrainz `onRequest` (before fetch).
-- P3: `Mr. [unknown] & Foo` → `Mr. Foo` (not `Mr. & Foo`). Timeout pick commits pressing `unavailable` / `incomplete recording probe` with `AUTH_RETRY_MS`, not 180-day success.
-- Preview walker restart on this head from all 276 (`lf:preview:`, `--budget-ms=600000`, gaps capped at 60s, stop if the same id+cursor repeat twice). Never prod. Do not merge.
+IN PROGRESS (2026-10-08 — #64 P2 durable deadlineStops + lock-lost + incomplete overwrite):
+- Forced `deadlineStops` persist on the committed pressing and inspect (`DEADLINE_STOP_MESSAGE`) so a 16-minute or 3-day gap still reaches `too_slow` after the 900s draft expires.
+- Research-loop catch rethrows `EnrichLockLostError` / `WorkerDeadlineError`. Heartbeat `lost` is sticky.
+- `setRecording` / `preferCompleteRecording` refuses to replace a verified recording with an incomplete timeout/429 stub (keeps Juicy samples).
+- Skip-match recovery sets `verifiedAt` when the prior value was null. Incomplete pressing attempts use `nextBackoffMs` and die at `CRATE_MAX_ATTEMPTS`.
+- `Alpha x x [unknown]` → `Alpha x x` (only the joiner next to `[unknown]`).
+- tsc / eslint / `npm test` (407 pass). Tests ran with KV unset. Preview walker still running `lf:preview:` `--retry`. Never prod. Do not merge.
 
 COMPLETED (2026-10-07 — track search pagination + duration tie-break, off main `dae37a5`):
 - MusicBrainz recording search `limit=100`, page while the page min score stays at the top score (`RECORDING_SEARCH_MAX_PAGES` 3, existing 1 req/s client). Tie-break: score, samples-material, Discogs duration closeness, lowest MBID. `TRACK_LEVEL_ANNOTATE_CAP` 3 after that order. Sticky saved-match unchanged (duration does not unstick). Skip annotate probes when a saved match still wins and `forceRefresh` is false.
