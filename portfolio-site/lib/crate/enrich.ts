@@ -1150,6 +1150,56 @@ export function rehydrateSameSongRecordings(
   return next
 }
 
+/** Same-song sampled docs from the pressing map and the Redis index. Title + raw artist, duration sane. */
+export function sameSongSampledRecordings(
+  discogs: { artist: string; title: string; durationMs: number | null },
+  recordings: Record<string, StoredRecording>,
+  candidates: StoredRecording[]
+): StoredRecording[] {
+  const byMbid = new Map<string, StoredRecording>()
+  for (const doc of [...Object.values(recordings), ...candidates]) {
+    if (!recordingHasSampleMaterial(doc)) continue
+    const hit = hitFromStoredRecording(doc, 100)
+    if (filterTrackLevelRecordings([hit], discogs).length === 0) continue
+    if (!byMbid.has(doc.mbid)) byMbid.set(doc.mbid, recordings[doc.mbid] ?? doc)
+  }
+  return [...byMbid.values()]
+}
+
+export function sampledSidecarPriorMbid(
+  savedMbid: string | null,
+  sidecars: StoredRecording[]
+): string | null {
+  return sidecars[0]?.mbid ?? savedMbid
+}
+
+/** Empty sibling stays the pick only when no same-song sampled sidecar exists. */
+export function overrideEmptyPickWithSampled(
+  picked: TrackLevelRecordingHit[],
+  discogs: { artist: string; title: string; durationMs: number | null },
+  sidecars: Array<{
+    mbid: string
+    title: string
+    artist: string
+    samplesFrom?: unknown[]
+    sampledIn?: unknown[]
+  }>
+): TrackLevelRecordingHit[] {
+  if (sidecars.length === 0) return picked
+  const top = picked[0]
+  if (top?.hasSamples) return picked
+  const topScore = Math.max(100, ...picked.map((hit) => hit.score ?? 0))
+  const sidecarHits = filterTrackLevelRecordings(
+    sidecars.map((doc) => hitFromStoredRecording(doc, topScore)),
+    discogs
+  )
+  if (sidecarHits.length === 0) return picked
+  const competing = mergeRecalledRecordingHits(picked, sidecarHits)
+  return pickTrackLevelRecordings(competing, discogs, {
+    priorMbid: sidecarHits[0]?.mbid,
+  })
+}
+
 async function applyTrackLevelSamples(
   tracks: TrackOccurrence[],
   recordings: Record<string, StoredRecording>,
@@ -1168,42 +1218,41 @@ async function applyTrackLevelSamples(
   let sampledIndex: StoredRecording[] | null = null
   let cursor = startCursor
   for (let index = 0; index < playable.length; index++) {
-    if (index < startCursor) continue
-    const remaining =
-      deps.deadlineMs == null
-        ? Number.POSITIVE_INFINITY
-        : remainingBudgetMs(deps.deadlineMs, (deps.now ?? Date.now)())
-    if (remainingBelowTakeFloor(remaining, takeFloorMs)) {
-      return { cursor, incomplete: true }
+    if (index >= startCursor) {
+      const remaining =
+        deps.deadlineMs == null
+          ? Number.POSITIVE_INFINITY
+          : remainingBudgetMs(deps.deadlineMs, (deps.now ?? Date.now)())
+      if (remainingBelowTakeFloor(remaining, takeFloorMs)) {
+        return { cursor, incomplete: true }
+      }
+      await pulseLock(deps.onLockHeartbeat)
+      assertWithinWorkerDeadline(deps)
     }
-    await pulseLock(deps.onLockHeartbeat)
-    assertWithinWorkerDeadline(deps)
     const track = playable[index]
     if (!track) {
-      cursor = index + 1
-      await onProgress?.(cursor)
+      if (index >= startCursor) {
+        cursor = index + 1
+        await onProgress?.(cursor)
+      }
       continue
     }
     const queryTitle = songTitle(track.title)
     const queryArtist = (track.artist ?? '').trim() || artist
     if (!queryArtist || !queryTitle) {
-      cursor = index + 1
-      await onProgress?.(cursor)
+      if (index >= startCursor) {
+        cursor = index + 1
+        await onProgress?.(cursor)
+      }
       continue
     }
     await pulseLock(deps.onLockHeartbeat)
-    const hits = await mb.searchRecordingsByArtistTitle({
-      artist: queryArtist,
-      title: queryTitle,
-    })
     const discogs = {
       artist: queryArtist,
       title: track.title,
       durationMs: track.durationMs,
     }
-    const filtered = filterTrackLevelRecordings(hits, discogs)
     const savedMbid = priorTrackLevelMbid(track, previousTracks)
-    const priorMbid = savedMbid
     if (savedMbid && !recordings[savedMbid]) {
       const storedPrior = await deps.store.getRecording(savedMbid)
       if (storedPrior) recordings[savedMbid] = storedPrior
@@ -1213,8 +1262,48 @@ async function applyTrackLevelSamples(
       const hydrated = rehydrateSameSongRecordings(discogs, recordings, sampledIndex)
       for (const [mbid, doc] of Object.entries(hydrated)) recordings[mbid] = doc
     }
+    const sidecars = sameSongSampledRecordings(discogs, recordings, sampledIndex ?? [])
+    const priorMbid = sampledSidecarPriorMbid(savedMbid, sidecars)
+    if (index < startCursor) {
+      if (!deps.forceRefresh || sidecars.length === 0) continue
+      const currentMbid = track.recording.mbid
+      const current = currentMbid ? recordings[currentMbid] : undefined
+      if (current && recordingHasSampleMaterial(current)) continue
+      const currentHits = current
+        ? filterTrackLevelRecordings([hitFromStoredRecording(current, 100)], discogs)
+        : []
+      const recalledHits = filterTrackLevelRecordings(
+        sidecars.map((doc) => hitFromStoredRecording(doc, 100)),
+        discogs
+      )
+      const mergedPast = mergeRecalledRecordingHits(currentHits, recalledHits)
+      const pickedPast = overrideEmptyPickWithSampled(
+        pickTrackLevelRecordings(mergedPast, discogs, { priorMbid }).slice(
+          0,
+          TRACK_LEVEL_FETCH_CAP
+        ),
+        discogs,
+        sidecars
+      ).slice(0, TRACK_LEVEL_FETCH_CAP)
+      const pickPast = pickedPast[0]
+      if (!pickPast || pickPast.mbid === currentMbid) continue
+      const docsPast = pickedPast
+        .map((hit) => recordings[hit.mbid])
+        .filter((doc): doc is StoredRecording => Boolean(doc))
+      if (docsPast.length === 0) continue
+      const siblingsPast = siblingRecordingsForPick(pickPast, mergedPast, recordings)
+      await persistTrackLevelDocs(deps.store, track, recordings, docsPast, siblingsPast)
+      continue
+    }
+    const hits = await mb.searchRecordingsByArtistTitle({
+      artist: queryArtist,
+      title: queryTitle,
+    })
+    const filtered = filterTrackLevelRecordings(hits, discogs)
     const topScore = Math.max(100, ...filtered.map((hit) => hit.score ?? 0))
-    const recalled = Object.values(recordings).map((doc) => hitFromStoredRecording(doc, topScore))
+    const recalled = [...Object.values(recordings), ...(sampledIndex ?? [])].map((doc) =>
+      hitFromStoredRecording(doc, topScore)
+    )
     const merged = mergeRecalledRecordingHits(
       filtered,
       filterTrackLevelRecordings(recalled, discogs)
@@ -1232,10 +1321,14 @@ async function applyTrackLevelSamples(
       track.durationMs,
       priorMbid
     )
-    const picked = pickTrackLevelRecordings(annotated, discogs, { priorMbid }).slice(
-      0,
-      TRACK_LEVEL_FETCH_CAP
-    )
+    const picked = overrideEmptyPickWithSampled(
+      pickTrackLevelRecordings(annotated, discogs, { priorMbid }).slice(
+        0,
+        TRACK_LEVEL_FETCH_CAP
+      ),
+      discogs,
+      sidecars
+    ).slice(0, TRACK_LEVEL_FETCH_CAP)
     if (picked.length === 0) {
       if (
         hits.length > 0 &&

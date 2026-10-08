@@ -30,7 +30,7 @@ import {
 import { AUTH_RETRY_MS, isoFromMs, keepPriorMatch, nextBackoffMs, preferCompleteRecording, preservePressingOnFailure, shouldRefreshPressing, SUCCESS_REFRESH_MS, TERMINAL_REFRESH_MS, withClearedDeadlineStops } from './preserve.ts'
 import { createMemoryCrateStore, crateRedisKeys, DRAFT_TTL_SECONDS, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA, RELEASE_LOCK_LUA, REFRESH_LOCK_LUA, selectEnrichLockToken, type CrateStore } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
-import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, resumeForceRefreshTrackCursor, isForceRunStampFresh, isWikidataOnlyLastError, WorkerDeadlineError, EnrichLockLostError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, DEADLINE_STOP_MESSAGE, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, CLI_BACKFILL_BUDGET_MS, ENRICH_LOCK_SECONDS, ENRICH_LOCK_HEARTBEAT_MS, ENRICH_LOCK_HEARTBEAT_REQUESTS, INCOMPLETE_RECORDING_MESSAGE, TRACK_LEVEL_ANNOTATE_CAP, TRACK_LEVEL_FETCH_CAP, TRACK_LEVEL_REASON, overlayTrackLevelProgress, applyDeadlineStop, persistTrackLevelDocs, shouldStopWalkOnRateLimit, createEnrichLockHeartbeat, isEnrichLockLostError, createForceSeriesId, carryPriorRecordings, rehydrateSameSongRecordings } from './enrich.ts'
+import { enrichPressing, failRefreshFromEnv, occurrencesFromDetail, processEnrichmentQueue, sentencesFrom, classifyQueueOutcome, shouldSkipMatch, shouldReuseDraft, resumeForceRefreshTrackCursor, isForceRunStampFresh, isWikidataOnlyLastError, WorkerDeadlineError, EnrichLockLostError, isBackfillSettled, deadlineBackoffMs, remainingBelowTakeFloor, DEADLINE_STOP_LIMIT, DEADLINE_STOP_MESSAGE, ENRICH_TAKE_FLOOR_MS, ENRICH_BUDGET_MS, CLI_BACKFILL_BUDGET_MS, ENRICH_LOCK_SECONDS, ENRICH_LOCK_HEARTBEAT_MS, ENRICH_LOCK_HEARTBEAT_REQUESTS, INCOMPLETE_RECORDING_MESSAGE, TRACK_LEVEL_ANNOTATE_CAP, TRACK_LEVEL_FETCH_CAP, TRACK_LEVEL_REASON, overlayTrackLevelProgress, applyDeadlineStop, persistTrackLevelDocs, shouldStopWalkOnRateLimit, createEnrichLockHeartbeat, isEnrichLockLostError, createForceSeriesId, carryPriorRecordings, rehydrateSameSongRecordings, sameSongSampledRecordings, overrideEmptyPickWithSampled } from './enrich.ts'
 import { isUnusableDiscogsNotes, resolveDescription, withReadableDescription } from './description.ts'
 import { COLLECTION_KEEP_PATH, scheduleKeepPing } from './keep-ping.ts'
 import { runCrateEnrichCron } from './keep.ts'
@@ -343,6 +343,38 @@ describe('duration and title helpers', () => {
     )
     assert.equal(hydrated[jam.mbid]?.title, 'Jamming')
     assert.equal(hydrated[anteUp.mbid], undefined)
+    const sidecars = sameSongSampledRecordings(
+      { artist: 'Bob Marley & The Wailers', title: 'Jamming', durationMs: 197000 },
+      {},
+      [jam, anteUp]
+    )
+    assert.deepEqual(sidecars.map((doc) => doc.mbid), [jam.mbid])
+  })
+
+  it('overrideEmptyPickWithSampled swaps an empty sibling for a same-song sidecar', () => {
+    const discogs = {
+      artist: 'The Beatnuts',
+      title: 'Props Over Here',
+      durationMs: null,
+    }
+    const empty = {
+      mbid: '2d2752c8-f13d-4997-b45a-6b979218f9ef',
+      title: 'Props Over Here',
+      artist: 'The Beatnuts',
+      lengthMs: null,
+      score: 100,
+      hasSamples: false,
+    }
+    const sampled = {
+      mbid: '9cb859c8-284d-4433-8a3a-6f083533e004',
+      title: 'Props Over Here',
+      artist: 'The Beatnuts',
+      credits: [] as StoredRecording['credits'],
+      samplesFrom: [{ title: 'The Hit' }],
+      sampledIn: [] as StoredRecording['sampledIn'],
+    }
+    const picked = overrideEmptyPickWithSampled([empty], discogs, [sampled])
+    assert.equal(picked[0]?.mbid, sampled.mbid)
   })
 
   it('drops an old wrong-song pick even when it has sample rels', () => {
@@ -6080,6 +6112,149 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
       )
     })
   }
+
+  it('recalls a same-song sampled sidecar past the resume cursor without searching', async () => {
+    const releaseId = 1679157
+    const emptyMbid = '2d2752c8-f13d-4997-b45a-6b979218f9ef'
+    const sampledMbid = '9cb859c8-284d-4433-8a3a-6f083533e004'
+    const nowIso = '2026-10-08T11:00:00.000Z'
+    const link: SampleLink = {
+      title: 'The Hit',
+      artist: 'Later Artist',
+      mbid: 'hit-props-sidecar',
+      sourceUrl: 'https://musicbrainz.org/recording/hit-props-sidecar',
+      source: 'musicbrainz',
+      providerId: 'hit-props-sidecar',
+    }
+    const provenance = (mbid: string) => ({
+      sourceUrls: [`https://musicbrainz.org/recording/${mbid}`],
+      matchStatus: 'matched' as const,
+      confidence: 0.7,
+      reason: TRACK_LEVEL_REASON,
+      checkedAt: nowIso,
+      refreshAfter: '2026-11-07T11:00:00.000Z',
+      lastError: null,
+      verifiedAt: nowIso,
+      lastAttemptAt: nowIso,
+    })
+    const emptyDoc: StoredRecording = {
+      mbid: emptyMbid,
+      title: 'Props Over Here',
+      artist: 'The Beatnuts',
+      credits: [],
+      samplesFrom: [],
+      sampledIn: [],
+      provenance: provenance(emptyMbid),
+    }
+    const sampledDoc: StoredRecording = {
+      mbid: sampledMbid,
+      title: 'Props Over Here',
+      artist: 'The Beatnuts',
+      credits: [],
+      samplesFrom: [link],
+      sampledIn: [],
+      provenance: provenance(sampledMbid),
+    }
+    const detail = {
+      ...nTrackDetail(releaseId, 1, 'The Beatnuts', 'A Musical Massacre Mixtape'),
+      tracklist: [
+        {
+          position: 'A2',
+          title: 'Props Over Here',
+          duration: '',
+          type_: 'track' as const,
+        },
+      ],
+    }
+    const tracks = occurrencesFromDetail(detail)
+    const first = tracks[0]
+    assert.ok(first)
+    first.recording = {
+      matchStatus: 'matched',
+      confidence: 0.7,
+      reason: TRACK_LEVEL_REASON,
+      mbid: emptyMbid,
+      recordingUrl: `https://musicbrainz.org/recording/${emptyMbid}`,
+    }
+    const previous = hydratePressing({
+      ...pressingStub({
+        releaseId,
+        facts: {
+          ...pressingStub().facts,
+          releaseId,
+          title: detail.title,
+          artist: detail.artist,
+          catno: detail.catno,
+          discogsUrl: detail.discogsUrl,
+        },
+        tracks,
+        mbRelease: {
+          mbid: null,
+          url: null,
+          matchStatus: 'unmatched',
+          confidence: 0,
+          reason: 'no musicbrainz release',
+        },
+        checkpoint: {
+          stage: 'research',
+          researchCursor: 0,
+          trackSampleCursor: 1,
+          forceRun: true,
+          forceRunAt: nowIso,
+        },
+        provenance: {
+          ...pressingStub().provenance,
+          lastError: {
+            kind: 'rate_limit',
+            message: 'MusicBrainz rate limited',
+            attempts: 0,
+            at: nowIso,
+          },
+        },
+      }),
+      recordings: {
+        [emptyMbid]: emptyDoc,
+        [sampledMbid]: sampledDoc,
+      },
+    })
+    const store = createMemoryCrateStore({
+      pressings: { [releaseId]: previous },
+      recordings: { [emptyMbid]: emptyDoc, [sampledMbid]: sampledDoc },
+    })
+    let searches = 0
+    const mb = createMusicBrainzClientForTests()
+    mb.searchRecordingsByArtistTitle = async () => {
+      searches += 1
+      return [
+        {
+          mbid: emptyMbid,
+          title: 'Props Over Here',
+          artist: 'The Beatnuts',
+          lengthMs: null,
+          score: 100,
+        },
+      ]
+    }
+    mb.getRecording = async (id) => ({
+      mbid: id,
+      title: 'Props Over Here',
+      artist: 'The Beatnuts',
+      credits: [],
+      samplesFrom: id === sampledMbid ? [link] : [],
+      sampledIn: [],
+    })
+    const retried = await enrichPressing(releaseId, {
+      store,
+      now: () => Date.parse(nowIso) + 60_000,
+      fetchDiscogs: async () => detail,
+      fetchWikidata: async () => [],
+      mb,
+      forceRefresh: true,
+    })
+    assert.equal(searches, 0)
+    assert.equal(retried.tracks[0]?.recording.mbid, sampledMbid)
+    assert.equal(retried.recordings[sampledMbid]?.samplesFrom[0]?.title, 'The Hit')
+  })
 
   it('does not reuse store.getRecording for a forced pick missing from memory', async () => {
     const savedMbid = '1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc'

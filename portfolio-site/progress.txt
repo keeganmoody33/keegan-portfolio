@@ -1,7 +1,7 @@
 COMPLETED (2026-10-08 — class (b) prior-pick vote + same-song orphan recall):
 - Class (b) five lost because the sampled MBID was **not in search hits** (off the map, so Redis fill never saw it). Fill already keys on `hit.mbid`; it does not iterate the pressing map. Empty sibling stayed the pick.
-- `--retry` now rehydrates same-song sampled Redis docs (title + raw artist, duration sane) onto the map and merges them into the candidate set so a prior sampled pick always gets a vote. Wrong-song orphans stay off. Persist reuses a sampled stored doc under force (no extra MB getRecording that would clobber rels).
-- Fixtures for Message In Our Music (Interlude), Props Over Here, Brazilian Rhyme (Interlude), Imma Be, Jamming: search omits the sampled MBID → empty wins first run; force retry recalls the Redis sampled doc. Same-song samples beat a higher-score empty sibling outside slack 5.
+- `--retry` now rehydrates same-song sampled Redis docs (title + raw artist, duration sane) onto the map and merges them into the candidate set from the Redis sampled index **and** the map so a prior sampled pick always gets a vote. A same-song sampled sidecar is `priorMbid` and overrides an empty pick. A resumed `--retry` past the track still applies that vote with no new search. Wrong-song orphans stay off. Persist reuses a sampled stored doc under force (no extra MB getRecording that would clobber rels).
+- Fixtures for Message In Our Music (Interlude), Props Over Here, Brazilian Rhyme (Interlude), Imma Be, Jamming: search omits the sampled MBID → empty wins first run; force retry recalls the Redis sampled doc. Sidecar-on-map + cursor-past Props fixture: empty pick `2d2752c8` + sampled `9cb859c8` on the map, resume cursor 1 → sampled wins, 0 searches.
 - Preview `--retry` walk only the five + orphan-owner ids (not 276). Never prod. Do not merge.
 
 COMPLETED (2026-10-08 — class (d) sidecar recordings map + preview walk):
