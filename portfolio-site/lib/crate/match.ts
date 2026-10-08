@@ -18,6 +18,7 @@ const VERSION_TOKENS = [
 export const DURATION_CLOSE_MS = 5000
 export const DURATION_FAR_MS = 15000
 export const SAME_PERFORMANCE_DURATION_MS = 5000
+export const DURATION_SIDECAR_MS = SAME_PERFORMANCE_DURATION_MS
 export const NEAR_TOP_SCORE_SLACK = 5
 export const UNIQUE_SEARCH_SCORE = 95
 
@@ -168,6 +169,7 @@ export function hitFromStoredRecording(
     artist: string
     samplesFrom?: unknown[]
     sampledIn?: unknown[]
+    lengthMs?: number | null
   },
   score = 0
 ): TrackLevelRecordingHit {
@@ -175,7 +177,7 @@ export function hitFromStoredRecording(
     mbid: recording.mbid,
     title: recording.title,
     artist: recording.artist,
-    lengthMs: null,
+    lengthMs: recording.lengthMs ?? null,
     score,
     hasSamples: recordingHasSampleMaterial(recording),
   }
@@ -239,19 +241,23 @@ export function compareTrackLevelProbeOrder(
 export function trackLevelHitOutranksPrior(
   hit: TrackLevelRecordingHit,
   prior: TrackLevelRecordingHit,
-  discogsDurationMs: number | null = null
+  discogsDurationMs: number | null = null,
+  options?: { forceRefresh?: boolean }
 ): boolean {
+  const hitScore = hit.score ?? 0
+  const priorScore = prior.score ?? 0
+  if (options?.forceRefresh && isSameSongCandidate(hit, prior, discogsDurationMs)) {
+    if (hit.hasSamples && prior.hasSamples) return hitScore > priorScore
+    if (hit.hasSamples && !prior.hasSamples) return true
+    return false
+  }
   if (isSameSongCandidate(hit, prior, discogsDurationMs)) {
     const hitSamples = hit.hasSamples ? 1 : 0
     const priorSamples = prior.hasSamples ? 1 : 0
     if (priorSamples > 0 && hitSamples <= priorSamples) return false
     if (hitSamples > priorSamples) return true
-    const hitScore = hit.score ?? 0
-    const priorScore = prior.score ?? 0
     return hitScore - priorScore > NEAR_TOP_SCORE_SLACK
   }
-  const hitScore = hit.score ?? 0
-  const priorScore = prior.score ?? 0
   if (hitScore > priorScore) return true
   if (hitScore === priorScore && Boolean(hit.hasSamples) && !prior.hasSamples) return true
   return false
@@ -290,23 +296,89 @@ export function filterTrackLevelRecordings(
   })
 }
 
+export function titlesMatchExactly(left: string, right: string): boolean {
+  const a = normalizeTitle(left)
+  const b = normalizeTitle(right)
+  return Boolean(a && b && a === b)
+}
+
+const SIDECAR_VERSION_TOKENS = new Set<string>([
+  ...VERSION_TOKENS,
+  'live',
+  'acapella',
+  'cappella',
+  'demo',
+  'dub',
+  'feat',
+  'ft',
+  'featuring',
+])
+
+export function sidecarVersionsAlign(leftTitle: string, rightTitle: string): boolean {
+  const left = tokensFrom(leftTitle, SIDECAR_VERSION_TOKENS)
+  const right = tokensFrom(rightTitle, SIDECAR_VERSION_TOKENS)
+  if (left.size !== right.size) return false
+  for (const token of left) {
+    if (!right.has(token)) return false
+  }
+  return true
+}
+
+export function isStrictSidecarMatch(
+  discogs: { artist: string; title: string; durationMs: number | null },
+  hit: Pick<TrackLevelRecordingHit, 'title' | 'artist' | 'lengthMs'>
+): boolean {
+  if (!artistsMatch(discogs.artist, hit.artist)) return false
+  if (!titlesMatchExactly(discogs.title, hit.title)) return false
+  if (!sidecarVersionsAlign(discogs.title, hit.title)) return false
+  const delta = durationDeltaMs(discogs.durationMs, hit.lengthMs)
+  if (delta != null && delta > DURATION_SIDECAR_MS) return false
+  return true
+}
+
+export function compareSidecarHits(
+  left: TrackLevelRecordingHit,
+  right: TrackLevelRecordingHit
+): number {
+  const leftSamples = left.hasSamples ? 1 : 0
+  const rightSamples = right.hasSamples ? 1 : 0
+  if (leftSamples !== rightSamples) return rightSamples - leftSamples
+  const scoreDelta = (right.score ?? 0) - (left.score ?? 0)
+  if (scoreDelta !== 0) return scoreDelta
+  return left.mbid.localeCompare(right.mbid)
+}
+
 export function pickTrackLevelRecordings(
   hits: TrackLevelRecordingHit[],
   discogs: { artist: string; title: string; durationMs: number | null },
-  options?: { priorMbid?: string | null }
+  options?: {
+    priorMbid?: string | null
+    forceRefresh?: boolean
+    searchMbids?: ReadonlySet<string>
+  }
 ): TrackLevelRecordingHit[] {
   const matched = filterTrackLevelRecordings(hits, discogs)
-  const ranked = matched
+  const searchMbids = options?.searchMbids
+  const forceRefresh = Boolean(options?.forceRefresh)
+  const rankedPool =
+    forceRefresh && searchMbids
+      ? matched.filter((hit) => searchMbids.has(hit.mbid))
+      : matched
+  const ranked = rankedPool
     .slice()
     .sort((left, right) => compareTrackLevelRecordings(left, right, discogs.durationMs))
   const priorMbid = options?.priorMbid
   if (!priorMbid) return ranked
+  if (forceRefresh && searchMbids && !searchMbids.has(priorMbid)) return ranked
   const prior = matched.find((hit) => hit.mbid === priorMbid)
   if (!prior) return ranked
   if (priorTrackIsWrongSong(prior, discogs)) return ranked
+  if (forceRefresh && !isStrictSidecarMatch(discogs, prior)) return ranked
   const best = ranked[0]
   if (!best) return [prior]
-  if (trackLevelHitOutranksPrior(best, prior, discogs.durationMs)) return ranked
+  if (trackLevelHitOutranksPrior(best, prior, discogs.durationMs, { forceRefresh })) {
+    return ranked
+  }
   return [prior, ...ranked.filter((hit) => hit.mbid !== prior.mbid)]
 }
 

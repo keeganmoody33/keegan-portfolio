@@ -1,4 +1,5 @@
 import { collectionReleaseIds } from './sync.ts'
+import { parseIdList } from './ids.ts'
 export { parseIdList, parsePositiveId } from './ids.ts'
 import { fetchDiscogsReleaseDetail } from './discogs-release.ts'
 import {
@@ -20,7 +21,12 @@ import {
   type EnrichDeps,
 } from './enrich.ts'
 import { createMusicBrainzClient } from './musicbrainz.ts'
-import { crateRedisKeys, selectEnrichLockToken, type CrateStore } from './store.ts'
+import {
+  crateRedisKeys,
+  FORCE_SERIES_TTL_SECONDS,
+  selectEnrichLockToken,
+  type CrateStore,
+} from './store.ts'
 import { AUTH_RETRY_MS, isoFromMs, storedPressingHasVisitorFacts } from './preserve.ts'
 import type { BackfillState, DeadLetter, StoredPressing } from './types.ts'
 import type { DiscogsCollection } from '../discogs.ts'
@@ -36,6 +42,98 @@ export function parseBackfillBudgetMs(
   const parsed = Number.parseInt(raw, 10)
   if (!Number.isInteger(parsed) || parsed <= 0) return fallback
   return parsed
+}
+
+export type BackfillCliArgs = {
+  retry: boolean
+  ids: number[]
+  limit?: number
+  budgetMs: number
+  newSeries: boolean
+  invalidIds: boolean
+}
+
+export function parseBackfillCliArgs(argv: string[]): BackfillCliArgs {
+  let retry = false
+  let ids: number[] = []
+  let limit: number | undefined
+  let budgetMs = CLI_BACKFILL_BUDGET_MS
+  let newSeries = false
+  let invalidIds = false
+  for (const arg of argv) {
+    if (arg === '--retry' || arg === 'retry=1' || arg === '--retry=1') retry = true
+    else if (arg === '--new-series' || arg === '--new-series=1') newSeries = true
+    else if (arg.startsWith('--ids=')) {
+      ids = parseIdList(arg.slice('--ids='.length))
+      if (ids.length === 0) invalidIds = true
+    } else if (arg.startsWith('--limit=')) {
+      const parsed = Number.parseInt(arg.slice('--limit='.length), 10)
+      if (Number.isInteger(parsed) && parsed > 0) limit = parsed
+    } else if (arg.startsWith('--budget-ms=')) {
+      budgetMs = parseBackfillBudgetMs(arg.slice('--budget-ms='.length))
+    }
+  }
+  return { retry, ids, limit, budgetMs, newSeries, invalidIds }
+}
+
+export type BackfillRunOptions = {
+  limit?: number
+  retry?: boolean
+  ids?: number[]
+  newSeries?: boolean
+  mintForceSeries?: boolean
+}
+
+export function cliBackfillRunOptions(args: BackfillCliArgs): BackfillRunOptions {
+  return {
+    retry: args.retry,
+    ids: args.ids.length > 0 ? args.ids : undefined,
+    limit: args.limit,
+    newSeries: args.newSeries,
+    mintForceSeries: true,
+  }
+}
+
+export function cronBackfillRunOptions(
+  retry: boolean,
+  ids?: number[],
+  limit?: number
+): BackfillRunOptions {
+  return {
+    retry,
+    ids,
+    limit,
+    mintForceSeries: false,
+  }
+}
+
+async function resolveForceSeriesForRecord(
+  store: CrateStore,
+  releaseId: number,
+  options: {
+    mint: boolean
+    reset: boolean
+    injected?: string
+  }
+): Promise<string | undefined> {
+  if (options.injected) return options.injected
+  if (options.reset) {
+    const id = createForceSeriesId()
+    await store.setForceSeriesId(releaseId, id, FORCE_SERIES_TTL_SECONDS)
+    return id
+  }
+  const stored =
+    (await store.getForceSeriesId(releaseId)) ??
+    (await store.getDraftPressing(releaseId))?.checkpoint?.forceSeriesId ??
+    (await store.getInspect()).find((row) => row.releaseId === releaseId)?.forceSeriesId
+  if (stored) {
+    await store.setForceSeriesId(releaseId, stored, FORCE_SERIES_TTL_SECONDS)
+    return stored
+  }
+  if (!options.mint) return undefined
+  const id = createForceSeriesId()
+  await store.setForceSeriesId(releaseId, id, FORCE_SERIES_TTL_SECONDS)
+  return id
 }
 
 export type InspectPressingDump = {
@@ -215,7 +313,7 @@ function refreshAfterMs(pressing: StoredPressing | null): number {
 
 export async function runBackfill(
   deps: EnrichDeps & { collection: DiscogsCollection },
-  options: { limit?: number; retry?: boolean; ids?: number[] } = {}
+  options: BackfillRunOptions = {}
 ): Promise<BackfillResult> {
   const store = deps.store
   const now = deps.now ?? Date.now
@@ -366,10 +464,8 @@ export async function runBackfill(
   }
   const mbStart = mb.requestCount
   const cap = options.limit ?? Number.POSITIVE_INFINITY
-  const forceSeriesId =
-    options.retry || deps.forceRefresh
-      ? (deps.forceSeriesId ?? createForceSeriesId())
-      : deps.forceSeriesId
+  const mintForceSeries = options.mintForceSeries === true
+  const resetSeries = options.newSeries === true
   const processed: number[] = []
   let completedThis = 0
   let failedThis = 0
@@ -410,14 +506,23 @@ export async function runBackfill(
 
       try {
         await heartbeat()
+        const forceRefresh = Boolean(options.retry || deps.forceRefresh)
+        const forceSeriesId = forceRefresh
+          ? await resolveForceSeriesForRecord(store, releaseId, {
+              mint: mintForceSeries,
+              reset: resetSeries,
+              injected: deps.forceSeriesId,
+            })
+          : deps.forceSeriesId
         const pressing = await enrichPressing(releaseId, {
           ...deps,
           mb,
           wikidataClient,
           fetchDiscogs: wrappedFetch,
           deadlineMs,
-          forceRefresh: Boolean(options.retry || deps.forceRefresh),
+          forceRefresh,
           forceSeriesId,
+          resetForceSeries: resetSeries,
           onLockHeartbeat: heartbeat,
         })
         processed.push(releaseId)

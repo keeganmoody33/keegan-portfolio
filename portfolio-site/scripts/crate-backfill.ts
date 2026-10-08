@@ -6,9 +6,11 @@
  *   npm run crate:backfill -- --retry
  *   npm run crate:backfill -- --ids=567894,573292 --retry
  *   npm run crate:backfill -- --budget-ms=600000 --retry
+ *   npm run crate:backfill -- --ids=567894 --retry --new-series
  *
  * `--retry` without `--ids` retries dead, inspect too_slow / rate_limit / unavailable,
  * and stored pressings whose lastError is still retryable (including pending provenance).
+ * `--new-series` mints a fresh forceSeriesId for each targeted id and resets deadlineStops.
  *
  * Gated HTTP (preview only unless CRON_SECRET is set):
  *   GET /api/cron/crate-backfill?ids=567894&retry=1
@@ -17,41 +19,13 @@
  * CRON_SECRET is not in production. Do not add it without Keegan's yes.
  * Missing secret → 404. Visitor traffic never writes Redis.
  */
-import { parseBackfillBudgetMs, parseIdList, runBackfill } from '../lib/crate/backfill.ts'
-import { CLI_BACKFILL_BUDGET_MS } from '../lib/crate/enrich.ts'
+import {
+  cliBackfillRunOptions,
+  parseBackfillCliArgs,
+  runBackfill,
+} from '../lib/crate/backfill.ts'
 import { getDefaultCrateStore } from '../lib/crate/store.ts'
 import { readCachedCollection } from '../lib/discogs.ts'
-
-function parseArgs(argv: string[]): {
-  retry: boolean
-  ids: number[]
-  limit?: number
-  budgetMs: number
-} {
-  let retry = false
-  let ids: number[] = []
-  let limit: number | undefined
-  let budgetMs = CLI_BACKFILL_BUDGET_MS
-  for (const arg of argv) {
-    if (arg === '--retry' || arg === 'retry=1' || arg === '--retry=1') retry = true
-    else if (arg.startsWith('--ids=')) {
-      ids = parseIdList(arg.slice('--ids='.length))
-      // Explicit but invalid --ids must not fall through to a full backfill.
-      if (ids.length === 0) {
-        console.error('invalid --ids: expected comma-separated positive integers')
-        process.exit(1)
-      }
-    }
-    else if (arg.startsWith('--limit=')) {
-      const parsed = Number.parseInt(arg.slice('--limit='.length), 10)
-      if (Number.isInteger(parsed) && parsed > 0) limit = parsed
-    }
-    else if (arg.startsWith('--budget-ms=')) {
-      budgetMs = parseBackfillBudgetMs(arg.slice('--budget-ms='.length))
-    }
-  }
-  return { retry, ids, limit, budgetMs }
-}
 
 const store = getDefaultCrateStore()
 if (!store) {
@@ -65,9 +39,14 @@ if (!collection) {
   process.exit(1)
 }
 
-const { retry, ids, limit, budgetMs } = parseArgs(process.argv.slice(2))
+const args = parseBackfillCliArgs(process.argv.slice(2))
+if (args.invalidIds) {
+  console.error('invalid --ids: expected comma-separated positive integers')
+  process.exit(1)
+}
+
 const result = await runBackfill(
-  { store, collection, forceRefresh: Boolean(retry), budgetMs },
-  { retry, ids: ids.length > 0 ? ids : undefined, limit }
+  { store, collection, forceRefresh: Boolean(args.retry), budgetMs: args.budgetMs },
+  cliBackfillRunOptions(args)
 )
 console.log(JSON.stringify(result, null, 2))

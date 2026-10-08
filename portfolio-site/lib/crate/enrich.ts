@@ -27,10 +27,12 @@ import {
   classifyReleaseMatch,
   matchDiscogsTrackToMb,
   parseDurationToMs,
+  compareSidecarHits,
   compareTrackLevelProbeOrder,
   filterTrackLevelRecordings,
   hitFromStoredRecording,
   isSamePerformanceSibling,
+  isStrictSidecarMatch,
   mergeRecalledRecordingHits,
   pickTrackLevelRecordings,
   recordingHasSampleMaterial,
@@ -71,6 +73,7 @@ import { resolveDescription } from './description.ts'
 import {
   INFLIGHT_TTL_SECONDS,
   DRAFT_TTL_SECONDS,
+  FORCE_SERIES_TTL_SECONDS,
   selectEnrichLockToken,
   type CrateStore,
 } from './store.ts'
@@ -120,6 +123,7 @@ export const ENRICH_TAKE_FLOOR_MS = 8_000
 export const WORKER_MAX_DURATION_MS = 60_000
 export const WORKER_DEADLINE_MARGIN_MS = 8_000
 export const DEADLINE_STOP_LIMIT = 3
+export { FORCE_SERIES_TTL_SECONDS }
 export const DEADLINE_BACKOFF_MS = ENRICH_TAKE_FLOOR_MS
 export const TRACK_LEVEL_FETCH_CAP = 1
 export const TRACK_LEVEL_ANNOTATE_CAP = 3
@@ -333,6 +337,7 @@ export async function applyDeadlineStop(
   const retryAtMs = nowMs + deadlineBackoffMs(stops)
   const nowIso = isoFromMs(nowMs)
   if (stops >= DEADLINE_STOP_LIMIT) {
+    await store.clearForceSeriesId(releaseId)
     await store.markUnresolved({
       releaseId,
       kind: 'too_slow',
@@ -382,6 +387,10 @@ export async function applyDeadlineStop(
       })
     )
   }
+  const seriesId = checkpoint.forceSeriesId ?? live?.checkpoint?.forceSeriesId
+  if (seriesId) {
+    await store.setForceSeriesId(releaseId, seriesId, FORCE_SERIES_TTL_SECONDS)
+  }
   await store.markUnresolved({
     releaseId,
     kind: 'unavailable',
@@ -389,7 +398,7 @@ export async function applyDeadlineStop(
     attempts: stops,
     at: nowIso,
     stage: 'queue',
-    forceSeriesId: live?.checkpoint?.forceSeriesId,
+    forceSeriesId: seriesId,
   })
   await store.nack(releaseId, retryAtMs)
   return { tooSlow: false, stops, retryAtMs }
@@ -512,15 +521,20 @@ async function forceSeriesDeadlineStops(
   releaseId: number,
   draft: StoredPressing | null | undefined,
   forceRefresh: boolean,
-  incomingSeriesId?: string
+  incomingSeriesId?: string,
+  resetSeries = false
 ): Promise<number> {
   const inspect = (await store.getInspect()).find((row) => row.releaseId === releaseId)
   if (!forceRefresh) return priorForceDeadlineStops(draft, inspectDeadlineStops(inspect))
-  const storedSeries = draft?.checkpoint?.forceSeriesId ?? inspect?.forceSeriesId
-  // Every new operator `--retry`/`--ids` series gets a full stop budget, not
-  // only after inspect too_slow. Same seriesId still accumulates across gaps,
-  // including after the 900s draft TTL, via inspect.forceSeriesId.
-  if (inspect?.kind === 'too_slow') {
+  const storedSeries =
+    (await store.getForceSeriesId(releaseId)) ??
+    draft?.checkpoint?.forceSeriesId ??
+    inspect?.forceSeriesId
+  // too_slow and `--new-series` reset. Cron never passes resetSeries.
+  // Same stored id still accumulates across 16-minute and 3-day gaps after
+  // the 900s draft TTL (Redis 24h, then inspect.forceSeriesId).
+  if (inspect?.kind === 'too_slow' || resetSeries) {
+    if (inspect?.kind === 'too_slow') await store.clearForceSeriesId(releaseId)
     await store.unmarkUnresolved(releaseId)
     return 0
   }
@@ -582,6 +596,8 @@ export type EnrichDeps = {
   forceRefresh?: boolean
   /** One operator `--retry`/`--ids` invocation. A new id resets deadlineStops. */
   forceSeriesId?: string
+  /** CLI `--new-series`. Cron never sets this. */
+  resetForceSeries?: boolean
   onLockHeartbeat?: () => Promise<boolean | void>
   fetchWikidata?: (input: WikidataLookupInput, fetchedAt: string) => Promise<ResearchFact[]>
   wikidata?: WikidataClientOptions
@@ -1122,18 +1138,44 @@ async function annotateTrackLevelHits(
   return annotated
 }
 
-const sampledRecordingLists = new WeakMap<CrateStore, StoredRecording[]>()
+let sampledIndexStore: CrateStore | null = null
+let sampledIndexDocs: StoredRecording[] | null = null
+
+export function resetSampledRecordingIndex(): void {
+  sampledIndexStore = null
+  sampledIndexDocs = null
+}
 
 async function listSampledRecordings(store: CrateStore): Promise<StoredRecording[]> {
-  const cached = sampledRecordingLists.get(store)
-  if (cached) return cached
+  if (sampledIndexStore === store && sampledIndexDocs) return sampledIndexDocs
   if (typeof store.listRecordings !== 'function') {
-    sampledRecordingLists.set(store, [])
-    return []
+    sampledIndexStore = store
+    sampledIndexDocs = []
+    return sampledIndexDocs
   }
   const sampled = (await store.listRecordings()).filter(recordingHasSampleMaterial)
-  sampledRecordingLists.set(store, sampled)
+  sampledIndexStore = store
+  sampledIndexDocs = sampled
   return sampled
+}
+
+export function recordingIsCompleteSidecar(doc: StoredRecording): boolean {
+  if (!doc.provenance?.verifiedAt) return false
+  return doc.provenance.lastError?.message !== INCOMPLETE_RECORDING_MESSAGE
+}
+
+function sidecarHitOf(
+  doc: {
+    mbid: string
+    title: string
+    artist: string
+    samplesFrom?: unknown[]
+    sampledIn?: unknown[]
+    lengthMs?: number | null
+  },
+  score = 100
+): TrackLevelRecordingHit {
+  return hitFromStoredRecording(doc, score)
 }
 
 export function rehydrateSameSongRecordings(
@@ -1143,14 +1185,15 @@ export function rehydrateSameSongRecordings(
 ): Record<string, StoredRecording> {
   const next = { ...recordings }
   for (const doc of candidates) {
-    const hit = hitFromStoredRecording(doc, 100)
-    if (filterTrackLevelRecordings([hit], discogs).length === 0) continue
+    if (!recordingIsCompleteSidecar(doc)) continue
+    const hit = sidecarHitOf(doc, 100)
+    if (!isStrictSidecarMatch(discogs, hit)) continue
     next[doc.mbid] = next[doc.mbid] ?? doc
   }
   return next
 }
 
-/** Same-song sampled docs from the pressing map and the Redis index. Title + raw artist, duration sane. */
+/** Exact-title sampled docs from the pressing map and the Redis index. */
 export function sameSongSampledRecordings(
   discogs: { artist: string; title: string; durationMs: number | null },
   recordings: Record<string, StoredRecording>,
@@ -1159,21 +1202,29 @@ export function sameSongSampledRecordings(
   const byMbid = new Map<string, StoredRecording>()
   for (const doc of [...Object.values(recordings), ...candidates]) {
     if (!recordingHasSampleMaterial(doc)) continue
-    const hit = hitFromStoredRecording(doc, 100)
-    if (filterTrackLevelRecordings([hit], discogs).length === 0) continue
+    if (!recordingIsCompleteSidecar(doc)) continue
+    const hit = sidecarHitOf(doc, 100)
+    if (!isStrictSidecarMatch(discogs, hit)) continue
     if (!byMbid.has(doc.mbid)) byMbid.set(doc.mbid, recordings[doc.mbid] ?? doc)
   }
-  return [...byMbid.values()]
+  return [...byMbid.values()].sort((left, right) =>
+    compareSidecarHits(sidecarHitOf(left), sidecarHitOf(right))
+  )
 }
 
 export function sampledSidecarPriorMbid(
   savedMbid: string | null,
-  sidecars: StoredRecording[]
+  sidecars: StoredRecording[],
+  options?: { forceRefresh?: boolean; searchMbids?: ReadonlySet<string> }
 ): string | null {
-  return sidecars[0]?.mbid ?? savedMbid
+  const eligible =
+    options?.forceRefresh && options.searchMbids
+      ? sidecars.filter((doc) => options.searchMbids?.has(doc.mbid))
+      : sidecars
+  return eligible[0]?.mbid ?? savedMbid
 }
 
-/** Empty sibling stays the pick only when no same-song sampled sidecar exists. */
+/** Empty sibling stays the pick only when a strict sidecar is in this run's search hits. */
 export function overrideEmptyPickWithSampled(
   picked: TrackLevelRecordingHit[],
   discogs: { artist: string; title: string; durationMs: number | null },
@@ -1183,20 +1234,28 @@ export function overrideEmptyPickWithSampled(
     artist: string
     samplesFrom?: unknown[]
     sampledIn?: unknown[]
-  }>
+    lengthMs?: number | null
+  }>,
+  options?: { forceRefresh?: boolean; searchMbids?: ReadonlySet<string> }
 ): TrackLevelRecordingHit[] {
   if (sidecars.length === 0) return picked
   const top = picked[0]
   if (top?.hasSamples) return picked
   const topScore = Math.max(100, ...picked.map((hit) => hit.score ?? 0))
-  const sidecarHits = filterTrackLevelRecordings(
-    sidecars.map((doc) => hitFromStoredRecording(doc, topScore)),
-    discogs
-  )
-  if (sidecarHits.length === 0) return picked
-  const competing = mergeRecalledRecordingHits(picked, sidecarHits)
+  const sidecarHits = sidecars
+    .map((doc) => sidecarHitOf(doc, topScore))
+    .filter((hit) => isStrictSidecarMatch(discogs, hit))
+    .sort(compareSidecarHits)
+  const allowed =
+    options?.forceRefresh && options.searchMbids
+      ? sidecarHits.filter((hit) => options.searchMbids?.has(hit.mbid))
+      : sidecarHits
+  if (allowed.length === 0) return picked
+  const competing = mergeRecalledRecordingHits(picked, allowed)
   return pickTrackLevelRecordings(competing, discogs, {
-    priorMbid: sidecarHits[0]?.mbid,
+    priorMbid: allowed[0]?.mbid,
+    forceRefresh: options?.forceRefresh,
+    searchMbids: options?.searchMbids,
   })
 }
 
@@ -1215,7 +1274,7 @@ async function applyTrackLevelSamples(
 ): Promise<{ cursor: number; incomplete: boolean }> {
   const playable = tracks.filter((track) => isPlayableOccurrence(track))
   const probeCache: Record<string, StoredRecording> = {}
-  let sampledIndex: StoredRecording[] | null = null
+  const sampledIndex = deps.forceRefresh ? await listSampledRecordings(deps.store) : []
   let cursor = startCursor
   for (let index = 0; index < playable.length; index++) {
     if (index >= startCursor) {
@@ -1258,12 +1317,10 @@ async function applyTrackLevelSamples(
       if (storedPrior) recordings[savedMbid] = storedPrior
     }
     if (deps.forceRefresh) {
-      if (!sampledIndex) sampledIndex = await listSampledRecordings(deps.store)
       const hydrated = rehydrateSameSongRecordings(discogs, recordings, sampledIndex)
       for (const [mbid, doc] of Object.entries(hydrated)) recordings[mbid] = doc
     }
-    const sidecars = sameSongSampledRecordings(discogs, recordings, sampledIndex ?? [])
-    const priorMbid = sampledSidecarPriorMbid(savedMbid, sidecars)
+    const sidecars = sameSongSampledRecordings(discogs, recordings, sampledIndex)
     if (index < startCursor) {
       if (!deps.forceRefresh || sidecars.length === 0) continue
       const currentMbid = track.recording.mbid
@@ -1272,18 +1329,17 @@ async function applyTrackLevelSamples(
       const currentHits = current
         ? filterTrackLevelRecordings([hitFromStoredRecording(current, 100)], discogs)
         : []
-      const recalledHits = filterTrackLevelRecordings(
-        sidecars.map((doc) => hitFromStoredRecording(doc, 100)),
-        discogs
-      )
-      const mergedPast = mergeRecalledRecordingHits(currentHits, recalledHits)
+      // Past the cursor there is no this-run search; an MBID not in search
+      // cannot override under force.
       const pickedPast = overrideEmptyPickWithSampled(
-        pickTrackLevelRecordings(mergedPast, discogs, { priorMbid }).slice(
-          0,
-          TRACK_LEVEL_FETCH_CAP
-        ),
+        pickTrackLevelRecordings(currentHits, discogs, {
+          priorMbid: savedMbid,
+          forceRefresh: true,
+          searchMbids: new Set(currentHits.map((hit) => hit.mbid)),
+        }).slice(0, TRACK_LEVEL_FETCH_CAP),
         discogs,
-        sidecars
+        sidecars,
+        { forceRefresh: true, searchMbids: new Set(currentHits.map((hit) => hit.mbid)) }
       ).slice(0, TRACK_LEVEL_FETCH_CAP)
       const pickPast = pickedPast[0]
       if (!pickPast || pickPast.mbid === currentMbid) continue
@@ -1291,7 +1347,7 @@ async function applyTrackLevelSamples(
         .map((hit) => recordings[hit.mbid])
         .filter((doc): doc is StoredRecording => Boolean(doc))
       if (docsPast.length === 0) continue
-      const siblingsPast = siblingRecordingsForPick(pickPast, mergedPast, recordings)
+      const siblingsPast = siblingRecordingsForPick(pickPast, currentHits, recordings)
       await persistTrackLevelDocs(deps.store, track, recordings, docsPast, siblingsPast)
       continue
     }
@@ -1299,15 +1355,18 @@ async function applyTrackLevelSamples(
       artist: queryArtist,
       title: queryTitle,
     })
+    const searchMbids = new Set(hits.map((hit) => hit.mbid))
+    const priorMbid = sampledSidecarPriorMbid(savedMbid, sidecars, {
+      forceRefresh: Boolean(deps.forceRefresh),
+      searchMbids,
+    })
     const filtered = filterTrackLevelRecordings(hits, discogs)
     const topScore = Math.max(100, ...filtered.map((hit) => hit.score ?? 0))
-    const recalled = [...Object.values(recordings), ...(sampledIndex ?? [])].map((doc) =>
-      hitFromStoredRecording(doc, topScore)
-    )
-    const merged = mergeRecalledRecordingHits(
-      filtered,
-      filterTrackLevelRecordings(recalled, discogs)
-    )
+    const recalled = [...Object.values(recordings), ...sampledIndex]
+      .filter((doc) => recordingIsCompleteSidecar(doc))
+      .map((doc) => hitFromStoredRecording(doc, topScore))
+      .filter((hit) => isStrictSidecarMatch(discogs, hit))
+    const merged = mergeRecalledRecordingHits(filtered, recalled)
     const annotated = await annotateTrackLevelHits(
       merged,
       recordings,
@@ -1322,12 +1381,14 @@ async function applyTrackLevelSamples(
       priorMbid
     )
     const picked = overrideEmptyPickWithSampled(
-      pickTrackLevelRecordings(annotated, discogs, { priorMbid }).slice(
-        0,
-        TRACK_LEVEL_FETCH_CAP
-      ),
+      pickTrackLevelRecordings(annotated, discogs, {
+        priorMbid,
+        forceRefresh: Boolean(deps.forceRefresh),
+        searchMbids,
+      }).slice(0, TRACK_LEVEL_FETCH_CAP),
       discogs,
-      sidecars
+      sidecars,
+      { forceRefresh: Boolean(deps.forceRefresh), searchMbids }
     ).slice(0, TRACK_LEVEL_FETCH_CAP)
     if (picked.length === 0) {
       if (
@@ -1565,7 +1626,8 @@ export async function enrichPressing(
           releaseId,
           hydratedDraft,
           true,
-          deps.forceSeriesId
+          deps.forceSeriesId,
+          Boolean(deps.resetForceSeries)
         )
         pressingDraft = hydratePressing({
           ...pressingDraft,
@@ -1681,7 +1743,8 @@ export async function enrichPressing(
                   releaseId,
                   hydratedDraft,
                   true,
-                  deps.forceSeriesId
+                  deps.forceSeriesId,
+                  Boolean(deps.resetForceSeries)
                 )
               : skipReleaseRematch
                 ? previous?.checkpoint?.deadlineStops ?? 0
@@ -2116,6 +2179,7 @@ export async function enrichPressing(
       })
     } else {
       await deps.store.unmarkUnresolved(releaseId)
+      await deps.store.clearForceSeriesId(releaseId)
     }
     const committed = withClearedDeadlineStops(pressing)
     await deps.store.setPressing(committed)
