@@ -9142,6 +9142,75 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     assert.equal(stored?.lengthMs, 181000)
   })
 
+  it('force persist stamps search lengthMs onto a stored recording that lacked it', async () => {
+    const releaseId = 9107710
+    const mbid = 'legacy-no-length-0000-0000-000000000001'
+    const store = createMemoryCrateStore()
+    await store.setRecording({
+      mbid,
+      title: 'Song 1',
+      artist: 'Lecturer',
+      credits: [],
+      samplesFrom: [
+        {
+          title: 'The Hit',
+          artist: 'Later',
+          mbid: 'hit',
+          sourceUrl: 'https://musicbrainz.org/recording/hit',
+          source: 'musicbrainz',
+          providerId: 'hit',
+        },
+      ],
+      sampledIn: [],
+      provenance: {
+        sourceUrls: [`https://musicbrainz.org/recording/${mbid}`],
+        matchStatus: 'matched',
+        confidence: 0.7,
+        reason: TRACK_LEVEL_REASON,
+        checkedAt: '2026-10-06T08:00:00.000Z',
+        refreshAfter: '2026-11-05T08:00:00.000Z',
+        lastError: null,
+        verifiedAt: '2026-10-06T08:00:00.000Z',
+        lastAttemptAt: '2026-10-06T08:00:00.000Z',
+      },
+    })
+    assert.equal((await store.getRecording(mbid))?.lengthMs, undefined)
+    const mb = createMusicBrainzClientForTests()
+    let lookups = 0
+    mb.searchRecordingsByArtistTitle = async () => [
+      {
+        mbid,
+        title: 'Song 1',
+        artist: 'Lecturer',
+        lengthMs: 188000,
+        score: 100,
+      },
+    ]
+    mb.getRecording = async () => {
+      lookups += 1
+      throw new Error('sampled stored doc must not refetch')
+    }
+    const pressing = await enrichPressing(releaseId, {
+      store,
+      now: () => Date.parse('2026-10-06T09:00:00.000Z'),
+      fetchDiscogs: async () => nTrackDetail(releaseId, 1),
+      fetchWikidata: async () => [],
+      mb,
+      forceRefresh: true,
+    })
+    assert.equal(lookups, 0)
+    assert.equal(pressing.recordings[mbid]?.lengthMs, 188000)
+    const stored = await store.getRecording(mbid)
+    assert.equal(stored?.lengthMs, 188000)
+    assert.equal(
+      isStrictSidecarMatch(
+        { artist: 'Lecturer', title: 'Song 1', durationMs: 180000 },
+        hitFromStoredRecording(stored!, 100)
+      ),
+      false
+    )
+  })
+
   it('aborts MusicBrainz requests at min(timeout, deadline remaining)', async () => {
     let calls = 0
     const client = createMusicBrainzClient({

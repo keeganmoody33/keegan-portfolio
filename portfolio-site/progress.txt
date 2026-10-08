@@ -1,3 +1,6 @@
+COMPLETED (2026-10-08 — StoredRecording lengthMs add-on on the same head):
+- Persist MusicBrainz `lengthMs` on the recording doc so the P2b 5s sidecar check can run from stored hits. Missing on older Redis docs is unknown. Unknown duration still requires exact `normalizeTitle` and matching version markers. Force `--retry` stamps search-hit length onto a legacy sampled doc without refetching. Never prod. Do not merge.
+
 COMPLETED (2026-10-08 — P2b preview audit on `lf:preview:` after abcda21 BLOCK fix):
 - Preview `--retry --ids` walk of 11 pick-changed + class (b) ids. Finished rematch: 21093352, 28896664, 1311185, 3018422, 11449230, 12563641, 378994, 10416361, 1679157. Honest-stop on MB 429 at cursor 0 after 20m+ cooloffs: 1921824 (partial rematch, remix track did change), 13694938 (14/14 picks already rematched including class (b) Jamming). Prefix `lf:preview:` only. DISCOGS unset. Never prod.
 - Totals **389 / 75 / 101 / 288** vs #54 360/72/111/249 and vs prewalk 387/75/101/286. +2 sampledBy vs 387. 0 links removed vs 387. Unknown 0, work URLs 0.
@@ -9,7 +12,7 @@ COMPLETED (2026-10-08 — Integrations BLOCK abcda21: persist series, strict sid
 - P2a: under force a fresh sampled hit in this-run search outranks a stale sampled prior on score (`1d890c2b` 100 beats `1aaf2f49` 90). Keep the prior only when no fresh hit has samples.
 - P2b: sidecar/prior override needs exact `normalizeTitle`, matching version markers (remix/live/mix/edit/instrumental/acapella/version/demo/dub/feat.), and duration within 5s when both known. Persist `lengthMs` on the recording doc (missing on older Redis docs is unknown). Unknown duration still requires exact title + version markers. An MBID not in this-run search cannot override under force. Remix 8s off, Live 10s off, feat. Guest, orphan MBIDs, and exact-title 8s-off no longer win.
 - P3: sidecar sort is samples → score → MBID (not SCAN order). Incomplete docs are never sidecars. Sampled index loads once per process.
-- Crate tests 261. Preview audit: 389/75/101/288, class (b) 5/5, Juicy linked. Never prod. Do not merge.
+- Crate tests 262. Preview audit: 389/75/101/288, class (b) 5/5, Juicy linked. Never prod. Do not merge.
 
 COMPLETED (2026-10-08 — class (b) prior-pick vote + same-song orphan recall):
 - Class (b) five lost because the sampled MBID was **not in search hits** (off the map, so Redis fill never saw it). Fill already keys on `hit.mbid`; it does not iterate the pressing map. Empty sibling stayed the pick.
