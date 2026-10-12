@@ -12,7 +12,8 @@
  * Copied sample links must be MusicBrainz recording/release URLs that match
  * a samples-material rel on that source recording. Studio rels never attach
  * to a live destination. --apply holds the enrich lock, plans after acquire,
- * and requires --backup=<path>.
+ * and requires --prod --backup=<path> --run-id. Snapshot is TYPE/PTTL/GET;
+ * rollback restores SET+PEXPIRE through assertPrefixedRedisKey.
  */
 import { writeFileSync, readFileSync, mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
@@ -21,6 +22,7 @@ import {
   ENRICH_LOCK_SECONDS,
   recordingIsCompleteSidecar,
 } from './enrich.ts'
+import { parsePositiveId } from './ids.ts'
 import { isPlayableOccurrence } from './lifecycle.ts'
 import {
   artistsMatch,
@@ -32,9 +34,10 @@ import {
   titleIsLive,
   type SearchVersionFit,
 } from './match.ts'
-import { coalesceRecordingLengthMs } from './preserve.ts'
+import { coalesceRecordingLengthMs, preferCompleteRecording } from './preserve.ts'
 import { isRecordingOrReleaseSampleLink, mergeSampleLinks } from './research.ts'
 import { crateRedisKeys, selectEnrichLockToken, type CrateStore } from './store.ts'
+import { assertPrefixedRedisKey, isProductionRedisNamespace } from '../redis-env.ts'
 import type { SampleLink, StoredPressing, StoredRecording, TrackOccurrence } from './types.ts'
 import type { MusicBrainzClient } from './musicbrainz.ts'
 
@@ -43,6 +46,8 @@ export const GAP_RELEASE_IDS = [
   3221873, 4217381, 4666933, 6625293, 6729400, 7482706, 10416361, 11449230, 11917223,
   13694938, 14851267, 21093352, 23467838,
 ] as const
+
+export const GAP_RELEASE_ID_SET = new Set<number>(GAP_RELEASE_IDS)
 
 export const MTUME_RELEASE_ID = 567894
 export const MTUME_VOCAL_MBID = '1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc'
@@ -83,26 +88,35 @@ export type PromoteMode = 'dry-run' | 'apply' | 'rollback'
 
 export type PromoteArgs = {
   apply: boolean
+  prod: boolean
   rollbackPath?: string
   backupPath?: string
+  runId?: string
   ids?: number[]
 }
 
 export type PromoteSnapshotEntry = {
   key: string
-  value: string | null
+  type: string
+  pttl: number
+  dump: string | null
 }
 
 export type PromoteSnapshot = {
   createdAt: string
-  prefix: string
+  runId: string
+  prefix: 'lf:'
   keys: PromoteSnapshotEntry[]
 }
 
 export type PromoteRawStore = {
   getRaw(key: string): Promise<string | null>
-  setRaw(key: string, value: string | null): Promise<void>
-  scanKeys?(match: string): Promise<string[]>
+  setRaw(key: string, value: string | null, pttlMs?: number): Promise<void>
+  typeOf(key: string): Promise<string>
+  pttl(key: string): Promise<number>
+  dumpKey(key: string): Promise<string | null>
+  scanKeys(match: string): Promise<string[]>
+  multiExec(commands: string[][]): Promise<unknown[]>
 }
 
 export type SampleTotals = {
@@ -200,6 +214,7 @@ export type PromoteReport = {
   lengthAudit: PromoteLengthAudit[]
   lockHeld?: boolean
   rollbackCommand?: string
+  runId?: string
   mtume: {
     releaseId: number
     inGapIds: boolean
@@ -221,12 +236,47 @@ function uniquePositive(ids: Iterable<number>): number[] {
   return out
 }
 
+export function parsePromoteIds(raw: string): number[] {
+  const ids: number[] = []
+  const seen = new Set<number>()
+  for (const part of raw.split(',')) {
+    const token = part.trim()
+    if (!token) continue
+    const id = parsePositiveId(token)
+    if (id === null) {
+      throw new Error(`--ids= rejects ${token}`)
+    }
+    if (!GAP_RELEASE_ID_SET.has(id)) {
+      throw new Error(`--ids= ${id} is not in the closed 23-id list`)
+    }
+    if (!seen.has(id)) {
+      seen.add(id)
+      ids.push(id)
+    }
+  }
+  if (ids.length === 0) {
+    throw new Error('--ids= requires at least one gap record id')
+  }
+  return ids
+}
+
+export function closedGapIds(ids: Iterable<number> | undefined): number[] {
+  const wanted = uniquePositive(ids ?? GAP_RELEASE_IDS)
+  for (const id of wanted) {
+    if (!GAP_RELEASE_ID_SET.has(id)) {
+      throw new Error(`id ${id} is not in the closed 23-id list`)
+    }
+  }
+  return wanted
+}
+
 export function parsePromoteArgs(argv: string[]): PromoteArgs {
-  const args: PromoteArgs = { apply: false }
+  const args: PromoteArgs = { apply: false, prod: false }
   for (let i = 0; i < argv.length; i++) {
     const raw = argv[i]
     if (!raw) continue
     if (raw === '--apply') args.apply = true
+    else if (raw === '--prod') args.prod = true
     else if (raw === '--rollback') {
       const next = argv[i + 1]
       if (!next || next.startsWith('--')) {
@@ -245,37 +295,69 @@ export function parsePromoteArgs(argv: string[]): PromoteArgs {
       i += 1
     } else if (raw.startsWith('--backup=')) {
       args.backupPath = raw.slice('--backup='.length)
+    } else if (raw === '--run-id') {
+      const next = argv[i + 1]
+      if (!next || next.startsWith('--')) {
+        throw new Error('--run-id requires a value')
+      }
+      args.runId = next
+      i += 1
+    } else if (raw.startsWith('--run-id=')) {
+      args.runId = raw.slice('--run-id='.length)
     } else if (raw.startsWith('--ids=')) {
-      args.ids = raw
-        .slice('--ids='.length)
-        .split(',')
-        .map((part) => Number.parseInt(part.trim(), 10))
-        .filter((id) => Number.isInteger(id) && id > 0)
+      args.ids = parsePromoteIds(raw.slice('--ids='.length))
     }
   }
   if (args.apply && args.rollbackPath) {
     throw new Error('pass --apply or --rollback, not both')
   }
-  if (args.apply && !args.backupPath) {
-    throw new Error('--apply requires --backup=<path>')
+  if (args.apply) {
+    if (!args.backupPath) throw new Error('--apply requires --backup=<path>')
+    if (!args.prod) throw new Error('refusing prod Redis keys; pass --prod')
+    if (!args.runId?.trim()) throw new Error('--apply requires --run-id')
+  }
+  if (args.rollbackPath) {
+    if (!args.prod) throw new Error('refusing prod Redis keys; pass --prod')
+    if (!args.runId?.trim()) throw new Error('--rollback requires --run-id')
   }
   return args
 }
 
-export function promoteRollbackCommand(backupPath: string): string {
-  return `npm run crate:promote-preview -- --rollback ${backupPath}`
+export function assertPromoteProdAllowed(
+  options: { prod?: boolean; env?: EnvMap } = {}
+): void {
+  if (options.prod) return
+  const env = options.env ?? process.env
+  if (isProductionRedisNamespace(env) || crateRedisKeys(env).prefix === 'lf:') {
+    throw new Error('refusing prod Redis keys; pass --prod')
+  }
+}
+
+export function assertProdPromoteKey(key: string, env: EnvMap = PROD_NAMESPACE_ENV): string {
+  if (key.startsWith('lf:preview:')) {
+    throw new Error(`prod Redis must not write preview key: ${key}`)
+  }
+  if (!key.startsWith('lf:')) {
+    throw new Error(`prod promote key must start with lf: excluding lf:preview: (${key})`)
+  }
+  return assertPrefixedRedisKey(key, env)
+}
+
+export function promoteRollbackCommand(backupPath: string, runId?: string): string {
+  const run = runId?.trim() ? ` --run-id=${runId.trim()}` : ''
+  return `npm run crate:promote-preview -- --rollback ${backupPath} --prod${run}`
 }
 
 export class PromoteApplyError extends Error {
   readonly backupPath: string
   readonly rollbackCommand: string
 
-  constructor(backupPath: string, cause: unknown) {
+  constructor(backupPath: string, cause: unknown, runId?: string) {
     const detail = cause instanceof Error ? cause.message : String(cause)
     super(`promote apply failed after snapshot (${detail}). backup=${backupPath}`)
     this.name = 'PromoteApplyError'
     this.backupPath = backupPath
-    this.rollbackCommand = promoteRollbackCommand(backupPath)
+    this.rollbackCommand = promoteRollbackCommand(backupPath, runId)
   }
 }
 
@@ -640,6 +722,46 @@ async function juicyLinked(store: CrateStore): Promise<{
   }
 }
 
+function expireAtFromPttl(pttlMs: number | undefined): number | null {
+  if (pttlMs == null || pttlMs < 0) return null
+  if (pttlMs === 0) return Date.now()
+  return Date.now() + pttlMs
+}
+
+function remainingPttl(expireAt: number | null | undefined, exists: boolean): number {
+  if (!exists) return -2
+  if (expireAt == null) return -1
+  return Math.max(0, expireAt - Date.now())
+}
+
+export function restoreCommandsForEntry(entry: PromoteSnapshotEntry): string[][] {
+  const key = assertProdPromoteKey(entry.key)
+  if (entry.dump == null || entry.type === 'none' || entry.pttl === -2) {
+    return [['DEL', key]]
+  }
+  if (entry.pttl > 0) {
+    return [['SET', key, entry.dump, 'PX', String(entry.pttl)]]
+  }
+  return [['SET', key, entry.dump]]
+}
+
+export function applyCommandsForWrites(writes: PlannedWrite[]): string[][] {
+  const recordings = writes.filter((write) => write.kind === 'recording' && write.recording)
+  const pressings = writes.filter((write) => write.kind === 'pressing' && write.pressing)
+  const commands: string[][] = []
+  for (const write of [...recordings, ...pressings]) {
+    const key = assertProdPromoteKey(write.key)
+    const doc = write.kind === 'recording' ? write.recording : write.pressing
+    commands.push(['SET', key, JSON.stringify(doc)])
+  }
+  return commands
+}
+
+async function runPromoteCommands(raw: PromoteRawStore, commands: string[][]): Promise<void> {
+  if (commands.length === 0) return
+  await raw.multiExec(commands)
+}
+
 export function memoryPromoteRawStore(
   store: {
     pressings: Record<number, StoredPressing>
@@ -648,42 +770,74 @@ export function memoryPromoteRawStore(
   env: EnvMap
 ): PromoteRawStore {
   const keys = crateRedisKeys(env)
+  const expireAt = new Map<string, number | null>()
   const pressingRe = new RegExp(`^${keys.prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}crate:pressing:(\\d+):v1$`)
   const recordingRe = new RegExp(
     `^${keys.prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}crate:recording:(.+):v1$`
   )
-  return {
+
+  async function readExisting(key: string): Promise<string | null> {
+    const pressing = pressingRe.exec(key)
+    if (pressing) {
+      const id = Number.parseInt(pressing[1] ?? '', 10)
+      const doc = store.pressings[id]
+      return doc ? JSON.stringify(doc) : null
+    }
+    const recording = recordingRe.exec(key)
+    if (recording) {
+      const mbid = recording[1] ?? ''
+      const doc = store.recordings[mbid]
+      return doc ? JSON.stringify(doc) : null
+    }
+    throw new Error(`unsupported promote key: ${key}`)
+  }
+
+  async function writeExisting(key: string, value: string | null, pttlMs?: number): Promise<void> {
+    assertProdPromoteKey(key, env.VERCEL_ENV === 'production' ? env : PROD_NAMESPACE_ENV)
+    const pressing = pressingRe.exec(key)
+    if (pressing) {
+      const id = Number.parseInt(pressing[1] ?? '', 10)
+      if (value == null) {
+        delete store.pressings[id]
+        expireAt.delete(key)
+        return
+      }
+      store.pressings[id] = JSON.parse(value) as StoredPressing
+      expireAt.set(key, expireAtFromPttl(pttlMs))
+      return
+    }
+    const recording = recordingRe.exec(key)
+    if (recording) {
+      const mbid = recording[1] ?? ''
+      if (value == null) {
+        delete store.recordings[mbid]
+        expireAt.delete(key)
+        return
+      }
+      store.recordings[mbid] = JSON.parse(value) as StoredRecording
+      expireAt.set(key, expireAtFromPttl(pttlMs))
+      return
+    }
+    throw new Error(`unsupported promote key: ${key}`)
+  }
+
+  const raw: PromoteRawStore = {
     async getRaw(key: string) {
-      const pressing = pressingRe.exec(key)
-      if (pressing) {
-        const id = Number.parseInt(pressing[1] ?? '', 10)
-        const doc = store.pressings[id]
-        return doc ? JSON.stringify(doc) : null
-      }
-      const recording = recordingRe.exec(key)
-      if (recording) {
-        const mbid = recording[1] ?? ''
-        const doc = store.recordings[mbid]
-        return doc ? JSON.stringify(doc) : null
-      }
-      throw new Error(`unsupported promote key: ${key}`)
+      return readExisting(key)
     },
-    async setRaw(key: string, value: string | null) {
-      const pressing = pressingRe.exec(key)
-      if (pressing) {
-        const id = Number.parseInt(pressing[1] ?? '', 10)
-        if (value == null) delete store.pressings[id]
-        else store.pressings[id] = JSON.parse(value) as StoredPressing
-        return
-      }
-      const recording = recordingRe.exec(key)
-      if (recording) {
-        const mbid = recording[1] ?? ''
-        if (value == null) delete store.recordings[mbid]
-        else store.recordings[mbid] = JSON.parse(value) as StoredRecording
-        return
-      }
-      throw new Error(`unsupported promote key: ${key}`)
+    async setRaw(key: string, value: string | null, pttlMs?: number) {
+      await writeExisting(key, value, pttlMs)
+    },
+    async typeOf(key: string) {
+      const value = await readExisting(key)
+      return value == null ? 'none' : 'string'
+    },
+    async pttl(key: string) {
+      const value = await readExisting(key)
+      return remainingPttl(expireAt.get(key), value != null)
+    },
+    async dumpKey(key: string) {
+      return readExisting(key)
     },
     async scanKeys(match: string) {
       const pattern = new RegExp(`^${match.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '.*')}$`)
@@ -698,43 +852,100 @@ export function memoryPromoteRawStore(
       }
       return found
     },
+    async multiExec(commands: string[][]) {
+      const results: unknown[] = []
+      for (const command of commands) {
+        const op = command[0]
+        const key = command[1]
+        if (!op || !key) throw new Error('empty promote command')
+        if (op === 'DEL') {
+          await raw.setRaw(key, null)
+          results.push(1)
+          continue
+        }
+        if (op === 'SET') {
+          const value = command[2]
+          if (value == null) throw new Error(`SET missing value for ${key}`)
+          let pttlMs: number | undefined
+          if (command[3] === 'PX') {
+            pttlMs = Number(command[4])
+          }
+          await raw.setRaw(key, value, pttlMs)
+          results.push('OK')
+          continue
+        }
+        if (op === 'PEXPIRE') {
+          const ms = Number(command[2])
+          const value = await raw.getRaw(key)
+          if (value == null) {
+            results.push(0)
+            continue
+          }
+          expireAt.set(key, expireAtFromPttl(ms))
+          results.push(1)
+          continue
+        }
+        throw new Error(`unsupported promote command: ${op}`)
+      }
+      return results
+    },
   }
+  return raw
 }
 
 export async function snapshotPromoteKeys(
   raw: PromoteRawStore,
   keys: string[],
-  prefix: string
+  prefix: 'lf:',
+  runId: string
 ): Promise<PromoteSnapshot> {
+  if (prefix !== 'lf:') {
+    throw new Error(`snapshot prefix must be lf: (got ${prefix})`)
+  }
+  if (!runId.trim()) throw new Error('snapshot requires a run id')
   const entries: PromoteSnapshotEntry[] = []
   for (const key of keys) {
-    entries.push({ key, value: await raw.getRaw(key) })
+    const guarded = assertProdPromoteKey(key)
+    const type = await raw.typeOf(guarded)
+    const pttl = await raw.pttl(guarded)
+    const dump = type === 'none' || pttl === -2 ? null : await raw.dumpKey(guarded)
+    entries.push({ key: guarded, type, pttl, dump })
   }
-  return { createdAt: new Date().toISOString(), prefix, keys: entries }
+  return { createdAt: new Date().toISOString(), runId, prefix: 'lf:', keys: entries }
 }
 
 export async function restorePromoteSnapshot(
   raw: PromoteRawStore,
-  snapshot: PromoteSnapshot
+  snapshot: PromoteSnapshot,
+  runId: string
 ): Promise<string[]> {
-  const restored: string[] = []
-  for (const entry of snapshot.keys) {
-    await raw.setRaw(entry.key, entry.value)
-    restored.push(entry.key)
+  if (snapshot.prefix !== 'lf:') {
+    throw new Error(`snapshot prefix ${snapshot.prefix} does not match lf:`)
   }
-  return restored
+  if (!runId.trim() || snapshot.runId !== runId) {
+    throw new Error(`snapshot run-id ${snapshot.runId} does not match --run-id ${runId}`)
+  }
+  const commands = snapshot.keys.flatMap((entry) => restoreCommandsForEntry(entry))
+  await runPromoteCommands(raw, commands)
+  return snapshot.keys.map((entry) => assertProdPromoteKey(entry.key))
 }
 
 export function writePromoteSnapshotFile(path: string, snapshot: PromoteSnapshot): void {
+  if (snapshot.prefix !== 'lf:') {
+    throw new Error(`refusing to write snapshot with prefix ${snapshot.prefix}`)
+  }
+  if (!snapshot.runId.trim()) throw new Error('snapshot requires a run id')
+  for (const entry of snapshot.keys) assertProdPromoteKey(entry.key)
   mkdirSync(dirname(path), { recursive: true })
   writeFileSync(path, JSON.stringify(snapshot), { encoding: 'utf8', mode: 0o600 })
 }
 
 export function readPromoteSnapshotFile(path: string): PromoteSnapshot {
   const parsed = JSON.parse(readFileSync(path, 'utf8')) as PromoteSnapshot
-  if (!parsed || parsed.prefix !== 'lf:' || !Array.isArray(parsed.keys)) {
+  if (!parsed || parsed.prefix !== 'lf:' || !parsed.runId || !Array.isArray(parsed.keys)) {
     throw new Error(`invalid promote snapshot: ${path}`)
   }
+  for (const entry of parsed.keys) assertProdPromoteKey(entry.key)
   return parsed
 }
 
@@ -801,7 +1012,7 @@ async function planCopies(options: {
       }
       const alreadyOnMap = Boolean(prodPressing.recordings[mbid])
       const matched = matchingTracks(prodPressing, previewDoc)
-      if (!alreadyOnMap && matched.length === 0) {
+      if (matched.length === 0) {
         skips.push({ releaseId, mbid, title: previewDoc.title, reason: 'no matching prod track' })
         continue
       }
@@ -860,7 +1071,7 @@ async function planCopies(options: {
         })
         continue
       }
-      const merged = mergePromoteRecording(prodDoc, previewFiltered)
+      const merged = preferCompleteRecording(prodDoc, mergePromoteRecording(prodDoc, previewFiltered))
       const addedLinks = addedSampleLinks(prodPressing.recordings[mbid] ?? prodDoc, merged)
       const mapEntryChanged =
         !alreadyOnMap || JSON.stringify(nextRecordings[mbid] ?? null) !== JSON.stringify(merged)
@@ -922,7 +1133,7 @@ async function planCopies(options: {
       if (redisNeedsWrite && !recordingWriteMbids.has(mbid)) {
         recordingWriteMbids.add(mbid)
         writes.push({
-          key: prodKeys.recording(mbid),
+          key: assertProdPromoteKey(prodKeys.recording(mbid)),
           kind: 'recording',
           mbid,
           recording: merged,
@@ -933,7 +1144,7 @@ async function planCopies(options: {
     const projected = countPressingMapLinks({ ...prodPressing, recordings: nextRecordings })
     if (mapChanged) {
       writes.push({
-        key: prodKeys.pressing(releaseId),
+        key: assertProdPromoteKey(prodKeys.pressing(releaseId)),
         kind: 'pressing',
         releaseId,
         pressing: { ...prodPressing, recordings: nextRecordings },
@@ -951,9 +1162,14 @@ async function planCopies(options: {
     })
   }
 
+  const plannedMbids = new Set(records.flatMap((row) => row.copies.map((copy) => copy.mbid)))
+  const closedWrites = writes.filter(
+    (write) => write.kind !== 'recording' || (write.mbid != null && plannedMbids.has(write.mbid))
+  )
+
   return {
     records,
-    writes,
+    writes: closedWrites,
     remixLiveEdit: dedupeAddedLinks(remixLiveEdit),
     borderline,
     droppedLinks,
@@ -981,6 +1197,7 @@ async function reportFromPlan(input: {
   prodKeys: ReturnType<typeof crateRedisKeys>
   prod: CrateStore
   lockHeld?: boolean
+  runId?: string
 }): Promise<PromoteReport> {
   const mtume = await juicyLinked(input.prod)
   return {
@@ -1002,7 +1219,10 @@ async function reportFromPlan(input: {
     droppedLinks: input.planned.droppedLinks,
     lengthAudit: input.planned.lengthAudit,
     lockHeld: input.lockHeld,
-    rollbackCommand: input.backupPath ? promoteRollbackCommand(input.backupPath) : undefined,
+    runId: input.runId,
+    rollbackCommand: input.backupPath
+      ? promoteRollbackCommand(input.backupPath, input.runId)
+      : undefined,
     mtume: {
       releaseId: MTUME_RELEASE_ID,
       inGapIds: input.ids.includes(MTUME_RELEASE_ID),
@@ -1020,50 +1240,64 @@ export async function runPromotePreview(options: {
   previewEnv: EnvMap
   ids?: number[]
   apply?: boolean
+  allowProd?: boolean
   rollbackPath?: string
   backupPath?: string
+  runId?: string
   raw?: PromoteRawStore
   verifyRecording?: PromoteVerifyRecording
 }): Promise<PromoteReport> {
   const { prodPrefix, previewPrefix } = assertPromotePrefixes(options.prodEnv, options.previewEnv)
   const prodKeys = crateRedisKeys(options.prodEnv)
-  const ids = uniquePositive(options.ids ?? GAP_RELEASE_IDS)
+  const ids = closedGapIds(options.ids)
+  const runId = options.runId?.trim()
 
   if (options.rollbackPath) {
+    assertPromoteProdAllowed({ prod: options.allowProd, env: options.prodEnv })
+    if (!runId) throw new Error('--rollback requires --run-id')
     if (!options.raw) throw new Error('rollback needs a raw store')
     const snapshot = readPromoteSnapshotFile(options.rollbackPath)
-    if (snapshot.prefix !== prodPrefix) {
-      throw new Error(`snapshot prefix ${snapshot.prefix} does not match ${prodPrefix}`)
+    if (snapshot.prefix !== 'lf:' || prodPrefix !== 'lf:') {
+      throw new Error(`snapshot prefix ${snapshot.prefix} does not match lf:`)
     }
-    const restored = await restorePromoteSnapshot(options.raw, snapshot)
-    const mtume = await juicyLinked(options.prod)
-    const currentProd = await totalsFor(options.prod, ids, options.raw, prodPrefix)
-    const currentPreview = await totalsFor(options.preview, ids, options.raw, previewPrefix)
-    return {
-      mode: 'rollback',
-      prodPrefix,
-      previewPrefix,
-      wrote: true,
-      keys: restored,
-      backupPath: options.rollbackPath,
-      restored,
-      currentProd,
-      currentPreview,
-      projectedProd: currentProd,
-      vs360: currentProd.links - PROD_BAR,
-      vs389: currentProd.links - PREVIEW_BAR,
-      records: [],
-      remixLiveEdit: [],
-      borderline: [],
-      ...emptyPlanExtras(),
-      rollbackCommand: promoteRollbackCommand(options.rollbackPath),
-      mtume: {
-        releaseId: MTUME_RELEASE_ID,
-        inGapIds: ids.includes(MTUME_RELEASE_ID),
-        plannedPressingWrite: restored.includes(prodKeys.pressing(MTUME_RELEASE_ID)),
-        vocalMbid: MTUME_VOCAL_MBID,
-        ...mtume,
-      },
+    const token = selectEnrichLockToken()
+    const held = await options.prod.acquireEnrichLock(ENRICH_LOCK_SECONDS, token)
+    if (!held) throw new Error('enrich lock held (lf:crate:enrich:lock:v1)')
+    try {
+      const restored = await restorePromoteSnapshot(options.raw, snapshot, runId)
+      const mtume = await juicyLinked(options.prod)
+      const currentProd = await totalsFor(options.prod, ids, options.raw, prodPrefix)
+      const currentPreview = await totalsFor(options.preview, ids, options.raw, previewPrefix)
+      return {
+        mode: 'rollback',
+        prodPrefix,
+        previewPrefix,
+        wrote: true,
+        keys: restored,
+        backupPath: options.rollbackPath,
+        restored,
+        currentProd,
+        currentPreview,
+        projectedProd: currentProd,
+        vs360: currentProd.links - PROD_BAR,
+        vs389: currentProd.links - PREVIEW_BAR,
+        records: [],
+        remixLiveEdit: [],
+        borderline: [],
+        ...emptyPlanExtras(),
+        lockHeld: true,
+        runId,
+        rollbackCommand: promoteRollbackCommand(options.rollbackPath, runId),
+        mtume: {
+          releaseId: MTUME_RELEASE_ID,
+          inGapIds: ids.includes(MTUME_RELEASE_ID),
+          plannedPressingWrite: restored.includes(prodKeys.pressing(MTUME_RELEASE_ID)),
+          vocalMbid: MTUME_VOCAL_MBID,
+          ...mtume,
+        },
+      }
+    } finally {
+      await options.prod.releaseEnrichLock(token)
     }
   }
 
@@ -1104,8 +1338,11 @@ export async function runPromotePreview(options: {
     })
   }
 
+  assertPromoteProdAllowed({ prod: options.allowProd, env: options.prodEnv })
+  if (!runId) throw new Error('--apply requires --run-id')
   if (!options.backupPath) throw new Error('--apply requires --backup=<path>')
   if (!options.raw) throw new Error('--apply needs a raw store for the backup snapshot')
+  if (prodPrefix !== 'lf:') throw new Error(`prod prefix must be lf: (got ${prodPrefix})`)
   const backupPath = options.backupPath
   const token = selectEnrichLockToken()
   const held = await options.prod.acquireEnrichLock(ENRICH_LOCK_SECONDS, token)
@@ -1120,24 +1357,16 @@ export async function runPromotePreview(options: {
     await heartbeat()
     const planned = await planCopies({ ...planOpts, pulse: heartbeat })
     const keys = [...new Set(planned.writes.map((write) => write.key))].sort()
+    for (const key of keys) assertProdPromoteKey(key)
     const currentProd = await totalsFor(options.prod, ids, options.raw, prodPrefix)
     const currentPreview = await totalsFor(options.preview, ids, options.raw, previewPrefix)
-    const snapshot = await snapshotPromoteKeys(options.raw, keys, prodPrefix)
+    const snapshot = await snapshotPromoteKeys(options.raw, keys, 'lf:', runId)
     writePromoteSnapshotFile(backupPath, snapshot)
     try {
       await heartbeat()
-      for (const write of planned.writes) {
-        if (write.kind === 'recording' && write.recording) {
-          await options.raw.setRaw(write.key, JSON.stringify(write.recording))
-        }
-      }
-      for (const write of planned.writes) {
-        if (write.kind === 'pressing' && write.pressing) {
-          await options.raw.setRaw(write.key, JSON.stringify(write.pressing))
-        }
-      }
+      await runPromoteCommands(options.raw, applyCommandsForWrites(planned.writes))
     } catch (error) {
-      const applyError = new PromoteApplyError(backupPath, error)
+      const applyError = new PromoteApplyError(backupPath, error, runId)
       console.error(applyError.message)
       console.error(applyError.rollbackCommand)
       throw applyError
@@ -1158,10 +1387,16 @@ export async function runPromotePreview(options: {
       prodKeys,
       prod: options.prod,
       lockHeld: true,
+      runId,
     })
   } finally {
     await options.prod.releaseEnrichLock(token)
   }
+}
+
+function asRedisString(result: unknown): string | null {
+  if (result == null) return null
+  return typeof result === 'string' ? result : JSON.stringify(result)
 }
 
 export async function upstashPromoteRawStore(config: {
@@ -1185,18 +1420,49 @@ export async function upstashPromoteRawStore(config: {
     if (body.error) throw new Error(body.error)
     return body.result ?? null
   }
+  async function multi(commands: string[][]): Promise<unknown[]> {
+    const response = await fetch(`${endpoint}/multi-exec`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(commands),
+    })
+    if (!response.ok) {
+      throw new Error(`upstash MULTI failed: ${response.status}`)
+    }
+    const body = (await response.json()) as { result?: unknown; error?: string }
+    if (body.error) throw new Error(body.error)
+    return Array.isArray(body.result) ? body.result : []
+  }
   return {
     async getRaw(key: string) {
-      const result = await command(['GET', key])
-      if (result == null) return null
-      return typeof result === 'string' ? result : JSON.stringify(result)
+      return asRedisString(await command(['GET', key]))
     },
-    async setRaw(key: string, value: string | null) {
+    async setRaw(key: string, value: string | null, pttlMs?: number) {
+      const guarded = assertProdPromoteKey(key)
       if (value == null) {
-        await command(['DEL', key])
+        await command(['DEL', guarded])
         return
       }
-      await command(['SET', key, value])
+      if (pttlMs != null && pttlMs > 0) {
+        await command(['SET', guarded, value, 'PX', String(pttlMs)])
+        return
+      }
+      await command(['SET', guarded, value])
+    },
+    async typeOf(key: string) {
+      const result = await command(['TYPE', key])
+      return typeof result === 'string' && result ? result : 'none'
+    },
+    async pttl(key: string) {
+      const result = await command(['PTTL', key])
+      const n = typeof result === 'number' ? result : Number(result)
+      return Number.isFinite(n) ? n : -2
+    },
+    async dumpKey(key: string) {
+      return asRedisString(await command(['GET', key]))
     },
     async scanKeys(match: string) {
       const found: string[] = []
@@ -1211,6 +1477,14 @@ export async function upstashPromoteRawStore(config: {
         }
       } while (cursor !== '0')
       return found
+    },
+    async multiExec(commands: string[][]) {
+      const guarded = commands.map((command) => {
+        const next = [...command]
+        if (next[1]) next[1] = assertProdPromoteKey(next[1])
+        return next
+      })
+      return multi(guarded)
     },
   }
 }

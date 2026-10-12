@@ -4,7 +4,7 @@
  */
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { INCOMPLETE_RECORDING_MESSAGE, TRACK_LEVEL_REASON } from './enrich.ts'
@@ -15,7 +15,9 @@ import {
   MTUME_VOCAL_MBID,
   UNKNOWN_LENGTH_AUDIT_MBIDS,
   PromoteApplyError,
+  assertProdPromoteKey,
   assertPromotePrefixes,
+  assertPromoteProdAllowed,
   countPressingMapLinks,
   filterPreviewSampleLinks,
   isPromoteSidecarMatch,
@@ -124,14 +126,39 @@ function pressingOf(
   }
 }
 
+const APPLY = { apply: true as const, allowProd: true, runId: 'qa-test-run' }
+
 describe('promote-preview args and prefixes', () => {
-  it('defaults to dry-run and parses --apply / --rollback / --backup', () => {
-    assert.deepEqual(parsePromoteArgs([]), { apply: false })
-    assert.equal(parsePromoteArgs(['--apply', '--backup=/tmp/x.json']).apply, true)
-    assert.equal(parsePromoteArgs(['--apply', '--backup=/tmp/x.json']).backupPath, '/tmp/x.json')
-    assert.equal(parsePromoteArgs(['--rollback', '/tmp/backup.json']).rollbackPath, '/tmp/backup.json')
+  it('defaults to dry-run and parses --apply / --rollback / --backup / --prod / --run-id', () => {
+    assert.deepEqual(parsePromoteArgs([]), { apply: false, prod: false })
+    const applied = parsePromoteArgs([
+      '--apply',
+      '--prod',
+      '--backup=/tmp/x.json',
+      '--run-id=qa-test-run',
+    ])
+    assert.equal(applied.apply, true)
+    assert.equal(applied.prod, true)
+    assert.equal(applied.backupPath, '/tmp/x.json')
+    assert.equal(applied.runId, 'qa-test-run')
+    assert.equal(
+      parsePromoteArgs(['--rollback', '/tmp/backup.json', '--prod', '--run-id=qa-test-run'])
+        .rollbackPath,
+      '/tmp/backup.json'
+    )
     assert.throws(() => parsePromoteArgs(['--apply']))
+    assert.throws(() => parsePromoteArgs(['--apply', '--backup=/tmp/x.json']))
+    assert.throws(() => parsePromoteArgs(['--apply', '--prod', '--backup=/tmp/x.json']))
+    assert.throws(() => parsePromoteArgs(['--rollback', 'x.json']))
     assert.throws(() => parsePromoteArgs(['--apply', '--rollback', 'x.json']))
+  })
+
+  it('validates --ids= against the closed 23-id list with strict integer parsing', () => {
+    assert.throws(() => parsePromoteArgs(['--ids=567894oops']), /567894oops/)
+    assert.throws(() => parsePromoteArgs(['--ids=567894']), /closed 23/)
+    assert.throws(() => parsePromoteArgs(['--ids=378994,567894oops']), /567894oops/)
+    assert.deepEqual(parsePromoteArgs(['--ids=378994']).ids, [378994])
+    assert.deepEqual(parsePromoteArgs(['--ids=378994,903960']).ids, [378994, 903960])
   })
 
   it('asserts lf: and lf:preview:', () => {
@@ -351,7 +378,7 @@ describe('promote copy plan', () => {
       prodEnv: PROD_ENV,
       previewEnv: PREVIEW_ENV,
       ids: [RELEASE_ID],
-      apply: true,
+      ...APPLY,
       backupPath: join(mkdtempSync(join(tmpdir(), 'crate-promote-')), 'backup.json'),
       raw: memoryPromoteRawStore(prod, PROD_ENV),
     })
@@ -393,7 +420,7 @@ describe('promote copy plan', () => {
       prodEnv: PROD_ENV,
       previewEnv: PREVIEW_ENV,
       ids: [RELEASE_ID],
-      apply: true,
+      ...APPLY,
       backupPath,
       raw,
     })
@@ -401,8 +428,18 @@ describe('promote copy plan', () => {
     assert.equal(applied.mode, 'apply')
     assert.ok(prod.pressings[RELEASE_ID]?.recordings[sampled.mbid])
     assert.notEqual(JSON.stringify(prod.pressings[RELEASE_ID]), beforePressing)
-    const snapshot = JSON.parse(readFileSync(backupPath, 'utf8')) as { keys: Array<{ key: string; value: string | null }> }
-    assert.ok(snapshot.keys.some((entry) => entry.key === `lf:crate:pressing:${RELEASE_ID}:v1` && entry.value === beforePressing))
+    const snapshot = JSON.parse(readFileSync(backupPath, 'utf8')) as {
+      runId: string
+      prefix: string
+      keys: Array<{ key: string; type: string; pttl: number; dump: string | null }>
+    }
+    assert.equal(snapshot.runId, APPLY.runId)
+    assert.equal(snapshot.prefix, 'lf:')
+    assert.ok(
+      snapshot.keys.some(
+        (entry) => entry.key === `lf:crate:pressing:${RELEASE_ID}:v1` && entry.dump === beforePressing
+      )
+    )
     const rolled = await runPromotePreview({
       prod,
       preview,
@@ -410,6 +447,8 @@ describe('promote copy plan', () => {
       previewEnv: PREVIEW_ENV,
       ids: [RELEASE_ID],
       rollbackPath: backupPath,
+      allowProd: true,
+      runId: APPLY.runId,
       raw,
     })
     assert.equal(rolled.mode, 'rollback')
@@ -533,7 +572,7 @@ describe('promote copy plan', () => {
           prodEnv: PROD_ENV,
           previewEnv: PREVIEW_ENV,
           ids: [RELEASE_ID],
-          apply: true,
+          ...APPLY,
           backupPath: join(mkdtempSync(join(tmpdir(), 'crate-promote-')), 'backup.json'),
           raw: memoryPromoteRawStore(prod, PROD_ENV),
         }),
@@ -574,7 +613,7 @@ describe('promote copy plan', () => {
           prodEnv: PROD_ENV,
           previewEnv: PREVIEW_ENV,
           ids: [RELEASE_ID],
-          apply: true,
+          ...APPLY,
           backupPath,
           raw,
         }),
@@ -582,9 +621,326 @@ describe('promote copy plan', () => {
         assert.equal(error instanceof PromoteApplyError, true)
         const applyError = error as PromoteApplyError
         assert.equal(applyError.backupPath, backupPath)
-        assert.equal(applyError.rollbackCommand, promoteRollbackCommand(backupPath))
+        assert.equal(applyError.rollbackCommand, promoteRollbackCommand(backupPath, APPLY.runId))
         return true
       }
+    )
+  })
+})
+
+describe('QA gate: alreadyOnMap still requires sidecar match', () => {
+  it('does not copy Clubstar onto Cha-Cha 378994 Radio Edit when that MBID is already on the prod map', async () => {
+    const chacha = 378994
+    const clubstar = completeRecording({
+      mbid: '67350ade-clubstar',
+      title: 'Cha Cha Slide (Clubstar Remix)',
+      artist: 'DJ Casper',
+      sampledIn: [sampleLink('Later hit', 'hit-1')],
+    })
+    const prodPressing = pressingOf(
+      { [clubstar.mbid]: clubstar },
+      [{ position: 'B1', title: 'Cha-Cha Slide (Radio Edit)', durationMs: 200000 }],
+      chacha
+    )
+    prodPressing.facts.title = 'Cha-Cha Slide'
+    prodPressing.facts.artist = 'DJ Casper'
+    const previewPressing = pressingOf(
+      { [clubstar.mbid]: clubstar },
+      [{ position: 'B1', title: 'Cha-Cha Slide (Radio Edit)', durationMs: 200000, mbid: clubstar.mbid }],
+      chacha
+    )
+    previewPressing.facts.title = 'Cha-Cha Slide'
+    previewPressing.facts.artist = 'DJ Casper'
+    const prod = createMemoryCrateStore({
+      pressings: { [chacha]: prodPressing },
+      recordings: { [clubstar.mbid]: clubstar },
+      seen: [chacha],
+    })
+    const preview = createMemoryCrateStore({
+      pressings: { [chacha]: previewPressing },
+      recordings: { [clubstar.mbid]: clubstar },
+      seen: [chacha],
+    })
+    const before = JSON.stringify(prod.pressings[chacha])
+    const report = await runPromotePreview({
+      prod,
+      preview,
+      prodEnv: PROD_ENV,
+      previewEnv: PREVIEW_ENV,
+      ids: [chacha],
+    })
+    assert.equal(report.wrote, false)
+    assert.equal(report.keys.length, 0)
+    assert.equal(report.records[0]?.copies.length, 0)
+    assert.equal(report.records[0]?.skips[0]?.reason, 'no matching prod track')
+    assert.equal(
+      report.keys.includes(`lf:crate:recording:${clubstar.mbid}:v1`),
+      false
+    )
+    assert.equal(JSON.stringify(prod.pressings[chacha]), before)
+  })
+
+  it('recording keys are the planned copy MBIDs, not every preview map MBID', async () => {
+    const extra = completeRecording({
+      mbid: 'preview-map-extra',
+      title: 'Unrelated Sidecar',
+      sampledIn: [sampleLink('Later', 'later-1')],
+    })
+    const sampled = completeRecording({ mbid: 'planned-copy', title: 'Strutter' })
+    const prod = createMemoryCrateStore({
+      pressings: {
+        [RELEASE_ID]: pressingOf({}, [{ position: 'A1', title: 'Strutter', durationMs: 180000 }]),
+      },
+      seen: [RELEASE_ID],
+    })
+    const preview = createMemoryCrateStore({
+      pressings: {
+        [RELEASE_ID]: pressingOf(
+          { [sampled.mbid]: sampled, [extra.mbid]: extra },
+          [
+            { position: 'A1', title: 'Strutter', durationMs: 180000, mbid: sampled.mbid },
+            { position: 'A2', title: 'Unrelated Sidecar', durationMs: 180000, mbid: extra.mbid },
+          ]
+        ),
+      },
+      recordings: { [sampled.mbid]: sampled, [extra.mbid]: extra },
+      seen: [RELEASE_ID],
+    })
+    const report = await runPromotePreview({
+      prod,
+      preview,
+      prodEnv: PROD_ENV,
+      previewEnv: PREVIEW_ENV,
+      ids: [RELEASE_ID],
+    })
+    assert.equal(report.keys.includes(`lf:crate:recording:${sampled.mbid}:v1`), true)
+    assert.equal(report.keys.includes(`lf:crate:recording:${extra.mbid}:v1`), false)
+    assert.equal(
+      report.records[0]?.copies.every((copy) => copy.mbid === sampled.mbid),
+      true
+    )
+  })
+})
+
+describe('QA gate: write-site prefix and --prod', () => {
+  it('assertPrefixedRedisKey / assertProdPromoteKey reject lf:preview: on the prod write site', () => {
+    assert.equal(assertProdPromoteKey('lf:crate:recording:abcd:v1'), 'lf:crate:recording:abcd:v1')
+    assert.throws(() => assertProdPromoteKey('lf:preview:crate:recording:abcd:v1'), /preview/)
+    assert.throws(() => assertProdPromoteKey('other:crate:recording:abcd:v1'))
+    assert.throws(() => assertPromoteProdAllowed({ env: PROD_ENV }), /pass --prod/)
+    assert.doesNotThrow(() => assertPromoteProdAllowed({ prod: true, env: PROD_ENV }))
+  })
+
+  it('apply and rollback refuse prod writes without --prod', async () => {
+    const sampled = completeRecording({ mbid: 'prod-guard', title: 'Strutter' })
+    const prod = createMemoryCrateStore({
+      pressings: {
+        [RELEASE_ID]: pressingOf({}, [{ position: 'A1', title: 'Strutter', durationMs: 180000 }]),
+      },
+      seen: [RELEASE_ID],
+    })
+    const preview = createMemoryCrateStore({
+      pressings: {
+        [RELEASE_ID]: pressingOf({ [sampled.mbid]: sampled }, [
+          { position: 'A1', title: 'Strutter', durationMs: 180000, mbid: sampled.mbid },
+        ]),
+      },
+      recordings: { [sampled.mbid]: sampled },
+      seen: [RELEASE_ID],
+    })
+    const raw = memoryPromoteRawStore(prod, PROD_ENV)
+    await assert.rejects(
+      () =>
+        runPromotePreview({
+          prod,
+          preview,
+          prodEnv: PROD_ENV,
+          previewEnv: PREVIEW_ENV,
+          ids: [RELEASE_ID],
+          apply: true,
+          runId: 'no-prod',
+          backupPath: join(mkdtempSync(join(tmpdir(), 'crate-promote-')), 'backup.json'),
+          raw,
+        }),
+      /pass --prod/
+    )
+    await assert.rejects(
+      () =>
+        runPromotePreview({
+          prod,
+          preview,
+          prodEnv: PROD_ENV,
+          previewEnv: PREVIEW_ENV,
+          rollbackPath: join(mkdtempSync(join(tmpdir(), 'crate-promote-')), 'missing.json'),
+          runId: 'no-prod',
+          raw,
+        }),
+      /pass --prod/
+    )
+  })
+
+  it('rollback SET/DEL refuse lf:preview: keys even when the snapshot claims lf:', async () => {
+    const sampled = completeRecording({ mbid: 'prefix-rollback', title: 'Strutter' })
+    const prod = createMemoryCrateStore({
+      pressings: {
+        [RELEASE_ID]: pressingOf({}, [{ position: 'A1', title: 'Strutter', durationMs: 180000 }]),
+      },
+      seen: [RELEASE_ID],
+    })
+    const preview = createMemoryCrateStore({
+      pressings: {
+        [RELEASE_ID]: pressingOf({ [sampled.mbid]: sampled }, [
+          { position: 'A1', title: 'Strutter', durationMs: 180000, mbid: sampled.mbid },
+        ]),
+      },
+      recordings: { [sampled.mbid]: sampled },
+      seen: [RELEASE_ID],
+    })
+    const raw = memoryPromoteRawStore(prod, PROD_ENV)
+    const backupPath = join(mkdtempSync(join(tmpdir(), 'crate-promote-')), 'backup.json')
+    writeFileSync(
+      backupPath,
+      JSON.stringify({
+        createdAt: new Date().toISOString(),
+        runId: APPLY.runId,
+        prefix: 'lf:',
+        keys: [
+          {
+            key: 'lf:preview:crate:recording:sneak:v1',
+            type: 'string',
+            pttl: -1,
+            dump: '{}',
+          },
+        ],
+      })
+    )
+    await assert.rejects(
+      () =>
+        runPromotePreview({
+          prod,
+          preview,
+          prodEnv: PROD_ENV,
+          previewEnv: PREVIEW_ENV,
+          rollbackPath: backupPath,
+          allowProd: true,
+          runId: APPLY.runId,
+          raw,
+        }),
+      /preview/
+    )
+  })
+})
+
+describe('QA gate: TTL-preserving snapshot rollback', () => {
+  it('rollback restores DUMP bytes and PTTL', async () => {
+    const sampled = completeRecording({ mbid: 'ttl-copy', title: 'Strutter' })
+    const prodPressing = pressingOf(
+      {},
+      [{ position: 'A1', title: 'Strutter', durationMs: 180000, mbid: 'prod-pick' }]
+    )
+    const prod = createMemoryCrateStore({
+      pressings: { [RELEASE_ID]: prodPressing },
+      seen: [RELEASE_ID],
+    })
+    const preview = createMemoryCrateStore({
+      pressings: {
+        [RELEASE_ID]: pressingOf({ [sampled.mbid]: sampled }, [
+          { position: 'A1', title: 'Strutter', durationMs: 180000, mbid: sampled.mbid },
+        ]),
+      },
+      recordings: { [sampled.mbid]: sampled },
+      seen: [RELEASE_ID],
+    })
+    const raw = memoryPromoteRawStore(prod, PROD_ENV)
+    const pressingKey = `lf:crate:pressing:${RELEASE_ID}:v1`
+    await raw.setRaw(pressingKey, JSON.stringify(prodPressing), 60_000)
+    assert.equal(await raw.typeOf(pressingKey), 'string')
+    const beforeTtl = await raw.pttl(pressingKey)
+    assert.ok(beforeTtl > 50_000 && beforeTtl <= 60_000)
+    const beforeDump = await raw.dumpKey(pressingKey)
+    const backupPath = join(mkdtempSync(join(tmpdir(), 'crate-promote-')), 'backup.json')
+    await runPromotePreview({
+      prod,
+      preview,
+      prodEnv: PROD_ENV,
+      previewEnv: PREVIEW_ENV,
+      ids: [RELEASE_ID],
+      ...APPLY,
+      backupPath,
+      raw,
+    })
+    assert.ok(prod.pressings[RELEASE_ID]?.recordings[sampled.mbid])
+    await runPromotePreview({
+      prod,
+      preview,
+      prodEnv: PROD_ENV,
+      previewEnv: PREVIEW_ENV,
+      rollbackPath: backupPath,
+      allowProd: true,
+      runId: APPLY.runId,
+      raw,
+    })
+    assert.equal(await raw.dumpKey(pressingKey), beforeDump)
+    const restoredTtl = await raw.pttl(pressingKey)
+    assert.ok(restoredTtl > 45_000 && restoredTtl <= 60_000, `restored pttl ${restoredTtl}`)
+    assert.equal(prod.pressings[RELEASE_ID]?.recordings[sampled.mbid], undefined)
+  })
+
+  it('rollback requires a matching --run-id and exact lf: prefix', async () => {
+    const sampled = completeRecording({ mbid: 'runid-copy', title: 'Strutter' })
+    const prod = createMemoryCrateStore({
+      pressings: {
+        [RELEASE_ID]: pressingOf({}, [{ position: 'A1', title: 'Strutter', durationMs: 180000 }]),
+      },
+      seen: [RELEASE_ID],
+    })
+    const preview = createMemoryCrateStore({
+      pressings: {
+        [RELEASE_ID]: pressingOf({ [sampled.mbid]: sampled }, [
+          { position: 'A1', title: 'Strutter', durationMs: 180000, mbid: sampled.mbid },
+        ]),
+      },
+      recordings: { [sampled.mbid]: sampled },
+      seen: [RELEASE_ID],
+    })
+    const raw = memoryPromoteRawStore(prod, PROD_ENV)
+    const backupPath = join(mkdtempSync(join(tmpdir(), 'crate-promote-')), 'backup.json')
+    await runPromotePreview({
+      prod,
+      preview,
+      prodEnv: PROD_ENV,
+      previewEnv: PREVIEW_ENV,
+      ids: [RELEASE_ID],
+      ...APPLY,
+      backupPath,
+      raw,
+    })
+    await assert.rejects(
+      () =>
+        runPromotePreview({
+          prod,
+          preview,
+          prodEnv: PROD_ENV,
+          previewEnv: PREVIEW_ENV,
+          rollbackPath: backupPath,
+          allowProd: true,
+          raw,
+        }),
+      /run-id/
+    )
+    await assert.rejects(
+      () =>
+        runPromotePreview({
+          prod,
+          preview,
+          prodEnv: PROD_ENV,
+          previewEnv: PREVIEW_ENV,
+          rollbackPath: backupPath,
+          allowProd: true,
+          runId: 'other-run',
+          raw,
+        }),
+      /run-id/
     )
   })
 })

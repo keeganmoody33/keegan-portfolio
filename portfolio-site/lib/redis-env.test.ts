@@ -56,4 +56,10 @@ describe('isProductionRedisNamespace / discogsKeyPrefix', () => {
     assert.throws(() => assertPrefixedRedisKey('lf:tally:v1', env))
     assert.equal(assertPrefixedRedisKey('lf:preview:tally:v1', env), 'lf:preview:tally:v1')
   })
+
+  it('blocks lf:preview: keys on the prod write site', () => {
+    const env = { VERCEL_ENV: 'production' as const, VERCEL_GIT_COMMIT_REF: 'main' }
+    assert.equal(assertPrefixedRedisKey('lf:crate:recording:abcd:v1', env), 'lf:crate:recording:abcd:v1')
+    assert.throws(() => assertPrefixedRedisKey('lf:preview:crate:recording:abcd:v1', env), /preview/)
+  })
 })

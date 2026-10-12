@@ -2,6 +2,13 @@
 
 Updated: 2026-10-12
 
+## Promote copy write-site and id parsing (2026-10-12)
+
+- `alreadyOnMap` is not a sidecar match. Clubstar `67350ade` already on the Cha-Cha 378994 map still needs `isPromoteSidecarMatch` against Radio Edit; skip when `matched.length === 0`.
+- `Number.parseInt('567894oops', 10)` is 567894 (Mtume). `--ids=` uses `parsePositiveId` (`/^[1-9]\d*$/`) and must throw unless the id is in the closed 23-list. Recording writes are the planned copy MBIDs, not every preview map MBID.
+- Prod prefix `lf:` is a prefix of `lf:preview:`. `assertPrefixedRedisKey` under prod must reject `lf:preview:` before `startsWith('lf:')`. Rollback requires `--run-id` matching the snapshot and prefix exactly `lf:`. `--apply` / `--rollback` need `--prod` like `assertCoverSyncAllowed`.
+- Snapshot TYPE + PTTL + GET (DUMP-equivalent for JSON strings). Restore SET PX / DEL through MULTI/EXEC so TTLs survive. Wrap merged recording writes with `preferCompleteRecording`.
+
 ## Do not invent MusicBrainz UUID suffixes (2026-10-12)
 
 - Short prefixes in `progress.txt` (`1d890c2b`, `181c0a32`) are not full MBIDs. The live Redis vocal is `1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc` and Juicy is `181c0a32-6e3f-4680-8a7d-1daf0b42e43b` (same as `crate.test.ts`). A guessed suffix made the promote dry-run report `juicyLinked: false` while the prod doc still had Juicy. Copy full MBIDs from Redis or fixtures; never pad a prefix.

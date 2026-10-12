@@ -2,11 +2,11 @@
  * Copy audited lf:preview: sidecar recordings onto lf: for the 23 gap records.
  *
  *   npm run crate:promote-preview
- *   npm run crate:promote-preview -- --apply --backup=/tmp/lf-secrets/crate-promote-backup.json
- *   npm run crate:promote-preview -- --rollback /tmp/lf-secrets/crate-promote-backup.json
+ *   npm run crate:promote-preview -- --apply --prod --backup=/tmp/lf-secrets/crate-promote-backup.json --run-id=<id>
+ *   npm run crate:promote-preview -- --rollback /tmp/lf-secrets/crate-promote-backup.json --prod --run-id=<id>
  *
- * Default is dry-run. --apply requires --backup=<path>, holds lf:crate:enrich:lock:v1,
- * and plans after acquire. No WhoSampled. Never a visitor path.
+ * Default is dry-run. --apply requires --prod --backup=<path> --run-id, holds
+ * lf:crate:enrich:lock:v1, and plans after acquire. No WhoSampled. Never a visitor path.
  */
 import { resolveRedisRestConfig } from '../lib/redis-env.ts'
 import { createMusicBrainzClient } from '../lib/crate/musicbrainz.ts'
@@ -47,8 +47,10 @@ try {
     previewEnv,
     ids: args.ids,
     apply: args.apply,
+    allowProd: args.prod,
     rollbackPath: args.rollbackPath,
     backupPath: args.backupPath,
+    runId: args.runId,
     raw,
     verifyRecording,
   })

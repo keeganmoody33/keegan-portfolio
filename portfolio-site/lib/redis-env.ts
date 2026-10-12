@@ -56,6 +56,9 @@ export function assertPrefixedRedisKey(key: string, env: EnvMap = process.env): 
   if (prefix === PREVIEW_REDIS_PREFIX && /^lf:(?!preview:)/.test(key)) {
     throw new Error(`preview Redis must not write unprefixed key: ${key}`)
   }
+  if (prefix === PRODUCTION_REDIS_PREFIX && key.startsWith(PREVIEW_REDIS_PREFIX)) {
+    throw new Error(`prod Redis must not write preview key: ${key}`)
+  }
   if (!key.startsWith(prefix)) {
     throw new Error(`Redis key must start with ${prefix}`)
   }
