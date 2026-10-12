@@ -10,10 +10,13 @@
  * lengths are known, and recordingIsCompleteSidecar.
  *
  * Copied sample links must be MusicBrainz recording/release URLs that match
- * a samples-material rel on that source recording. Studio rels never attach
+ * a samples-material rel on that source recording, or the inverse rel on a
+ * same-song / same-version sibling (recall review). Studio rels never attach
  * to a live destination. --apply holds the enrich lock, plans after acquire,
- * and requires --prod --backup=<path> --run-id. Snapshot is TYPE/PTTL/GET;
- * rollback restores SET+PEXPIRE through assertPrefixedRedisKey.
+ * and requires --prod --backup=<path> --run-id. Snapshot is TYPE/PTTL/GET.
+ * REST WATCH is connection-scoped, so writes use EVAL CAS against snapshot
+ * dumps (equivalent). Rollback refuses DEL of a non-string type with a null
+ * dump. getRecordingSampleRels shares the 1.1s getJson limiter on one client.
  */
 import { writeFileSync, readFileSync, mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
@@ -29,6 +32,8 @@ import {
   DURATION_SIDECAR_MS,
   hitFromStoredRecording,
   recordingHasSampleMaterial,
+  normalizeTitle,
+  recordingIsLive,
   searchVersionFit,
   songTitle,
   titleIsLive,
@@ -71,6 +76,101 @@ export const UNKNOWN_LENGTH_AUDIT_MBIDS = [
 ] as const
 
 const REMIX_LIVE_EDIT_TOKENS = ['remix', 'live', 'edit', 'radio', 'club'] as const
+
+/** MB ws/2 JSON omits relationship UUIDs; type-id is the samples-material rel id. */
+export const MB_SAMPLES_MATERIAL_REL_ID = '9efd9ce9-e702-448b-8e76-641515e8fe62'
+
+const PROMOTE_CAS_NIL = '__PROMOTE_NIL__'
+
+/** EVAL CAS: compare GET to snapshot dumps, then SET/DEL. REST WATCH is connection-scoped. */
+export const PROMOTE_WATCH_CAS_LUA = `
+local n = #KEYS
+for i = 1, n do
+  local current = redis.call('GET', KEYS[i])
+  local expected = ARGV[i]
+  if expected == '${PROMOTE_CAS_NIL}' then
+    if current ~= false then
+      return redis.error_reply('watched key changed: ' .. KEYS[i])
+    end
+  elseif current ~= expected then
+    return redis.error_reply('watched key changed: ' .. KEYS[i])
+  end
+end
+local idx = n + 1
+local cmdCount = tonumber(ARGV[idx])
+idx = idx + 1
+local unpackFn = unpack or table.unpack
+for _ = 1, cmdCount do
+  local argc = tonumber(ARGV[idx])
+  idx = idx + 1
+  local args = {}
+  for j = 1, argc do
+    args[j] = ARGV[idx]
+    idx = idx + 1
+  end
+  redis.call(unpackFn(args))
+end
+return 'OK'
+`.trim()
+
+export const RECALL_REVIEW_ROWS = [
+  {
+    label: "Gangsta's Paradise / Pastime Paradise",
+    releaseId: 266650,
+    sourceMbid: 'd2637c43-cb52-419a-9a6d-3e1fa1b9be30',
+    targetMbid: '2f7a6735-2e09-4ce2-81e4-b148e6c39a55',
+    direction: 'sampled_by' as const,
+  },
+  {
+    label: "My Lovin' / The Payback",
+    releaseId: 6625293,
+    sourceMbid: '824e104c-4406-46c8-b74f-bf79ef968633',
+    targetMbid: 'd9154cae-507c-4b35-9021-025e320a067a',
+    direction: 'sample_of' as const,
+  },
+  {
+    label: 'Catching the Sun / フリーターストーリー',
+    releaseId: 1575060,
+    sourceMbid: '13b2dabd-de20-4180-97f9-c7f9528dd8b1',
+    targetMbid: '3c6ebd0c-0f85-4436-a591-5bcff14ff250',
+    direction: 'sampled_by' as const,
+  },
+  {
+    label: 'Bourgié Bourgié / Guitarra G',
+    releaseId: 7482706,
+    sourceMbid: '723a6918-f337-4d60-8b9a-8cc89eab9a43',
+    targetMbid: 'a048a0d5-54de-4dd8-b79a-747539e2ecfc',
+    direction: 'sampled_by' as const,
+  },
+  {
+    label: 'Here I Am / Any Way the Wind Blows',
+    releaseId: 11917223,
+    sourceMbid: 'efb9067c-431c-4cd1-8703-b2894a56b3c2',
+    targetMbid: '4a72c3a9-02a8-4645-9c8e-5ab2dc7a7a33',
+    direction: 'sampled_by' as const,
+  },
+  {
+    label: 'Look What You Done for Me / Set Me Free',
+    releaseId: 11917223,
+    sourceMbid: '7e85160c-24b0-4645-a203-7c6f1a498a6f',
+    targetMbid: '2d736e0e-8e32-49cd-a3cf-f427e1659486',
+    direction: 'sampled_by' as const,
+  },
+  {
+    label: 'Look What You Done for Me / Warm Sentiments',
+    releaseId: 11917223,
+    sourceMbid: '7e85160c-24b0-4645-a203-7c6f1a498a6f',
+    targetMbid: '70bbe44c-d66b-4168-acbf-6bd4021f66ef',
+    direction: 'sampled_by' as const,
+  },
+  {
+    label: 'No Woman No Cry / Thin Line',
+    releaseId: 13694938,
+    sourceMbid: '8f540449-337b-4e4f-ab72-acbf4b1a7c85',
+    targetMbid: '96501356-5008-4826-8a7d-4b393d52dd87',
+    direction: 'sampled_by' as const,
+  },
+] as const
 
 export const PROD_NAMESPACE_ENV = {
   VERCEL_ENV: 'production',
@@ -117,6 +217,7 @@ export type PromoteRawStore = {
   dumpKey(key: string): Promise<string | null>
   scanKeys(match: string): Promise<string[]>
   multiExec(commands: string[][]): Promise<unknown[]>
+  casExec(keys: string[], expected: Array<string | null>, commands: string[][]): Promise<unknown[]>
 }
 
 export type SampleTotals = {
@@ -166,6 +267,19 @@ export type PromoteDroppedLink = {
   reason: string
 }
 
+export type PromoteRecallReview = {
+  label: string
+  releaseId: number
+  sourceMbid: string
+  sourceTitle: string
+  targetMbid: string
+  targetTitle: string
+  direction: 'sample_of' | 'sampled_by'
+  status: 'restored' | 'confirmed_false'
+  relId: string | null
+  siblingMbid?: string
+}
+
 export type PromoteLengthAudit = {
   mbid: string
   title: string
@@ -173,12 +287,21 @@ export type PromoteLengthAudit = {
   mbLengthMs: number | null
   samplesFrom: number
   sampledIn: number
+  disambiguation?: string
+  live?: boolean
+  releaseTitles?: string[]
 }
 
 export type PromoteVerifiedRels = {
   lengthMs: number | null
   samplesFrom: Set<string>
   sampledIn: Set<string>
+  disambiguation?: string
+  live?: boolean
+  releaseTitles?: string[]
+  samplesFromLinks?: SampleLink[]
+  sampledInLinks?: SampleLink[]
+  relIds?: Map<string, string>
 }
 
 export type PromoteVerifyRecording = (mbid: string) => Promise<PromoteVerifiedRels | null>
@@ -212,6 +335,7 @@ export type PromoteReport = {
   borderline: Array<{ releaseId: number; mbid: string; title: string; notes: string[] }>
   droppedLinks: PromoteDroppedLink[]
   lengthAudit: PromoteLengthAudit[]
+  recallReview: PromoteRecallReview[]
   lockHeld?: boolean
   rollbackCommand?: string
   runId?: string
@@ -371,6 +495,32 @@ export function isPromoteMbSampleLink(link: SampleLink): boolean {
 export function destinationIsLive(pressing: StoredPressing, tracks: TrackOccurrence[]): boolean {
   if (titleIsLive(pressing.facts.title)) return true
   return tracks.some((track) => titleIsLive(track.title))
+}
+
+export function recordingAppearsOnPressing(
+  releaseTitles: string[] | undefined,
+  destTitle: string
+): boolean {
+  if (!releaseTitles || releaseTitles.length === 0) return false
+  const dest = normalizeTitle(destTitle)
+  if (!dest) return false
+  return releaseTitles.some((title) => {
+    const got = normalizeTitle(title)
+    if (got === dest) return true
+    return titleIsLive(destTitle) && titleIsLive(title)
+  })
+}
+
+export function promoteRecordingIsLive(
+  recording: { title: string },
+  verified?: PromoteVerifiedRels | null
+): boolean {
+  return recordingIsLive({
+    title: recording.title,
+    disambiguation: verified?.disambiguation,
+    releaseTitles: verified?.releaseTitles,
+    live: verified?.live,
+  })
 }
 
 function dedupeAddedLinks(links: PromoteAddedLink[]): PromoteAddedLink[] {
@@ -607,14 +757,131 @@ export function createPromoteMbLookup(
       cache.set(mbid, null)
       return null
     }
+    const relIds = new Map<string, string>(Object.entries(facts.relIds ?? {}))
     const verified: PromoteVerifiedRels = {
       lengthMs: facts.lengthMs,
       samplesFrom: new Set(facts.samplesFrom.map((link) => link.mbid).filter(Boolean)),
       sampledIn: new Set(facts.sampledIn.map((link) => link.mbid).filter(Boolean)),
+      samplesFromLinks: facts.samplesFrom,
+      sampledInLinks: facts.sampledIn,
+      relIds,
+      disambiguation: facts.disambiguation,
+      releaseTitles: facts.releaseTitles,
+      live: recordingIsLive({
+        title: facts.title,
+        disambiguation: facts.disambiguation,
+        releaseTitles: facts.releaseTitles,
+      }),
     }
     cache.set(mbid, verified)
     return verified
   }
+}
+
+function inverseSampleLinks(
+  verified: PromoteVerifiedRels,
+  direction: 'sample_of' | 'sampled_by'
+): SampleLink[] {
+  if (direction === 'sampled_by') return verified.samplesFromLinks ?? []
+  return verified.sampledInLinks ?? []
+}
+
+function inverseSampleIds(
+  verified: PromoteVerifiedRels,
+  direction: 'sample_of' | 'sampled_by'
+): Set<string> {
+  if (direction === 'sampled_by') return verified.samplesFrom
+  return verified.sampledIn
+}
+
+async function applyRecallReview(options: {
+  preview: StoredRecording
+  releaseId: number
+  verified: PromoteVerifiedRels
+  verifyRecording: PromoteVerifyRecording
+  pulse?: () => Promise<boolean | void>
+}): Promise<{ verified: PromoteVerifiedRels; rows: PromoteRecallReview[] }> {
+  const rows: PromoteRecallReview[] = []
+  const next: PromoteVerifiedRels = {
+    ...options.verified,
+    samplesFrom: new Set(options.verified.samplesFrom),
+    sampledIn: new Set(options.verified.sampledIn),
+    relIds: new Map(options.verified.relIds ?? []),
+  }
+  const wanted = RECALL_REVIEW_ROWS.filter(
+    (row) => row.releaseId === options.releaseId && row.sourceMbid === options.preview.mbid
+  )
+  for (const row of wanted) {
+    if (options.pulse) await options.pulse()
+    const target = await options.verifyRecording(row.targetMbid)
+    const previewLink = [...options.preview.samplesFrom, ...options.preview.sampledIn].find(
+      (link) => link.mbid === row.targetMbid
+    )
+    const targetTitle = previewLink?.title ?? row.label.split(' / ')[0] ?? row.label
+    if (!target) {
+      rows.push({
+        label: row.label,
+        releaseId: row.releaseId,
+        sourceMbid: row.sourceMbid,
+        sourceTitle: options.preview.title,
+        targetMbid: row.targetMbid,
+        targetTitle,
+        direction: row.direction,
+        status: 'confirmed_false',
+        relId: null,
+      })
+      continue
+    }
+    const inverseIds = inverseSampleIds(target, row.direction)
+    const inverseLinks = inverseSampleLinks(target, row.direction)
+    const direct = inverseIds.has(options.preview.mbid)
+    const siblingLink = inverseLinks.find(
+      (link) =>
+        link.mbid &&
+        link.mbid !== options.preview.mbid &&
+        recallSameSongOrVersion(options.preview, link)
+    )
+    const siblingMbid = direct ? undefined : siblingLink?.mbid
+    const relId =
+      target.relIds?.get(direct ? options.preview.mbid : siblingMbid ?? '') ??
+      (direct || siblingLink ? MB_SAMPLES_MATERIAL_REL_ID : null)
+    if (direct || siblingLink) {
+      if (row.direction === 'sampled_by') next.sampledIn.add(row.targetMbid)
+      else next.samplesFrom.add(row.targetMbid)
+      if (relId) next.relIds?.set(row.targetMbid, relId)
+      rows.push({
+        label: row.label,
+        releaseId: row.releaseId,
+        sourceMbid: row.sourceMbid,
+        sourceTitle: options.preview.title,
+        targetMbid: row.targetMbid,
+        targetTitle,
+        direction: row.direction,
+        status: 'restored',
+        relId,
+        siblingMbid,
+      })
+      continue
+    }
+    const wrongVersion = inverseLinks.find((link) => link.mbid && songTitle(link.title) === songTitle(options.preview.title))
+    rows.push({
+      label: row.label,
+      releaseId: row.releaseId,
+      sourceMbid: row.sourceMbid,
+      sourceTitle: options.preview.title,
+      targetMbid: row.targetMbid,
+      targetTitle,
+      direction: row.direction,
+      status: 'confirmed_false',
+      relId: wrongVersion
+        ? target.relIds?.get(wrongVersion.mbid) ?? MB_SAMPLES_MATERIAL_REL_ID
+        : inverseLinks[0]
+          ? target.relIds?.get(inverseLinks[0].mbid) ?? MB_SAMPLES_MATERIAL_REL_ID
+          : null,
+      siblingMbid: wrongVersion?.mbid ?? inverseLinks[0]?.mbid,
+    })
+  }
+  return { verified: next, rows }
 }
 
 async function loadRecording(
@@ -736,6 +1003,9 @@ function remainingPttl(expireAt: number | null | undefined, exists: boolean): nu
 
 export function restoreCommandsForEntry(entry: PromoteSnapshotEntry): string[][] {
   const key = assertProdPromoteKey(entry.key)
+  if (entry.dump == null && entry.type !== 'string' && entry.type !== 'none') {
+    throw new Error(`refusing rollback DEL of ${entry.type} key ${key} with null dump`)
+  }
   if (entry.dump == null || entry.type === 'none' || entry.pttl === -2) {
     return [['DEL', key]]
   }
@@ -757,9 +1027,27 @@ export function applyCommandsForWrites(writes: PlannedWrite[]): string[][] {
   return commands
 }
 
-async function runPromoteCommands(raw: PromoteRawStore, commands: string[][]): Promise<void> {
+export async function runWatchedPromoteCommands(
+  raw: PromoteRawStore,
+  keys: string[],
+  commands: string[][],
+  expectedDumps?: Array<string | null>
+): Promise<void> {
   if (commands.length === 0) return
-  await raw.multiExec(commands)
+  const guarded = keys.map((key) => assertProdPromoteKey(key))
+  const expected =
+    expectedDumps ?? (await Promise.all(guarded.map((key) => raw.dumpKey(key))))
+  await raw.casExec(guarded, expected, commands)
+}
+
+export function recallSameSongOrVersion(
+  source: { title: string },
+  sibling: { title: string }
+): boolean {
+  const left = songTitle(source.title)
+  const right = songTitle(sibling.title)
+  if (!left || !right || left !== right) return false
+  return searchVersionFit(source.title, sibling.title) !== 'wrong'
 }
 
 export function memoryPromoteRawStore(
@@ -889,6 +1177,17 @@ export function memoryPromoteRawStore(
       }
       return results
     },
+    async casExec(keys: string[], expected: Array<string | null>, commands: string[][]) {
+      for (let i = 0; i < keys.length; i++) {
+        const key = keys[i]
+        if (!key) continue
+        const current = await raw.getRaw(key)
+        if (current !== (expected[i] ?? null)) {
+          throw new Error(`watched key changed: ${key}`)
+        }
+      }
+      return raw.multiExec(commands)
+    },
   }
   return raw
 }
@@ -908,7 +1207,7 @@ export async function snapshotPromoteKeys(
     const guarded = assertProdPromoteKey(key)
     const type = await raw.typeOf(guarded)
     const pttl = await raw.pttl(guarded)
-    const dump = type === 'none' || pttl === -2 ? null : await raw.dumpKey(guarded)
+    const dump = type === 'string' ? await raw.dumpKey(guarded) : null
     entries.push({ key: guarded, type, pttl, dump })
   }
   return { createdAt: new Date().toISOString(), runId, prefix: 'lf:', keys: entries }
@@ -926,7 +1225,11 @@ export async function restorePromoteSnapshot(
     throw new Error(`snapshot run-id ${snapshot.runId} does not match --run-id ${runId}`)
   }
   const commands = snapshot.keys.flatMap((entry) => restoreCommandsForEntry(entry))
-  await runPromoteCommands(raw, commands)
+  await runWatchedPromoteCommands(
+    raw,
+    snapshot.keys.map((entry) => entry.key),
+    commands
+  )
   return snapshot.keys.map((entry) => assertProdPromoteKey(entry.key))
 }
 
@@ -963,6 +1266,7 @@ async function planCopies(options: {
   borderline: PromoteReport['borderline']
   droppedLinks: PromoteDroppedLink[]
   lengthAudit: PromoteLengthAudit[]
+  recallReview: PromoteRecallReview[]
 }> {
   const { prod, preview, prodKeys, ids } = options
   const records: PromoteRecordRow[] = []
@@ -971,6 +1275,7 @@ async function planCopies(options: {
   const borderline: PromoteReport['borderline'] = []
   const droppedLinks: PromoteDroppedLink[] = []
   const lengthAudit: PromoteLengthAudit[] = []
+  const recallReview: PromoteRecallReview[] = []
   const audited = new Set<string>()
   const recordingWriteMbids = new Set<string>()
 
@@ -1016,7 +1321,7 @@ async function planCopies(options: {
         skips.push({ releaseId, mbid, title: previewDoc.title, reason: 'no matching prod track' })
         continue
       }
-      const liveDest = destinationIsLive(prodPressing, matched) && !titleIsLive(previewDoc.title)
+      const destLive = destinationIsLive(prodPressing, matched)
       const prodDocEarly = await loadRecording(prod, prodPressing.recordings[mbid], mbid)
       const tentative = filterPreviewSampleLinks(previewDoc, undefined, false).recording
       const tentativeAdded = addedSampleLinks(prodPressing.recordings[mbid] ?? prodDocEarly, tentative)
@@ -1025,13 +1330,16 @@ async function planCopies(options: {
         previewDoc.lengthMs == null
       const needsVerify =
         Boolean(options.verifyRecording) &&
-        (auditThis || (!liveDest && (tentativeAdded.length > 0 || (!alreadyOnMap && recordingHasSampleMaterial(tentative)))))
+        (auditThis ||
+          tentativeAdded.length > 0 ||
+          (!alreadyOnMap && recordingHasSampleMaterial(tentative)))
       if (options.pulse && needsVerify) await options.pulse()
       let verified: PromoteVerifiedRels | null | undefined
       if (needsVerify && options.verifyRecording) {
         verified = await options.verifyRecording(mbid)
       }
-      if (needsVerify && previewDoc.lengthMs == null && !audited.has(mbid)) {
+      const recLive = promoteRecordingIsLive(previewDoc, verified)
+      if (needsVerify && !audited.has(mbid)) {
         audited.add(mbid)
         lengthAudit.push({
           mbid,
@@ -1040,11 +1348,49 @@ async function planCopies(options: {
           mbLengthMs: verified?.lengthMs ?? null,
           samplesFrom: verified?.samplesFrom.size ?? 0,
           sampledIn: verified?.sampledIn.size ?? 0,
+          disambiguation: verified?.disambiguation,
+          live: recLive,
+          releaseTitles: verified?.releaseTitles,
         })
       }
-      if (liveDest) {
+      if (destLive && !recLive) {
         skips.push({ releaseId, mbid, title: previewDoc.title, reason: 'studio recording on live dest' })
         continue
+      }
+      if (!destLive && recLive) {
+        skips.push({ releaseId, mbid, title: previewDoc.title, reason: 'live recording on studio dest' })
+        continue
+      }
+      if (
+        verified &&
+        (verified.releaseTitles?.length ?? 0) > 0 &&
+        artistsMatch(prodPressing.facts.artist, previewDoc.artist) &&
+        !recordingAppearsOnPressing(verified.releaseTitles, prodPressing.facts.title) &&
+        Object.values(prodPressing.recordings).some(
+          (doc) =>
+            doc.mbid !== previewDoc.mbid &&
+            songTitle(doc.title) === songTitle(previewDoc.title) &&
+            artistsMatch(doc.artist, previewDoc.artist)
+        )
+      ) {
+        skips.push({
+          releaseId,
+          mbid,
+          title: previewDoc.title,
+          reason: 'recording not on dest release',
+        })
+        continue
+      }
+      if (verified && needsVerify && options.verifyRecording) {
+        const recall = await applyRecallReview({
+          preview: previewDoc,
+          releaseId,
+          verified,
+          verifyRecording: options.verifyRecording,
+          pulse: options.pulse,
+        })
+        verified = recall.verified
+        recallReview.push(...recall.rows)
       }
       const filtered = filterPreviewSampleLinks(
         previewDoc,
@@ -1174,11 +1520,12 @@ async function planCopies(options: {
     borderline,
     droppedLinks,
     lengthAudit,
+    recallReview,
   }
 }
 
-function emptyPlanExtras(): Pick<PromoteReport, 'droppedLinks' | 'lengthAudit'> {
-  return { droppedLinks: [], lengthAudit: [] }
+function emptyPlanExtras(): Pick<PromoteReport, 'droppedLinks' | 'lengthAudit' | 'recallReview'> {
+  return { droppedLinks: [], lengthAudit: [], recallReview: [] }
 }
 
 async function reportFromPlan(input: {
@@ -1218,6 +1565,7 @@ async function reportFromPlan(input: {
     borderline: input.planned.borderline,
     droppedLinks: input.planned.droppedLinks,
     lengthAudit: input.planned.lengthAudit,
+    recallReview: input.planned.recallReview,
     lockHeld: input.lockHeld,
     runId: input.runId,
     rollbackCommand: input.backupPath
@@ -1364,7 +1712,12 @@ export async function runPromotePreview(options: {
     writePromoteSnapshotFile(backupPath, snapshot)
     try {
       await heartbeat()
-      await runPromoteCommands(options.raw, applyCommandsForWrites(planned.writes))
+      await runWatchedPromoteCommands(
+        options.raw,
+        snapshot.keys.map((entry) => entry.key),
+        applyCommandsForWrites(planned.writes),
+        snapshot.keys.map((entry) => entry.dump)
+      )
     } catch (error) {
       const applyError = new PromoteApplyError(backupPath, error, runId)
       console.error(applyError.message)
@@ -1397,6 +1750,29 @@ export async function runPromotePreview(options: {
 function asRedisString(result: unknown): string | null {
   if (result == null) return null
   return typeof result === 'string' ? result : JSON.stringify(result)
+}
+
+export function assertUpstashMultiResults(payload: unknown): unknown[] {
+  if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+    const error = (payload as { error?: unknown }).error
+    if (error) throw new Error(String(error))
+  }
+  const rows = Array.isArray(payload)
+    ? payload
+    : payload && typeof payload === 'object' && Array.isArray((payload as { result?: unknown }).result)
+      ? ((payload as { result: unknown[] }).result)
+      : null
+  if (!rows) throw new Error('upstash MULTI returned no result list')
+  rows.forEach((row, index) => {
+    if (row && typeof row === 'object' && !Array.isArray(row)) {
+      const error = (row as { error?: unknown }).error
+      if (error) throw new Error(`upstash MULTI command ${index} failed: ${String(error)}`)
+    }
+    if (Array.isArray(row) && row[0]) {
+      throw new Error(`upstash MULTI command ${index} failed: ${String(row[0])}`)
+    }
+  })
+  return rows
 }
 
 export async function upstashPromoteRawStore(config: {
@@ -1432,9 +1808,8 @@ export async function upstashPromoteRawStore(config: {
     if (!response.ok) {
       throw new Error(`upstash MULTI failed: ${response.status}`)
     }
-    const body = (await response.json()) as { result?: unknown; error?: string }
-    if (body.error) throw new Error(body.error)
-    return Array.isArray(body.result) ? body.result : []
+    const body: unknown = await response.json()
+    return assertUpstashMultiResults(body)
   }
   return {
     async getRaw(key: string) {
@@ -1485,6 +1860,29 @@ export async function upstashPromoteRawStore(config: {
         return next
       })
       return multi(guarded)
+    },
+    async casExec(keys: string[], expected: Array<string | null>, commands: string[][]) {
+      const guardedKeys = keys.map((key) => assertProdPromoteKey(key))
+      const guardedCommands = commands.map((row) => {
+        const next = [...row]
+        if (next[1]) next[1] = assertProdPromoteKey(next[1])
+        return next
+      })
+      const args: string[] = [
+        PROMOTE_WATCH_CAS_LUA,
+        String(guardedKeys.length),
+        ...guardedKeys,
+        ...expected.map((dump) => (dump == null ? PROMOTE_CAS_NIL : dump)),
+        String(guardedCommands.length),
+      ]
+      for (const row of guardedCommands) {
+        args.push(String(row.length), ...row)
+      }
+      const result = await command(['EVAL', ...args])
+      if (result !== 'OK') {
+        throw new Error(`watched MULTI CAS failed: ${String(result)}`)
+      }
+      return [result]
     },
   }
 }

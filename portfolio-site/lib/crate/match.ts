@@ -46,6 +46,19 @@ export function titleIsLive(title: string): boolean {
   return /\balive\b/.test(normalizeTitle(title))
 }
 
+/** Recording live-ness from title, MB disambiguation (`live, 1975`), or the releases it appears on. */
+export function recordingIsLive(input: {
+  title: string
+  disambiguation?: string | null
+  releaseTitles?: string[]
+  live?: boolean
+}): boolean {
+  if (input.live === true) return true
+  if (titleIsLive(input.title)) return true
+  if (input.disambiguation && titleIsLive(input.disambiguation)) return true
+  return (input.releaseTitles ?? []).some((title) => titleIsLive(title))
+}
+
 export function searchVersionFit(discogsTitle: string, hitTitle: string): SearchVersionFit {
   const want = tokensFrom(discogsTitle, SEARCH_VERSION_TOKENS)
   const got = tokensFrom(hitTitle, SEARCH_VERSION_TOKENS)

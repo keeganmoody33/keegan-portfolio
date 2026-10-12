@@ -12,19 +12,24 @@ import { DURATION_SIDECAR_MS } from './match.ts'
 import {
   GAP_RELEASE_IDS,
   JUICY_MBID,
+  MB_SAMPLES_MATERIAL_REL_ID,
   MTUME_VOCAL_MBID,
   UNKNOWN_LENGTH_AUDIT_MBIDS,
   PromoteApplyError,
   assertProdPromoteKey,
   assertPromotePrefixes,
   assertPromoteProdAllowed,
+  assertUpstashMultiResults,
   countPressingMapLinks,
   filterPreviewSampleLinks,
   isPromoteSidecarMatch,
   memoryPromoteRawStore,
   parsePromoteArgs,
   promoteRollbackCommand,
+  recallSameSongOrVersion,
+  restoreCommandsForEntry,
   runPromotePreview,
+  runWatchedPromoteCommands,
   withPreviewNamespace,
   withProdNamespace,
 } from './promote-preview.ts'
@@ -941,6 +946,343 @@ describe('QA gate: TTL-preserving snapshot rollback', () => {
           raw,
         }),
       /run-id/
+    )
+  })
+})
+
+describe('Integrations: live/studio pairing and dest-release', () => {
+  const liveHth = 'e144dd90-9720-4117-b695-9382008defa4'
+  const debutDiamond = '6e4909b0-49b2-454b-89e6-8b83f1114b4a'
+  const remixDiamond = '3fcae502-4191-4b3f-abb7-c6ffb8e2abf1'
+  const aliveId = 3221873
+
+  it('maps e144dd90 onto Alive! A4 and not Double Platinum B4', async () => {
+    const live = completeRecording({
+      mbid: liveHth,
+      title: 'Hotter Than Hell',
+      lengthMs: 209933,
+      sampledIn: [sampleLink('Passion (radio edit)', 'passion-radio')],
+    })
+    const prodAlive = pressingOf(
+      {},
+      [{ position: 'A4', title: 'Hotter Than Hell', durationMs: 210000 }],
+      aliveId
+    )
+    prodAlive.facts.title = 'Alive!'
+    prodAlive.facts.artist = 'Kiss'
+    const prodDp = pressingOf({}, [{ position: 'B4', title: 'Hotter Than Hell', durationMs: 210000 }])
+    const previewAlive = pressingOf(
+      { [live.mbid]: live },
+      [{ position: 'A4', title: 'Hotter Than Hell', durationMs: 210000, mbid: live.mbid }],
+      aliveId
+    )
+    previewAlive.facts.title = 'Alive!'
+    previewAlive.facts.artist = 'Kiss'
+    const previewDp = pressingOf(
+      { [live.mbid]: live },
+      [{ position: 'B4', title: 'Hotter Than Hell', durationMs: 210000, mbid: live.mbid }]
+    )
+    const prod = createMemoryCrateStore({
+      pressings: { [aliveId]: prodAlive, [RELEASE_ID]: prodDp },
+      seen: [aliveId, RELEASE_ID],
+    })
+    const preview = createMemoryCrateStore({
+      pressings: { [aliveId]: previewAlive, [RELEASE_ID]: previewDp },
+      recordings: { [live.mbid]: live },
+      seen: [aliveId, RELEASE_ID],
+    })
+    const report = await runPromotePreview({
+      prod,
+      preview,
+      prodEnv: PROD_ENV,
+      previewEnv: PREVIEW_ENV,
+      ids: [aliveId, RELEASE_ID],
+      verifyRecording: async () => ({
+        lengthMs: 209933,
+        samplesFrom: new Set(),
+        sampledIn: new Set(['passion-radio']),
+        disambiguation: 'live, 1975',
+        live: true,
+        releaseTitles: ['Alive!', 'KISS Alive! 1975–2000'],
+      }),
+    })
+    const aliveRow = report.records.find((row) => row.releaseId === aliveId)
+    const dpRow = report.records.find((row) => row.releaseId === RELEASE_ID)
+    assert.equal(aliveRow?.copies.some((copy) => copy.mbid === liveHth), true)
+    assert.equal(
+      aliveRow?.copies.find((copy) => copy.mbid === liveHth)?.matchedTracks[0]?.position,
+      'A4'
+    )
+    assert.equal(dpRow?.copies.some((copy) => copy.mbid === liveHth), false)
+    assert.equal(
+      dpRow?.skips.some(
+        (skip) => skip.mbid === liveHth && skip.reason === 'live recording on studio dest'
+      ),
+      true
+    )
+  })
+
+  it('drops 6e4909b0 on Double Platinum D5 while 3fcae502 may stay', async () => {
+    const debut = completeRecording({
+      mbid: debutDiamond,
+      title: 'Black Diamond',
+      lengthMs: null,
+      sampledIn: [sampleLink('Out on the Street', 'out-street')],
+    })
+    const remix = completeRecording({
+      mbid: remixDiamond,
+      title: 'Black Diamond',
+      lengthMs: 255240,
+      sampledIn: [sampleLink('Later', 'later-1')],
+    })
+    const prodPressing = pressingOf(
+      { [remix.mbid]: remix },
+      [{ position: 'D5', title: 'Black Diamond', durationMs: 255000 }]
+    )
+    const previewPressing = pressingOf(
+      { [debut.mbid]: debut, [remix.mbid]: remix },
+      [
+        { position: 'D5', title: 'Black Diamond', durationMs: 255000, mbid: remix.mbid },
+      ]
+    )
+    const prod = createMemoryCrateStore({
+      pressings: { [RELEASE_ID]: prodPressing },
+      recordings: { [remix.mbid]: remix },
+      seen: [RELEASE_ID],
+    })
+    const preview = createMemoryCrateStore({
+      pressings: { [RELEASE_ID]: previewPressing },
+      recordings: { [debut.mbid]: debut, [remix.mbid]: remix },
+      seen: [RELEASE_ID],
+    })
+    const report = await runPromotePreview({
+      prod,
+      preview,
+      prodEnv: PROD_ENV,
+      previewEnv: PREVIEW_ENV,
+      ids: [RELEASE_ID],
+      verifyRecording: async (mbid) => {
+        if (mbid === debutDiamond) {
+          return {
+            lengthMs: 312920,
+            samplesFrom: new Set(),
+            sampledIn: new Set(['out-street']),
+            disambiguation: '',
+            live: false,
+            releaseTitles: ['KISS', 'The Originals'],
+          }
+        }
+        return {
+          lengthMs: 255240,
+          samplesFrom: new Set(),
+          sampledIn: new Set(['later-1']),
+          disambiguation: '1978 remix',
+          live: false,
+          releaseTitles: ['Double Platinum'],
+        }
+      },
+    })
+    assert.equal(
+      report.records[0]?.skips.some(
+        (skip) => skip.mbid === debutDiamond && skip.reason === 'recording not on dest release'
+      ),
+      true
+    )
+    assert.equal(report.records[0]?.copies.some((copy) => copy.mbid === debutDiamond), false)
+  })
+})
+
+describe('QA fold: WATCH CAS, rollback refuse, multi errors, recall', () => {
+  it('assertUpstashMultiResults scans per-command errors', () => {
+    assert.deepEqual(assertUpstashMultiResults({ result: ['OK', 'OK'] }), ['OK', 'OK'])
+    assert.throws(
+      () => assertUpstashMultiResults({ result: [{ error: 'WRONGTYPE' }] }),
+      /command 0 failed: WRONGTYPE/
+    )
+    assert.throws(
+      () => assertUpstashMultiResults({ result: [['ERR boom', null]] }),
+      /command 0 failed: ERR boom/
+    )
+  })
+
+  it('rollback refuses DEL of a non-string type with a null dump', () => {
+    assert.throws(
+      () =>
+        restoreCommandsForEntry({
+          key: 'lf:crate:recording:hash-key:v1',
+          type: 'hash',
+          pttl: -1,
+          dump: null,
+        }),
+      /refusing rollback DEL of hash/
+    )
+    const gone = restoreCommandsForEntry({
+      key: 'lf:crate:recording:missing:v1',
+      type: 'none',
+      pttl: -2,
+      dump: null,
+    })
+    assert.deepEqual(gone, [['DEL', 'lf:crate:recording:missing:v1']])
+  })
+
+  it('WATCH-equivalent CAS aborts when a snapshot key changed', async () => {
+    const sampled = completeRecording({ mbid: 'watch-copy', title: 'Strutter' })
+    const prod = createMemoryCrateStore({
+      pressings: {
+        [RELEASE_ID]: pressingOf({}, [{ position: 'A1', title: 'Strutter', durationMs: 180000 }]),
+      },
+      seen: [RELEASE_ID],
+    })
+    const raw = memoryPromoteRawStore(prod, PROD_ENV)
+    const key = `lf:crate:pressing:${RELEASE_ID}:v1`
+    const expected = await raw.dumpKey(key)
+    const mutated = JSON.parse(expected ?? '{}') as StoredPressing
+    mutated.description = 'changed after snapshot'
+    await raw.setRaw(key, JSON.stringify(mutated))
+    await assert.rejects(
+      () =>
+        runWatchedPromoteCommands(raw, [key], [['SET', key, '{"changed":true}']], [expected]),
+      /watched key changed/
+    )
+  })
+
+  it('restores a recall row when the inverse samples rel is on a same-song sibling', async () => {
+    assert.equal(
+      recallSameSongOrVersion({ title: 'Pastime Paradise' }, { title: 'Pastime Paradise' }),
+      true
+    )
+    const sourceMbid = 'd2637c43-cb52-419a-9a6d-3e1fa1b9be30'
+    const targetMbid = '2f7a6735-2e09-4ce2-81e4-b148e6c39a55'
+    const siblingMbid = 'e97bedfc-b0ee-4cb6-8343-03a714caab15'
+    const releaseId = 266650
+    const pastime = completeRecording({
+      mbid: sourceMbid,
+      title: 'Pastime Paradise',
+      artist: 'Stevie Wonder',
+      lengthMs: 200000,
+      sampledIn: [sampleLink("Gangsta's Paradise", targetMbid)],
+    })
+    const prodPressing = pressingOf(
+      {},
+      [{ position: 'A1', title: 'Pastime Paradise', durationMs: 200000 }],
+      releaseId
+    )
+    prodPressing.facts.title = 'Songs in the Key of Life'
+    prodPressing.facts.artist = 'Stevie Wonder'
+    const previewPressing = pressingOf(
+      { [pastime.mbid]: pastime },
+      [{ position: 'A1', title: 'Pastime Paradise', durationMs: 200000, mbid: pastime.mbid }],
+      releaseId
+    )
+    previewPressing.facts.title = 'Songs in the Key of Life'
+    previewPressing.facts.artist = 'Stevie Wonder'
+    const prod = createMemoryCrateStore({
+      pressings: { [releaseId]: prodPressing },
+      seen: [releaseId],
+    })
+    const preview = createMemoryCrateStore({
+      pressings: { [releaseId]: previewPressing },
+      recordings: { [pastime.mbid]: pastime },
+      seen: [releaseId],
+    })
+    const report = await runPromotePreview({
+      prod,
+      preview,
+      prodEnv: PROD_ENV,
+      previewEnv: PREVIEW_ENV,
+      ids: [releaseId],
+      verifyRecording: async (mbid) => {
+        if (mbid === sourceMbid) {
+          return {
+            lengthMs: 200000,
+            samplesFrom: new Set(),
+            sampledIn: new Set(),
+            live: false,
+            releaseTitles: ['Magic Soul'],
+          }
+        }
+        return {
+          lengthMs: 241306,
+          samplesFrom: new Set([siblingMbid]),
+          sampledIn: new Set(),
+          samplesFromLinks: [sampleLink('Pastime Paradise', siblingMbid)],
+          relIds: new Map([[siblingMbid, MB_SAMPLES_MATERIAL_REL_ID]]),
+          live: false,
+          releaseTitles: ['Gangsta’s Paradise'],
+        }
+      },
+    })
+    const recalled = report.recallReview.find((row) => row.targetMbid === targetMbid)
+    assert.equal(recalled?.status, 'restored')
+    assert.equal(recalled?.relId, MB_SAMPLES_MATERIAL_REL_ID)
+    assert.equal(recalled?.siblingMbid, siblingMbid)
+    assert.equal(
+      report.records[0]?.copies.some((copy) =>
+        copy.addedLinks.some((link) => link.mbid === targetMbid)
+      ),
+      true
+    )
+    assert.equal(
+      report.droppedLinks.some((drop) => drop.mbid === targetMbid && drop.reason === 'not on source recording'),
+      false
+    )
+  })
+
+  it('confirms false when the target has no same-song samples rel', async () => {
+    const sourceMbid = 'd2637c43-cb52-419a-9a6d-3e1fa1b9be30'
+    const targetMbid = '2f7a6735-2e09-4ce2-81e4-b148e6c39a55'
+    const releaseId = 266650
+    const pastime = completeRecording({
+      mbid: sourceMbid,
+      title: 'Pastime Paradise',
+      artist: 'Stevie Wonder',
+      lengthMs: 200000,
+      sampledIn: [sampleLink("Gangsta's Paradise", targetMbid)],
+    })
+    const prodPressing = pressingOf(
+      {},
+      [{ position: 'A1', title: 'Pastime Paradise', durationMs: 200000 }],
+      releaseId
+    )
+    prodPressing.facts.title = 'Songs in the Key of Life'
+    prodPressing.facts.artist = 'Stevie Wonder'
+    const previewPressing = pressingOf(
+      { [pastime.mbid]: pastime },
+      [{ position: 'A1', title: 'Pastime Paradise', durationMs: 200000, mbid: pastime.mbid }],
+      releaseId
+    )
+    previewPressing.facts.title = 'Songs in the Key of Life'
+    previewPressing.facts.artist = 'Stevie Wonder'
+    const prod = createMemoryCrateStore({
+      pressings: { [releaseId]: prodPressing },
+      seen: [releaseId],
+    })
+    const preview = createMemoryCrateStore({
+      pressings: { [releaseId]: previewPressing },
+      recordings: { [pastime.mbid]: pastime },
+      seen: [releaseId],
+    })
+    const report = await runPromotePreview({
+      prod,
+      preview,
+      prodEnv: PROD_ENV,
+      previewEnv: PREVIEW_ENV,
+      ids: [releaseId],
+      verifyRecording: async () => ({
+        lengthMs: 200000,
+        samplesFrom: new Set(),
+        sampledIn: new Set(),
+        samplesFromLinks: [],
+        sampledInLinks: [],
+        live: false,
+        releaseTitles: ['Magic Soul'],
+      }),
+    })
+    assert.equal(report.recallReview[0]?.status, 'confirmed_false')
+    assert.equal(report.recallReview[0]?.relId, null)
+    assert.equal(
+      report.droppedLinks.some((drop) => drop.mbid === targetMbid && drop.reason === 'not on source recording'),
+      true
     )
   })
 })

@@ -124,6 +124,7 @@ type MbArtistCreditPart = {
 type MbArtistCredit = MbArtistCreditPart[]
 
 type MbRelation = {
+  id?: string
   type?: string
   'type-id'?: string
   direction?: string
@@ -165,8 +166,10 @@ type MbRecordingDoc = {
   id?: string
   title?: string
   length?: number
+  disambiguation?: string
   'artist-credit'?: MbArtistCredit
   relations?: MbRelation[]
+  releases?: Array<{ title?: string; disambiguation?: string }>
 }
 
 function defaultSleep(ms: number): Promise<void> {
@@ -717,16 +720,23 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
       return facts()
     },
 
-    /** One request. Samples-material rels + length only. No artist fill. */
+    /**
+     * One request through the shared getJson limiter (MUSICBRAINZ_MIN_INTERVAL_MS
+     * 1100 + jitter, one lastAt per client). Samples-material rels, length,
+     * disambiguation, and releases. No artist fill. No work rels.
+     */
     async getRecordingSampleRels(mbid: string): Promise<{
       mbid: string
       title: string
+      disambiguation: string
       lengthMs: number | null
+      releaseTitles: string[]
       samplesFrom: SampleLink[]
       sampledIn: SampleLink[]
+      relIds: Record<string, string>
     } | null> {
       const params = new URLSearchParams({
-        inc: 'recording-rels+release-rels',
+        inc: 'recording-rels+release-rels+releases',
         fmt: 'json',
       })
       const data = await getJson<MbRecordingDoc>(
@@ -735,6 +745,7 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
       if (!data.id) return null
       const samplesFrom: SampleLink[] = []
       const sampledIn: SampleLink[] = []
+      const relIds: Record<string, string> = {}
       for (const rel of data.relations ?? []) {
         if (!isSamplesMaterialRelation(rel)) continue
         const link = sampleLinkFromRelation(rel)
@@ -742,13 +753,25 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
         const incoming = (rel.direction ?? '').toLowerCase() === 'backward'
         if (incoming) sampledIn.push(link)
         else samplesFrom.push(link)
+        const relId = (rel.id ?? rel['type-id'] ?? '').trim()
+        if (link.mbid && relId) relIds[link.mbid] = relId
       }
+      const releaseTitles = [
+        ...new Set(
+          (data.releases ?? [])
+            .map((release) => (release.title ?? '').trim())
+            .filter(Boolean)
+        ),
+      ]
       return {
         mbid: data.id,
         title: data.title ?? '',
+        disambiguation: (data.disambiguation ?? '').trim(),
         lengthMs: typeof data.length === 'number' ? data.length : null,
+        releaseTitles,
         samplesFrom,
         sampledIn,
+        relIds,
       }
     },
   }

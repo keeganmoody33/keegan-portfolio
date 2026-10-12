@@ -1749,6 +1749,10 @@ function createMusicBrainzClientForTests(): MusicBrainzClient {
       client.requestCount += 1
       return null
     },
+    async getRecordingSampleRels() {
+      client.requestCount += 1
+      return null
+    },
   }
   return client
 }
@@ -1766,6 +1770,7 @@ function throwingMb(message = 'musicbrainz down'): MusicBrainzClient {
     searchRecordingsByArtistTitle: boom,
     getRelease: boom,
     getRecording: boom,
+    getRecordingSampleRels: boom,
   }
 }
 
@@ -10358,6 +10363,22 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     assert.match(body, /recording-rels\+release-rels/)
     assert.doesNotMatch(body, /\/work\//)
     assert.doesNotMatch(body, /work-rels/)
+  })
+
+  it('getRecordingSampleRels shares the 1.1s getJson limiter on one client', () => {
+    const src = readFileSync(fileURLToPath(new URL('./musicbrainz.ts', import.meta.url)), 'utf8')
+    const factory = src.slice(
+      src.indexOf('export function createMusicBrainzClient'),
+      src.indexOf('export type MusicBrainzClient')
+    )
+    assert.match(factory, /let lastAt = 0/)
+    assert.match(factory, /minInterval = options.minIntervalMs \?\? MUSICBRAINZ_MIN_INTERVAL_MS/)
+    const start = src.indexOf('async getRecordingSampleRels')
+    const body = src.slice(start, src.indexOf('export type MusicBrainzClient', start))
+    assert.match(body, /getJson<MbRecordingDoc>/)
+    assert.match(body, /recording-rels\+release-rels\+releases/)
+    assert.doesNotMatch(body, /work-rels/)
+    assert.equal([...factory.matchAll(/let lastAt = 0/g)].length, 1)
   })
 
   it('gives overview connection titles a 24px hit target', () => {

@@ -7,6 +7,10 @@
  *
  * Default is dry-run. --apply requires --prod --backup=<path> --run-id, holds
  * lf:crate:enrich:lock:v1, and plans after acquire. No WhoSampled. Never a visitor path.
+ *
+ * MusicBrainz: one createMusicBrainzClient() (single walker, shared lastAt).
+ * getRecordingSampleRels uses getJson at MUSICBRAINZ_MIN_INTERVAL_MS 1100 + jitter.
+ * createPromoteMbLookup caches by MBID so recall-review inverse lookups stay small.
  */
 import { resolveRedisRestConfig } from '../lib/redis-env.ts'
 import { createMusicBrainzClient } from '../lib/crate/musicbrainz.ts'

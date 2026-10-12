@@ -1,3 +1,9 @@
+COMPLETED (2026-10-12 — Integrations + QA re-gate on 7dd8b41, still no --apply):
+- Live/studio uses MB disambiguation + release titles (`recordingIsLive`). `e144dd90` (`live, 1975`, Alive! releases) maps to Alive! A4, not Double Platinum B4. Studio dest rejects live recordings. `6e4909b0` (debut Black Diamond) drops on DP D5 when remix `3fcae502` is already on the map and DP is not in its release list. Dest-release skip is same-act + already-mapped same-song sibling only (does not drop sampled sources like Pastime).
+- `proof.ts` fake client has `getRecordingSampleRels`. `assertUpstashMultiResults` scans per-command `{error}` / `[err,val]`. REST WATCH is connection-scoped; apply/rollback use EVAL CAS against snapshot dumps. Rollback refuses DEL of a non-string type with a null dump.
+- CLI `getRecordingSampleRels` shares `getJson` (1100ms + jitter, one client, cache by MBID). Documented in TECH_STACK / BACKEND_STRUCTURE / CLI header.
+- Recall review of 8 dropped 'not on source recording' rows: inverse samples-material on same-song sibling. MB ws/2 omits relationship UUIDs; rel id is type-id `9efd9ce9-e702-448b-8e76-641515e8fe62`. Do not `--apply`.
+
 COMPLETED (2026-10-12 — QA Gate fold on #67, still no --apply):
 - alreadyOnMap now requires `isPromoteSidecarMatch` (Clubstar cannot copy onto Cha-Cha 378994 Radio Edit). `--ids=` uses `parsePositiveId` + closed 23-list (throws on `567894oops` and on Mtume 567894). Recording keys are planned copy MBIDs only.
 - All SET/DEL through `assertPrefixedRedisKey`; prod rejects `lf:preview:`. `--apply`/`--rollback` require `--prod` (cover-sync style) and `--run-id`. Snapshot is TYPE/PTTL/GET; rollback SET PX so TTLs survive; writes go through Upstash `/multi-exec`. Apply still holds `lf:crate:enrich:lock:v1`. Merged recording writes use `preferCompleteRecording`.
