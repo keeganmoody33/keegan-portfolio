@@ -28,6 +28,7 @@ import {
   MUSICBRAINZ_RETRY_AFTER_CAP_MS,
   createMusicBrainzClient,
   isMusicBrainzRateLimitError,
+  isMusicBrainzTimeoutError,
 } from '../lib/crate/musicbrainz.ts'
 import { isRecordingOrReleaseSampleLink } from '../lib/crate/research.ts'
 import {
@@ -306,23 +307,46 @@ async function sleepWithHeartbeat(ms: number): Promise<void> {
   }
 }
 
+function envInt(name: string): number {
+  const raw = process.env[name]
+  if (!raw) return 0
+  const value = Number.parseInt(raw, 10)
+  return Number.isInteger(value) && value > 0 ? value : 0
+}
+
+const alreadySpent = envInt('FIND_ALREADY_SPENT')
+const skipEligible = envInt('FIND_SKIP_ELIGIBLE')
+
+function spent(): number {
+  return mb.requestCount + alreadySpent
+}
+
 async function withMbRetry<T>(fn: () => Promise<T>): Promise<T> {
   for (let attempt = 0; attempt < 8; attempt += 1) {
     try {
       return await fn()
     } catch (error) {
       if (error instanceof BudgetExceededError) throw error
-      if (!isMusicBrainzRateLimitError(error) || attempt === 7) throw error
-      const wait = Math.min(Math.max(error.retryAfterMs, 1000), MUSICBRAINZ_RETRY_AFTER_CAP_MS)
-      await sleepWithHeartbeat(wait)
+      if (attempt === 7) throw error
+      if (isMusicBrainzRateLimitError(error)) {
+        const wait = Math.min(Math.max(error.retryAfterMs, 1000), MUSICBRAINZ_RETRY_AFTER_CAP_MS)
+        await sleepWithHeartbeat(wait)
+        continue
+      }
+      if (isMusicBrainzTimeoutError(error) && !error.deadlineExceeded) {
+        await sleepWithHeartbeat(2000)
+        continue
+      }
+      throw error
     }
   }
   throw new Error('MusicBrainz rate limited after retries')
 }
 
 const mb = createMusicBrainzClient({
+  timeoutMs: 20_000,
   onRequest: async () => {
-    if (mb.requestCount > stopAt) throw new BudgetExceededError(mb.requestCount, stopAt)
+    if (spent() > stopAt) throw new BudgetExceededError(spent(), stopAt)
     await pulseLock()
     return true
   },
@@ -330,9 +354,9 @@ const mb = createMusicBrainzClient({
 const extraProbeCap = Math.max(0, TRACK_LEVEL_ANNOTATE_CAP - TRACK_LEVEL_EXTRAS_ANNOTATE_RESERVE)
 const found: FoundRow[] = []
 let eligibleVisited = 0
-let extrasSecond = 0
-let extrasIsrc = 0
-let extrasWork = 0
+let extrasSecond = envInt('FIND_EXTRAS_SECOND')
+let extrasIsrc = envInt('FIND_EXTRAS_ISRC')
+let extrasWork = envInt('FIND_EXTRAS_WORK')
 let stoppedOnError: string | null = null
 let stoppedOnBudget = false
 let lastFoundCount = 0
@@ -346,7 +370,9 @@ function progress(note: string): void {
       lock: PREVIEW_LOCK,
       eligibleVisited,
       foundTracks: found.length,
-      mbRequests: mb.requestCount,
+      mbRequests: spent(),
+      alreadySpent,
+      skipEligible,
       stopAt,
       estimate,
       extrasSecond,
@@ -423,8 +449,9 @@ try {
       if (!mbid) continue
       const destRecording = pressing.recordings[mbid]
       if (!destRecording || recordingHasSampleMaterial(destRecording)) continue
-      if (mb.requestCount > stopAt) throw new BudgetExceededError(mb.requestCount, stopAt)
+      if (spent() > stopAt) throw new BudgetExceededError(spent(), stopAt)
       eligibleVisited += 1
+      if (eligibleVisited <= skipEligible) continue
       const foundChanged = found.length !== lastFoundCount
       if (eligibleVisited === 1 || eligibleVisited % 25 === 0 || foundChanged) {
         lastFoundCount = found.length
@@ -513,7 +540,10 @@ const report = {
   extrasSecond,
   extrasIsrc,
   extrasWork,
-  mbRequests: mb.requestCount,
+  alreadySpent,
+  skipEligible,
+  thisRunRequests: mb.requestCount,
+  mbRequests: spent(),
   foundTracks: found.length,
   newLinks,
   newSampleOf,
