@@ -1,7 +1,11 @@
+COMPLETED (2026-10-12 — Proper Respect frames are live product screenshots, preview only):
+- Replaced the four lf-02 brand-art frames (mark, bump-art, fists-blueprint, share-image) with 2x 2880×1920 public-page captures of proper-respect.com: `/lecturesfrom` collection, Wispr Flow item detail, GitHub 1,304-contribution snapshot, `/app/collection` “start with one source”. No sign-in. Old files removed.
+- Captions/alt describe those surfaces. `cover` is `profile.png`. Punch2Pen and yadiggg untouched. Do not merge.
+
 COMPLETED (2026-10-12 — catalog sleeve gallery + copy refresh, preview only):
 - `Sleeve.images[]` (`src`, `alt`, `width`, `height`, optional `caption`). `cover` still works when `images` is empty.
 - `SleeveGallery`: native scroll-snap, swipe, visible prev/next (`.house-text-button`), arrow keys, no autoplay, reduced-motion `auto` scroll, first-frame aspect so the slot cannot shift. House chrome only.
-- Proper Respect (`lf-02`): liner rewritten from proper-respect.com + README (measurements / imports). Four self-hosted frames under `public/catalog/proper-respect/` (mark/cover, bump-art, fists-blueprint, share-image).
+- Proper Respect (`lf-02`): liner rewritten from proper-respect.com + README (measurements / imports). Frames are live product screenshots under `public/catalog/proper-respect/` (profile, item-detail, measurements, import).
 - Punch2Pen (`lf-01`): honesty gates from punch2pen.com (unsigned pkg, no prices, sign-in not in this build, Logic-first, never a browser engine). Still `IssuePlate` — no screenshots.
 - yadiggg untouched. Do not merge.
 

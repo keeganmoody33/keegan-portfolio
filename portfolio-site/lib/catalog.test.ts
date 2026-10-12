@@ -7,8 +7,13 @@
 
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
+import { existsSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { getSleeveBySlug } from './catalog.ts'
 import { resolveSleeveMedia } from './sleeve-gallery.ts'
+
+const publicDir = join(dirname(fileURLToPath(import.meta.url)), '../public')
 
 describe('punch2pen (lf-01)', () => {
   const sleeve = getSleeveBySlug('punch2pen')
@@ -57,19 +62,50 @@ describe('proper-respect (lf-02)', () => {
   const sleeve = getSleeveBySlug('proper-respect')
 
   it('keeps cover for back-compat and ships a 4-frame gallery', () => {
-    assert.equal(sleeve?.cover, '/catalog/proper-respect/cover.png')
+    assert.equal(sleeve?.cover, '/catalog/proper-respect/profile.png')
     assert.equal(sleeve?.images?.length, 4)
     assert.equal(sleeve?.images?.[0]?.src, sleeve?.cover)
     assert.equal(resolveSleeveMedia(sleeve!).kind, 'gallery')
   })
 
-  it('every gallery frame has src, alt, width, height', () => {
-    for (const image of sleeve?.images ?? []) {
+  it('self-hosts live product screenshots, not brand art', () => {
+    const srcs = (sleeve?.images ?? []).map((image) => image.src)
+    assert.deepEqual(srcs, [
+      '/catalog/proper-respect/profile.png',
+      '/catalog/proper-respect/item-detail.png',
+      '/catalog/proper-respect/measurements.png',
+      '/catalog/proper-respect/import.png',
+    ])
+    const blob = (sleeve?.images ?? []).map((image) => `${image.alt} ${image.caption}`).join(' ')
+    for (const banned of ['logo', 'mark', 'bump art', 'share image', 'blueprint']) {
+      assert.equal(blob.toLowerCase().includes(banned), false, `brand-art leftover: ${banned}`)
+    }
+    for (const needle of [
+      '/lecturesfrom',
+      'Wispr Flow',
+      '1,304',
+      'Start with one source',
+      'Claude Code',
+    ]) {
+      assert.ok(blob.includes(needle), `missing product cue: ${needle}`)
+    }
+  })
+
+  it('every gallery frame has src, alt, width, height, caption, file, and shared 3:2 aspect', () => {
+    const images = sleeve?.images ?? []
+    const first = images[0]
+    assert.ok(first)
+    for (const image of images) {
       assert.ok(image.src.startsWith('/catalog/proper-respect/'))
       assert.ok(image.alt.length > 0)
-      assert.ok(image.width > 0)
-      assert.ok(image.height > 0)
+      assert.ok((image.caption ?? '').length > 0)
+      assert.equal(image.width, 2880)
+      assert.equal(image.height, 1920)
+      assert.equal(image.width * first.height, image.height * first.width)
+      assert.equal(existsSync(join(publicDir, image.src)), true, `missing ${image.src}`)
     }
+    assert.equal(existsSync(join(publicDir, 'catalog/proper-respect/cover.png')), false)
+    assert.equal(existsSync(join(publicDir, 'catalog/proper-respect/bump-art.webp')), false)
   })
 
   it('covers measurements and imports from the live product', () => {

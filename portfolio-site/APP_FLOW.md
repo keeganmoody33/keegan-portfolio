@@ -331,7 +331,7 @@ Land on /keeganmoody33
 3. The first frame's width/height set `--sleeve-gallery-aspect` so the slot cannot shift. Later frames `object-contain` in that box. Chrome is house tokens only (Chakra Petch / Space Grotesk / Roboto Mono / Doto; paper ink/line). Project color lives in the images.
 4. `prefers-reduced-motion: reduce` uses `scroll-behavior: auto` (no smooth). Punch2Pen (`lf-01`) has no `images` and no `cover` — it keeps `IssuePlate`. yadiggg stays a single square `cover`.
 
-**Success state:** Proper Respect (`lf-02`) shows four self-hosted frames (mark, bump-art, fists-blueprint, share-image) with alt text and captions.
+**Success state:** Proper Respect (`lf-02`) shows four self-hosted product screenshots from live proper-respect.com (public `/lecturesfrom` collection, Wispr Flow item detail, GitHub contribution snapshot, `/app/collection` import picker) with alt text and captions. No logo, mark, bump art, or share image.
 
 **Empty state:** No `images` and no `cover` → issue plate. No tracks → `empty pocket`.
 

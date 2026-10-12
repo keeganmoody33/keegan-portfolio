@@ -8,6 +8,7 @@ Updated: 2026-10-12
 - **Do not restyle sleeve chrome in a project palette.** House tokens only (Chakra Petch / Space Grotesk / Roboto Mono / Doto; paper ink/line/orange). Punch2Pen brick and Proper Respect lime/red may appear inside the frames, not on prev/next, captions, or the plate.
 - **Reserve the first frame's aspect.** Dynamic Tailwind `aspect-[${w}/${h}]` will not emit. Set `--sleeve-gallery-aspect` from `width` / `height` and `object-contain` later frames so the column cannot shift.
 - **Self-host owned art under `public/catalog/{slug}/`.** Do not hotlink punch2pen.com or proper-respect.com. Discogs hotlink rules do not apply to these files.
+- **Proper Respect frames are product screenshots, not brand art.** Capture public pages only (`/lecturesfrom`, item detail, measurements, `/app/collection` import). No logo, mark, bump art, or share image. Same 3:2 at 2x (2880×1920). Do not sign in. Punch2Pen still has no screenshots.
 - **yadiggg stays cover-only** until CAD-backed imagery is signed off. Do not mount the concept PNGs as a carousel.
 - **Copy only what the repo or live site backs up.** Punch2Pen: unsigned pkg / Gatekeeper, no prices, sign-in not in this build, Logic is the host they run, DAW menu is interest not compatibility, never a browser engine. Proper Respect: measurements keep native units (GitHub snapshots, sanitized Claude Code / Codex packets, `proper-measurements-v1`); usage does not rank; private until the owner approves the preview.
 
