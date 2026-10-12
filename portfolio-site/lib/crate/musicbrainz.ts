@@ -9,9 +9,12 @@ import {
   type SampleLink,
 } from './types.ts'
 import { presentSampleArtist } from './research.ts'
+import { songTitle } from './match.ts'
 
 export const RECORDING_SEARCH_LIMIT = 100
 export const RECORDING_SEARCH_MAX_PAGES = 3
+export const WORK_BROWSE_LIMIT = 100
+export const WORK_BROWSE_MAX_PAGES = 3
 
 export { MUSICBRAINZ_INTERVAL_JITTER_MS, MUSICBRAINZ_RETRY_AFTER_CAP_MS, MUSICBRAINZ_MIN_INTERVAL_MS }
 
@@ -45,9 +48,11 @@ export type MbRecordingFacts = {
   title: string
   artist: string
   lengthMs?: number | null
+  disambiguation?: string
   credits: Credit[]
   samplesFrom: SampleLink[]
   sampledIn: SampleLink[]
+  isrcs?: string[]
 }
 
 export class MusicBrainzRateLimitError extends Error {
@@ -110,6 +115,7 @@ export type MbRecordingSearchHit = {
   artist: string
   lengthMs: number | null
   score: number
+  disambiguation?: string
 }
 
 export const MB_SAMPLES_MATERIAL_RECORDING_TYPE_ID = '9efd9ce9-e702-448b-8e76-641515e8fe62'
@@ -167,9 +173,32 @@ type MbRecordingDoc = {
   title?: string
   length?: number
   disambiguation?: string
+  isrcs?: string[]
   'artist-credit'?: MbArtistCredit
   relations?: MbRelation[]
   releases?: Array<{ title?: string; disambiguation?: string }>
+}
+
+type MbRecordingSearchRow = {
+  id?: string
+  title?: string
+  score?: number
+  length?: number
+  disambiguation?: string
+  'artist-credit'?: MbArtistCredit
+}
+
+function recordingSearchHitFrom(recording: MbRecordingSearchRow): MbRecordingSearchHit | null {
+  if (!recording.id) return null
+  const disambiguation = recording.disambiguation?.trim()
+  return {
+    mbid: recording.id,
+    title: recording.title ?? '',
+    artist: rawArtistCreditName(recording['artist-credit']),
+    lengthMs: typeof recording.length === 'number' ? recording.length : null,
+    score: typeof recording.score === 'number' ? recording.score : 0,
+    ...(disambiguation ? { disambiguation } : {}),
+  }
 }
 
 function defaultSleep(ms: number): Promise<void> {
@@ -287,6 +316,13 @@ export function escapeLucene(value: string): string {
 
 export function stripDiscogsArtistSuffix(name: string): string {
   return name.replace(/\s+\(\d+\)$/u, '').trim()
+}
+
+export function secondArtistTitleQuery(artist: string, title: string): string {
+  const name = stripDiscogsArtistSuffix(artist).trim()
+  const unquoted = songTitle(title)
+  if (!name || !unquoted) return ''
+  return `artistname:"${escapeLucene(name)}" AND recording:(${escapeLucene(unquoted)})`
 }
 
 export function readRetryAfterMs(
@@ -495,13 +531,7 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
           offset: String(offset),
         })
         const data = await getJson<{
-          recordings?: Array<{
-            id?: string
-            title?: string
-            score?: number
-            length?: number
-            'artist-credit'?: MbArtistCredit
-          }>
+          recordings?: MbRecordingSearchRow[]
         }>(`${MUSICBRAINZ_API}/recording?${params.toString()}`)
         const pageHits = data.recordings ?? []
         if (pageHits.length === 0) break
@@ -512,15 +542,10 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
         const pageMin = Math.min(...pageScores)
         if (topScore == null) topScore = pageMax
         for (const recording of pageHits) {
-          if (!recording.id || seen.has(recording.id)) continue
-          seen.add(recording.id)
-          hits.push({
-            mbid: recording.id,
-            title: recording.title ?? '',
-            artist: rawArtistCreditName(recording['artist-credit']),
-            lengthMs: typeof recording.length === 'number' ? recording.length : null,
-            score: typeof recording.score === 'number' ? recording.score : 0,
-          })
+          const hit = recordingSearchHitFrom(recording)
+          if (!hit || seen.has(hit.mbid)) continue
+          seen.add(hit.mbid)
+          hits.push(hit)
         }
         const allTiedAtTop =
           pageHits.length === RECORDING_SEARCH_LIMIT &&
@@ -528,6 +553,114 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
           pageMax === (topScore ?? pageMax)
         if (!allTiedAtTop) break
         offset += RECORDING_SEARCH_LIMIT
+      }
+      return hits
+    },
+
+    async searchRecordingsByArtistNameTitle(input: {
+      artist: string
+      title: string
+    }): Promise<MbRecordingSearchHit[]> {
+      const query = secondArtistTitleQuery(input.artist, input.title)
+      if (!query) return []
+      const params = new URLSearchParams({
+        query,
+        fmt: 'json',
+        limit: String(RECORDING_SEARCH_LIMIT),
+        offset: '0',
+      })
+      const data = await getJson<{ recordings?: MbRecordingSearchRow[] }>(
+        `${MUSICBRAINZ_API}/recording?${params.toString()}`
+      )
+      const hits: MbRecordingSearchHit[] = []
+      const seen = new Set<string>()
+      for (const recording of data.recordings ?? []) {
+        const hit = recordingSearchHitFrom(recording)
+        if (!hit || seen.has(hit.mbid)) continue
+        seen.add(hit.mbid)
+        hits.push(hit)
+      }
+      return hits
+    },
+
+    async searchRecordingsByIsrc(isrc: string): Promise<MbRecordingSearchHit[]> {
+      const compact = isrc.replace(/[\s-]/g, '').toUpperCase()
+      if (!compact) return []
+      const params = new URLSearchParams({
+        query: `isrc:${compact}`,
+        fmt: 'json',
+        limit: String(RECORDING_SEARCH_LIMIT),
+        offset: '0',
+      })
+      const data = await getJson<{ recordings?: MbRecordingSearchRow[] }>(
+        `${MUSICBRAINZ_API}/recording?${params.toString()}`
+      )
+      const hits: MbRecordingSearchHit[] = []
+      const seen = new Set<string>()
+      for (const recording of data.recordings ?? []) {
+        const hit = recordingSearchHitFrom(recording)
+        if (!hit || seen.has(hit.mbid)) continue
+        seen.add(hit.mbid)
+        hits.push(hit)
+      }
+      return hits
+    },
+
+    async searchWorksByArtistTitle(input: {
+      artist: string
+      title: string
+    }): Promise<Array<{ mbid: string; title: string; score: number }>> {
+      const artist = stripDiscogsArtistSuffix(input.artist)
+      const title = songTitle(input.title)
+      if (!artist || !title) return []
+      const query = `work:"${escapeLucene(title)}" AND artist:"${escapeLucene(artist)}"`
+      const params = new URLSearchParams({
+        query,
+        fmt: 'json',
+        limit: '25',
+      })
+      const data = await getJson<{
+        works?: Array<{ id?: string; title?: string; score?: number }>
+      }>(`${MUSICBRAINZ_API}/work?${params.toString()}`)
+      const works: Array<{ mbid: string; title: string; score: number }> = []
+      const seen = new Set<string>()
+      for (const work of data.works ?? []) {
+        if (!work.id || seen.has(work.id)) continue
+        seen.add(work.id)
+        works.push({
+          mbid: work.id,
+          title: work.title ?? '',
+          score: typeof work.score === 'number' ? work.score : 0,
+        })
+      }
+      return works
+    },
+
+    async browseRecordingsByWork(workMbid: string): Promise<MbRecordingSearchHit[]> {
+      const id = workMbid.trim()
+      if (!id) return []
+      const hits: MbRecordingSearchHit[] = []
+      const seen = new Set<string>()
+      for (let page = 0; page < WORK_BROWSE_MAX_PAGES; page += 1) {
+        const params = new URLSearchParams({
+          work: id,
+          inc: 'artist-credits',
+          fmt: 'json',
+          limit: String(WORK_BROWSE_LIMIT),
+          offset: String(page * WORK_BROWSE_LIMIT),
+        })
+        const data = await getJson<{ recordings?: MbRecordingSearchRow[] }>(
+          `${MUSICBRAINZ_API}/recording?${params.toString()}`
+        )
+        const pageHits = data.recordings ?? []
+        if (pageHits.length === 0) break
+        for (const recording of pageHits) {
+          const hit = recordingSearchHitFrom({ ...recording, score: recording.score ?? 100 })
+          if (!hit || seen.has(hit.mbid)) continue
+          seen.add(hit.mbid)
+          hits.push(hit)
+        }
+        if (pageHits.length < WORK_BROWSE_LIMIT) break
       }
       return hits
     },
@@ -618,7 +751,7 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
 
     async getRecording(mbid: string): Promise<MbRecordingFacts | null> {
       const params = new URLSearchParams({
-        inc: 'artist-credits+artist-rels+recording-rels+release-rels+url-rels',
+        inc: 'artist-credits+artist-rels+recording-rels+release-rels+url-rels+isrcs',
         fmt: 'json',
       })
       const data = await getJson<MbRecordingDoc>(
@@ -633,6 +766,10 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
       const lookups = { count: 0 }
       rememberArtist(artistCache, data.id, data['artist-credit'])
 
+      const isrcs = (data.isrcs ?? []).filter(
+        (code): code is string => typeof code === 'string' && code.trim().length > 0
+      )
+      const disambiguation = data.disambiguation?.trim()
       const facts = (): MbRecordingFacts => ({
         mbid: data.id!,
         title: data.title ?? '',
@@ -641,6 +778,8 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
         credits,
         samplesFrom,
         sampledIn,
+        ...(disambiguation ? { disambiguation } : {}),
+        ...(isrcs.length > 0 ? { isrcs } : {}),
       })
 
       const attachPartial = (error: unknown): unknown => {

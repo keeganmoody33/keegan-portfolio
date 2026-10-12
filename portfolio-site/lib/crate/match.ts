@@ -69,6 +69,52 @@ export function recordingIsLive(input: {
   return (input.releaseTitles ?? []).some((title) => titleIsLive(title))
 }
 
+/** KISS Alive! / Alive II only. Stayin' Alive and Alive 2007 are studio dests. */
+const KNOWN_LIVE_ALBUMS = new Set(['alive', 'alive ii'])
+
+/** Live dest: mix-marker live on the track, or a known live album (KISS Alive! / Alive II). */
+export function destinationIsLive(input: { albumTitle?: string | null; trackTitle: string }): boolean {
+  if (titleIsLive(input.trackTitle)) return true
+  const album = normalizeTitle(input.albumTitle ?? '')
+  return KNOWN_LIVE_ALBUMS.has(album)
+}
+
+/** MB disambiguation `DJ-mix` / `dj mix` is a different version. */
+export function isDjMixDisambiguation(value?: string | null): boolean {
+  if (!value) return false
+  return /\bdj mix\b/.test(normalizeTitle(value))
+}
+
+/** Extra hits may take at most cap-1 annotate slots so a base hit still gets a probe. */
+export const TRACK_LEVEL_EXTRAS_ANNOTATE_RESERVE = 1
+
+export function selectAnnotateProbeHits(
+  ordered: TrackLevelRecordingHit[],
+  cap: number,
+  extrasReserve = TRACK_LEVEL_EXTRAS_ANNOTATE_RESERVE
+): TrackLevelRecordingHit[] {
+  const extras = ordered.filter((hit) => hit.extra)
+  const bases = ordered.filter((hit) => !hit.extra)
+  if (extras.length === 0) return ordered.slice(0, cap)
+  const knownBases = bases.filter((hit) => hit.hasSamples != null)
+  const reserved = (knownBases.length > 0 ? knownBases : bases).slice(
+    0,
+    Math.max(0, extrasReserve)
+  )
+  const extraSlots = Math.max(0, cap - reserved.length)
+  const picked: TrackLevelRecordingHit[] = []
+  const seen = new Set<string>()
+  // Extras wave: extras (at most cap-1) plus reserved base. Do not fill leftover
+  // slots with unprobed first-search hits — that would raise the annotate budget.
+  for (const hit of [...extras.slice(0, extraSlots), ...reserved]) {
+    if (seen.has(hit.mbid)) continue
+    seen.add(hit.mbid)
+    picked.push(hit)
+    if (picked.length >= cap) break
+  }
+  return picked
+}
+
 export function searchVersionFit(discogsTitle: string, hitTitle: string): SearchVersionFit {
   const want = tokensFrom(discogsTitle, SEARCH_VERSION_TOKENS)
   const got = tokensFrom(hitTitle, SEARCH_VERSION_TOKENS)
@@ -176,6 +222,10 @@ export type TrackLevelRecordingHit = {
   lengthMs: number | null
   score?: number
   hasSamples?: boolean
+  disambiguation?: string
+  releaseTitles?: string[]
+  isrcs?: string[]
+  extra?: boolean
 }
 
 export function recordingHasSampleMaterial(
@@ -271,6 +321,16 @@ export function mergeRecalledRecordingHits(
     if (existing.lengthMs == null && hit.lengthMs != null) {
       existing.lengthMs = hit.lengthMs
     }
+    if (hit.extra) existing.extra = true
+    if (!existing.disambiguation && hit.disambiguation) {
+      existing.disambiguation = hit.disambiguation
+    }
+    if (!existing.isrcs?.length && hit.isrcs?.length) {
+      existing.isrcs = hit.isrcs
+    }
+    if (!existing.releaseTitles?.length && hit.releaseTitles?.length) {
+      existing.releaseTitles = hit.releaseTitles
+    }
   }
   return [...byMbid.values()]
 }
@@ -307,6 +367,7 @@ export function compareTrackLevelProbeOrder(
   discogsDurationMs: number | null = null,
   discogsTitle?: string
 ): number {
+  if (Boolean(left.extra) !== Boolean(right.extra)) return left.extra ? -1 : 1
   if (discogsTitle) {
     const leftFit = searchVersionRank(discogsTitle, left.title)
     const rightFit = searchVersionRank(discogsTitle, right.title)
@@ -388,6 +449,11 @@ export function filterTrackLevelRecordings(
     if (delta == null) return true
     return delta <= DURATION_FAR_MS
   })
+}
+
+export function durationDeltaMs(a: number | null, b: number | null): number | null {
+  if (a == null || b == null) return null
+  return Math.abs(a - b)
 }
 
 export function titlesMatchExactly(left: string, right: string): boolean {
@@ -501,11 +567,6 @@ function titleEquals(a: string, b: string): boolean {
   const right = normalizeTitle(b)
   if (!left || !right) return false
   return left === right
-}
-
-function durationDeltaMs(a: number | null, b: number | null): number | null {
-  if (a == null || b == null) return null
-  return Math.abs(a - b)
 }
 
 /** Missing lengths rank after any known duration so the comparator stays transitive. */

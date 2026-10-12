@@ -2,6 +2,12 @@
 
 Updated: 2026-10-12
 
+## Search extras for missed sampled recordings (2026-10-12)
+
+- Fire extras **only after annotate**, and only when near-top has 0 sampled hits **and a known unsampled match** (`hasSamples === false`). Unmatched / unknown-hasSamples tracks skip extras. Cold Redis-sampled first-search hits must not spend extras. Typical +3 (`EXTRAS_TYPICAL_REQUESTS_PER_TRACK`: second query + extra annotate slots). Worst +12 (`EXTRAS_WORST_REQUESTS_PER_TRACK`: second/ISRC/work each with extra annotate, plus 3 work-browse pages). FIND walk: measure E first, expect base+3E, plan base+12E, **stop at 1.5× estimate**. Stop extras as soon as any new hit has samples. The old ungated ~1,630 was playable×3 before the annotate-first gate, browse pagination, and annotate lookups; gated cost is `projectExtrasRequestCost`. Do not raise `TRACK_LEVEL_ANNOTATE_CAP` 3. Extra hits may take at most cap−1 annotate slots (`TRACK_LEVEL_EXTRAS_ANNOTATE_RESERVE` 1). Do not add `work-rels` to `getRecording` (`isrcs` only). Radio Edit extras must not keep Clubstar; extras must not keep a different-artist hit.
+- Extra hits on **all** extras paths (second query, ISRC, work browse) need a **known** length within 5s. Do **not** exempt stored dest picks (`releaseRecordingIds`) — Intro `47a16400` self-confirms. An MB-release-membership check would need `getRelease`; until that exists, drop the exemption. Also `searchVersionFit` + `promoteVersionContradicts` (vocal vs instrumental, including instrumental vs unmarked) + live/studio **on extras only** (`recordingIsLive` from title / disambiguation `live, 1975` / release titles). Live dest albums are the known list KISS Alive! / Alive II — not `/\balive\b/` (Stayin' Alive, Alive 2007 stay studio). `titleIsLive` is the `live` token, not Alive!. Reject DJ-mix disambiguations. Studio HTH stays off Alive!; live HTH stays off Double Platinum; Bourgié vocal stays off an instrumental dest; Black Diamond studio (59s) stays off the remix dest.
+- Unique work means **exactly one** work search hit. Ambiguous work search skips browse. Browse is `recording?work=` (not `getRecording` `/work/`), paginated (`WORK_BROWSE_LIMIT` 100, `WORK_BROWSE_MAX_PAGES` 3). Preview FIND on 1978 eligible: 6988 MB requests (under 8901), 4 extra recordings / 7 unique links, 0 exemptions, 0 #67 traps. Persist found rows across resumes; unique-count extra MBIDs so Clean/LP dests sharing one extra are not doubled.
+
 ## Promote live/studio, WATCH CAS, and recall inverse (2026-10-12)
 
 - Title-only live detection inverts Alive! vs Double Platinum. Use MB disambiguation (`live, 1975`) and release titles. Live dest only takes live recordings; studio dest only takes studio. Fail closed when dest is live and the recording is unverified/non-live.
@@ -22,8 +28,6 @@ Updated: 2026-10-12
 ## Do not invent MusicBrainz UUID suffixes (2026-10-12)
 
 - Short prefixes in `progress.txt` (`1d890c2b`, `181c0a32`) are not full MBIDs. The live Redis vocal is `1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc` and Juicy is `181c0a32-6e3f-4680-8a7d-1daf0b42e43b` (same as `crate.test.ts`). A guessed suffix made the promote dry-run report `juicyLinked: false` while the prod doc still had Juicy. Copy full MBIDs from Redis or fixtures; never pad a prefix.
-
-## Collection research match-quality gates (2026-10-07)
 
 ## Collection research match-quality gates (2026-10-07)
 

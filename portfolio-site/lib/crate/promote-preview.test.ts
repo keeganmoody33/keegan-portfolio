@@ -21,6 +21,7 @@ import {
   assertPromoteProdAllowed,
   assertUpstashMultiResults,
   countPressingMapLinks,
+  destinationIsLive,
   filterPreviewSampleLinks,
   isPromoteSidecarMatch,
   memoryPromoteRawStore,
@@ -957,6 +958,41 @@ describe('Integrations: live/studio pairing and dest-release', () => {
   const debutDiamond = '6e4909b0-49b2-454b-89e6-8b83f1114b4a'
   const remixDiamond = '3fcae502-4191-4b3f-abb7-c6ffb8e2abf1'
   const aliveId = 3221873
+
+  it('uses the KISS Alive list for dest-live, not /\\balive\\b/', () => {
+    const stayin = pressingOf(
+      {},
+      [{ position: 'A1', title: "Stayin' Alive", durationMs: 249000 }],
+      1
+    )
+    stayin.facts.title = "Stayin' Alive"
+    stayin.facts.artist = 'Bee Gees'
+    assert.equal(destinationIsLive(stayin, stayin.tracks), false)
+
+    const daft = pressingOf(
+      {},
+      [{ position: 'A1', title: 'Daftendirekt', durationMs: 160000 }],
+      2
+    )
+    daft.facts.title = 'Alive 2007'
+    assert.equal(destinationIsLive(daft, daft.tracks), false)
+
+    const alive = pressingOf(
+      {},
+      [{ position: 'A4', title: 'Hotter Than Hell', durationMs: 210000 }],
+      aliveId
+    )
+    alive.facts.title = 'Alive!'
+    assert.equal(destinationIsLive(alive, alive.tracks), true)
+
+    const aliveIi = pressingOf(
+      {},
+      [{ position: 'A1', title: 'Detroit Rock City', durationMs: 220000 }],
+      5150579
+    )
+    aliveIi.facts.title = 'Alive II'
+    assert.equal(destinationIsLive(aliveIi, aliveIi.tracks), true)
+  })
 
   it('maps e144dd90 onto Alive! A4 and not Double Platinum B4', async () => {
     const live = completeRecording({

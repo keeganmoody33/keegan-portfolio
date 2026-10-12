@@ -32,6 +32,7 @@ import { parsePositiveId } from './ids.ts'
 import { isPlayableOccurrence } from './lifecycle.ts'
 import {
   artistsMatch,
+  destinationIsLive as albumTrackIsLive,
   DURATION_FAR_MS,
   DURATION_SIDECAR_MS,
   hitFromStoredRecording,
@@ -504,9 +505,10 @@ export function isPromoteMbSampleLink(link: SampleLink): boolean {
 }
 
 export function destinationIsLive(pressing: StoredPressing, tracks: TrackOccurrence[]): boolean {
-  if (titleIsLive(pressing.facts.title)) return true
-  if (/\balive\b/.test(normalizeTitle(pressing.facts.title))) return true
-  return tracks.some((track) => titleIsLive(track.title))
+  if (albumTrackIsLive({ albumTitle: pressing.facts.title, trackTitle: '' })) return true
+  return tracks.some((track) =>
+    albumTrackIsLive({ albumTitle: pressing.facts.title, trackTitle: track.title })
+  )
 }
 
 export function recordingAppearsOnPressing(

@@ -1,3 +1,14 @@
+COMPLETED (2026-10-12 — merge #67 + #68 to go live):
+- Combined PR #67 (prod promote already applied: live **323 / 73 / 98 / 225**) and PR #68 (search extras). `destinationIsLive` is the KISS Alive! / Alive II list (Stayin' Alive / Alive 2007 stay studio). Promote dest-live uses that list, not `/\\balive\\b/`. `musicbrainz.ts` keeps extras search/browse **and** `getRecordingSampleRels`. `package.json` keeps `crate:promote-preview`, `crate:search-extras-measure`, `crate:search-extras-find`; `npm test` includes `promote-preview.test.ts`.
+- Combined tree: `unset VERCEL_ENV` + KV unset, `npm test` **524 / 0**, `npx tsc --noEmit` pass, `npm run lint` pass.
+- Preview extras FIND: E=1978, MB **6988** (stop 8901), **4 extra recordings / 7 unique links**, 5/5 audited, 0 traps. Maps still **389 / 75 / 101 / 288** (FIND wrote false). Those 7 links are not on prod Redis until a later extras apply of 875352 / 2679499 / 12563641.
+
+COMPLETED (2026-10-12 — preview-only extras FIND on #68, head `d6111a4`):
+- Integrations PASS: dropped stored-pick dest-release exemption; worst extras cost 12; known 5s on every extras path. Local `npm test` 481/0, tsc/lint pass.
+- Measure E = **1978**. Estimate 5934, plan 23736, stop 8901. Walked all 1978 eligible. **MB requests 6988** (1.18× estimate, under 1.5×). Prefix `lf:preview:`. Lock released. `wrote` false. No prod writes.
+- New extras: **5 dest tracks / 4 extra recordings / 7 unique links** (6 sample_of, 1 sampled_by). All 5 audited pass. 0 fail. 0 exemptions. 0 #67 traps.
+- Audited extras: 875352 A1/A2 3 Card Molly Clean/LP → `0fe643ce` (3 sample_of, 3.7s); 2679499 A3 Luv Me, Luv Me → `dd326523` (Impeach the President, 1.5s); 12563641 2 Rock That Body → `5663941d` (It Takes Two + Think About It, 0.1s); 12563641 3 Meet Me Halfway → `72efde9b` (sampled by Turrastory, 0.4s). If applied, preview maps would be **396 / 77 / 107 / 289** vs prod 323.
+
 COMPLETED (2026-10-12 — promote --apply of audited sidecars onto prod lf:):
 - Pre-apply dry-run matched committed JSON: 33 keys, projected **323 / 73 / 98 / 225**, all `lf:` none `lf:preview:`. Prod + preview enrich locks free (TTL -2). No crate-backfill / MB walker running. Stale backfill status `running` is Oct 10 / Oct 8 leftovers, not a live writer.
 - `--apply --prod --run-id=promote-copy-20261012T161826Z --backup=/tmp/lf-secrets/crate-promote-backup-promote-copy-20261012T161826Z.json`. Single writer under `lf:crate:enrich:lock:v1`. `wrote: true`. Backup prefix `lf:`, 33 keys, every entry has post-apply `written` (33 strings); live GET matched `written` 33/33. Lock released after apply.
