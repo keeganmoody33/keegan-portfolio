@@ -2,6 +2,12 @@
 
 Updated: 2026-10-12
 
+## Brand name is always lowercase lecturesfrom (2026-10-12)
+
+- The site/brand name is `lecturesfrom`, never `Lecturesfrom`, `LecturesFrom`, or `Lectures From` in user-visible text, titles, OG/meta, JSON-LD, manifest, llms.txt, or alt text. `lecturesfrom LLC` is the footer/legal form already on the house pages.
+- Do not change code identifiers (`LecturesFromPortfolio` User-Agent), file paths, URLs, or CSS `text-transform: uppercase` on non-brand labels (`.house-meta`, footer nav, tally buttons). Those uppercase rules do not wrap the brand string today.
+- `lib/brand-casing.test.ts` scans shipped surfaces. Leave legal-entity `Lectures From` (source interviews, LLC certificate language) for Keegan — do not auto-rewrite those.
+
 ## Search extras for missed sampled recordings (2026-10-12)
 
 - Fire extras **only after annotate**, and only when near-top has 0 sampled hits **and a known unsampled match** (`hasSamples === false`). Unmatched / unknown-hasSamples tracks skip extras. Cold Redis-sampled first-search hits must not spend extras. Typical +3 (`EXTRAS_TYPICAL_REQUESTS_PER_TRACK`: second query + extra annotate slots). Worst +12 (`EXTRAS_WORST_REQUESTS_PER_TRACK`: second/ISRC/work each with extra annotate, plus 3 work-browse pages). FIND walk: measure E first, expect base+3E, plan base+12E, **stop at 1.5× estimate**. Stop extras as soon as any new hit has samples. The old ungated ~1,630 was playable×3 before the annotate-first gate, browse pagination, and annotate lookups; gated cost is `projectExtrasRequestCost`. Do not raise `TRACK_LEVEL_ANNOTATE_CAP` 3. Extra hits may take at most cap−1 annotate slots (`TRACK_LEVEL_EXTRAS_ANNOTATE_RESERVE` 1). Do not add `work-rels` to `getRecording` (`isrcs` only). Radio Edit extras must not keep Clubstar; extras must not keep a different-artist hit.

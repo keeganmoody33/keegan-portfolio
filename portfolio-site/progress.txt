@@ -1,3 +1,8 @@
+COMPLETED (2026-10-12 — lecturesfrom brand casing, preview only):
+- Keegan rule: brand is always lowercase `lecturesfrom`. Shipped metadata / titles / OG / JSON-LD / manifest / llms.txt / alt text were already lowercase. Changed leftover brand strings in house docs, `IMPLEMENTATION_PLAN.md`, `FRONTEND_GUIDELINES.md`, and the `LogoGlobe` comment. Left User-Agent identifiers (`LecturesFromPortfolio/1.0`, spec `LecturesFrom/1.0`).
+- Added `lib/brand-casing.test.ts` to `npm test`. Wordmark SVG test now also rejects `Lecturesfrom`.
+- CSS uppercase (`.house-meta`, `.house-text-button`, footer nav, tally toggles) does **not** wrap the brand; wordmark / footer `lecturesfrom LLC` have no capitalize. Do not merge.
+
 COMPLETED (2026-10-12 — merge #67 + #68 to go live):
 - Combined PR #67 (prod promote already applied: live **323 / 73 / 98 / 225**) and PR #68 (search extras). `destinationIsLive` is the KISS Alive! / Alive II list (Stayin' Alive / Alive 2007 stay studio). Promote dest-live uses that list, not `/\\balive\\b/`. `musicbrainz.ts` keeps extras search/browse **and** `getRecordingSampleRels`. `package.json` keeps `crate:promote-preview`, `crate:search-extras-measure`, `crate:search-extras-find`; `npm test` includes `promote-preview.test.ts`.
 - Combined tree: `unset VERCEL_ENV` + KV unset, `npm test` **524 / 0**, `npx tsc --noEmit` pass, `npm run lint` pass.
