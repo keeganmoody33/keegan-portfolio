@@ -5,13 +5,16 @@
  *   npm run crate:promote-preview -- --apply --backup=/tmp/lf-secrets/crate-promote-backup.json
  *   npm run crate:promote-preview -- --rollback /tmp/lf-secrets/crate-promote-backup.json
  *
- * Default is dry-run. --apply writes prod keys only after snapshotting them.
- * No MusicBrainz. No WhoSampled. Never a visitor path.
+ * Default is dry-run. --apply requires --backup=<path>, holds lf:crate:enrich:lock:v1,
+ * and plans after acquire. No WhoSampled. Never a visitor path.
  */
 import { resolveRedisRestConfig } from '../lib/redis-env.ts'
+import { createMusicBrainzClient } from '../lib/crate/musicbrainz.ts'
 import {
   assertPromotePrefixes,
+  createPromoteMbLookup,
   parsePromoteArgs,
+  PromoteApplyError,
   runPromotePreview,
   upstashPromoteRawStore,
   withPreviewNamespace,
@@ -33,17 +36,27 @@ if (!config) {
 const prod = createRedisCrateStore(config, prodEnv)
 const preview = createRedisCrateStore(config, previewEnv)
 const raw = await upstashPromoteRawStore(config)
+const mb = createMusicBrainzClient()
+const verifyRecording = createPromoteMbLookup(mb)
 
-const report = await runPromotePreview({
-  prod,
-  preview,
-  prodEnv,
-  previewEnv,
-  ids: args.ids,
-  apply: args.apply,
-  rollbackPath: args.rollbackPath,
-  backupPath: args.backupPath,
-  raw,
-})
-
-console.log(JSON.stringify(report, null, 2))
+try {
+  const report = await runPromotePreview({
+    prod,
+    preview,
+    prodEnv,
+    previewEnv,
+    ids: args.ids,
+    apply: args.apply,
+    rollbackPath: args.rollbackPath,
+    backupPath: args.backupPath,
+    raw,
+    verifyRecording,
+  })
+  console.log(JSON.stringify(report, null, 2))
+} catch (error) {
+  if (error instanceof PromoteApplyError) {
+    console.error(error.message)
+    console.error(error.rollbackCommand)
+  }
+  throw error
+}

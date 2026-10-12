@@ -716,6 +716,41 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
 
       return facts()
     },
+
+    /** One request. Samples-material rels + length only. No artist fill. */
+    async getRecordingSampleRels(mbid: string): Promise<{
+      mbid: string
+      title: string
+      lengthMs: number | null
+      samplesFrom: SampleLink[]
+      sampledIn: SampleLink[]
+    } | null> {
+      const params = new URLSearchParams({
+        inc: 'recording-rels+release-rels',
+        fmt: 'json',
+      })
+      const data = await getJson<MbRecordingDoc>(
+        `${MUSICBRAINZ_API}/recording/${mbid}?${params.toString()}`
+      )
+      if (!data.id) return null
+      const samplesFrom: SampleLink[] = []
+      const sampledIn: SampleLink[] = []
+      for (const rel of data.relations ?? []) {
+        if (!isSamplesMaterialRelation(rel)) continue
+        const link = sampleLinkFromRelation(rel)
+        if (!link) continue
+        const incoming = (rel.direction ?? '').toLowerCase() === 'backward'
+        if (incoming) sampledIn.push(link)
+        else samplesFrom.push(link)
+      }
+      return {
+        mbid: data.id,
+        title: data.title ?? '',
+        lengthMs: typeof data.length === 'number' ? data.length : null,
+        samplesFrom,
+        sampledIn,
+      }
+    },
   }
 }
 

@@ -1,6 +1,6 @@
 /**
  * One-off copy of audited preview crate sidecars onto prod for the 23 gap
- * records. No MusicBrainz. No WhoSampled. Default is dry-run.
+ * records. No WhoSampled. Default is dry-run.
  *
  * Preview recordings attach to a prod track only when they pass the same
  * artist / song / version / duration / complete checks the crate uses now:
@@ -8,10 +8,19 @@
  * takes unmarked only; marked track takes the same marker or falls back to
  * the unmarked original), duration within DURATION_SIDECAR_MS when both
  * lengths are known, and recordingIsCompleteSidecar.
+ *
+ * Copied sample links must be MusicBrainz recording/release URLs that match
+ * a samples-material rel on that source recording. Studio rels never attach
+ * to a live destination. --apply holds the enrich lock, plans after acquire,
+ * and requires --backup=<path>.
  */
 import { writeFileSync, readFileSync, mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
-import { recordingIsCompleteSidecar } from './enrich.ts'
+import {
+  createEnrichLockHeartbeat,
+  ENRICH_LOCK_SECONDS,
+  recordingIsCompleteSidecar,
+} from './enrich.ts'
 import { isPlayableOccurrence } from './lifecycle.ts'
 import {
   artistsMatch,
@@ -20,12 +29,14 @@ import {
   recordingHasSampleMaterial,
   searchVersionFit,
   songTitle,
+  titleIsLive,
   type SearchVersionFit,
 } from './match.ts'
 import { coalesceRecordingLengthMs } from './preserve.ts'
 import { isRecordingOrReleaseSampleLink, mergeSampleLinks } from './research.ts'
-import { crateRedisKeys, type CrateStore } from './store.ts'
+import { crateRedisKeys, selectEnrichLockToken, type CrateStore } from './store.ts'
 import type { SampleLink, StoredPressing, StoredRecording, TrackOccurrence } from './types.ts'
+import type { MusicBrainzClient } from './musicbrainz.ts'
 
 export const GAP_RELEASE_IDS = [
   106712, 266650, 378994, 451558, 550972, 903960, 1575060, 1679157, 1930841, 3018422,
@@ -39,6 +50,20 @@ export const JUICY_MBID = '181c0a32-6e3f-4680-8a7d-1daf0b42e43b'
 
 export const PROD_BAR = 360
 export const PREVIEW_BAR = 389
+
+/** Prior dry-run unknown-length copy rows to audit against MusicBrainz (≤10). */
+export const UNKNOWN_LENGTH_AUDIT_MBIDS = [
+  '33bcd7f3-41bc-4441-aa89-352c8a08c33a',
+  '3fcae502-4191-4b3f-abb7-c6ffb8e2abf1',
+  '9cb859c8-284d-4433-8a3a-6f083533e004',
+  '755ea925-c364-4e59-b21f-8d0f4f73f821',
+  '5bd8736d-1f1b-4666-8050-4cc03a128af5',
+  '47a16400-4e94-4a15-912d-b5a6b2f174ba',
+  '5461c08e-3b9d-4da0-96cd-ade17b241654',
+  '83c21345-afcf-44b0-b619-f0f7c5f9b2a1',
+  '13ef609a-ceb6-44c5-b1cd-6ed05b8948cf',
+  'efb9067c-431c-4cd1-8703-b2894a56b3c2',
+] as const
 
 const REMIX_LIVE_EDIT_TOKENS = ['remix', 'live', 'edit', 'radio', 'club'] as const
 
@@ -117,6 +142,33 @@ export type PromoteSkip = {
   reason: string
 }
 
+export type PromoteDroppedLink = {
+  releaseId: number
+  sourceMbid: string
+  sourceTitle: string
+  direction: 'sample_of' | 'sampled_by'
+  title: string
+  mbid: string
+  reason: string
+}
+
+export type PromoteLengthAudit = {
+  mbid: string
+  title: string
+  storedLengthMs: number | null
+  mbLengthMs: number | null
+  samplesFrom: number
+  sampledIn: number
+}
+
+export type PromoteVerifiedRels = {
+  lengthMs: number | null
+  samplesFrom: Set<string>
+  sampledIn: Set<string>
+}
+
+export type PromoteVerifyRecording = (mbid: string) => Promise<PromoteVerifiedRels | null>
+
 export type PromoteRecordRow = {
   releaseId: number
   title: string
@@ -144,6 +196,10 @@ export type PromoteReport = {
   records: PromoteRecordRow[]
   remixLiveEdit: PromoteAddedLink[]
   borderline: Array<{ releaseId: number; mbid: string; title: string; notes: string[] }>
+  droppedLinks: PromoteDroppedLink[]
+  lengthAudit: PromoteLengthAudit[]
+  lockHeld?: boolean
+  rollbackCommand?: string
   mtume: {
     releaseId: number
     inGapIds: boolean
@@ -200,7 +256,51 @@ export function parsePromoteArgs(argv: string[]): PromoteArgs {
   if (args.apply && args.rollbackPath) {
     throw new Error('pass --apply or --rollback, not both')
   }
+  if (args.apply && !args.backupPath) {
+    throw new Error('--apply requires --backup=<path>')
+  }
   return args
+}
+
+export function promoteRollbackCommand(backupPath: string): string {
+  return `npm run crate:promote-preview -- --rollback ${backupPath}`
+}
+
+export class PromoteApplyError extends Error {
+  readonly backupPath: string
+  readonly rollbackCommand: string
+
+  constructor(backupPath: string, cause: unknown) {
+    const detail = cause instanceof Error ? cause.message : String(cause)
+    super(`promote apply failed after snapshot (${detail}). backup=${backupPath}`)
+    this.name = 'PromoteApplyError'
+    this.backupPath = backupPath
+    this.rollbackCommand = promoteRollbackCommand(backupPath)
+  }
+}
+
+export function isPromoteMbSampleLink(link: SampleLink): boolean {
+  if (link.source !== 'musicbrainz') return false
+  if (!link.mbid) return false
+  if (!isRecordingOrReleaseSampleLink(link)) return false
+  return /musicbrainz\.org\/(?:recording|release)\//i.test(link.sourceUrl ?? '')
+}
+
+export function destinationIsLive(pressing: StoredPressing, tracks: TrackOccurrence[]): boolean {
+  if (titleIsLive(pressing.facts.title)) return true
+  return tracks.some((track) => titleIsLive(track.title))
+}
+
+function dedupeAddedLinks(links: PromoteAddedLink[]): PromoteAddedLink[] {
+  const seen = new Set<string>()
+  const out: PromoteAddedLink[] = []
+  for (const link of links) {
+    const key = `${link.direction}\u001f${link.mbid || link.sourceUrl}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(link)
+  }
+  return out
 }
 
 export function withProdNamespace(env: EnvMap = process.env): EnvMap {
@@ -234,6 +334,7 @@ export function isPromoteSidecarMatch(
   const discogsSong = songTitle(discogs.title)
   const hitSong = songTitle(hit.title)
   if (!discogsSong || discogsSong !== hitSong) return false
+  if (titleIsLive(discogs.title) && !titleIsLive(hit.title)) return false
   if (searchVersionFit(discogs.title, hit.title) === 'wrong') return false
   if (discogs.durationMs != null && hit.lengthMs != null) {
     if (Math.abs(discogs.durationMs - hit.lengthMs) > DURATION_SIDECAR_MS) return false
@@ -314,7 +415,7 @@ function addedSampleLinks(
 ): PromoteAddedLink[] {
   const have = recordingLinkIdentities(from)
   const added: PromoteAddedLink[] = []
-  for (const link of to.samplesFrom.filter(isRecordingOrReleaseSampleLink)) {
+  for (const link of to.samplesFrom.filter(isPromoteMbSampleLink)) {
     if (have.has(linkIdentity('sample_of', link))) continue
     added.push({
       source: 'sample-target',
@@ -326,7 +427,7 @@ function addedSampleLinks(
       versionFlags: versionFlags(link.title),
     })
   }
-  for (const link of to.sampledIn.filter(isRecordingOrReleaseSampleLink)) {
+  for (const link of to.sampledIn.filter(isPromoteMbSampleLink)) {
     if (have.has(linkIdentity('sampled_by', link))) continue
     added.push({
       source: 'sample-target',
@@ -338,7 +439,58 @@ function addedSampleLinks(
       versionFlags: versionFlags(link.title),
     })
   }
-  return added
+  return dedupeAddedLinks(added)
+}
+
+export function filterPreviewSampleLinks(
+  preview: StoredRecording,
+  verified: PromoteVerifiedRels | null | undefined,
+  requireVerified = false
+): { recording: StoredRecording; dropped: Array<Omit<PromoteDroppedLink, 'releaseId'>> } {
+  const dropped: Array<Omit<PromoteDroppedLink, 'releaseId'>> = []
+  const empty = new Set<string>()
+  const fromAllowed = requireVerified ? (verified?.samplesFrom ?? empty) : verified?.samplesFrom
+  const inAllowed = requireVerified ? (verified?.sampledIn ?? empty) : verified?.sampledIn
+  const keepFrom = (link: SampleLink, direction: 'sample_of' | 'sampled_by', allowed?: Set<string>) => {
+    if (!isPromoteMbSampleLink(link)) {
+      dropped.push({
+        sourceMbid: preview.mbid,
+        sourceTitle: preview.title,
+        direction,
+        title: link.title,
+        mbid: link.mbid,
+        reason: 'not musicbrainz samples rel',
+      })
+      return false
+    }
+    if (allowed && !allowed.has(link.mbid)) {
+      dropped.push({
+        sourceMbid: preview.mbid,
+        sourceTitle: preview.title,
+        direction,
+        title: link.title,
+        mbid: link.mbid,
+        reason: 'not on source recording',
+      })
+      return false
+    }
+    return true
+  }
+  const samplesFrom = mergeSampleLinks(
+    preview.samplesFrom.filter((link) => keepFrom(link, 'sample_of', fromAllowed))
+  )
+  const sampledIn = mergeSampleLinks(
+    preview.sampledIn.filter((link) => keepFrom(link, 'sampled_by', inAllowed))
+  )
+  return {
+    recording: {
+      ...preview,
+      samplesFrom,
+      sampledIn,
+      lengthMs: coalesceRecordingLengthMs(preview.lengthMs, verified?.lengthMs ?? null),
+    },
+    dropped,
+  }
 }
 
 function mergePromoteRecording(
@@ -359,6 +511,27 @@ function mergePromoteRecording(
     samplesFrom: mergeSampleLinks(prod.samplesFrom, preview.samplesFrom),
     sampledIn: mergeSampleLinks(prod.sampledIn, preview.sampledIn),
     lengthMs: coalesceRecordingLengthMs(prod.lengthMs, preview.lengthMs),
+  }
+}
+
+export function createPromoteMbLookup(
+  mb: Pick<MusicBrainzClient, 'getRecordingSampleRels'>,
+  cache = new Map<string, PromoteVerifiedRels | null>()
+): PromoteVerifyRecording {
+  return async (mbid: string) => {
+    if (cache.has(mbid)) return cache.get(mbid) ?? null
+    const facts = await mb.getRecordingSampleRels(mbid)
+    if (!facts) {
+      cache.set(mbid, null)
+      return null
+    }
+    const verified: PromoteVerifiedRels = {
+      lengthMs: facts.lengthMs,
+      samplesFrom: new Set(facts.samplesFrom.map((link) => link.mbid).filter(Boolean)),
+      sampledIn: new Set(facts.sampledIn.map((link) => link.mbid).filter(Boolean)),
+    }
+    cache.set(mbid, verified)
+    return verified
   }
 }
 
@@ -565,27 +738,29 @@ export function readPromoteSnapshotFile(path: string): PromoteSnapshot {
   return parsed
 }
 
-function defaultBackupPath(): string {
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-')
-  return `/tmp/lf-secrets/crate-promote-preview-${stamp}.json`
-}
-
 async function planCopies(options: {
   prod: CrateStore
   preview: CrateStore
   prodKeys: ReturnType<typeof crateRedisKeys>
   ids: number[]
+  verifyRecording?: PromoteVerifyRecording
+  pulse?: () => Promise<boolean | void>
 }): Promise<{
   records: PromoteRecordRow[]
   writes: PlannedWrite[]
   remixLiveEdit: PromoteAddedLink[]
   borderline: PromoteReport['borderline']
+  droppedLinks: PromoteDroppedLink[]
+  lengthAudit: PromoteLengthAudit[]
 }> {
   const { prod, preview, prodKeys, ids } = options
   const records: PromoteRecordRow[] = []
   const writes: PlannedWrite[] = []
   const remixLiveEdit: PromoteAddedLink[] = []
   const borderline: PromoteReport['borderline'] = []
+  const droppedLinks: PromoteDroppedLink[] = []
+  const lengthAudit: PromoteLengthAudit[] = []
+  const audited = new Set<string>()
   const recordingWriteMbids = new Set<string>()
 
   for (const releaseId of ids) {
@@ -630,12 +805,51 @@ async function planCopies(options: {
         skips.push({ releaseId, mbid, title: previewDoc.title, reason: 'no matching prod track' })
         continue
       }
-      const prodDoc = await loadRecording(prod, prodPressing.recordings[mbid], mbid)
+      const liveDest = destinationIsLive(prodPressing, matched) && !titleIsLive(previewDoc.title)
+      const prodDocEarly = await loadRecording(prod, prodPressing.recordings[mbid], mbid)
+      const tentative = filterPreviewSampleLinks(previewDoc, undefined, false).recording
+      const tentativeAdded = addedSampleLinks(prodPressing.recordings[mbid] ?? prodDocEarly, tentative)
+      const auditThis =
+        UNKNOWN_LENGTH_AUDIT_MBIDS.includes(mbid as (typeof UNKNOWN_LENGTH_AUDIT_MBIDS)[number]) &&
+        previewDoc.lengthMs == null
+      const needsVerify =
+        Boolean(options.verifyRecording) &&
+        (auditThis || (!liveDest && (tentativeAdded.length > 0 || (!alreadyOnMap && recordingHasSampleMaterial(tentative)))))
+      if (options.pulse && needsVerify) await options.pulse()
+      let verified: PromoteVerifiedRels | null | undefined
+      if (needsVerify && options.verifyRecording) {
+        verified = await options.verifyRecording(mbid)
+      }
+      if (needsVerify && previewDoc.lengthMs == null && !audited.has(mbid)) {
+        audited.add(mbid)
+        lengthAudit.push({
+          mbid,
+          title: previewDoc.title,
+          storedLengthMs: previewDoc.lengthMs ?? null,
+          mbLengthMs: verified?.lengthMs ?? null,
+          samplesFrom: verified?.samplesFrom.size ?? 0,
+          sampledIn: verified?.sampledIn.size ?? 0,
+        })
+      }
+      if (liveDest) {
+        skips.push({ releaseId, mbid, title: previewDoc.title, reason: 'studio recording on live dest' })
+        continue
+      }
+      const filtered = filterPreviewSampleLinks(
+        previewDoc,
+        verified,
+        Boolean(options.verifyRecording) && needsVerify
+      )
+      for (const drop of filtered.dropped) {
+        droppedLinks.push({ ...drop, releaseId })
+      }
+      const previewFiltered = filtered.recording
+      const prodDoc = prodDocEarly
       if (
         prodDoc &&
         recordingIsCompleteSidecar(prodDoc) &&
-        countRecordingLinks(prodDoc).links > countRecordingLinks(previewDoc).links &&
-        addedSampleLinks(prodDoc, previewDoc).length === 0 &&
+        countRecordingLinks(prodDoc).links > countRecordingLinks(previewFiltered).links &&
+        addedSampleLinks(prodDoc, previewFiltered).length === 0 &&
         alreadyOnMap
       ) {
         skips.push({
@@ -646,7 +860,7 @@ async function planCopies(options: {
         })
         continue
       }
-      const merged = mergePromoteRecording(prodDoc, previewDoc)
+      const merged = mergePromoteRecording(prodDoc, previewFiltered)
       const addedLinks = addedSampleLinks(prodPressing.recordings[mbid] ?? prodDoc, merged)
       const mapEntryChanged =
         !alreadyOnMap || JSON.stringify(nextRecordings[mbid] ?? null) !== JSON.stringify(merged)
@@ -675,7 +889,7 @@ async function planCopies(options: {
         matched[0] != null
           ? searchVersionFit(matched[0].title, previewDoc.title)
           : searchVersionFit(previewDoc.title, previewDoc.title)
-      const notes = copyBorderline(previewDoc, fit, matched)
+      const notes = copyBorderline(previewFiltered, fit, matched)
       copies.push({
         releaseId,
         mbid,
@@ -737,7 +951,66 @@ async function planCopies(options: {
     })
   }
 
-  return { records, writes, remixLiveEdit, borderline }
+  return {
+    records,
+    writes,
+    remixLiveEdit: dedupeAddedLinks(remixLiveEdit),
+    borderline,
+    droppedLinks,
+    lengthAudit,
+  }
+}
+
+function emptyPlanExtras(): Pick<PromoteReport, 'droppedLinks' | 'lengthAudit'> {
+  return { droppedLinks: [], lengthAudit: [] }
+}
+
+async function reportFromPlan(input: {
+  mode: PromoteMode
+  wrote: boolean
+  prodPrefix: string
+  previewPrefix: string
+  keys: string[]
+  backupPath?: string
+  restored?: string[]
+  currentProd: SampleTotals
+  currentPreview: SampleTotals
+  projectedProd: SampleTotals
+  planned: Awaited<ReturnType<typeof planCopies>>
+  ids: number[]
+  prodKeys: ReturnType<typeof crateRedisKeys>
+  prod: CrateStore
+  lockHeld?: boolean
+}): Promise<PromoteReport> {
+  const mtume = await juicyLinked(input.prod)
+  return {
+    mode: input.mode,
+    prodPrefix: input.prodPrefix,
+    previewPrefix: input.previewPrefix,
+    wrote: input.wrote,
+    keys: input.keys,
+    backupPath: input.backupPath,
+    restored: input.restored,
+    currentProd: input.currentProd,
+    currentPreview: input.currentPreview,
+    projectedProd: input.projectedProd,
+    vs360: input.projectedProd.links - PROD_BAR,
+    vs389: input.projectedProd.links - PREVIEW_BAR,
+    records: input.planned.records,
+    remixLiveEdit: input.planned.remixLiveEdit,
+    borderline: input.planned.borderline,
+    droppedLinks: input.planned.droppedLinks,
+    lengthAudit: input.planned.lengthAudit,
+    lockHeld: input.lockHeld,
+    rollbackCommand: input.backupPath ? promoteRollbackCommand(input.backupPath) : undefined,
+    mtume: {
+      releaseId: MTUME_RELEASE_ID,
+      inGapIds: input.ids.includes(MTUME_RELEASE_ID),
+      plannedPressingWrite: input.keys.includes(input.prodKeys.pressing(MTUME_RELEASE_ID)),
+      vocalMbid: MTUME_VOCAL_MBID,
+      ...mtume,
+    },
+  }
 }
 
 export async function runPromotePreview(options: {
@@ -750,6 +1023,7 @@ export async function runPromotePreview(options: {
   rollbackPath?: string
   backupPath?: string
   raw?: PromoteRawStore
+  verifyRecording?: PromoteVerifyRecording
 }): Promise<PromoteReport> {
   const { prodPrefix, previewPrefix } = assertPromotePrefixes(options.prodEnv, options.previewEnv)
   const prodKeys = crateRedisKeys(options.prodEnv)
@@ -781,6 +1055,8 @@ export async function runPromotePreview(options: {
       records: [],
       remixLiveEdit: [],
       borderline: [],
+      ...emptyPlanExtras(),
+      rollbackCommand: promoteRollbackCommand(options.rollbackPath),
       mtume: {
         releaseId: MTUME_RELEASE_ID,
         inGapIds: ids.includes(MTUME_RELEASE_ID),
@@ -791,88 +1067,100 @@ export async function runPromotePreview(options: {
     }
   }
 
-  const planned = await planCopies({
+  const planOpts = {
     prod: options.prod,
     preview: options.preview,
     prodKeys,
     ids,
-  })
-  const keys = [...new Set(planned.writes.map((write) => write.key))].sort()
-  const currentProd = await totalsFor(options.prod, ids, options.raw, prodPrefix)
-  const currentPreview = await totalsFor(options.preview, ids, options.raw, previewPrefix)
-  const gapCurrent = sumTotals(planned.records.map((row) => row.currentProd))
-  const gapProjected = sumTotals(planned.records.map((row) => row.projectedProd))
-  const projectedProd: SampleTotals = {
-    links: currentProd.links - gapCurrent.links + gapProjected.links,
-    records: currentProd.records - gapCurrent.records + gapProjected.records,
-    sampleOf: currentProd.sampleOf - gapCurrent.sampleOf + gapProjected.sampleOf,
-    sampledBy: currentProd.sampledBy - gapCurrent.sampledBy + gapProjected.sampledBy,
+    verifyRecording: options.verifyRecording,
   }
-  const mtume = await juicyLinked(options.prod)
-  const plannedPressingWrite = keys.includes(prodKeys.pressing(MTUME_RELEASE_ID))
 
   if (!options.apply) {
-    return {
+    const planned = await planCopies(planOpts)
+    const keys = [...new Set(planned.writes.map((write) => write.key))].sort()
+    const currentProd = await totalsFor(options.prod, ids, options.raw, prodPrefix)
+    const currentPreview = await totalsFor(options.preview, ids, options.raw, previewPrefix)
+    const gapCurrent = sumTotals(planned.records.map((row) => row.currentProd))
+    const gapProjected = sumTotals(planned.records.map((row) => row.projectedProd))
+    const projectedProd: SampleTotals = {
+      links: currentProd.links - gapCurrent.links + gapProjected.links,
+      records: currentProd.records - gapCurrent.records + gapProjected.records,
+      sampleOf: currentProd.sampleOf - gapCurrent.sampleOf + gapProjected.sampleOf,
+      sampledBy: currentProd.sampledBy - gapCurrent.sampledBy + gapProjected.sampledBy,
+    }
+    return reportFromPlan({
       mode: 'dry-run',
+      wrote: false,
       prodPrefix,
       previewPrefix,
-      wrote: false,
       keys,
       currentProd,
       currentPreview,
       projectedProd,
-      vs360: projectedProd.links - PROD_BAR,
-      vs389: projectedProd.links - PREVIEW_BAR,
-      records: planned.records,
-      remixLiveEdit: planned.remixLiveEdit,
-      borderline: planned.borderline,
-      mtume: {
-        releaseId: MTUME_RELEASE_ID,
-        inGapIds: ids.includes(MTUME_RELEASE_ID),
-        plannedPressingWrite,
-        vocalMbid: MTUME_VOCAL_MBID,
-        ...mtume,
-      },
-    }
+      planned,
+      ids,
+      prodKeys,
+      prod: options.prod,
+    })
   }
 
+  if (!options.backupPath) throw new Error('--apply requires --backup=<path>')
   if (!options.raw) throw new Error('--apply needs a raw store for the backup snapshot')
-  const backupPath = options.backupPath ?? defaultBackupPath()
-  const snapshot = await snapshotPromoteKeys(options.raw, keys, prodPrefix)
-  writePromoteSnapshotFile(backupPath, snapshot)
-  for (const write of planned.writes) {
-    if (write.kind === 'recording' && write.recording) {
-      await options.raw.setRaw(write.key, JSON.stringify(write.recording))
+  const backupPath = options.backupPath
+  const token = selectEnrichLockToken()
+  const held = await options.prod.acquireEnrichLock(ENRICH_LOCK_SECONDS, token)
+  if (!held) throw new Error('enrich lock held (lf:crate:enrich:lock:v1)')
+  const heartbeat = createEnrichLockHeartbeat(
+    options.prod,
+    token,
+    ENRICH_LOCK_SECONDS,
+    () => Date.now()
+  )
+  try {
+    await heartbeat()
+    const planned = await planCopies({ ...planOpts, pulse: heartbeat })
+    const keys = [...new Set(planned.writes.map((write) => write.key))].sort()
+    const currentProd = await totalsFor(options.prod, ids, options.raw, prodPrefix)
+    const currentPreview = await totalsFor(options.preview, ids, options.raw, previewPrefix)
+    const snapshot = await snapshotPromoteKeys(options.raw, keys, prodPrefix)
+    writePromoteSnapshotFile(backupPath, snapshot)
+    try {
+      await heartbeat()
+      for (const write of planned.writes) {
+        if (write.kind === 'recording' && write.recording) {
+          await options.raw.setRaw(write.key, JSON.stringify(write.recording))
+        }
+      }
+      for (const write of planned.writes) {
+        if (write.kind === 'pressing' && write.pressing) {
+          await options.raw.setRaw(write.key, JSON.stringify(write.pressing))
+        }
+      }
+    } catch (error) {
+      const applyError = new PromoteApplyError(backupPath, error)
+      console.error(applyError.message)
+      console.error(applyError.rollbackCommand)
+      throw applyError
     }
-  }
-  for (const write of planned.writes) {
-    if (write.kind === 'pressing' && write.pressing) {
-      await options.raw.setRaw(write.key, JSON.stringify(write.pressing))
-    }
-  }
-  const afterProd = await totalsFor(options.prod, ids, options.raw, prodPrefix)
-  return {
-    mode: 'apply',
-    prodPrefix,
-    previewPrefix,
-    wrote: true,
-    keys,
-    backupPath,
-    currentProd,
-    currentPreview,
-    projectedProd: afterProd,
-    vs360: afterProd.links - PROD_BAR,
-    vs389: afterProd.links - PREVIEW_BAR,
-    records: planned.records,
-    remixLiveEdit: planned.remixLiveEdit,
-    borderline: planned.borderline,
-    mtume: {
-      releaseId: MTUME_RELEASE_ID,
-      inGapIds: ids.includes(MTUME_RELEASE_ID),
-      plannedPressingWrite,
-      vocalMbid: MTUME_VOCAL_MBID,
-      ...(await juicyLinked(options.prod)),
-    },
+    const afterProd = await totalsFor(options.prod, ids, options.raw, prodPrefix)
+    return reportFromPlan({
+      mode: 'apply',
+      wrote: true,
+      prodPrefix,
+      previewPrefix,
+      keys,
+      backupPath,
+      currentProd,
+      currentPreview,
+      projectedProd: afterProd,
+      planned,
+      ids,
+      prodKeys,
+      prod: options.prod,
+      lockHeld: true,
+    })
+  } finally {
+    await options.prod.releaseEnrichLock(token)
   }
 }
 

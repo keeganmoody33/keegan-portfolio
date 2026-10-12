@@ -40,6 +40,12 @@ const SEARCH_VERSION_TOKENS = new Set<string>([
 
 export type SearchVersionFit = 'aligned' | 'unmarked_fallback' | 'wrong'
 
+/** Mix-marker live, or an album/track titled Alive / Alive!. */
+export function titleIsLive(title: string): boolean {
+  if (tokensFrom(title, SEARCH_VERSION_TOKENS).has('live')) return true
+  return /\balive\b/.test(normalizeTitle(title))
+}
+
 export function searchVersionFit(discogsTitle: string, hitTitle: string): SearchVersionFit {
   const want = tokensFrom(discogsTitle, SEARCH_VERSION_TOKENS)
   const got = tokensFrom(hitTitle, SEARCH_VERSION_TOKENS)

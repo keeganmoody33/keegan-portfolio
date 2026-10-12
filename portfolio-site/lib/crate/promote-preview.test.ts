@@ -13,11 +13,15 @@ import {
   GAP_RELEASE_IDS,
   JUICY_MBID,
   MTUME_VOCAL_MBID,
+  UNKNOWN_LENGTH_AUDIT_MBIDS,
+  PromoteApplyError,
   assertPromotePrefixes,
   countPressingMapLinks,
+  filterPreviewSampleLinks,
   isPromoteSidecarMatch,
   memoryPromoteRawStore,
   parsePromoteArgs,
+  promoteRollbackCommand,
   runPromotePreview,
   withPreviewNamespace,
   withProdNamespace,
@@ -123,8 +127,10 @@ function pressingOf(
 describe('promote-preview args and prefixes', () => {
   it('defaults to dry-run and parses --apply / --rollback / --backup', () => {
     assert.deepEqual(parsePromoteArgs([]), { apply: false })
-    assert.equal(parsePromoteArgs(['--apply']).apply, true)
+    assert.equal(parsePromoteArgs(['--apply', '--backup=/tmp/x.json']).apply, true)
+    assert.equal(parsePromoteArgs(['--apply', '--backup=/tmp/x.json']).backupPath, '/tmp/x.json')
     assert.equal(parsePromoteArgs(['--rollback', '/tmp/backup.json']).rollbackPath, '/tmp/backup.json')
+    assert.throws(() => parsePromoteArgs(['--apply']))
     assert.throws(() => parsePromoteArgs(['--apply', '--rollback', 'x.json']))
   })
 
@@ -140,6 +146,11 @@ describe('promote-preview args and prefixes', () => {
     assert.equal(GAP_RELEASE_IDS.length, 23)
     assert.equal(new Set(GAP_RELEASE_IDS).size, 23)
     assert.equal(GAP_RELEASE_IDS.includes(567894), false)
+  })
+
+  it('audits ten unknown-length recording MBIDs', () => {
+    assert.equal(UNKNOWN_LENGTH_AUDIT_MBIDS.length, 10)
+    assert.equal(new Set(UNKNOWN_LENGTH_AUDIT_MBIDS).size, 10)
   })
 
   it('uses the live Redis Mtume vocal and Juicy recording MBIDs', () => {
@@ -187,6 +198,13 @@ describe('promote sidecar match (version + duration)', () => {
         artist: 'DJ Casper',
         lengthMs: 200000,
       }),
+      false
+    )
+    assert.equal(
+      isPromoteSidecarMatch(
+        { artist: 'Kiss', title: 'Hotter Than Hell (Live)', durationMs: 180000 },
+        { title: 'Hotter Than Hell', artist: 'Kiss', lengthMs: 180000 }
+      ),
       false
     )
   })
@@ -397,6 +415,177 @@ describe('promote copy plan', () => {
     assert.equal(rolled.mode, 'rollback')
     assert.equal(JSON.stringify(prod.pressings[RELEASE_ID]), beforePressing)
     assert.equal(JSON.stringify(prod.recordings), beforeRecordings)
+  })
+
+  it('drops sample links that are not on the source recording', async () => {
+    const hotter = completeRecording({
+      mbid: '33bcd7f3-hth',
+      title: 'Hotter Than Hell',
+      sampledIn: [
+        sampleLink('Passion (radio edit)', 'passion-radio'),
+        sampleLink('The Hit', 'hit-1'),
+      ],
+    })
+    const prod = createMemoryCrateStore({
+      pressings: {
+        [RELEASE_ID]: pressingOf({}, [{ position: 'B4', title: 'Hotter Than Hell', durationMs: 180000 }]),
+      },
+      seen: [RELEASE_ID],
+    })
+    const preview = createMemoryCrateStore({
+      pressings: {
+        [RELEASE_ID]: pressingOf({ [hotter.mbid]: hotter }, [
+          { position: 'B4', title: 'Hotter Than Hell', durationMs: 180000, mbid: hotter.mbid },
+        ]),
+      },
+      recordings: { [hotter.mbid]: hotter },
+      seen: [RELEASE_ID],
+    })
+    const report = await runPromotePreview({
+      prod,
+      preview,
+      prodEnv: PROD_ENV,
+      previewEnv: PREVIEW_ENV,
+      ids: [RELEASE_ID],
+      verifyRecording: async () => ({
+        lengthMs: 180000,
+        samplesFrom: new Set(),
+        sampledIn: new Set(['hit-1']),
+      }),
+    })
+    const added = report.records[0]?.copies.flatMap((copy) => copy.addedLinks) ?? []
+    assert.equal(added.some((link) => link.mbid === 'passion-radio'), false)
+    assert.equal(added.some((link) => link.mbid === 'hit-1'), true)
+    assert.equal(report.droppedLinks.some((drop) => drop.mbid === 'passion-radio'), true)
+  })
+
+  it('does not map a studio recording onto a live destination', async () => {
+    const studio = completeRecording({ mbid: 'studio-hth', title: 'Hotter Than Hell' })
+    const liveId = 3221873
+    const prod = createMemoryCrateStore({
+      pressings: {
+        [liveId]: pressingOf(
+          {},
+          [{ position: 'A1', title: 'Hotter Than Hell', durationMs: 180000 }],
+          liveId
+        ),
+      },
+      seen: [liveId],
+    })
+    prod.pressings[liveId]!.facts.title = 'Alive!'
+    prod.pressings[liveId]!.facts.artist = 'Kiss'
+    const preview = createMemoryCrateStore({
+      pressings: {
+        [liveId]: pressingOf(
+          { [studio.mbid]: studio },
+          [{ position: 'A1', title: 'Hotter Than Hell', durationMs: 180000, mbid: studio.mbid }],
+          liveId
+        ),
+      },
+      recordings: { [studio.mbid]: studio },
+      seen: [liveId],
+    })
+    preview.pressings[liveId]!.facts.title = 'Alive!'
+    const report = await runPromotePreview({
+      prod,
+      preview,
+      prodEnv: PROD_ENV,
+      previewEnv: PREVIEW_ENV,
+      ids: [liveId],
+    })
+    assert.equal(report.keys.length, 0)
+    assert.equal(report.records[0]?.skips[0]?.reason, 'studio recording on live dest')
+  })
+
+  it('dedupes sample links by mbid', () => {
+    const recording = completeRecording({
+      mbid: 'dup-src',
+      title: 'Strutter',
+      sampledIn: [sampleLink('The Hit', 'hit-1'), sampleLink('The Hit again', 'hit-1')],
+    })
+    const filtered = filterPreviewSampleLinks(recording, undefined, false)
+    assert.equal(filtered.recording.sampledIn.length, 1)
+  })
+
+  it('apply refuses when the enrich lock is held', async () => {
+    const sampled = completeRecording({ mbid: 'lock-copy', title: 'Strutter' })
+    const prod = createMemoryCrateStore({
+      pressings: {
+        [RELEASE_ID]: pressingOf({}, [{ position: 'A1', title: 'Strutter', durationMs: 180000 }]),
+      },
+      seen: [RELEASE_ID],
+    })
+    const preview = createMemoryCrateStore({
+      pressings: {
+        [RELEASE_ID]: pressingOf({ [sampled.mbid]: sampled }, [
+          { position: 'A1', title: 'Strutter', durationMs: 180000, mbid: sampled.mbid },
+        ]),
+      },
+      recordings: { [sampled.mbid]: sampled },
+      seen: [RELEASE_ID],
+    })
+    assert.equal(await prod.acquireEnrichLock(90, 'intruder'), true)
+    await assert.rejects(
+      () =>
+        runPromotePreview({
+          prod,
+          preview,
+          prodEnv: PROD_ENV,
+          previewEnv: PREVIEW_ENV,
+          ids: [RELEASE_ID],
+          apply: true,
+          backupPath: join(mkdtempSync(join(tmpdir(), 'crate-promote-')), 'backup.json'),
+          raw: memoryPromoteRawStore(prod, PROD_ENV),
+        }),
+      /enrich lock held/
+    )
+    assert.equal(prod.pressings[RELEASE_ID]?.recordings[sampled.mbid], undefined)
+  })
+
+  it('prints backup path and rollback command when a SET fails', async () => {
+    const sampled = completeRecording({ mbid: 'fail-copy', title: 'Strutter' })
+    const prod = createMemoryCrateStore({
+      pressings: {
+        [RELEASE_ID]: pressingOf({}, [{ position: 'A1', title: 'Strutter', durationMs: 180000 }]),
+      },
+      seen: [RELEASE_ID],
+    })
+    const preview = createMemoryCrateStore({
+      pressings: {
+        [RELEASE_ID]: pressingOf({ [sampled.mbid]: sampled }, [
+          { position: 'A1', title: 'Strutter', durationMs: 180000, mbid: sampled.mbid },
+        ]),
+      },
+      recordings: { [sampled.mbid]: sampled },
+      seen: [RELEASE_ID],
+    })
+    const backupPath = join(mkdtempSync(join(tmpdir(), 'crate-promote-')), 'backup.json')
+    const raw = memoryPromoteRawStore(prod, PROD_ENV)
+    const inner = raw.setRaw.bind(raw)
+    raw.setRaw = async (key, value) => {
+      if (key.includes('crate:recording:')) throw new Error('boom')
+      return inner(key, value)
+    }
+    await assert.rejects(
+      () =>
+        runPromotePreview({
+          prod,
+          preview,
+          prodEnv: PROD_ENV,
+          previewEnv: PREVIEW_ENV,
+          ids: [RELEASE_ID],
+          apply: true,
+          backupPath,
+          raw,
+        }),
+      (error: unknown) => {
+        assert.equal(error instanceof PromoteApplyError, true)
+        const applyError = error as PromoteApplyError
+        assert.equal(applyError.backupPath, backupPath)
+        assert.equal(applyError.rollbackCommand, promoteRollbackCommand(backupPath))
+        return true
+      }
+    )
   })
 })
 
