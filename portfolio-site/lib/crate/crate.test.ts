@@ -663,6 +663,7 @@ describe('duration and title helpers', () => {
     assert.equal(titleIsLive('Hotter Than Hell (live)'), true)
     assert.equal(titleIsLive('live, 1975'), true)
     assert.equal(titleIsLive('Alive!'), false)
+    assert.equal(titleIsLive('alive'), false)
     assert.equal(titleIsLive('KISS Alive! 1975–2000'), false)
     assert.equal(titleIsLive('Hotter Than Hell'), false)
     assert.equal(promoteVersionContradicts('Bourgié Bourgié (instrumental)', 'Bourgié, Bourgié'), true)

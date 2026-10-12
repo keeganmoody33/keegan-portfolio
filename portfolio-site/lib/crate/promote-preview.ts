@@ -18,7 +18,7 @@
  * dumps (equivalent). The backup stores post-apply written values; rollback
  * CAS-compares those and refuses on mismatch. Rollback refuses DEL of a
  * non-string type with a null dump. A remix with no rels does not license
- * another version's rels (duration >5s or vocal vs instrumental).
+ * another version's rels (duration >15s or vocal vs instrumental).
  * getRecordingSampleRels shares the 1.1s getJson limiter on one client.
  */
 import { writeFileSync, readFileSync, mkdirSync } from 'node:fs'
@@ -32,6 +32,7 @@ import { parsePositiveId } from './ids.ts'
 import { isPlayableOccurrence } from './lifecycle.ts'
 import {
   artistsMatch,
+  DURATION_FAR_MS,
   DURATION_SIDECAR_MS,
   hitFromStoredRecording,
   recordingHasSampleMaterial,
@@ -1125,6 +1126,20 @@ function samePromotePerformance(
   return true
 }
 
+/** Mapped empty remix/other-version does not license this recording's rels. */
+function mappedDifferentVersion(
+  preview: { title: string; lengthMs?: number | null },
+  host: { title: string; lengthMs?: number | null }
+): boolean {
+  if (promoteVersionContradicts(preview.title, host.title)) return true
+  const previewLength = preview.lengthMs ?? null
+  const hostLength = host.lengthMs ?? null
+  if (previewLength != null && hostLength != null) {
+    return Math.abs(previewLength - hostLength) > DURATION_FAR_MS
+  }
+  return false
+}
+
 export function memoryPromoteRawStore(
   store: {
     pressings: Record<number, StoredPressing>
@@ -1461,8 +1476,8 @@ async function planCopies(options: {
       const mappedSameSongWithSamples = mappedSameSong.filter((doc) =>
         recordingHasSampleMaterial(doc)
       )
-      const mappedIncompatible = mappedSameSong.filter(
-        (doc) => !samePromotePerformance(previewForMatch, doc)
+      const mappedIncompatible = mappedSameSong.filter((doc) =>
+        mappedDifferentVersion(previewForMatch, doc)
       )
       const destReleaseMismatch =
         Boolean(verified) &&

@@ -1234,6 +1234,158 @@ describe('Integrations: live/studio pairing and dest-release', () => {
     )
     assert.equal(report.records[0]?.copies.some((copy) => copy.mbid === sampledSidecar), true)
   })
+
+  it('copies an unmarked sampled sidecar when the mapped remix is empty and within 15s', async () => {
+    const remixPick = '241383d7-269f-4c16-a1cc-4c0031ae97c3'
+    const unmarkedSidecar = '5bd8736d-1f1b-4666-8050-4cc03a128af5'
+    const remix = completeRecording({
+      mbid: remixPick,
+      title: 'Scenario (remix)',
+      artist: 'A Tribe Called Quest',
+      lengthMs: 255000,
+      samplesFrom: [],
+      sampledIn: [],
+    })
+    const sidecar = completeRecording({
+      mbid: unmarkedSidecar,
+      title: 'Scenario',
+      artist: 'A Tribe Called Quest',
+      lengthMs: 255000,
+      sampledIn: [sampleLink('Act Like You Know', 'act-like-you-know')],
+    })
+    const prodPressing = pressingOf(
+      { [remix.mbid]: remix },
+      [{ position: 'B2', title: 'Scenario (Remix)', durationMs: 255000, mbid: remix.mbid }],
+      14851267
+    )
+    prodPressing.facts.title = 'The Love Movement'
+    prodPressing.facts.artist = 'A Tribe Called Quest'
+    const previewPressing = pressingOf(
+      { [remix.mbid]: remix, [sidecar.mbid]: sidecar },
+      [{ position: 'B2', title: 'Scenario (Remix)', durationMs: 255000, mbid: remix.mbid }],
+      14851267
+    )
+    previewPressing.facts.title = 'The Love Movement'
+    previewPressing.facts.artist = 'A Tribe Called Quest'
+    const prod = createMemoryCrateStore({
+      pressings: { [14851267]: prodPressing },
+      recordings: { [remix.mbid]: remix },
+      seen: [14851267],
+    })
+    const preview = createMemoryCrateStore({
+      pressings: { [14851267]: previewPressing },
+      recordings: { [remix.mbid]: remix, [sidecar.mbid]: sidecar },
+      seen: [14851267],
+    })
+    const report = await runPromotePreview({
+      prod,
+      preview,
+      prodEnv: PROD_ENV,
+      previewEnv: PREVIEW_ENV,
+      ids: [14851267],
+      verifyRecording: async (mbid) => {
+        if (mbid === unmarkedSidecar) {
+          return {
+            lengthMs: 255000,
+            samplesFrom: new Set(),
+            sampledIn: new Set(['act-like-you-know']),
+            live: false,
+            releaseTitles: ['The Low End Theory'],
+          }
+        }
+        return {
+          lengthMs: 255000,
+          samplesFrom: new Set(),
+          sampledIn: new Set(),
+          live: false,
+          releaseTitles: ['The Love Movement'],
+        }
+      },
+    })
+    assert.equal(
+      report.records[0]?.skips.some(
+        (skip) => skip.mbid === unmarkedSidecar && skip.reason === 'recording not on dest release'
+      ),
+      false
+    )
+    assert.equal(report.records[0]?.copies.some((copy) => copy.mbid === unmarkedSidecar), true)
+  })
+
+  it('copies a same-title sidecar 8s off an empty mapped pick (Intro)', async () => {
+    const emptyPick = '116ded73-4268-4ac3-ac2d-801bebc52a94'
+    const sampledSidecar = '47a16400-4e94-4a15-912d-b5a6b2f174ba'
+    const pick = completeRecording({
+      mbid: emptyPick,
+      title: 'Intro',
+      artist: 'De La Soul',
+      lengthMs: 60000,
+      samplesFrom: [],
+      sampledIn: [],
+    })
+    const sidecar = completeRecording({
+      mbid: sampledSidecar,
+      title: 'Intro',
+      artist: 'De La Soul',
+      lengthMs: 52520,
+      sampledIn: [sampleLink('Deep Gully', 'deep-gully')],
+    })
+    const prodPressing = pressingOf(
+      { [pick.mbid]: pick },
+      [{ position: 'A1', title: 'Intro', durationMs: 52520, mbid: pick.mbid }],
+      106712
+    )
+    prodPressing.facts.title = 'AOI: Bionix'
+    prodPressing.facts.artist = 'De La Soul'
+    const previewPressing = pressingOf(
+      { [pick.mbid]: pick, [sidecar.mbid]: sidecar },
+      [{ position: 'A1', title: 'Intro', durationMs: 52520, mbid: pick.mbid }],
+      106712
+    )
+    previewPressing.facts.title = 'AOI: Bionix'
+    previewPressing.facts.artist = 'De La Soul'
+    const prod = createMemoryCrateStore({
+      pressings: { [106712]: prodPressing },
+      recordings: { [pick.mbid]: pick },
+      seen: [106712],
+    })
+    const preview = createMemoryCrateStore({
+      pressings: { [106712]: previewPressing },
+      recordings: { [pick.mbid]: pick, [sidecar.mbid]: sidecar },
+      seen: [106712],
+    })
+    const report = await runPromotePreview({
+      prod,
+      preview,
+      prodEnv: PROD_ENV,
+      previewEnv: PREVIEW_ENV,
+      ids: [106712],
+      verifyRecording: async (mbid) => {
+        if (mbid === sampledSidecar) {
+          return {
+            lengthMs: 52520,
+            samplesFrom: new Set(),
+            sampledIn: new Set(['deep-gully']),
+            live: false,
+            releaseTitles: ['AOI: Bionix (instrumental)'],
+          }
+        }
+        return {
+          lengthMs: 60000,
+          samplesFrom: new Set(),
+          sampledIn: new Set(),
+          live: false,
+          releaseTitles: ['AOI: Bionix'],
+        }
+      },
+    })
+    assert.equal(
+      report.records[0]?.skips.some(
+        (skip) => skip.mbid === sampledSidecar && skip.reason === 'recording not on dest release'
+      ),
+      false
+    )
+    assert.equal(report.records[0]?.copies.some((copy) => copy.mbid === sampledSidecar), true)
+  })
 })
 
 describe('QA fold: WATCH CAS, rollback refuse, multi errors, recall', () => {
