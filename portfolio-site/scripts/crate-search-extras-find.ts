@@ -125,20 +125,6 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-async function withMbRetry<T>(fn: () => Promise<T>): Promise<T> {
-  for (let attempt = 0; attempt < 8; attempt += 1) {
-    try {
-      return await fn()
-    } catch (error) {
-      if (error instanceof BudgetExceededError) throw error
-      if (!isMusicBrainzRateLimitError(error) || attempt === 7) throw error
-      const wait = Math.min(Math.max(error.retryAfterMs, 1000), MUSICBRAINZ_RETRY_AFTER_CAP_MS)
-      await sleep(wait)
-    }
-  }
-  throw new Error('MusicBrainz rate limited after retries')
-}
-
 function linkKey(direction: 'sample_of' | 'sampled_by', link: SampleLink): string {
   return `${direction}:${link.mbid || link.sourceUrl}`
 }
@@ -304,11 +290,41 @@ if (!locked) {
 }
 
 const heartbeat = createEnrichLockHeartbeat(store, token, ENRICH_LOCK_SECONDS, Date.now)
+
+async function pulseLock(): Promise<void> {
+  assertPreviewWriteKey(keys.enrichLock)
+  await heartbeat()
+}
+
+async function sleepWithHeartbeat(ms: number): Promise<void> {
+  const started = Date.now()
+  while (Date.now() - started < ms) {
+    await pulseLock()
+    const left = ms - (Date.now() - started)
+    if (left <= 0) break
+    await sleep(Math.min(20_000, left))
+  }
+}
+
+async function withMbRetry<T>(fn: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    try {
+      return await fn()
+    } catch (error) {
+      if (error instanceof BudgetExceededError) throw error
+      if (!isMusicBrainzRateLimitError(error) || attempt === 7) throw error
+      const wait = Math.min(Math.max(error.retryAfterMs, 1000), MUSICBRAINZ_RETRY_AFTER_CAP_MS)
+      await sleepWithHeartbeat(wait)
+    }
+  }
+  throw new Error('MusicBrainz rate limited after retries')
+}
+
 const mb = createMusicBrainzClient({
   onRequest: async () => {
     if (mb.requestCount > stopAt) throw new BudgetExceededError(mb.requestCount, stopAt)
-    assertPreviewWriteKey(keys.enrichLock)
-    return heartbeat()
+    await pulseLock()
+    return true
   },
 })
 const extraProbeCap = Math.max(0, TRACK_LEVEL_ANNOTATE_CAP - TRACK_LEVEL_EXTRAS_ANNOTATE_RESERVE)
