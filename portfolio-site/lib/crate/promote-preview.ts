@@ -1392,7 +1392,7 @@ async function planCopies(options: {
         continue
       }
       const alreadyOnMap = Boolean(prodPressing.recordings[mbid])
-      let matched = matchingTracks(prodPressing, previewDoc)
+      const matched = matchingTracks(prodPressing, previewDoc)
       if (matched.length === 0) {
         skips.push({ releaseId, mbid, title: previewDoc.title, reason: 'no matching prod track' })
         continue
@@ -1452,7 +1452,6 @@ async function planCopies(options: {
       }
       const previewLength = coalesceRecordingLengthMs(previewDoc.lengthMs, verified?.lengthMs ?? null)
       const previewForMatch = { ...previewDoc, lengthMs: previewLength }
-      matched = matchingTracks(prodPressing, previewForMatch)
       const mappedSameSong = Object.values(nextRecordings).filter(
         (doc) =>
           doc.mbid !== previewDoc.mbid &&
@@ -1490,10 +1489,6 @@ async function planCopies(options: {
           })
           continue
         }
-      }
-      if (matched.length === 0 && !attachHost) {
-        skips.push({ releaseId, mbid, title: previewDoc.title, reason: 'no matching prod track' })
-        continue
       }
       const filtered = filterPreviewSampleLinks(
         previewDoc,
