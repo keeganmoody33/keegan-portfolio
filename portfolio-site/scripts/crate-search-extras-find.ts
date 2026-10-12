@@ -6,6 +6,7 @@
  *
  *   npm run crate:search-extras-find
  */
+import { appendFileSync, existsSync, readFileSync } from 'node:fs'
 import {
   ENRICH_LOCK_SECONDS,
   TRACK_LEVEL_ANNOTATE_CAP,
@@ -321,23 +322,25 @@ function spent(): number {
   return mb.requestCount + alreadySpent
 }
 
+function isRetryableMbError(error: unknown): boolean {
+  if (isMusicBrainzRateLimitError(error)) return true
+  if (isMusicBrainzTimeoutError(error)) return !error.deadlineExceeded
+  if (error instanceof TypeError && /fetch failed/i.test(error.message)) return true
+  if (error instanceof Error && error.message === 'MusicBrainz unavailable') return true
+  return false
+}
+
 async function withMbRetry<T>(fn: () => Promise<T>): Promise<T> {
   for (let attempt = 0; attempt < 8; attempt += 1) {
     try {
       return await fn()
     } catch (error) {
       if (error instanceof BudgetExceededError) throw error
-      if (attempt === 7) throw error
-      if (isMusicBrainzRateLimitError(error)) {
-        const wait = Math.min(Math.max(error.retryAfterMs, 1000), MUSICBRAINZ_RETRY_AFTER_CAP_MS)
-        await sleepWithHeartbeat(wait)
-        continue
-      }
-      if (isMusicBrainzTimeoutError(error) && !error.deadlineExceeded) {
-        await sleepWithHeartbeat(2000)
-        continue
-      }
-      throw error
+      if (!isRetryableMbError(error) || attempt === 7) throw error
+      const wait = isMusicBrainzRateLimitError(error)
+        ? Math.min(Math.max(error.retryAfterMs, 1000), MUSICBRAINZ_RETRY_AFTER_CAP_MS)
+        : 5000
+      await sleepWithHeartbeat(wait)
     }
   }
   throw new Error('MusicBrainz rate limited after retries')
@@ -352,14 +355,23 @@ const mb = createMusicBrainzClient({
   },
 })
 const extraProbeCap = Math.max(0, TRACK_LEVEL_ANNOTATE_CAP - TRACK_LEVEL_EXTRAS_ANNOTATE_RESERVE)
+const foundPath =
+  process.env.FIND_FOUND_JSONL?.trim() ||
+  '/opt/cursor/artifacts/crate-search-extras-find-found.jsonl'
 const found: FoundRow[] = []
+if (existsSync(foundPath)) {
+  for (const line of readFileSync(foundPath, 'utf8').split('\n')) {
+    if (!line.trim()) continue
+    found.push(JSON.parse(line) as FoundRow)
+  }
+}
 let eligibleVisited = 0
 let extrasSecond = envInt('FIND_EXTRAS_SECOND')
 let extrasIsrc = envInt('FIND_EXTRAS_ISRC')
 let extrasWork = envInt('FIND_EXTRAS_WORK')
 let stoppedOnError: string | null = null
 let stoppedOnBudget = false
-let lastFoundCount = 0
+let lastFoundCount = found.length
 
 function progress(note: string): void {
   console.error(
@@ -433,7 +445,9 @@ async function probeExtras(
       sampleOf: sampleRows(doc.samplesFrom),
       sampledBy: sampleRows(doc.sampledIn),
     }
-    found.push({ ...row, audit: auditRow(row, dest, discogs) })
+    const audited = { ...row, audit: auditRow(row, dest, discogs) }
+    found.push(audited)
+    appendFileSync(foundPath, `${JSON.stringify(audited)}\n`)
     return true
   }
   return false
@@ -516,9 +530,16 @@ try {
   progress('release')
 }
 
-const newLinks = found.reduce((sum, row) => sum + row.newLinks, 0)
-const newSampleOf = found.reduce((sum, row) => sum + row.newSampleOf, 0)
-const newSampledBy = found.reduce((sum, row) => sum + row.newSampledBy, 0)
+const uniqueExtra = new Map<string, FoundRow>()
+for (const row of found) uniqueExtra.set(row.extraMbid, row)
+const uniqueLinkKeys = new Set<string>()
+for (const row of uniqueExtra.values()) {
+  for (const link of row.sampleOf) uniqueLinkKeys.add(`sample_of:${link.mbid}`)
+  for (const link of row.sampledBy) uniqueLinkKeys.add(`sampled_by:${link.mbid}`)
+}
+const newLinks = uniqueLinkKeys.size
+const newSampleOf = [...uniqueLinkKeys].filter((key) => key.startsWith('sample_of:')).length
+const newSampledBy = [...uniqueLinkKeys].filter((key) => key.startsWith('sampled_by:')).length
 const auditedPass = found.filter((row) => row.audit.pass)
 const auditedFail = found.filter((row) => !row.audit.pass)
 const report = {
@@ -545,6 +566,7 @@ const report = {
   thisRunRequests: mb.requestCount,
   mbRequests: spent(),
   foundTracks: found.length,
+  uniqueExtraRecordings: uniqueExtra.size,
   newLinks,
   newSampleOf,
   newSampledBy,
