@@ -2869,6 +2869,22 @@ describe('independent lifecycles (direction change)', () => {
         requestCount += 1
         return mb.searchRecordingsByArtistTitle(input)
       },
+      async searchRecordingsByArtistNameTitle() {
+        requestCount += 1
+        return []
+      },
+      async searchRecordingsByIsrc() {
+        requestCount += 1
+        return []
+      },
+      async searchWorksByArtistTitle() {
+        requestCount += 1
+        return []
+      },
+      async browseRecordingsByWork() {
+        requestCount += 1
+        return []
+      },
       async getRelease(id) {
         releases += 1
         requestCount += 1
@@ -10956,8 +10972,8 @@ describe('search extras for missed sampled recordings', () => {
         score: 100,
       },
     ]
-    mb.searchWorksByArtistTitle = async () => {
-      works += 1
+    mb.searchWorksByArtistTitle = async (input) => {
+      if (/vocal/i.test(input.title)) works += 1
       return []
     }
     mb.getRecording = async (id) => ({

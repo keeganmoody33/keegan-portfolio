@@ -1147,10 +1147,6 @@ async function annotateTrackLevelHits(
     takeFloorMs,
     probeCache
   )
-  const remainingNow = () =>
-    deps.deadlineMs == null
-      ? Number.POSITIVE_INFINITY
-      : remainingBudgetMs(deps.deadlineMs, (deps.now ?? Date.now)())
   const prior = priorMbid ? annotated.find((hit) => hit.mbid === priorMbid) : undefined
   if (shouldSkipTrackLevelProbes(annotated, prior, Boolean(deps.forceRefresh))) {
     return annotated
@@ -1445,7 +1441,7 @@ async function applyTrackLevelSamples(
     )
     // Force ranking may only use hits that survived this-run filter. A raw
     // search MBID that failed version/duration must not re-enter via Redis recall.
-    let searchMbids = new Set(filtered.map((hit) => hit.mbid))
+    const searchMbids = new Set(filtered.map((hit) => hit.mbid))
     const priorMbid = sampledSidecarPriorMbid(savedMbid, sidecars, {
       forceRefresh: Boolean(deps.forceRefresh),
       searchMbids,
