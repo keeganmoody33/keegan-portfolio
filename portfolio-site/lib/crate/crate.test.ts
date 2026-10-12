@@ -10817,6 +10817,24 @@ describe('search extras for missed sampled recordings', () => {
     assert.equal(cap.length, TRACK_LEVEL_ANNOTATE_CAP)
     assert.equal(cap.filter((row) => row.extra).length, 2)
     assert.ok(cap.some((row) => row.mbid === 'base'))
+    const oneExtra = selectAnnotateProbeHits(
+      [hit('e1', true), hit('b1'), hit('b2'), hit('b3')],
+      TRACK_LEVEL_ANNOTATE_CAP
+    )
+    assert.deepEqual(
+      oneExtra.map((row) => row.mbid),
+      ['e1', 'b1']
+    )
+    const alreadyProbed = [
+      { ...hit('e1', true), hasSamples: null as boolean | null },
+      { ...hit('b1'), hasSamples: false },
+      { ...hit('b2'), hasSamples: null as boolean | null },
+      { ...hit('b3'), hasSamples: null as boolean | null },
+    ]
+    assert.deepEqual(
+      selectAnnotateProbeHits(alreadyProbed, TRACK_LEVEL_ANNOTATE_CAP).map((row) => row.mbid),
+      ['e1', 'b1']
+    )
   })
 
   it('mergeRecalledRecordingHits copies extra so a first-search miss is probed first', () => {

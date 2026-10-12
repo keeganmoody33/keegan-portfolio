@@ -1462,7 +1462,7 @@ async function applyTrackLevelSamples(
       .map((doc) => hitFromStoredRecording(doc, topScore))
       .filter((hit) => isStrictSidecarMatch(discogs, hit))
       .filter((hit) => !deps.forceRefresh || searchMbids.has(hit.mbid))
-    let merged = await fillTrackLevelHasSamples(
+    const merged = await fillTrackLevelHasSamples(
       mergeRecalledRecordingHits(filtered, recalled),
       recordings,
       deps.store,

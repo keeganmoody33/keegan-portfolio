@@ -95,11 +95,18 @@ export function selectAnnotateProbeHits(
 ): TrackLevelRecordingHit[] {
   const extras = ordered.filter((hit) => hit.extra)
   const bases = ordered.filter((hit) => !hit.extra)
-  const reserved = bases.slice(0, Math.max(0, extrasReserve))
+  if (extras.length === 0) return ordered.slice(0, cap)
+  const knownBases = bases.filter((hit) => hit.hasSamples != null)
+  const reserved = (knownBases.length > 0 ? knownBases : bases).slice(
+    0,
+    Math.max(0, extrasReserve)
+  )
   const extraSlots = Math.max(0, cap - reserved.length)
   const picked: TrackLevelRecordingHit[] = []
   const seen = new Set<string>()
-  for (const hit of [...extras.slice(0, extraSlots), ...reserved, ...bases]) {
+  // Extras wave: extras (at most cap-1) plus reserved base. Do not fill leftover
+  // slots with unprobed first-search hits — that would raise the annotate budget.
+  for (const hit of [...extras.slice(0, extraSlots), ...reserved]) {
     if (seen.has(hit.mbid)) continue
     seen.add(hit.mbid)
     picked.push(hit)
