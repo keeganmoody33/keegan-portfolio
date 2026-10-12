@@ -12,6 +12,7 @@
     "crate:inspect": "node --experimental-strip-types scripts/crate-inspect.ts",
     "crate:backfill": "node --experimental-strip-types scripts/crate-backfill.ts",
     "crate:promote-preview": "node --experimental-strip-types scripts/crate-promote-preview.ts",
+    "crate:promote-find-extras": "node --experimental-strip-types scripts/crate-promote-find-extras.ts",
     "crate:search-extras-measure": "node --experimental-strip-types scripts/crate-search-extras-measure.ts",
     "crate:search-extras-find": "node --experimental-strip-types scripts/crate-search-extras-find.ts",
     "covers:sync": "node --experimental-strip-types scripts/covers-sync.ts",
