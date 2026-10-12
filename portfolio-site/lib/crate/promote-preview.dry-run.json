@@ -14,25 +14,26 @@
     "lf:crate:pressing:21093352:v1",
     "lf:crate:pressing:23467838:v1",
     "lf:crate:pressing:3018422:v1",
-    "lf:crate:pressing:4217381:v1",
+    "lf:crate:pressing:3221873:v1",
     "lf:crate:pressing:451558:v1",
     "lf:crate:pressing:4666933:v1",
     "lf:crate:pressing:550972:v1",
+    "lf:crate:pressing:6625293:v1",
     "lf:crate:pressing:6729400:v1",
     "lf:crate:pressing:7482706:v1",
     "lf:crate:pressing:903960:v1",
     "lf:crate:recording:12db7ceb-c8f8-4220-8ea4-906226896b1f:v1",
     "lf:crate:recording:13ef609a-ceb6-44c5-b1cd-6ed05b8948cf:v1",
     "lf:crate:recording:33b9b9fd-15a1-4e1f-a10a-3d15df5e58f0:v1",
-    "lf:crate:recording:366b7693-aee3-49bc-a9f0-a555df42a080:v1",
     "lf:crate:recording:47a16400-4e94-4a15-912d-b5a6b2f174ba:v1",
     "lf:crate:recording:4e1974cc-aaf4-46b7-9634-7aa9899b70e2:v1",
     "lf:crate:recording:5461c08e-3b9d-4da0-96cd-ade17b241654:v1",
     "lf:crate:recording:5b85db52-5955-4f46-9114-b34caac195f9:v1",
     "lf:crate:recording:5bd8736d-1f1b-4666-8050-4cc03a128af5:v1",
+    "lf:crate:recording:723a6918-f337-4d60-8b9a-8cc89eab9a43:v1",
     "lf:crate:recording:755ea925-c364-4e59-b21f-8d0f4f73f821:v1",
-    "lf:crate:recording:83c21345-afcf-44b0-b619-f0f7c5f9b2a1:v1",
-    "lf:crate:recording:975e9e58-a22f-47bb-ad58-9bd712da9352:v1",
+    "lf:crate:recording:824e104c-4406-46c8-b74f-bf79ef968633:v1",
+    "lf:crate:recording:8f540449-337b-4e4f-ab72-acbf4b1a7c85:v1",
     "lf:crate:recording:9cb859c8-284d-4433-8a3a-6f083533e004:v1",
     "lf:crate:recording:a2f908dd-bcea-4336-bc30-e1b4d00fde80:v1",
     "lf:crate:recording:a2fa4d74-5dab-4df8-a52a-635e3c294ed8:v1",
@@ -57,13 +58,13 @@
     "sampledBy": 288
   },
   "projectedProd": {
-    "links": 329,
+    "links": 328,
     "records": 75,
-    "sampleOf": 100,
-    "sampledBy": 229
+    "sampleOf": 101,
+    "sampledBy": 227
   },
-  "vs360": -31,
-  "vs389": -60,
+  "vs360": -32,
+  "vs389": -61,
   "records": [
     {
       "releaseId": 106712,
@@ -197,7 +198,7 @@
         {
           "releaseId": 106712,
           "mbid": "064ac5de-3348-4040-9845-cd0c57fca4fd",
-          "title": "It’s American",
+          "title": "It\u2019s American",
           "reason": "already present"
         },
         {
@@ -403,7 +404,7 @@
         {
           "releaseId": 266650,
           "mbid": "16932b3b-a1e8-4e8c-8def-ae4b9831f16e",
-          "title": "Love’s in Need of Love Today",
+          "title": "Love\u2019s in Need of Love Today",
           "reason": "already present"
         },
         {
@@ -463,7 +464,7 @@
         {
           "releaseId": 266650,
           "mbid": "8186c4c4-3575-41b6-b9e6-2941d46acf26",
-          "title": "Isn’t She Lovely",
+          "title": "Isn\u2019t She Lovely",
           "reason": "already present"
         },
         {
@@ -487,7 +488,7 @@
         {
           "releaseId": 266650,
           "mbid": "f45ca484-1357-4693-9657-1f674694c93e",
-          "title": "If It’s Magic",
+          "title": "If It\u2019s Magic",
           "reason": "already present"
         },
         {
@@ -523,7 +524,7 @@
         {
           "releaseId": 266650,
           "mbid": "117df2f0-87c5-4daa-8ee8-f87de17a47d0",
-          "title": "Easy Goin’ Evening (My Mama’s Call)",
+          "title": "Easy Goin\u2019 Evening (My Mama\u2019s Call)",
           "reason": "already present"
         },
         {
@@ -632,7 +633,13 @@
           "releaseId": 266650,
           "mbid": "d2637c43-cb52-419a-9a6d-3e1fa1b9be30",
           "title": "Pastime Paradise",
-          "reason": "no sample rels"
+          "reason": "recording not on dest release"
+        },
+        {
+          "releaseId": 266650,
+          "mbid": "d2637c43-cb52-419a-9a6d-3e1fa1b9be30",
+          "title": "Pastime Paradise",
+          "reason": "already present"
         },
         {
           "releaseId": 266650,
@@ -795,7 +802,7 @@
         {
           "releaseId": 378994,
           "mbid": "b31318aa-23e7-497e-b871-61965c800ce5",
-          "title": "Cha‐Cha Slide (club)",
+          "title": "Cha\u2010Cha Slide (club)",
           "reason": "already present"
         },
         {
@@ -813,7 +820,7 @@
         {
           "releaseId": 378994,
           "mbid": "0d502deb-f9e0-447d-816e-ca46ccb67fc3",
-          "title": "Cha‐Cha Slide (radio)",
+          "title": "Cha\u2010Cha Slide (radio)",
           "reason": "no matching prod track"
         }
       ]
@@ -868,7 +875,7 @@
               "source": "sample-target",
               "direction": "sampled_by",
               "title": "Diamonds From Sierra Leone (remix)",
-              "artist": "Kanye West feat. JAY‐Z",
+              "artist": "Kanye West feat. JAY\u2010Z",
               "mbid": "4216d786-159c-4813-96a8-05743ae0dc71",
               "sourceUrl": "https://musicbrainz.org/recording/4216d786-159c-4813-96a8-05743ae0dc71",
               "versionFlags": [
@@ -919,7 +926,7 @@
         {
           "releaseId": 451558,
           "mbid": "c19128ef-2b83-4e37-97a8-9bfc104aa577",
-          "title": "Thunderball (From “Thunderball”)",
+          "title": "Thunderball (From \u201cThunderball\u201d)",
           "reason": "already present"
         },
         {
@@ -1016,7 +1023,7 @@
         {
           "releaseId": 550972,
           "mbid": "b6e141f6-cf99-4c40-8af2-205711f8cbd1",
-          "recordingTitle": "Luv n’ Haight",
+          "recordingTitle": "Luv n\u2019 Haight",
           "recordingArtist": "Sly & the Family Stone",
           "alreadyOnMap": true,
           "versionFit": "aligned",
@@ -1070,7 +1077,7 @@
         {
           "releaseId": 550972,
           "mbid": "a0a3e347-8e06-4891-af45-912525f9d763",
-          "recordingTitle": "Africa Talks to You “The Asphalt Jungle”",
+          "recordingTitle": "Africa Talks to You \u201cThe Asphalt Jungle\u201d",
           "recordingArtist": "Sly & the Family Stone",
           "alreadyOnMap": true,
           "versionFit": "aligned",
@@ -1142,7 +1149,7 @@
         {
           "releaseId": 550972,
           "mbid": "62887274-2945-4493-84a9-cd8a0dfee542",
-          "recordingTitle": "Runnin’ Away",
+          "recordingTitle": "Runnin\u2019 Away",
           "recordingArtist": "Sly & the Family Stone",
           "alreadyOnMap": true,
           "versionFit": "aligned",
@@ -1193,7 +1200,7 @@
               "source": "sample-target",
               "direction": "sampled_by",
               "title": "Bump Jam",
-              "artist": "Dante Mars Ajeto！",
+              "artist": "Dante Mars Ajeto\uff01",
               "mbid": "918f8583-4724-45db-a3e0-ed8a1bc6776f",
               "sourceUrl": "https://musicbrainz.org/recording/918f8583-4724-45db-a3e0-ed8a1bc6776f",
               "versionFlags": []
@@ -1281,7 +1288,7 @@
         {
           "releaseId": 550972,
           "mbid": "17cbb30d-f581-4eca-b8c4-2aed4d91bb2e",
-          "title": "Smilin’",
+          "title": "Smilin\u2019",
           "reason": "no sample rels"
         },
         {
@@ -1299,13 +1306,13 @@
         {
           "releaseId": 550972,
           "mbid": "43d7572b-ba8e-4c5a-b66e-477be18a039a",
-          "title": "Runnin’ Away",
+          "title": "Runnin\u2019 Away",
           "reason": "no sample rels"
         },
         {
           "releaseId": 550972,
           "mbid": "d8d9f1be-d3d9-42c6-b03b-b7a2f11e5130",
-          "title": "Runnin’ Away",
+          "title": "Runnin\u2019 Away",
           "reason": "no sample rels"
         }
       ]
@@ -1327,149 +1334,12 @@
         "sampledBy": 39
       },
       "projectedProd": {
-        "links": 14,
+        "links": 2,
         "records": 1,
         "sampleOf": 0,
-        "sampledBy": 14
+        "sampledBy": 2
       },
       "copies": [
-        {
-          "releaseId": 903960,
-          "mbid": "e144dd90-9720-4117-b695-9382008defa4",
-          "recordingTitle": "Hotter Than Hell",
-          "recordingArtist": "KISS",
-          "alreadyOnMap": false,
-          "versionFit": "aligned",
-          "matchedTracks": [
-            {
-              "position": "B4",
-              "title": "Hotter Than Hell"
-            }
-          ],
-          "addedLinks": [
-            {
-              "source": "sample-target",
-              "direction": "sampled_by",
-              "title": "Adrenalin",
-              "artist": "N‐Joi",
-              "mbid": "8343deee-9a6b-4ec8-8dde-f91f3c6c9573",
-              "sourceUrl": "https://musicbrainz.org/recording/8343deee-9a6b-4ec8-8dde-f91f3c6c9573",
-              "versionFlags": []
-            },
-            {
-              "source": "sample-target",
-              "direction": "sampled_by",
-              "title": "Gimme Sheldon",
-              "artist": "Bran Van 3000",
-              "mbid": "3436598b-3b75-4d3d-a7db-c8d949cd57ce",
-              "sourceUrl": "https://musicbrainz.org/recording/3436598b-3b75-4d3d-a7db-c8d949cd57ce",
-              "versionFlags": []
-            },
-            {
-              "source": "sample-target",
-              "direction": "sampled_by",
-              "title": "I'm Raving / O Si Nene (Long Version)",
-              "artist": "L.A. Style",
-              "mbid": "a70070db-4a11-4042-807c-65e34e36f0ef",
-              "sourceUrl": "https://musicbrainz.org/recording/a70070db-4a11-4042-807c-65e34e36f0ef",
-              "versionFlags": []
-            },
-            {
-              "source": "sample-target",
-              "direction": "sampled_by",
-              "title": "I'm Raving / O Si Nene (Radio Edit)",
-              "artist": "L.A. Style",
-              "mbid": "7103d5d1-6192-4e9c-841a-73e12ac5b43b",
-              "sourceUrl": "https://musicbrainz.org/recording/7103d5d1-6192-4e9c-841a-73e12ac5b43b",
-              "versionFlags": [
-                "edit",
-                "radio"
-              ]
-            },
-            {
-              "source": "sample-target",
-              "direction": "sampled_by",
-              "title": "Iguana",
-              "artist": "Mauro Picotto",
-              "mbid": "a9c80b04-988e-4070-adbd-448e604ded05",
-              "sourceUrl": "https://musicbrainz.org/recording/a9c80b04-988e-4070-adbd-448e604ded05",
-              "versionFlags": []
-            },
-            {
-              "source": "sample-target",
-              "direction": "sampled_by",
-              "title": "Passion (Maiwald & Fiedler remix)",
-              "artist": "Steve Murano",
-              "mbid": "220c9254-1347-4453-a414-59a8e5badc7d",
-              "sourceUrl": "https://musicbrainz.org/recording/220c9254-1347-4453-a414-59a8e5badc7d",
-              "versionFlags": [
-                "remix"
-              ]
-            },
-            {
-              "source": "sample-target",
-              "direction": "sampled_by",
-              "title": "Passion (original club mix)",
-              "artist": "Steve Murano",
-              "mbid": "ab00dea9-f64f-44b8-a853-d61aa483086f",
-              "sourceUrl": "https://musicbrainz.org/recording/ab00dea9-f64f-44b8-a853-d61aa483086f",
-              "versionFlags": [
-                "club"
-              ]
-            },
-            {
-              "source": "sample-target",
-              "direction": "sampled_by",
-              "title": "Passion (radio edit)",
-              "artist": "Steve Murano",
-              "mbid": "4f84222a-01a9-4888-8d2f-e45bcf91916f",
-              "sourceUrl": "https://musicbrainz.org/recording/4f84222a-01a9-4888-8d2f-e45bcf91916f",
-              "versionFlags": [
-                "edit",
-                "radio"
-              ]
-            },
-            {
-              "source": "sample-target",
-              "direction": "sampled_by",
-              "title": "Passion (vocal club mix)",
-              "artist": "Steve Murano",
-              "mbid": "74b0bd36-3fcf-42a4-9ffa-3f161a1d6171",
-              "sourceUrl": "https://musicbrainz.org/recording/74b0bd36-3fcf-42a4-9ffa-3f161a1d6171",
-              "versionFlags": [
-                "club"
-              ]
-            },
-            {
-              "source": "sample-target",
-              "direction": "sampled_by",
-              "title": "Quartz Quadrant “B” Mix",
-              "artist": "幡谷尚史",
-              "mbid": "28ad5181-2ffd-4633-8d99-e163e96e6bcc",
-              "sourceUrl": "https://musicbrainz.org/recording/28ad5181-2ffd-4633-8d99-e163e96e6bcc",
-              "versionFlags": []
-            },
-            {
-              "source": "sample-target",
-              "direction": "sampled_by",
-              "title": "We Gonna Get This Place",
-              "artist": "Too Fast For Mello",
-              "mbid": "cc69eb44-d1e5-4551-a828-91de5d961314",
-              "sourceUrl": "https://musicbrainz.org/recording/cc69eb44-d1e5-4551-a828-91de5d961314",
-              "versionFlags": []
-            },
-            {
-              "source": "sample-target",
-              "direction": "sampled_by",
-              "title": "We’re Gonna Get This Place",
-              "artist": "The Classic Men",
-              "mbid": "d8b9bf38-5283-4fc6-b8c1-9fd43472c4ca",
-              "sourceUrl": "https://musicbrainz.org/recording/d8b9bf38-5283-4fc6-b8c1-9fd43472c4ca",
-              "versionFlags": []
-            }
-          ],
-          "borderline": []
-        },
         {
           "releaseId": 903960,
           "mbid": "eae64661-2d2c-42dc-a29a-c4a02d6b7467",
@@ -1528,7 +1398,7 @@
         {
           "releaseId": 903960,
           "mbid": "241f34d4-c22b-4410-92dd-16ad6de91246",
-          "title": "Strutter ’78",
+          "title": "Strutter \u201978",
           "reason": "already present"
         },
         {
@@ -1552,7 +1422,7 @@
         {
           "releaseId": 903960,
           "mbid": "81520bae-89d3-4c50-9671-633db4506b3c",
-          "title": "Let Me Go, Rock ’n Roll",
+          "title": "Let Me Go, Rock \u2019n Roll",
           "reason": "already present"
         },
         {
@@ -1594,13 +1464,13 @@
         {
           "releaseId": 903960,
           "mbid": "9bb41982-a564-44e2-9bed-c6fcb479f850",
-          "title": "Makin’ Love",
+          "title": "Makin\u2019 Love",
           "reason": "already present"
         },
         {
           "releaseId": 903960,
           "mbid": "18d41344-e8fd-43a1-9a00-7c03ba6c9f76",
-          "title": "C’mon and Love Me",
+          "title": "C\u2019mon and Love Me",
           "reason": "already present"
         },
         {
@@ -1624,7 +1494,7 @@
         {
           "releaseId": 903960,
           "mbid": "495f025a-74b3-460b-aa25-e611c9b477b6",
-          "title": "Let Me Go, Rock ’n’ Roll",
+          "title": "Let Me Go, Rock \u2019n\u2019 Roll",
           "reason": "already present"
         },
         {
@@ -1638,6 +1508,12 @@
           "mbid": "84535856-3b7c-4d01-a6c3-221b59b199aa",
           "title": "Firehouse",
           "reason": "no sample rels"
+        },
+        {
+          "releaseId": 903960,
+          "mbid": "e144dd90-9720-4117-b695-9382008defa4",
+          "title": "Hotter Than Hell",
+          "reason": "live recording on studio dest"
         },
         {
           "releaseId": 903960,
@@ -1738,19 +1614,19 @@
         {
           "releaseId": 903960,
           "mbid": "0192df97-f9cb-4e67-b29a-24e1395cfa30",
-          "title": "Let Me Go, Rock ’n Roll",
+          "title": "Let Me Go, Rock \u2019n Roll",
           "reason": "no sample rels"
         },
         {
           "releaseId": 903960,
           "mbid": "662f3177-a21b-4ca3-9e45-73a1749cc1b1",
-          "title": "Let Me Go, Rock ’n’ Roll",
+          "title": "Let Me Go, Rock \u2019n\u2019 Roll",
           "reason": "no sample rels"
         },
         {
           "releaseId": 903960,
           "mbid": "b678aa38-7e70-47a1-b2f3-9d214164fa1a",
-          "title": "Let Me Go, Rock ’n Roll",
+          "title": "Let Me Go, Rock \u2019n Roll",
           "reason": "no sample rels"
         },
         {
@@ -1906,49 +1782,49 @@
         {
           "releaseId": 903960,
           "mbid": "b80af5f8-000d-43ff-9155-ecaa08e21d88",
-          "title": "Makin’ Love",
+          "title": "Makin\u2019 Love",
           "reason": "no sample rels"
         },
         {
           "releaseId": 903960,
           "mbid": "e44f0adf-49d9-4e9e-bc26-0afb64a991d1",
-          "title": "Makin’ Love",
+          "title": "Makin\u2019 Love",
           "reason": "no sample rels"
         },
         {
           "releaseId": 903960,
           "mbid": "aa02a176-02f5-4d8f-abad-b24fb17b5441",
-          "title": "Makin’ Love",
+          "title": "Makin\u2019 Love",
           "reason": "no sample rels"
         },
         {
           "releaseId": 903960,
           "mbid": "02daab29-d9c1-4a59-8a00-b1a3fdb74d95",
-          "title": "Makin’ Love",
+          "title": "Makin\u2019 Love",
           "reason": "no sample rels"
         },
         {
           "releaseId": 903960,
           "mbid": "65914bc7-4439-43c6-9271-c17ad284e4b6",
-          "title": "Makin’ Love",
+          "title": "Makin\u2019 Love",
           "reason": "no sample rels"
         },
         {
           "releaseId": 903960,
           "mbid": "d86ce555-90fc-45f3-b1ef-838ac7705eaa",
-          "title": "Makin’ Love",
+          "title": "Makin\u2019 Love",
           "reason": "already present"
         },
         {
           "releaseId": 903960,
           "mbid": "80f661d5-b0d8-4a7d-a76c-86e2800bd2dc",
-          "title": "Makin’ Love",
+          "title": "Makin\u2019 Love",
           "reason": "no sample rels"
         },
         {
           "releaseId": 903960,
           "mbid": "fc75c8fb-e1bf-4d6a-883f-03c65df2be79",
-          "title": "Makin’ Love",
+          "title": "Makin\u2019 Love",
           "reason": "no sample rels"
         },
         {
@@ -1973,7 +1849,7 @@
           "releaseId": 903960,
           "mbid": "19203d15-3815-48c9-94d4-14fe2732cd92",
           "title": "Hotter Than Hell",
-          "reason": "no sample rels"
+          "reason": "live recording on studio dest"
         },
         {
           "releaseId": 903960,
@@ -2071,7 +1947,13 @@
           "releaseId": 1575060,
           "mbid": "13b2dabd-de20-4180-97f9-c7f9528dd8b1",
           "title": "Catching the Sun",
-          "reason": "no sample rels"
+          "reason": "recording not on dest release"
+        },
+        {
+          "releaseId": 1575060,
+          "mbid": "13b2dabd-de20-4180-97f9-c7f9528dd8b1",
+          "title": "Catching the Sun",
+          "reason": "already present"
         }
       ]
     },
@@ -2476,13 +2358,13 @@
         {
           "releaseId": 1930841,
           "mbid": "e4b00dc5-bee2-4adf-8a51-2957824e93bd",
-          "title": "All Night Dancin’",
+          "title": "All Night Dancin\u2019",
           "reason": "already present"
         },
         {
           "releaseId": 1930841,
           "mbid": "06bc8179-5d75-49b5-a015-f58a734679f7",
-          "title": "That’s What You Get (for Being Polite)",
+          "title": "That\u2019s What You Get (for Being Polite)",
           "reason": "already present"
         },
         {
@@ -2701,7 +2583,7 @@
             {
               "source": "sample-target",
               "direction": "sample_of",
-              "title": "Ike’s Mood 1",
+              "title": "Ike\u2019s Mood 1",
               "artist": "Isaac Hayes",
               "mbid": "af9262b0-dbb2-4bad-80e5-482f14150d78",
               "sourceUrl": "https://musicbrainz.org/recording/af9262b0-dbb2-4bad-80e5-482f14150d78",
@@ -2875,12 +2757,150 @@
         "sampledBy": 27
       },
       "projectedProd": {
-        "links": 3,
+        "links": 15,
         "records": 1,
         "sampleOf": 0,
-        "sampledBy": 3
+        "sampledBy": 15
       },
-      "copies": [],
+      "copies": [
+        {
+          "releaseId": 3221873,
+          "mbid": "e144dd90-9720-4117-b695-9382008defa4",
+          "recordingTitle": "Hotter Than Hell",
+          "recordingArtist": "KISS",
+          "alreadyOnMap": false,
+          "versionFit": "aligned",
+          "matchedTracks": [
+            {
+              "position": "A4",
+              "title": "Hotter Than Hell"
+            }
+          ],
+          "addedLinks": [
+            {
+              "source": "sample-target",
+              "direction": "sampled_by",
+              "title": "Adrenalin",
+              "artist": "N\u2010Joi",
+              "mbid": "8343deee-9a6b-4ec8-8dde-f91f3c6c9573",
+              "sourceUrl": "https://musicbrainz.org/recording/8343deee-9a6b-4ec8-8dde-f91f3c6c9573",
+              "versionFlags": []
+            },
+            {
+              "source": "sample-target",
+              "direction": "sampled_by",
+              "title": "Gimme Sheldon",
+              "artist": "Bran Van 3000",
+              "mbid": "3436598b-3b75-4d3d-a7db-c8d949cd57ce",
+              "sourceUrl": "https://musicbrainz.org/recording/3436598b-3b75-4d3d-a7db-c8d949cd57ce",
+              "versionFlags": []
+            },
+            {
+              "source": "sample-target",
+              "direction": "sampled_by",
+              "title": "I'm Raving / O Si Nene (Long Version)",
+              "artist": "L.A. Style",
+              "mbid": "a70070db-4a11-4042-807c-65e34e36f0ef",
+              "sourceUrl": "https://musicbrainz.org/recording/a70070db-4a11-4042-807c-65e34e36f0ef",
+              "versionFlags": []
+            },
+            {
+              "source": "sample-target",
+              "direction": "sampled_by",
+              "title": "I'm Raving / O Si Nene (Radio Edit)",
+              "artist": "L.A. Style",
+              "mbid": "7103d5d1-6192-4e9c-841a-73e12ac5b43b",
+              "sourceUrl": "https://musicbrainz.org/recording/7103d5d1-6192-4e9c-841a-73e12ac5b43b",
+              "versionFlags": [
+                "edit",
+                "radio"
+              ]
+            },
+            {
+              "source": "sample-target",
+              "direction": "sampled_by",
+              "title": "Iguana",
+              "artist": "Mauro Picotto",
+              "mbid": "a9c80b04-988e-4070-adbd-448e604ded05",
+              "sourceUrl": "https://musicbrainz.org/recording/a9c80b04-988e-4070-adbd-448e604ded05",
+              "versionFlags": []
+            },
+            {
+              "source": "sample-target",
+              "direction": "sampled_by",
+              "title": "Passion (Maiwald & Fiedler remix)",
+              "artist": "Steve Murano",
+              "mbid": "220c9254-1347-4453-a414-59a8e5badc7d",
+              "sourceUrl": "https://musicbrainz.org/recording/220c9254-1347-4453-a414-59a8e5badc7d",
+              "versionFlags": [
+                "remix"
+              ]
+            },
+            {
+              "source": "sample-target",
+              "direction": "sampled_by",
+              "title": "Passion (original club mix)",
+              "artist": "Steve Murano",
+              "mbid": "ab00dea9-f64f-44b8-a853-d61aa483086f",
+              "sourceUrl": "https://musicbrainz.org/recording/ab00dea9-f64f-44b8-a853-d61aa483086f",
+              "versionFlags": [
+                "club"
+              ]
+            },
+            {
+              "source": "sample-target",
+              "direction": "sampled_by",
+              "title": "Passion (radio edit)",
+              "artist": "Steve Murano",
+              "mbid": "4f84222a-01a9-4888-8d2f-e45bcf91916f",
+              "sourceUrl": "https://musicbrainz.org/recording/4f84222a-01a9-4888-8d2f-e45bcf91916f",
+              "versionFlags": [
+                "edit",
+                "radio"
+              ]
+            },
+            {
+              "source": "sample-target",
+              "direction": "sampled_by",
+              "title": "Passion (vocal club mix)",
+              "artist": "Steve Murano",
+              "mbid": "74b0bd36-3fcf-42a4-9ffa-3f161a1d6171",
+              "sourceUrl": "https://musicbrainz.org/recording/74b0bd36-3fcf-42a4-9ffa-3f161a1d6171",
+              "versionFlags": [
+                "club"
+              ]
+            },
+            {
+              "source": "sample-target",
+              "direction": "sampled_by",
+              "title": "Quartz Quadrant \u201cB\u201d Mix",
+              "artist": "\u5e61\u8c37\u5c1a\u53f2",
+              "mbid": "28ad5181-2ffd-4633-8d99-e163e96e6bcc",
+              "sourceUrl": "https://musicbrainz.org/recording/28ad5181-2ffd-4633-8d99-e163e96e6bcc",
+              "versionFlags": []
+            },
+            {
+              "source": "sample-target",
+              "direction": "sampled_by",
+              "title": "We Gonna Get This Place",
+              "artist": "Too Fast For Mello",
+              "mbid": "cc69eb44-d1e5-4551-a828-91de5d961314",
+              "sourceUrl": "https://musicbrainz.org/recording/cc69eb44-d1e5-4551-a828-91de5d961314",
+              "versionFlags": []
+            },
+            {
+              "source": "sample-target",
+              "direction": "sampled_by",
+              "title": "We\u2019re Gonna Get This Place",
+              "artist": "The Classic Men",
+              "mbid": "d8b9bf38-5283-4fc6-b8c1-9fd43472c4ca",
+              "sourceUrl": "https://musicbrainz.org/recording/d8b9bf38-5283-4fc6-b8c1-9fd43472c4ca",
+              "versionFlags": []
+            }
+          ],
+          "borderline": []
+        }
+      ],
       "skips": [
         {
           "releaseId": 3221873,
@@ -2915,13 +2935,13 @@
         {
           "releaseId": 3221873,
           "mbid": "da53b5d5-6e11-4caa-8217-1fe7f8189ed4",
-          "title": "Nothin’ to Lose",
+          "title": "Nothin\u2019 to Lose",
           "reason": "studio recording on live dest"
         },
         {
           "releaseId": 3221873,
           "mbid": "aef516f1-3a01-4745-b322-8a2d8757a09e",
-          "title": "C’mon and Love Me",
+          "title": "C\u2019mon and Love Me",
           "reason": "studio recording on live dest"
         },
         {
@@ -2939,7 +2959,7 @@
         {
           "releaseId": 3221873,
           "mbid": "7ca82ab1-3da0-4fa4-8167-54932b93ca84",
-          "title": "Watchin’ You",
+          "title": "Watchin\u2019 You",
           "reason": "studio recording on live dest"
         },
         {
@@ -2999,7 +3019,7 @@
         {
           "releaseId": 3221873,
           "mbid": "cabad894-e7d8-4ff5-a07c-443bef939d17",
-          "title": "Nothin’ to Lose",
+          "title": "Nothin\u2019 to Lose",
           "reason": "studio recording on live dest"
         },
         {
@@ -3011,7 +3031,7 @@
         {
           "releaseId": 3221873,
           "mbid": "cfba7507-d3ce-4b93-8e5a-7c6edd568fc4",
-          "title": "Watchin’ You",
+          "title": "Watchin\u2019 You",
           "reason": "studio recording on live dest"
         },
         {
@@ -3029,7 +3049,7 @@
         {
           "releaseId": 3221873,
           "mbid": "0192df97-f9cb-4e67-b29a-24e1395cfa30",
-          "title": "Let Me Go, Rock ’n Roll",
+          "title": "Let Me Go, Rock \u2019n Roll",
           "reason": "studio recording on live dest"
         },
         {
@@ -3142,12 +3162,6 @@
         },
         {
           "releaseId": 3221873,
-          "mbid": "e144dd90-9720-4117-b695-9382008defa4",
-          "title": "Hotter Than Hell",
-          "reason": "studio recording on live dest"
-        },
-        {
-          "releaseId": 3221873,
           "mbid": "b5c4f355-564b-49e0-a200-a0fbe34dc38f",
           "title": "Hotter Than Hell",
           "reason": "studio recording on live dest"
@@ -3179,7 +3193,7 @@
         {
           "releaseId": 3221873,
           "mbid": "0d7b4627-a6fd-423d-9b5b-8097b276af0c",
-          "title": "Nothin’ to Lose",
+          "title": "Nothin\u2019 to Lose",
           "reason": "studio recording on live dest"
         },
         {
@@ -3197,7 +3211,7 @@
         {
           "releaseId": 3221873,
           "mbid": "1c1864e2-f970-4764-bb77-7630b6fad664",
-          "title": "Watchin’ You",
+          "title": "Watchin\u2019 You",
           "reason": "studio recording on live dest"
         },
         {
@@ -3281,13 +3295,13 @@
         {
           "releaseId": 3221873,
           "mbid": "662f3177-a21b-4ca3-9e45-73a1749cc1b1",
-          "title": "Let Me Go, Rock ’n’ Roll",
+          "title": "Let Me Go, Rock \u2019n\u2019 Roll",
           "reason": "studio recording on live dest"
         },
         {
           "releaseId": 3221873,
           "mbid": "b678aa38-7e70-47a1-b2f3-9d214164fa1a",
-          "title": "Let Me Go, Rock ’n Roll",
+          "title": "Let Me Go, Rock \u2019n Roll",
           "reason": "studio recording on live dest"
         }
       ]
@@ -3309,44 +3323,17 @@
         "sampledBy": 4
       },
       "projectedProd": {
-        "links": 4,
+        "links": 3,
         "records": 1,
         "sampleOf": 0,
-        "sampledBy": 4
+        "sampledBy": 3
       },
-      "copies": [
-        {
-          "releaseId": 4217381,
-          "mbid": "366b7693-aee3-49bc-a9f0-a555df42a080",
-          "recordingTitle": "The Newness Is Gone",
-          "recordingArtist": "Eddie Kendricks",
-          "alreadyOnMap": false,
-          "versionFit": "aligned",
-          "matchedTracks": [
-            {
-              "position": "A2",
-              "title": "The Newness Is Gone"
-            }
-          ],
-          "addedLinks": [
-            {
-              "source": "sample-target",
-              "direction": "sampled_by",
-              "title": "Greater",
-              "artist": "Dreamville with Ari Lennox",
-              "mbid": "270f3849-fb15-4b03-92e9-2bb9af0719fb",
-              "sourceUrl": "https://musicbrainz.org/recording/270f3849-fb15-4b03-92e9-2bb9af0719fb",
-              "versionFlags": []
-            }
-          ],
-          "borderline": []
-        }
-      ],
+      "copies": [],
       "skips": [
         {
           "releaseId": 4217381,
           "mbid": "920bd221-7644-43a1-b952-981b3ef7267d",
-          "title": "Goin’ Up in Smoke",
+          "title": "Goin\u2019 Up in Smoke",
           "reason": "already present"
         },
         {
@@ -3370,7 +3357,7 @@
         {
           "releaseId": 4217381,
           "mbid": "9ee06214-25df-4551-bb02-8f5539fbe9b1",
-          "title": "Don’t You Want Light",
+          "title": "Don\u2019t You Want Light",
           "reason": "already present"
         },
         {
@@ -3388,7 +3375,7 @@
         {
           "releaseId": 4217381,
           "mbid": "92618018-832b-45e4-af41-be84d12b794e",
-          "title": "Don’t Put Off Till Tomorrow",
+          "title": "Don\u2019t Put Off Till Tomorrow",
           "reason": "already present"
         },
         {
@@ -3400,7 +3387,7 @@
         {
           "releaseId": 4217381,
           "mbid": "74f3042c-e641-48e6-9549-de36ae609293",
-          "title": "Goin’ Up in Smoke",
+          "title": "Goin\u2019 Up in Smoke",
           "reason": "already present"
         },
         {
@@ -3418,25 +3405,25 @@
         {
           "releaseId": 4217381,
           "mbid": "85db6892-07b0-42a0-9a54-00a5727e2535",
-          "title": "Goin’ Up in Smoke",
+          "title": "Goin\u2019 Up in Smoke",
           "reason": "no sample rels"
         },
         {
           "releaseId": 4217381,
           "mbid": "e1a5c3a9-fbc0-4c99-ab37-d78d6aaf2c50",
-          "title": "Goin’ Up in Smoke",
+          "title": "Goin\u2019 Up in Smoke",
           "reason": "no sample rels"
         },
         {
           "releaseId": 4217381,
           "mbid": "92b4ff02-aa9c-4008-93f6-d852c5f8fdd1",
-          "title": "Goin’ Up in Smoke",
+          "title": "Goin\u2019 Up in Smoke",
           "reason": "no sample rels"
         },
         {
           "releaseId": 4217381,
           "mbid": "66356510-56d0-4799-bdb1-7839eb02dcc9",
-          "title": "Goin’ Up in Smoke",
+          "title": "Goin\u2019 Up in Smoke",
           "reason": "no sample rels"
         },
         {
@@ -3456,6 +3443,12 @@
           "mbid": "400b6b6d-86c7-4568-8149-a90a530dac25",
           "title": "Born Again",
           "reason": "no sample rels"
+        },
+        {
+          "releaseId": 4217381,
+          "mbid": "366b7693-aee3-49bc-a9f0-a555df42a080",
+          "title": "The Newness Is Gone",
+          "reason": "recording not on dest release"
         },
         {
           "releaseId": 4217381,
@@ -3512,7 +3505,7 @@
               "source": "sample-target",
               "direction": "sample_of",
               "title": "E. T. Boogie",
-              "artist": "Extra T’s",
+              "artist": "Extra T\u2019s",
               "mbid": "0dd77b08-abd3-47f7-94b7-4a1d9f199f88",
               "sourceUrl": "https://musicbrainz.org/recording/0dd77b08-abd3-47f7-94b7-4a1d9f199f88",
               "versionFlags": []
@@ -3680,13 +3673,13 @@
         {
           "releaseId": 4666933,
           "mbid": "36ba4432-83d0-4ed9-b28c-1341666c0889",
-          "title": "Things We Be Doin’ for Money, Part 1",
+          "title": "Things We Be Doin\u2019 for Money, Part 1",
           "reason": "already present"
         },
         {
           "releaseId": 4666933,
           "mbid": "1e9e6be1-702b-4301-b743-b27fded7b910",
-          "title": "Things We Be Doin’ for Money, Part 2",
+          "title": "Things We Be Doin\u2019 for Money, Part 2",
           "reason": "already present"
         },
         {
@@ -3804,17 +3797,44 @@
         "sampledBy": 7
       },
       "projectedProd": {
-        "links": 10,
+        "links": 11,
         "records": 1,
-        "sampleOf": 4,
+        "sampleOf": 5,
         "sampledBy": 6
       },
-      "copies": [],
+      "copies": [
+        {
+          "releaseId": 6625293,
+          "mbid": "824e104c-4406-46c8-b74f-bf79ef968633",
+          "recordingTitle": "My Lovin'",
+          "recordingArtist": "En Vogue",
+          "alreadyOnMap": false,
+          "versionFit": "aligned",
+          "matchedTracks": [
+            {
+              "position": "1",
+              "title": " My Lovin' (You're Never Gonna Get It) "
+            }
+          ],
+          "addedLinks": [
+            {
+              "source": "sample-target",
+              "direction": "sample_of",
+              "title": "The Payback",
+              "artist": "James Brown",
+              "mbid": "d9154cae-507c-4b35-9021-025e320a067a",
+              "sourceUrl": "https://musicbrainz.org/recording/d9154cae-507c-4b35-9021-025e320a067a",
+              "versionFlags": []
+            }
+          ],
+          "borderline": []
+        }
+      ],
       "skips": [
         {
           "releaseId": 6625293,
           "mbid": "9cf2bb20-ca0f-421b-a437-9d626850fc9b",
-          "title": "My Lovin’ (You’re Never Gonna Get It)",
+          "title": "My Lovin\u2019 (You\u2019re Never Gonna Get It)",
           "reason": "already present"
         },
         {
@@ -3880,7 +3900,7 @@
         {
           "releaseId": 6625293,
           "mbid": "51caf173-e21a-45dd-8034-8513bdb8727c",
-          "title": "What’s Love Got to Do With It",
+          "title": "What\u2019s Love Got to Do With It",
           "reason": "already present"
         },
         {
@@ -3894,12 +3914,6 @@
           "mbid": "8394d8cb-a2ba-4471-ad95-3e82137b9cb5",
           "title": "End of the Road",
           "reason": "already present"
-        },
-        {
-          "releaseId": 6625293,
-          "mbid": "824e104c-4406-46c8-b74f-bf79ef968633",
-          "title": "My Lovin'",
-          "reason": "no sample rels"
         },
         {
           "releaseId": 6625293,
@@ -3992,7 +4006,7 @@
               "source": "sample-target",
               "direction": "sample_of",
               "title": "Brooklyn Zoo",
-              "artist": "Ol’ Dirty Bastard",
+              "artist": "Ol\u2019 Dirty Bastard",
               "mbid": "a3203cf1-6de1-4c61-856f-cc60ee268da3",
               "sourceUrl": "https://musicbrainz.org/recording/a3203cf1-6de1-4c61-856f-cc60ee268da3",
               "versionFlags": []
@@ -4127,25 +4141,25 @@
         {
           "releaseId": 6729400,
           "mbid": "297a3f73-f292-4812-a51c-52bc7b71c662",
-          "title": "Fallin’",
+          "title": "Fallin\u2019",
           "reason": "no sample rels"
         },
         {
           "releaseId": 6729400,
           "mbid": "89fd06a8-3005-4587-9f31-fc1084cda8b7",
-          "title": "Fallin’",
+          "title": "Fallin\u2019",
           "reason": "no sample rels"
         },
         {
           "releaseId": 6729400,
           "mbid": "e6f98db1-813d-4162-ae04-1ad39569edb9",
-          "title": "Fallin’",
+          "title": "Fallin\u2019",
           "reason": "no sample rels"
         },
         {
           "releaseId": 6729400,
           "mbid": "fa5fed30-6f18-4962-8b8a-a7f71fc42556",
-          "title": "Fallin’",
+          "title": "Fallin\u2019",
           "reason": "no sample rels"
         },
         {
@@ -4211,15 +4225,15 @@
       "copies": [
         {
           "releaseId": 7482706,
-          "mbid": "83c21345-afcf-44b0-b619-f0f7c5f9b2a1",
-          "recordingTitle": "Bourgié, Bourgié",
+          "mbid": "723a6918-f337-4d60-8b9a-8cc89eab9a43",
+          "recordingTitle": "Bourgi\u00e9 Bourgi\u00e9 (instrumental)",
           "recordingArtist": "Ashford & Simpson",
-          "alreadyOnMap": false,
-          "versionFit": "unmarked_fallback",
+          "alreadyOnMap": true,
+          "versionFit": "aligned",
           "matchedTracks": [
             {
               "position": "B3",
-              "title": "Bourgié Bourgié (Instrumental)"
+              "title": "Bourgi\u00e9 Bourgi\u00e9 (Instrumental)"
             }
           ],
           "addedLinks": [
@@ -4233,16 +4247,14 @@
               "versionFlags": []
             }
           ],
-          "borderline": [
-            "marked track fell back to unmarked original"
-          ]
+          "borderline": []
         }
       ],
       "skips": [
         {
           "releaseId": 7482706,
           "mbid": "7e85fc1c-57a6-41f5-8421-4c18a273eceb",
-          "title": "By Way of Love’s Express",
+          "title": "By Way of Love\u2019s Express",
           "reason": "already present"
         },
         {
@@ -4265,15 +4277,15 @@
         },
         {
           "releaseId": 7482706,
-          "mbid": "723a6918-f337-4d60-8b9a-8cc89eab9a43",
-          "title": "Bourgié Bourgié (instrumental)",
+          "mbid": "3d5b4510-2254-4561-9b7b-e89bdd3f091b",
+          "title": "Too Bad",
           "reason": "already present"
         },
         {
           "releaseId": 7482706,
-          "mbid": "3d5b4510-2254-4561-9b7b-e89bdd3f091b",
-          "title": "Too Bad",
-          "reason": "already present"
+          "mbid": "83c21345-afcf-44b0-b619-f0f7c5f9b2a1",
+          "title": "Bourgi\u00e9, Bourgi\u00e9",
+          "reason": "recording not on dest release"
         },
         {
           "releaseId": 7482706,
@@ -4333,7 +4345,7 @@
               "source": "sample-target",
               "direction": "sampled_by",
               "title": "As One",
-              "artist": "Jay‐Z feat. Memphis Bleek, Freeway, Young Gunz, Peedi Crakk, Sparks & Rell",
+              "artist": "Jay\u2010Z feat. Memphis Bleek, Freeway, Young Gunz, Peedi Crakk, Sparks & Rell",
               "mbid": "c0b86a2a-85a1-41a6-b838-479a91e2fc0c",
               "sourceUrl": "https://musicbrainz.org/recording/c0b86a2a-85a1-41a6-b838-479a91e2fc0c",
               "versionFlags": []
@@ -4458,10 +4470,10 @@
         "sampledBy": 2
       },
       "projectedProd": {
-        "links": 2,
+        "links": 1,
         "records": 1,
         "sampleOf": 0,
-        "sampledBy": 2
+        "sampledBy": 1
       },
       "copies": [
         {
@@ -4485,7 +4497,7 @@
         {
           "releaseId": 11449230,
           "mbid": "da53b5d5-6e11-4caa-8217-1fe7f8189ed4",
-          "recordingTitle": "Nothin’ to Lose",
+          "recordingTitle": "Nothin\u2019 to Lose",
           "recordingArtist": "KISS",
           "alreadyOnMap": true,
           "versionFit": "aligned",
@@ -4517,22 +4529,6 @@
           "borderline": [
             "recording length unknown"
           ]
-        },
-        {
-          "releaseId": 11449230,
-          "mbid": "6d3e99e1-3838-4a23-9b22-4466139c719d",
-          "recordingTitle": "Black Diamond",
-          "recordingArtist": "KISS",
-          "alreadyOnMap": false,
-          "versionFit": "aligned",
-          "matchedTracks": [
-            {
-              "position": "B5",
-              "title": "Black Diamond"
-            }
-          ],
-          "addedLinks": [],
-          "borderline": []
         }
       ],
       "skips": [
@@ -4545,7 +4541,7 @@
         {
           "releaseId": 11449230,
           "mbid": "0d7b4627-a6fd-423d-9b5b-8097b276af0c",
-          "title": "Nothin’ to Lose",
+          "title": "Nothin\u2019 to Lose",
           "reason": "already present"
         },
         {
@@ -4659,13 +4655,13 @@
         {
           "releaseId": 11449230,
           "mbid": "df14ede9-20e1-4c7a-8874-0a5a54eb0cef",
-          "title": "Kissin’ Time",
+          "title": "Kissin\u2019 Time",
           "reason": "already present"
         },
         {
           "releaseId": 11449230,
           "mbid": "2ffe7c01-b2e2-4a13-8800-7cdad8654164",
-          "title": "Kissin’ Time",
+          "title": "Kissin\u2019 Time",
           "reason": "no sample rels"
         },
         {
@@ -4773,19 +4769,19 @@
         {
           "releaseId": 11449230,
           "mbid": "cabad894-e7d8-4ff5-a07c-443bef939d17",
-          "title": "Nothin’ to Lose",
+          "title": "Nothin\u2019 to Lose",
           "reason": "already present"
         },
         {
           "releaseId": 11449230,
           "mbid": "5a5e7ba8-7a49-41e7-86e7-429001811954",
-          "title": "Nothin’ to Lose",
+          "title": "Nothin\u2019 to Lose",
           "reason": "no sample rels"
         },
         {
           "releaseId": 11449230,
           "mbid": "cdfe4108-05a4-4ff4-b1ab-0e09705bebc0",
-          "title": "Nothin’ to Lose",
+          "title": "Nothin\u2019 to Lose",
           "reason": "no sample rels"
         },
         {
@@ -4832,6 +4828,12 @@
         },
         {
           "releaseId": 11449230,
+          "mbid": "6d3e99e1-3838-4a23-9b22-4466139c719d",
+          "title": "Black Diamond",
+          "reason": "live recording on studio dest"
+        },
+        {
+          "releaseId": 11449230,
           "mbid": "4390117f-bad5-4e52-87be-54b2ca292e4d",
           "title": "Black Diamond",
           "reason": "no sample rels"
@@ -4858,7 +4860,7 @@
           "releaseId": 11449230,
           "mbid": "3fcae502-4191-4b3f-abb7-c6ffb8e2abf1",
           "title": "Black Diamond",
-          "reason": "no sample rels"
+          "reason": "recording not on dest release"
         },
         {
           "releaseId": 11449230,
@@ -4907,7 +4909,7 @@
         {
           "releaseId": 11917223,
           "mbid": "cdac1a50-8ba6-4edd-8137-618928580d38",
-          "title": "I’m Still in Love With You",
+          "title": "I\u2019m Still in Love With You",
           "reason": "already present"
         },
         {
@@ -4925,13 +4927,13 @@
         {
           "releaseId": 11917223,
           "mbid": "b3384c19-483c-49ae-94d8-ec00ab56a25b",
-          "title": "Let’s Stay Together",
+          "title": "Let\u2019s Stay Together",
           "reason": "already present"
         },
         {
           "releaseId": 11917223,
           "mbid": "5fbba1d8-824f-4975-869d-d32f87fcf17b",
-          "title": "I Can’t Get Next to You",
+          "title": "I Can\u2019t Get Next to You",
           "reason": "already present"
         },
         {
@@ -4949,13 +4951,13 @@
         {
           "releaseId": 11917223,
           "mbid": "9c0d08d6-29ff-44a7-8b8b-33c35b03ed3f",
-          "title": "Let’s Get Married",
+          "title": "Let\u2019s Get Married",
           "reason": "already present"
         },
         {
           "releaseId": 11917223,
           "mbid": "cbe994e4-7adb-4758-aa26-2a968a1fb2ef",
-          "title": "Livin’ for You",
+          "title": "Livin\u2019 for You",
           "reason": "already present"
         },
         {
@@ -4967,7 +4969,7 @@
         {
           "releaseId": 11917223,
           "mbid": "25c34046-58ae-4399-91c4-41980c624cf2",
-          "title": "L‐O‐V‐E (Love)",
+          "title": "L\u2010O\u2010V\u2010E (Love)",
           "reason": "already present"
         },
         {
@@ -5052,7 +5054,13 @@
           "releaseId": 11917223,
           "mbid": "efb9067c-431c-4cd1-8703-b2894a56b3c2",
           "title": "Here I Am",
-          "reason": "no sample rels"
+          "reason": "recording not on dest release"
+        },
+        {
+          "releaseId": 11917223,
+          "mbid": "efb9067c-431c-4cd1-8703-b2894a56b3c2",
+          "title": "Here I Am",
+          "reason": "already present"
         },
         {
           "releaseId": 11917223,
@@ -5160,7 +5168,13 @@
           "releaseId": 11917223,
           "mbid": "7e85160c-24b0-4645-a203-7c6f1a498a6f",
           "title": "Look What You Done for Me",
-          "reason": "no sample rels"
+          "reason": "recording not on dest release"
+        },
+        {
+          "releaseId": 11917223,
+          "mbid": "7e85160c-24b0-4645-a203-7c6f1a498a6f",
+          "title": "Look What You Done for Me",
+          "reason": "already present"
         },
         {
           "releaseId": 11917223,
@@ -5195,7 +5209,7 @@
         {
           "releaseId": 11917223,
           "mbid": "2361a3b5-870e-4867-9d3b-bbfae0ba3c9b",
-          "title": "Livin’ for You (5.1 mix)",
+          "title": "Livin\u2019 for You (5.1 mix)",
           "reason": "no matching prod track"
         },
         {
@@ -5279,32 +5293,6 @@
       "copies": [
         {
           "releaseId": 13694938,
-          "mbid": "975e9e58-a22f-47bb-ad58-9bd712da9352",
-          "recordingTitle": "No Woman, No Cry",
-          "recordingArtist": "Bob Marley & The Wailers",
-          "alreadyOnMap": false,
-          "versionFit": "aligned",
-          "matchedTracks": [
-            {
-              "position": "A2",
-              "title": "No Woman No Cry"
-            }
-          ],
-          "addedLinks": [
-            {
-              "source": "sample-target",
-              "direction": "sampled_by",
-              "title": "Thin Line Between Law & Rape",
-              "artist": "Public Enemy",
-              "mbid": "96501356-5008-4826-8a7d-4b393d52dd87",
-              "sourceUrl": "https://musicbrainz.org/recording/96501356-5008-4826-8a7d-4b393d52dd87",
-              "versionFlags": []
-            }
-          ],
-          "borderline": []
-        },
-        {
-          "releaseId": 13694938,
           "mbid": "33b9b9fd-15a1-4e1f-a10a-3d15df5e58f0",
           "recordingTitle": "Three Little Birds",
           "recordingArtist": "Bob Marley & The Wailers",
@@ -5331,6 +5319,32 @@
         },
         {
           "releaseId": 13694938,
+          "mbid": "8f540449-337b-4e4f-ab72-acbf4b1a7c85",
+          "recordingTitle": "No Woman No Cry",
+          "recordingArtist": "Bob Marley & The Wailers",
+          "alreadyOnMap": true,
+          "versionFit": "aligned",
+          "matchedTracks": [
+            {
+              "position": "A2",
+              "title": "No Woman No Cry"
+            }
+          ],
+          "addedLinks": [
+            {
+              "source": "sample-target",
+              "direction": "sampled_by",
+              "title": "Thin Line Between Law & Rape",
+              "artist": "Public Enemy",
+              "mbid": "96501356-5008-4826-8a7d-4b393d52dd87",
+              "sourceUrl": "https://musicbrainz.org/recording/96501356-5008-4826-8a7d-4b393d52dd87",
+              "versionFlags": []
+            }
+          ],
+          "borderline": []
+        },
+        {
+          "releaseId": 13694938,
           "mbid": "13ef609a-ceb6-44c5-b1cd-6ed05b8948cf",
           "recordingTitle": "Could You Be Loved",
           "recordingArtist": "Bob Marley & The Wailers",
@@ -5346,7 +5360,7 @@
             {
               "source": "sample-target",
               "direction": "sampled_by",
-              "title": "C’est pas comme ça",
+              "title": "C\u2019est pas comme \u00e7a",
               "artist": "KDD",
               "mbid": "47a9ba16-fb92-470e-b1df-0bb396d03390",
               "sourceUrl": "https://musicbrainz.org/recording/47a9ba16-fb92-470e-b1df-0bb396d03390",
@@ -5355,7 +5369,7 @@
             {
               "source": "sample-target",
               "direction": "sampled_by",
-              "title": "Keepin’ the Faith",
+              "title": "Keepin\u2019 the Faith",
               "artist": "De La Soul",
               "mbid": "742ea211-1c3a-48f8-bafe-83da2e1c8c8a",
               "sourceUrl": "https://musicbrainz.org/recording/742ea211-1c3a-48f8-bafe-83da2e1c8c8a",
@@ -5392,7 +5406,7 @@
             {
               "source": "sample-target",
               "direction": "sampled_by",
-              "title": "Doin’ Our Own Dang",
+              "title": "Doin\u2019 Our Own Dang",
               "artist": "Jungle Brothers",
               "mbid": "39fc096d-2888-4000-b01b-ff8bcb4b8195",
               "sourceUrl": "https://musicbrainz.org/recording/39fc096d-2888-4000-b01b-ff8bcb4b8195",
@@ -5408,6 +5422,12 @@
           "mbid": "5bec76b6-6520-49a0-b8ab-0139bf48518a",
           "title": "Is This Love",
           "reason": "already present"
+        },
+        {
+          "releaseId": 13694938,
+          "mbid": "975e9e58-a22f-47bb-ad58-9bd712da9352",
+          "title": "No Woman, No Cry",
+          "reason": "live recording on studio dest"
         },
         {
           "releaseId": 13694938,
@@ -5516,12 +5536,6 @@
           "mbid": "69502c22-4ea6-42ce-b6c9-142072e04b83",
           "title": "No Woman No Cry",
           "reason": "no sample rels"
-        },
-        {
-          "releaseId": 13694938,
-          "mbid": "8f540449-337b-4e4f-ab72-acbf4b1a7c85",
-          "title": "No Woman No Cry",
-          "reason": "already present"
         },
         {
           "releaseId": 13694938,
@@ -5755,7 +5769,7 @@
         {
           "releaseId": 14851267,
           "mbid": "e1603c1f-c03e-4d5d-9232-f5092a3c9144",
-          "recordingTitle": "Jazz (We’ve Got)",
+          "recordingTitle": "Jazz (We\u2019ve Got)",
           "recordingArtist": "A Tribe Called Quest",
           "alreadyOnMap": false,
           "versionFit": "unmarked_fallback",
@@ -5858,7 +5872,7 @@
         {
           "releaseId": 14851267,
           "mbid": "b6b61da8-bc9a-40ae-bfdc-d78865e40eb0",
-          "title": "Steppin’ it Up",
+          "title": "Steppin\u2019 it Up",
           "reason": "already present"
         },
         {
@@ -6092,13 +6106,13 @@
         {
           "releaseId": 14851267,
           "mbid": "a98711b2-2eb8-44c1-98da-c8a727c6aced",
-          "title": "Jazz (We’ve Got)",
+          "title": "Jazz (We\u2019ve Got)",
           "reason": "no sample rels"
         },
         {
           "releaseId": 14851267,
           "mbid": "c62d8cf8-799c-424c-95bd-3553107dcd9f",
-          "title": "Jazz (We’ve Got)",
+          "title": "Jazz (We\u2019ve Got)",
           "reason": "no sample rels"
         },
         {
@@ -6110,7 +6124,7 @@
         {
           "releaseId": 14851267,
           "mbid": "8d5ab082-cc1f-44b7-8831-45049476c1e5",
-          "title": "Common Ground (Get It Goin’ On)",
+          "title": "Common Ground (Get It Goin\u2019 On)",
           "reason": "already present"
         },
         {
@@ -6122,7 +6136,7 @@
         {
           "releaseId": 14851267,
           "mbid": "6a772e6e-abd2-4261-add5-cda5f8e9ec9a",
-          "title": "Jazz (We’ve Got) (radio version)",
+          "title": "Jazz (We\u2019ve Got) (radio version)",
           "reason": "already present"
         }
       ]
@@ -6283,19 +6297,19 @@
         {
           "releaseId": 21093352,
           "mbid": "b93cbe31-04c9-44af-b17e-35c3091c2304",
-          "title": "Grindin’",
+          "title": "Grindin\u2019",
           "reason": "no sample rels"
         },
         {
           "releaseId": 21093352,
           "mbid": "125d0873-8e33-4877-9009-89f9439447d7",
-          "title": "Grindin’",
+          "title": "Grindin\u2019",
           "reason": "no sample rels"
         },
         {
           "releaseId": 21093352,
           "mbid": "2d131b99-56ae-4eaf-aba0-a435b72851d3",
-          "title": "Grindin’ (main)",
+          "title": "Grindin\u2019 (main)",
           "reason": "no sample rels"
         },
         {
@@ -6343,19 +6357,19 @@
         {
           "releaseId": 21093352,
           "mbid": "2a9d0b6c-657b-4e61-a93a-23da4e058e17",
-          "title": "Grindin’",
+          "title": "Grindin\u2019",
           "reason": "no sample rels"
         },
         {
           "releaseId": 21093352,
           "mbid": "84264a99-0def-4df9-ab54-2d831f9f591c",
-          "title": "Grindin’ (remix)",
+          "title": "Grindin\u2019 (remix)",
           "reason": "no matching prod track"
         },
         {
           "releaseId": 21093352,
           "mbid": "0d73d4fa-d802-44f8-aeaf-fe8c9dfca974",
-          "title": "Grindin’ (Selector remix)",
+          "title": "Grindin\u2019 (Selector remix)",
           "reason": "already present"
         }
       ]
@@ -6401,7 +6415,7 @@
               "source": "sample-target",
               "direction": "sampled_by",
               "title": "Bump Jam",
-              "artist": "Dante Mars Ajeto！",
+              "artist": "Dante Mars Ajeto\uff01",
               "mbid": "918f8583-4724-45db-a3e0-ed8a1bc6776f",
               "sourceUrl": "https://musicbrainz.org/recording/918f8583-4724-45db-a3e0-ed8a1bc6776f",
               "versionFlags": []
@@ -6441,7 +6455,7 @@
         {
           "releaseId": 23467838,
           "mbid": "b6e141f6-cf99-4c40-8af2-205711f8cbd1",
-          "title": "Luv n’ Haight",
+          "title": "Luv n\u2019 Haight",
           "reason": "already present"
         },
         {
@@ -6465,7 +6479,7 @@
         {
           "releaseId": 23467838,
           "mbid": "a0a3e347-8e06-4891-af45-912525f9d763",
-          "title": "Africa Talks to You “The Asphalt Jungle”",
+          "title": "Africa Talks to You \u201cThe Asphalt Jungle\u201d",
           "reason": "already present"
         },
         {
@@ -6489,7 +6503,7 @@
         {
           "releaseId": 23467838,
           "mbid": "62887274-2945-4493-84a9-cd8a0dfee542",
-          "title": "Runnin’ Away",
+          "title": "Runnin\u2019 Away",
           "reason": "already present"
         },
         {
@@ -6548,7 +6562,7 @@
       "source": "sample-target",
       "direction": "sampled_by",
       "title": "Diamonds From Sierra Leone (remix)",
-      "artist": "Kanye West feat. JAY‐Z",
+      "artist": "Kanye West feat. JAY\u2010Z",
       "mbid": "4216d786-159c-4813-96a8-05743ae0dc71",
       "sourceUrl": "https://musicbrainz.org/recording/4216d786-159c-4813-96a8-05743ae0dc71",
       "versionFlags": [
@@ -6567,7 +6581,7 @@
         "edit",
         "radio"
       ],
-      "releaseId": 903960
+      "releaseId": 3221873
     },
     {
       "source": "sample-target",
@@ -6579,7 +6593,7 @@
       "versionFlags": [
         "remix"
       ],
-      "releaseId": 903960
+      "releaseId": 3221873
     },
     {
       "source": "sample-target",
@@ -6591,7 +6605,7 @@
       "versionFlags": [
         "club"
       ],
-      "releaseId": 903960
+      "releaseId": 3221873
     },
     {
       "source": "sample-target",
@@ -6604,7 +6618,7 @@
         "edit",
         "radio"
       ],
-      "releaseId": 903960
+      "releaseId": 3221873
     },
     {
       "source": "sample-target",
@@ -6616,7 +6630,7 @@
       "versionFlags": [
         "club"
       ],
-      "releaseId": 903960
+      "releaseId": 3221873
     },
     {
       "source": "sample-target",
@@ -6635,7 +6649,7 @@
     {
       "releaseId": 550972,
       "mbid": "b6e141f6-cf99-4c40-8af2-205711f8cbd1",
-      "title": "Luv n’ Haight",
+      "title": "Luv n\u2019 Haight",
       "notes": [
         "recording length unknown"
       ]
@@ -6659,7 +6673,7 @@
     {
       "releaseId": 550972,
       "mbid": "a0a3e347-8e06-4891-af45-912525f9d763",
-      "title": "Africa Talks to You “The Asphalt Jungle”",
+      "title": "Africa Talks to You \u201cThe Asphalt Jungle\u201d",
       "notes": [
         "recording length unknown"
       ]
@@ -6691,7 +6705,7 @@
     {
       "releaseId": 550972,
       "mbid": "62887274-2945-4493-84a9-cd8a0dfee542",
-      "title": "Runnin’ Away",
+      "title": "Runnin\u2019 Away",
       "notes": [
         "recording length unknown"
       ]
@@ -6746,14 +6760,6 @@
       ]
     },
     {
-      "releaseId": 7482706,
-      "mbid": "83c21345-afcf-44b0-b619-f0f7c5f9b2a1",
-      "title": "Bourgié, Bourgié",
-      "notes": [
-        "marked track fell back to unmarked original"
-      ]
-    },
-    {
       "releaseId": 11449230,
       "mbid": "6230e976-badb-4c92-abee-9fde8add4c49",
       "title": "Strutter",
@@ -6764,7 +6770,7 @@
     {
       "releaseId": 11449230,
       "mbid": "da53b5d5-6e11-4caa-8217-1fe7f8189ed4",
-      "title": "Nothin’ to Lose",
+      "title": "Nothin\u2019 to Lose",
       "notes": [
         "recording length unknown"
       ]
@@ -6790,7 +6796,7 @@
     {
       "releaseId": 14851267,
       "mbid": "e1603c1f-c03e-4d5d-9232-f5092a3c9144",
-      "title": "Jazz (We’ve Got)",
+      "title": "Jazz (We\u2019ve Got)",
       "notes": [
         "marked track fell back to unmarked original",
         "track duration unknown"
@@ -6798,15 +6804,6 @@
     }
   ],
   "droppedLinks": [
-    {
-      "sourceMbid": "d2637c43-cb52-419a-9a6d-3e1fa1b9be30",
-      "sourceTitle": "Pastime Paradise",
-      "direction": "sampled_by",
-      "title": "Gangsta’s Paradise",
-      "mbid": "2f7a6735-2e09-4ce2-81e4-b148e6c39a55",
-      "reason": "not on source recording",
-      "releaseId": 266650
-    },
     {
       "sourceMbid": "33bcd7f3-41bc-4441-aa89-352c8a08c33a",
       "sourceTitle": "Hotter Than Hell",
@@ -6892,7 +6889,7 @@
       "sourceMbid": "33bcd7f3-41bc-4441-aa89-352c8a08c33a",
       "sourceTitle": "Hotter Than Hell",
       "direction": "sampled_by",
-      "title": "Quartz Quadrant “B” Mix",
+      "title": "Quartz Quadrant \u201cB\u201d Mix",
       "mbid": "28ad5181-2ffd-4633-8d99-e163e96e6bcc",
       "reason": "not on source recording",
       "releaseId": 903960
@@ -6910,7 +6907,7 @@
       "sourceMbid": "33bcd7f3-41bc-4441-aa89-352c8a08c33a",
       "sourceTitle": "Hotter Than Hell",
       "direction": "sampled_by",
-      "title": "We’re Gonna Get This Place",
+      "title": "We\u2019re Gonna Get This Place",
       "mbid": "d8b9bf38-5283-4fc6-b8c1-9fd43472c4ca",
       "reason": "not on source recording",
       "releaseId": 903960
@@ -6923,123 +6920,6 @@
       "mbid": "f9d57213-5e3a-4b90-ba00-ad371e4309c3",
       "reason": "not on source recording",
       "releaseId": 903960
-    },
-    {
-      "sourceMbid": "19203d15-3815-48c9-94d4-14fe2732cd92",
-      "sourceTitle": "Hotter Than Hell",
-      "direction": "sampled_by",
-      "title": "Adrenalin",
-      "mbid": "8343deee-9a6b-4ec8-8dde-f91f3c6c9573",
-      "reason": "not on source recording",
-      "releaseId": 903960
-    },
-    {
-      "sourceMbid": "19203d15-3815-48c9-94d4-14fe2732cd92",
-      "sourceTitle": "Hotter Than Hell",
-      "direction": "sampled_by",
-      "title": "Gimme Sheldon",
-      "mbid": "3436598b-3b75-4d3d-a7db-c8d949cd57ce",
-      "reason": "not on source recording",
-      "releaseId": 903960
-    },
-    {
-      "sourceMbid": "19203d15-3815-48c9-94d4-14fe2732cd92",
-      "sourceTitle": "Hotter Than Hell",
-      "direction": "sampled_by",
-      "title": "I'm Raving / O Si Nene (Long Version)",
-      "mbid": "a70070db-4a11-4042-807c-65e34e36f0ef",
-      "reason": "not on source recording",
-      "releaseId": 903960
-    },
-    {
-      "sourceMbid": "19203d15-3815-48c9-94d4-14fe2732cd92",
-      "sourceTitle": "Hotter Than Hell",
-      "direction": "sampled_by",
-      "title": "I'm Raving / O Si Nene (Radio Edit)",
-      "mbid": "7103d5d1-6192-4e9c-841a-73e12ac5b43b",
-      "reason": "not on source recording",
-      "releaseId": 903960
-    },
-    {
-      "sourceMbid": "19203d15-3815-48c9-94d4-14fe2732cd92",
-      "sourceTitle": "Hotter Than Hell",
-      "direction": "sampled_by",
-      "title": "Iguana",
-      "mbid": "a9c80b04-988e-4070-adbd-448e604ded05",
-      "reason": "not on source recording",
-      "releaseId": 903960
-    },
-    {
-      "sourceMbid": "19203d15-3815-48c9-94d4-14fe2732cd92",
-      "sourceTitle": "Hotter Than Hell",
-      "direction": "sampled_by",
-      "title": "Passion (Maiwald & Fiedler remix)",
-      "mbid": "220c9254-1347-4453-a414-59a8e5badc7d",
-      "reason": "not on source recording",
-      "releaseId": 903960
-    },
-    {
-      "sourceMbid": "19203d15-3815-48c9-94d4-14fe2732cd92",
-      "sourceTitle": "Hotter Than Hell",
-      "direction": "sampled_by",
-      "title": "Passion (original club mix)",
-      "mbid": "ab00dea9-f64f-44b8-a853-d61aa483086f",
-      "reason": "not on source recording",
-      "releaseId": 903960
-    },
-    {
-      "sourceMbid": "19203d15-3815-48c9-94d4-14fe2732cd92",
-      "sourceTitle": "Hotter Than Hell",
-      "direction": "sampled_by",
-      "title": "Passion (radio edit)",
-      "mbid": "4f84222a-01a9-4888-8d2f-e45bcf91916f",
-      "reason": "not on source recording",
-      "releaseId": 903960
-    },
-    {
-      "sourceMbid": "19203d15-3815-48c9-94d4-14fe2732cd92",
-      "sourceTitle": "Hotter Than Hell",
-      "direction": "sampled_by",
-      "title": "Passion (vocal club mix)",
-      "mbid": "74b0bd36-3fcf-42a4-9ffa-3f161a1d6171",
-      "reason": "not on source recording",
-      "releaseId": 903960
-    },
-    {
-      "sourceMbid": "19203d15-3815-48c9-94d4-14fe2732cd92",
-      "sourceTitle": "Hotter Than Hell",
-      "direction": "sampled_by",
-      "title": "Quartz Quadrant “B” Mix",
-      "mbid": "28ad5181-2ffd-4633-8d99-e163e96e6bcc",
-      "reason": "not on source recording",
-      "releaseId": 903960
-    },
-    {
-      "sourceMbid": "19203d15-3815-48c9-94d4-14fe2732cd92",
-      "sourceTitle": "Hotter Than Hell",
-      "direction": "sampled_by",
-      "title": "We Gonna Get This Place",
-      "mbid": "cc69eb44-d1e5-4551-a828-91de5d961314",
-      "reason": "not on source recording",
-      "releaseId": 903960
-    },
-    {
-      "sourceMbid": "19203d15-3815-48c9-94d4-14fe2732cd92",
-      "sourceTitle": "Hotter Than Hell",
-      "direction": "sampled_by",
-      "title": "We’re Gonna Get This Place",
-      "mbid": "d8b9bf38-5283-4fc6-b8c1-9fd43472c4ca",
-      "reason": "not on source recording",
-      "releaseId": 903960
-    },
-    {
-      "sourceMbid": "13b2dabd-de20-4180-97f9-c7f9528dd8b1",
-      "sourceTitle": "Catching the Sun",
-      "direction": "sampled_by",
-      "title": "フリーターストーリー",
-      "mbid": "3c6ebd0c-0f85-4436-a591-5bcff14ff250",
-      "reason": "not on source recording",
-      "releaseId": 1575060
     },
     {
       "sourceMbid": "789ef63e-072b-4134-b44e-4612763bf14a",
@@ -7062,83 +6942,11 @@
     {
       "sourceMbid": "824e104c-4406-46c8-b74f-bf79ef968633",
       "sourceTitle": "My Lovin'",
-      "direction": "sample_of",
-      "title": "The Payback",
-      "mbid": "d9154cae-507c-4b35-9021-025e320a067a",
-      "reason": "not on source recording",
-      "releaseId": 6625293
-    },
-    {
-      "sourceMbid": "824e104c-4406-46c8-b74f-bf79ef968633",
-      "sourceTitle": "My Lovin'",
       "direction": "sampled_by",
-      "title": "U Ain’t Gonna Take My Life",
+      "title": "U Ain\u2019t Gonna Take My Life",
       "mbid": "f653c1b1-a993-4f86-b6a0-5b92afe73e6c",
       "reason": "not on source recording",
       "releaseId": 6625293
-    },
-    {
-      "sourceMbid": "723a6918-f337-4d60-8b9a-8cc89eab9a43",
-      "sourceTitle": "Bourgié Bourgié (instrumental)",
-      "direction": "sampled_by",
-      "title": "Guitarra G (Afterlife mix)",
-      "mbid": "a048a0d5-54de-4dd8-b79a-747539e2ecfc",
-      "reason": "not on source recording",
-      "releaseId": 7482706
-    },
-    {
-      "sourceMbid": "6d3e99e1-3838-4a23-9b22-4466139c719d",
-      "sourceTitle": "Black Diamond",
-      "direction": "sampled_by",
-      "title": "Out on the Street",
-      "mbid": "f9d57213-5e3a-4b90-ba00-ad371e4309c3",
-      "reason": "not on source recording",
-      "releaseId": 11449230
-    },
-    {
-      "sourceMbid": "3fcae502-4191-4b3f-abb7-c6ffb8e2abf1",
-      "sourceTitle": "Black Diamond",
-      "direction": "sampled_by",
-      "title": "Out on the Street",
-      "mbid": "f9d57213-5e3a-4b90-ba00-ad371e4309c3",
-      "reason": "not on source recording",
-      "releaseId": 11449230
-    },
-    {
-      "sourceMbid": "efb9067c-431c-4cd1-8703-b2894a56b3c2",
-      "sourceTitle": "Here I Am",
-      "direction": "sampled_by",
-      "title": "Any Way the Wind Blows",
-      "mbid": "4a72c3a9-02a8-4645-9c8e-5ab2dc7a7a33",
-      "reason": "not on source recording",
-      "releaseId": 11917223
-    },
-    {
-      "sourceMbid": "7e85160c-24b0-4645-a203-7c6f1a498a6f",
-      "sourceTitle": "Look What You Done for Me",
-      "direction": "sampled_by",
-      "title": "Set Me Free",
-      "mbid": "2d736e0e-8e32-49cd-a3cf-f427e1659486",
-      "reason": "not on source recording",
-      "releaseId": 11917223
-    },
-    {
-      "sourceMbid": "7e85160c-24b0-4645-a203-7c6f1a498a6f",
-      "sourceTitle": "Look What You Done for Me",
-      "direction": "sampled_by",
-      "title": "Warm Sentiments",
-      "mbid": "70bbe44c-d66b-4168-acbf-6bd4021f66ef",
-      "reason": "not on source recording",
-      "releaseId": 11917223
-    },
-    {
-      "sourceMbid": "8f540449-337b-4e4f-ab72-acbf4b1a7c85",
-      "sourceTitle": "No Woman No Cry",
-      "direction": "sampled_by",
-      "title": "Thin Line Between Law & Rape",
-      "mbid": "96501356-5008-4826-8a7d-4b393d52dd87",
-      "reason": "not on source recording",
-      "releaseId": 13694938
     }
   ],
   "lengthAudit": [
@@ -7148,7 +6956,15 @@
       "storedLengthMs": null,
       "mbLengthMs": 52520,
       "samplesFrom": 1,
-      "sampledIn": 0
+      "sampledIn": 0,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "Buhlo\u035eone Mind State",
+        "Buhloone Mindstate",
+        "Original Album Series",
+        "Buhloone Mind State"
+      ]
     },
     {
       "mbid": "d2637c43-cb52-419a-9a6d-3e1fa1b9be30",
@@ -7156,7 +6972,12 @@
       "storedLengthMs": null,
       "mbLengthMs": 200000,
       "samplesFrom": 0,
-      "sampledIn": 0
+      "sampledIn": 0,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "Magic Soul"
+      ]
     },
     {
       "mbid": "5b85db52-5955-4f46-9114-b34caac195f9",
@@ -7164,7 +6985,29 @@
       "storedLengthMs": null,
       "mbLengthMs": 161840,
       "samplesFrom": 0,
-      "sampledIn": 4
+      "sampledIn": 4,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "Diamonds Are Forever",
+        "25th Anniversary Album",
+        "Gut Gestimmt",
+        "This Is My Life",
+        "James Bond Greatest Hits",
+        "Collection",
+        "Great Performances",
+        "Portrait of a Superstar",
+        "James Bond Greatest Hits: 007 / 13 Original Themes",
+        "The Singles",
+        "Diamonds: The Best of Shirley Bassey",
+        "Hits of the 70's",
+        "Let Me Sing And I'm Happy",
+        "Let Me Sing and I\u2019m Happy",
+        "James Bond: 13 Original Themes",
+        "The Definitive Shirley Bassey",
+        "This is Shirley Bassey",
+        "The Best of James Bond: 30th Anniversary Collection"
+      ]
     },
     {
       "mbid": "e007b469-f424-490b-b3f2-ff21f12d1989",
@@ -7172,7 +7015,29 @@
       "storedLengthMs": null,
       "mbLengthMs": 184000,
       "samplesFrom": 0,
-      "sampledIn": 4
+      "sampledIn": 4,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "Family Affair / Luv n\u2019 Haight",
+        "There\u2019s a Riot Goin\u2019 On",
+        "Family Affair",
+        "Solid Soul",
+        "25 Jaar Popmuziek: 1971/1972",
+        "25 Years of Rock \u2019n\u2019 Roll: 1972: 20 of the Year\u2019s Greatest Tracks",
+        "100 All Time Classic Dance Hits of the 1970s",
+        "Baby Boomer Classics: Electric Seventies",
+        "The Best of Sly and the Family Stone",
+        "Anthology",
+        "Billboard Top Rock\u2019n\u2019Roll Hits: 1971",
+        "Sounds of the Seventies: 1971",
+        "Baby Boomer Classics: Mellow Seventies",
+        "There's a Riot Goin' On",
+        "The Collection",
+        "Rhythm Divine",
+        "Sweet '70s Soul",
+        "The Greatest Hits of 1972"
+      ]
     },
     {
       "mbid": "33bcd7f3-41bc-4441-aa89-352c8a08c33a",
@@ -7180,7 +7045,15 @@
       "storedLengthMs": null,
       "mbLengthMs": 210866,
       "samplesFrom": 0,
-      "sampledIn": 0
+      "sampledIn": 0,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "Hotter Than Hell",
+        "Let Me Go, Rock \u2019n Roll / Hotter Than Hell",
+        "The Originals",
+        "Double Platinum"
+      ]
     },
     {
       "mbid": "3fcae502-4191-4b3f-abb7-c6ffb8e2abf1",
@@ -7188,7 +7061,14 @@
       "storedLengthMs": null,
       "mbLengthMs": 255240,
       "samplesFrom": 0,
-      "sampledIn": 0
+      "sampledIn": 0,
+      "disambiguation": "1978 remix",
+      "live": false,
+      "releaseTitles": [
+        "Double Platinum",
+        "The Casablanca Years: 1974\u20131982",
+        "KISSTERIA: The Ultimate Vinyl Road Case"
+      ]
     },
     {
       "mbid": "e144dd90-9720-4117-b695-9382008defa4",
@@ -7196,7 +7076,15 @@
       "storedLengthMs": null,
       "mbLengthMs": 209933,
       "samplesFrom": 0,
-      "sampledIn": 12
+      "sampledIn": 12,
+      "disambiguation": "live, 1975",
+      "live": true,
+      "releaseTitles": [
+        "Alive!",
+        "KISS Alive! 1975\u20132000",
+        "The Casablanca Years: 1974\u20131982",
+        "KISSTERIA: The Ultimate Vinyl Road Case"
+      ]
     },
     {
       "mbid": "19203d15-3815-48c9-94d4-14fe2732cd92",
@@ -7204,7 +7092,14 @@
       "storedLengthMs": null,
       "mbLengthMs": 193000,
       "samplesFrom": 0,
-      "sampledIn": 0
+      "sampledIn": 0,
+      "disambiguation": "live, 1975 (LP edit)",
+      "live": true,
+      "releaseTitles": [
+        "Alive!",
+        "The Originals 1974\u20131979",
+        "KISS Alive! 1975\u20132000"
+      ]
     },
     {
       "mbid": "6e4909b0-49b2-454b-89e6-8b83f1114b4a",
@@ -7212,7 +7107,17 @@
       "storedLengthMs": null,
       "mbLengthMs": 312920,
       "samplesFrom": 0,
-      "sampledIn": 1
+      "sampledIn": 1,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "KISS",
+        "The Originals",
+        "Wham Bam, Thank You Glam!",
+        "Greatest KISS",
+        "Greatest Kiss",
+        "Greatest Hits"
+      ]
     },
     {
       "mbid": "13b2dabd-de20-4180-97f9-c7f9528dd8b1",
@@ -7220,7 +7125,45 @@
       "storedLengthMs": null,
       "mbLengthMs": 280933,
       "samplesFrom": 0,
-      "sampledIn": 0
+      "sampledIn": 0,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "The Best of the First Ten Years",
+        "The Best of Spyro Gyra: The First Ten Years"
+      ]
+    },
+    {
+      "mbid": "9cb859c8-284d-4433-8a3a-6f083533e004",
+      "title": "Props Over Here",
+      "storedLengthMs": 239020,
+      "mbLengthMs": 239020,
+      "samplesFrom": 2,
+      "sampledIn": 0,
+      "disambiguation": "explicit",
+      "live": false,
+      "releaseTitles": [
+        "Street Level",
+        "The Beatnuts",
+        "Classic Nuts, Vol. 1"
+      ]
+    },
+    {
+      "mbid": "a2fa4d74-5dab-4df8-a52a-635e3c294ed8",
+      "title": "Watch Out Now",
+      "storedLengthMs": 173306,
+      "mbLengthMs": 173306,
+      "samplesFrom": 1,
+      "sampledIn": 0,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "The Source Presents Hip Hop Hits, Volume 3",
+        "Into the Groove, Volume 32",
+        "Classic Nuts, Vol. 1",
+        "Hip Hop Forever II",
+        "Once Upon a Time in \u201999"
+      ]
     },
     {
       "mbid": "f021c48e-6322-4e07-bfc1-3090853cc041",
@@ -7228,7 +7171,33 @@
       "storedLengthMs": null,
       "mbLengthMs": 212093,
       "samplesFrom": 0,
-      "sampledIn": 2
+      "sampledIn": 2,
+      "disambiguation": "album version",
+      "live": false,
+      "releaseTitles": [
+        "Destiny",
+        "CBS 10\u00ba Aniversario. 10 a\u00f1os de \u00e9xitos",
+        "Dance Classics, Volume 4",
+        "The Sony Digital Collection, Vol. 1",
+        "25 Jaar Popmuziek: 1978",
+        "Groove Zone, Sector Three",
+        "Le Top de la disco",
+        "18 Explosive Hits and One Real Loser",
+        "Classic Clubbin\u2019, Vol. 1",
+        "Collection Gold",
+        "Dancing Through the Soul of the 80's",
+        "Night Feelings",
+        "Video Hits Classics",
+        "60 More Classic Dance Hits of the 70\u2019s",
+        "Dance Classics Gold II",
+        "De Pre Historie 1978, Volume 1",
+        "Rhythm Divine",
+        "S\u00e1bado Noche",
+        "Blame It on the Boogie",
+        "25 Years of Rock \u2019n\u2019 Roll: 1978, Volume 2",
+        "Disco Mania: The Sound of the Seventies",
+        "Do the Funk, Volume 4"
+      ]
     },
     {
       "mbid": "4e1974cc-aaf4-46b7-9634-7aa9899b70e2",
@@ -7236,7 +7205,13 @@
       "storedLengthMs": null,
       "mbLengthMs": 271240,
       "samplesFrom": 1,
-      "sampledIn": 0
+      "sampledIn": 0,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "My Life",
+        "Ballads"
+      ]
     },
     {
       "mbid": "366b7693-aee3-49bc-a9f0-a555df42a080",
@@ -7244,7 +7219,12 @@
       "storedLengthMs": null,
       "mbLengthMs": 309547,
       "samplesFrom": 0,
-      "sampledIn": 1
+      "sampledIn": 1,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "The Essential Collection"
+      ]
     },
     {
       "mbid": "789ef63e-072b-4134-b44e-4612763bf14a",
@@ -7252,7 +7232,17 @@
       "storedLengthMs": null,
       "mbLengthMs": 218093,
       "samplesFrom": 0,
-      "sampledIn": 0
+      "sampledIn": 0,
+      "disambiguation": "clean",
+      "live": false,
+      "releaseTitles": [
+        "Dangerous",
+        "Promo Only: Urban Series, October 1997",
+        "When Disaster Strikes...",
+        "When Disaster Strikes\u2026",
+        "Dance Max 24",
+        "Pure Swing: The Very Best Of The Nineties"
+      ]
     },
     {
       "mbid": "c85cb2ba-d592-4e55-8487-c304e4d07bf8",
@@ -7260,7 +7250,20 @@
       "storedLengthMs": null,
       "mbLengthMs": 218000,
       "samplesFrom": 1,
-      "sampledIn": 1
+      "sampledIn": 1,
+      "disambiguation": "explicit",
+      "live": false,
+      "releaseTitles": [
+        "When Disaster Strikes\u2026",
+        "Dangerous",
+        "When Disaster Strikes",
+        "Black & Beautiful, Volume 4",
+        "DJ Hits '98 Volume 3",
+        "Keinijg #5",
+        "Rapper\u2019s Paradise V",
+        "Grammy Rap Nominees 1999",
+        "Turn It Up! The Very Best of Busta Rhymes"
+      ]
     },
     {
       "mbid": "eaceb094-a226-4bd0-9961-fad3393c8d38",
@@ -7268,7 +7271,27 @@
       "storedLengthMs": null,
       "mbLengthMs": 195000,
       "samplesFrom": 1,
-      "sampledIn": 0
+      "sampledIn": 0,
+      "disambiguation": "explicit, without interlude",
+      "live": false,
+      "releaseTitles": [
+        "When Disaster Strikes\u2026",
+        "Rapper\u2019s Paradise IV",
+        "Massive Dance Hits 3",
+        "Ultimate Hip Hop",
+        "Turn It Up! The Very Best of Busta Rhymes",
+        "Total Devastation: The Best of Busta Rhymes",
+        "The Hip Hop Box",
+        "Bring It!",
+        "The Best of Busta Rhymes",
+        "100 R&B Classics: The Anthems",
+        "Anthems: Hip-Hop III",
+        "Latest & Greatest Hip Hop Anthems",
+        "Hip Hop Fundamentals",
+        "Latest & Greatest Hip-Hop",
+        "Hip-Hop History: The Collection",
+        "Throwback: Hip Hop"
+      ]
     },
     {
       "mbid": "824e104c-4406-46c8-b74f-bf79ef968633",
@@ -7276,7 +7299,12 @@
       "storedLengthMs": null,
       "mbLengthMs": 282733,
       "samplesFrom": 0,
-      "sampledIn": 0
+      "sampledIn": 0,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "I LOVE R&B Ultimate Best"
+      ]
     },
     {
       "mbid": "a2f908dd-bcea-4336-bc30-e1b4d00fde80",
@@ -7284,23 +7312,104 @@
       "storedLengthMs": null,
       "mbLengthMs": 214573,
       "samplesFrom": 1,
-      "sampledIn": 0
+      "sampledIn": 0,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "Songs in A minor",
+        "The Dome, Volume 19",
+        "Absolute Music 41",
+        "Girlfriend",
+        "Edison Music Awards 2002",
+        "So Fresh: The Hits of Summer 2003 Plus the Biggest Hits of 2002",
+        "Touch My Soul: The Finest of Black Music, Vol. 23",
+        "Girls Night Out 2"
+      ]
     },
     {
       "mbid": "723a6918-f337-4d60-8b9a-8cc89eab9a43",
-      "title": "Bourgié Bourgié (instrumental)",
+      "title": "Bourgi\u00e9 Bourgi\u00e9 (instrumental)",
       "storedLengthMs": null,
       "mbLengthMs": 367666,
       "samplesFrom": 0,
-      "sampledIn": 1
+      "sampledIn": 1,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "Send It",
+        "Hits, Remixes and Rarities: The Warner Brothers Years",
+        "Grand 12\u2010Inches 14"
+      ]
     },
     {
       "mbid": "83c21345-afcf-44b0-b619-f0f7c5f9b2a1",
-      "title": "Bourgié, Bourgié",
+      "title": "Bourgi\u00e9, Bourgi\u00e9",
       "storedLengthMs": null,
       "mbLengthMs": 367000,
       "samplesFrom": 0,
-      "sampledIn": 1
+      "sampledIn": 1,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "Disco Connection, Volume 2: Authentic Classic Disco 1974\u20131981",
+        "Disco Fever: Just a Touch of Love"
+      ]
+    },
+    {
+      "mbid": "eb0e73b7-902d-4ecf-b8ee-7fc27ca7629e",
+      "title": "Fantasy",
+      "storedLengthMs": 278000,
+      "mbLengthMs": 278000,
+      "samplesFrom": 1,
+      "sampledIn": 1,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "All 'n All",
+        "All 'N All",
+        "All \u2019n All",
+        "Private Lessons (An Original Soundtrack Album)",
+        "The Collection",
+        "The Very Best of Earth Wind and Fire",
+        "Stereoplay Highlights CD 16: Meisterwerke aus Rock und Pop",
+        "Dance Trax",
+        "25 Jaar Popmuziek: 1978",
+        "60\u2019s / 70\u2019s Collection",
+        "Pop Classics",
+        "The More I See You",
+        "Hifi Visionen: Oldie-CD 18",
+        "Mr Music Plus: Number Eleven",
+        "Black Magic 3: The Most Beautiful Black and Soul Ballads",
+        "Rhythm & Black",
+        "Rhythm & Soul",
+        "The Love Songs",
+        "The Very Best Of",
+        "Top of Pop and Rock",
+        "The Eternal Dance"
+      ]
+    },
+    {
+      "mbid": "5461c08e-3b9d-4da0-96cd-ade17b241654",
+      "title": "Brazilian Rhyme (interlude)",
+      "storedLengthMs": 80733,
+      "mbLengthMs": 80733,
+      "samplesFrom": 1,
+      "sampledIn": 3,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "All \u2019n All",
+        "The Eternal Dance",
+        "Dance Tracks",
+        "Free Soul Party",
+        "Greatest Hits",
+        "Key to the Groove",
+        "Getaway: Greatest Hits + 2",
+        "Les Indispensables",
+        "100 Anthems: Chillout",
+        "Original Album Classics",
+        "The Columbia Masters"
+      ]
     },
     {
       "mbid": "6d3e99e1-3838-4a23-9b22-4466139c719d",
@@ -7308,7 +7417,13 @@
       "storedLengthMs": null,
       "mbLengthMs": 321000,
       "samplesFrom": 0,
-      "sampledIn": 0
+      "sampledIn": 0,
+      "disambiguation": "live, 1975 (LP edit)",
+      "live": true,
+      "releaseTitles": [
+        "Alive!",
+        "The Originals 1974\u20131979"
+      ]
     },
     {
       "mbid": "efb9067c-431c-4cd1-8703-b2894a56b3c2",
@@ -7316,7 +7431,12 @@
       "storedLengthMs": null,
       "mbLengthMs": null,
       "samplesFrom": 0,
-      "sampledIn": 0
+      "sampledIn": 0,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "Shades Of Al Green"
+      ]
     },
     {
       "mbid": "7e85160c-24b0-4645-a203-7c6f1a498a6f",
@@ -7324,7 +7444,61 @@
       "storedLengthMs": null,
       "mbLengthMs": 184000,
       "samplesFrom": 0,
-      "sampledIn": 0
+      "sampledIn": 0,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "Al Green \u2013 Greatest Hits"
+      ]
+    },
+    {
+      "mbid": "975e9e58-a22f-47bb-ad58-9bd712da9352",
+      "title": "No Woman, No Cry",
+      "storedLengthMs": 244293,
+      "mbLengthMs": 244293,
+      "samplesFrom": 0,
+      "sampledIn": 1,
+      "disambiguation": "live",
+      "live": true,
+      "releaseTitles": [
+        "Legend: The Best of Bob Marley and The Wailers",
+        "Legend - The Best of Bob Marley and The Wailers",
+        "Legend: The Best of Bob Marley & The Wailers",
+        "Legend: The Best of Bob Marley and the Wailers",
+        "Tougher Than Tough: The Story of Jamaican Music",
+        "The Story Of Jamaican Music (Tougher Than Tough)",
+        "The Very Best in Memoriam"
+      ]
+    },
+    {
+      "mbid": "33b9b9fd-15a1-4e1f-a10a-3d15df5e58f0",
+      "title": "Three Little Birds",
+      "storedLengthMs": 180106,
+      "mbLengthMs": 180106,
+      "samplesFrom": 0,
+      "sampledIn": 1,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "Exodus",
+        "Three Little Birds",
+        "The Box Set",
+        "Legend: The Best of Bob Marley and The Wailers",
+        "Legend - The Best of Bob Marley and The Wailers",
+        "Legend: The Best of Bob Marley & The Wailers",
+        "Legend: The Best of Bob Marley and the Wailers"
+      ]
+    },
+    {
+      "mbid": "8f540449-337b-4e4f-ab72-acbf4b1a7c85",
+      "title": "No Woman No Cry",
+      "storedLengthMs": 243333,
+      "mbLengthMs": 243333,
+      "samplesFrom": 0,
+      "sampledIn": 0,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": []
     },
     {
       "mbid": "13ef609a-ceb6-44c5-b1cd-6ed05b8948cf",
@@ -7332,7 +7506,16 @@
       "storedLengthMs": null,
       "mbLengthMs": 236000,
       "samplesFrom": 0,
-      "sampledIn": 3
+      "sampledIn": 3,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "Uprising",
+        "The Box Set",
+        "Legend: The Best of Bob Marley and The Wailers",
+        "Could You Be Loved",
+        "Legend: The Best of Bob Marley and the Wailers"
+      ]
     },
     {
       "mbid": "755ea925-c364-4e59-b21f-8d0f4f73f821",
@@ -7340,7 +7523,16 @@
       "storedLengthMs": null,
       "mbLengthMs": 211133,
       "samplesFrom": 0,
-      "sampledIn": 1
+      "sampledIn": 1,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "Exodus",
+        "The Box Set",
+        "Legend: The Best of Bob Marley and The Wailers",
+        "Legend: The Best of Bob Marley and the Wailers",
+        "Songs of Freedom"
+      ]
     },
     {
       "mbid": "5bd8736d-1f1b-4666-8050-4cc03a128af5",
@@ -7348,15 +7540,144 @@
       "storedLengthMs": null,
       "mbLengthMs": null,
       "samplesFrom": 0,
-      "sampledIn": 1
+      "sampledIn": 1,
+      "disambiguation": "part of \u201cHip Hop Classics, Volume 1\u201d DJ\u2010mix",
+      "live": false,
+      "releaseTitles": [
+        "Hip Hop Classics, Volume 1"
+      ]
     },
     {
       "mbid": "e1603c1f-c03e-4d5d-9232-f5092a3c9144",
-      "title": "Jazz (We’ve Got)",
+      "title": "Jazz (We\u2019ve Got)",
       "storedLengthMs": null,
       "mbLengthMs": 250226,
       "samplesFrom": 5,
-      "sampledIn": 2
+      "sampledIn": 2,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "The Low End Theory",
+        "PsycheFunkaJazzadelic",
+        "Find a Way",
+        "The Anthology",
+        "Reminisce: Hip Hop Classics",
+        "Hits, Rarities & Remixes"
+      ]
+    },
+    {
+      "mbid": "12db7ceb-c8f8-4220-8ea4-906226896b1f",
+      "title": "When the Last Time",
+      "storedLengthMs": 254306,
+      "mbLengthMs": 254306,
+      "samplesFrom": 0,
+      "sampledIn": 1,
+      "disambiguation": "",
+      "live": false,
+      "releaseTitles": [
+        "Lord Willin\u2019",
+        "Street Dance, Volume Two",
+        "Lord Willin'",
+        "Street Dance Battle"
+      ]
+    }
+  ],
+  "recallReview": [
+    {
+      "label": "Gangsta's Paradise / Pastime Paradise",
+      "releaseId": 266650,
+      "sourceMbid": "d2637c43-cb52-419a-9a6d-3e1fa1b9be30",
+      "sourceTitle": "Pastime Paradise",
+      "targetMbid": "2f7a6735-2e09-4ce2-81e4-b148e6c39a55",
+      "targetTitle": "Gangsta\u2019s Paradise",
+      "direction": "sampled_by",
+      "status": "restored",
+      "relId": "9efd9ce9-e702-448b-8e76-641515e8fe62",
+      "siblingMbid": "e97bedfc-b0ee-4cb6-8343-03a714caab15"
+    },
+    {
+      "label": "Catching the Sun / \u30d5\u30ea\u30fc\u30bf\u30fc\u30b9\u30c8\u30fc\u30ea\u30fc",
+      "releaseId": 1575060,
+      "sourceMbid": "13b2dabd-de20-4180-97f9-c7f9528dd8b1",
+      "sourceTitle": "Catching the Sun",
+      "targetMbid": "3c6ebd0c-0f85-4436-a591-5bcff14ff250",
+      "targetTitle": "\u30d5\u30ea\u30fc\u30bf\u30fc\u30b9\u30c8\u30fc\u30ea\u30fc",
+      "direction": "sampled_by",
+      "status": "restored",
+      "relId": "9efd9ce9-e702-448b-8e76-641515e8fe62",
+      "siblingMbid": "797b5ab3-2b43-46e5-bb46-6f72f7c311d3"
+    },
+    {
+      "label": "My Lovin' / The Payback",
+      "releaseId": 6625293,
+      "sourceMbid": "824e104c-4406-46c8-b74f-bf79ef968633",
+      "sourceTitle": "My Lovin'",
+      "targetMbid": "d9154cae-507c-4b35-9021-025e320a067a",
+      "targetTitle": "The Payback",
+      "direction": "sample_of",
+      "status": "restored",
+      "relId": "9efd9ce9-e702-448b-8e76-641515e8fe62",
+      "siblingMbid": "9cf2bb20-ca0f-421b-a437-9d626850fc9b"
+    },
+    {
+      "label": "Bourgi\u00e9 Bourgi\u00e9 / Guitarra G",
+      "releaseId": 7482706,
+      "sourceMbid": "723a6918-f337-4d60-8b9a-8cc89eab9a43",
+      "sourceTitle": "Bourgi\u00e9 Bourgi\u00e9 (instrumental)",
+      "targetMbid": "a048a0d5-54de-4dd8-b79a-747539e2ecfc",
+      "targetTitle": "Guitarra G (Afterlife mix)",
+      "direction": "sampled_by",
+      "status": "restored",
+      "relId": "9efd9ce9-e702-448b-8e76-641515e8fe62",
+      "siblingMbid": "83c21345-afcf-44b0-b619-f0f7c5f9b2a1"
+    },
+    {
+      "label": "Here I Am / Any Way the Wind Blows",
+      "releaseId": 11917223,
+      "sourceMbid": "efb9067c-431c-4cd1-8703-b2894a56b3c2",
+      "sourceTitle": "Here I Am",
+      "targetMbid": "4a72c3a9-02a8-4645-9c8e-5ab2dc7a7a33",
+      "targetTitle": "Any Way the Wind Blows",
+      "direction": "sampled_by",
+      "status": "restored",
+      "relId": "9efd9ce9-e702-448b-8e76-641515e8fe62",
+      "siblingMbid": "5a5d1712-4b2c-4b92-a659-5ac6397e584c"
+    },
+    {
+      "label": "Look What You Done for Me / Set Me Free",
+      "releaseId": 11917223,
+      "sourceMbid": "7e85160c-24b0-4645-a203-7c6f1a498a6f",
+      "sourceTitle": "Look What You Done for Me",
+      "targetMbid": "2d736e0e-8e32-49cd-a3cf-f427e1659486",
+      "targetTitle": "Set Me Free",
+      "direction": "sampled_by",
+      "status": "restored",
+      "relId": "9efd9ce9-e702-448b-8e76-641515e8fe62",
+      "siblingMbid": "017ee9fa-8d9d-4a51-82d1-47420fa9e402"
+    },
+    {
+      "label": "Look What You Done for Me / Warm Sentiments",
+      "releaseId": 11917223,
+      "sourceMbid": "7e85160c-24b0-4645-a203-7c6f1a498a6f",
+      "sourceTitle": "Look What You Done for Me",
+      "targetMbid": "70bbe44c-d66b-4168-acbf-6bd4021f66ef",
+      "targetTitle": "Warm Sentiments",
+      "direction": "sampled_by",
+      "status": "restored",
+      "relId": "9efd9ce9-e702-448b-8e76-641515e8fe62",
+      "siblingMbid": "017ee9fa-8d9d-4a51-82d1-47420fa9e402"
+    },
+    {
+      "label": "No Woman No Cry / Thin Line",
+      "releaseId": 13694938,
+      "sourceMbid": "8f540449-337b-4e4f-ab72-acbf4b1a7c85",
+      "sourceTitle": "No Woman No Cry",
+      "targetMbid": "96501356-5008-4826-8a7d-4b393d52dd87",
+      "targetTitle": "Thin Line Between Law & Rape",
+      "direction": "sampled_by",
+      "status": "restored",
+      "relId": "9efd9ce9-e702-448b-8e76-641515e8fe62",
+      "siblingMbid": "975e9e58-a22f-47bb-ad58-9bd712da9352"
     }
   ],
   "mtume": {
