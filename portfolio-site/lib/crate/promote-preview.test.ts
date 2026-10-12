@@ -1228,6 +1228,100 @@ describe('QA fold: WATCH CAS, rollback refuse, multi errors, recall', () => {
     )
   })
 
+  it('grafts a restored recall link onto an already-mapped same-song dest recording', async () => {
+    const sourceMbid = 'd2637c43-cb52-419a-9a6d-3e1fa1b9be30'
+    const targetMbid = '2f7a6735-2e09-4ce2-81e4-b148e6c39a55'
+    const siblingMbid = 'e97bedfc-b0ee-4cb6-8343-03a714caab15'
+    const releaseId = 266650
+    const mapped = completeRecording({
+      mbid: siblingMbid,
+      title: 'Pastime Paradise',
+      artist: 'Stevie Wonder',
+      lengthMs: 207693,
+    })
+    const offRelease = completeRecording({
+      mbid: sourceMbid,
+      title: 'Pastime Paradise',
+      artist: 'Stevie Wonder',
+      lengthMs: null,
+      sampledIn: [sampleLink("Gangsta's Paradise", targetMbid)],
+    })
+    const prodPressing = pressingOf(
+      { [mapped.mbid]: mapped },
+      [{ position: 'A1', title: 'Pastime Paradise', durationMs: 207000 }],
+      releaseId
+    )
+    prodPressing.facts.title = 'Songs in the Key of Life'
+    prodPressing.facts.artist = 'Stevie Wonder'
+    const previewPressing = pressingOf(
+      { [offRelease.mbid]: offRelease, [mapped.mbid]: mapped },
+      [{ position: 'A1', title: 'Pastime Paradise', durationMs: 207000, mbid: mapped.mbid }],
+      releaseId
+    )
+    previewPressing.facts.title = 'Songs in the Key of Life'
+    previewPressing.facts.artist = 'Stevie Wonder'
+    const prod = createMemoryCrateStore({
+      pressings: { [releaseId]: prodPressing },
+      recordings: { [mapped.mbid]: mapped },
+      seen: [releaseId],
+    })
+    const preview = createMemoryCrateStore({
+      pressings: { [releaseId]: previewPressing },
+      recordings: { [offRelease.mbid]: offRelease, [mapped.mbid]: mapped },
+      seen: [releaseId],
+    })
+    const report = await runPromotePreview({
+      prod,
+      preview,
+      prodEnv: PROD_ENV,
+      previewEnv: PREVIEW_ENV,
+      ids: [releaseId],
+      verifyRecording: async (mbid) => {
+        if (mbid === sourceMbid) {
+          return {
+            lengthMs: 200000,
+            samplesFrom: new Set(),
+            sampledIn: new Set(),
+            live: false,
+            releaseTitles: ['Magic Soul'],
+          }
+        }
+        if (mbid === siblingMbid) {
+          return {
+            lengthMs: 207693,
+            samplesFrom: new Set(),
+            sampledIn: new Set(),
+            live: false,
+            releaseTitles: ['Songs in the Key of Life'],
+          }
+        }
+        return {
+          lengthMs: 241306,
+          samplesFrom: new Set([siblingMbid]),
+          sampledIn: new Set(),
+          samplesFromLinks: [sampleLink('Pastime Paradise', siblingMbid)],
+          relIds: new Map([[siblingMbid, MB_SAMPLES_MATERIAL_REL_ID]]),
+          live: false,
+          releaseTitles: ['Gangsta’s Paradise'],
+        }
+      },
+    })
+    assert.equal(report.recallReview[0]?.status, 'restored')
+    assert.equal(
+      report.records[0]?.skips.some(
+        (skip) => skip.mbid === sourceMbid && skip.reason === 'recording not on dest release'
+      ),
+      true
+    )
+    assert.equal(
+      report.records[0]?.copies.some(
+        (copy) =>
+          copy.mbid === siblingMbid && copy.addedLinks.some((link) => link.mbid === targetMbid)
+      ),
+      true
+    )
+  })
+
   it('confirms false when the target has no same-song samples rel', async () => {
     const sourceMbid = 'd2637c43-cb52-419a-9a6d-3e1fa1b9be30'
     const targetMbid = '2f7a6735-2e09-4ce2-81e4-b148e6c39a55'

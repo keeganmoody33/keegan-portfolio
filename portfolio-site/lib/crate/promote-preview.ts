@@ -1361,26 +1361,7 @@ async function planCopies(options: {
         skips.push({ releaseId, mbid, title: previewDoc.title, reason: 'live recording on studio dest' })
         continue
       }
-      if (
-        verified &&
-        (verified.releaseTitles?.length ?? 0) > 0 &&
-        artistsMatch(prodPressing.facts.artist, previewDoc.artist) &&
-        !recordingAppearsOnPressing(verified.releaseTitles, prodPressing.facts.title) &&
-        Object.values(prodPressing.recordings).some(
-          (doc) =>
-            doc.mbid !== previewDoc.mbid &&
-            songTitle(doc.title) === songTitle(previewDoc.title) &&
-            artistsMatch(doc.artist, previewDoc.artist)
-        )
-      ) {
-        skips.push({
-          releaseId,
-          mbid,
-          title: previewDoc.title,
-          reason: 'recording not on dest release',
-        })
-        continue
-      }
+      let recallRows: PromoteRecallReview[] = []
       if (verified && needsVerify && options.verifyRecording) {
         const recall = await applyRecallReview({
           preview: previewDoc,
@@ -1390,7 +1371,38 @@ async function planCopies(options: {
           pulse: options.pulse,
         })
         verified = recall.verified
+        recallRows = recall.rows
         recallReview.push(...recall.rows)
+      }
+      const mappedSameSong = Object.values(nextRecordings).filter(
+        (doc) =>
+          doc.mbid !== previewDoc.mbid &&
+          songTitle(doc.title) === songTitle(previewDoc.title) &&
+          artistsMatch(doc.artist, previewDoc.artist)
+      )
+      const destReleaseMismatch =
+        Boolean(verified) &&
+        (verified?.releaseTitles?.length ?? 0) > 0 &&
+        artistsMatch(prodPressing.facts.artist, previewDoc.artist) &&
+        !recordingAppearsOnPressing(verified?.releaseTitles, prodPressing.facts.title) &&
+        mappedSameSong.length > 0
+      const restoredIds = new Set(
+        recallRows.filter((row) => row.status === 'restored').map((row) => row.targetMbid)
+      )
+      let attachHost: StoredRecording | null = null
+      if (destReleaseMismatch) {
+        const host = mappedSameSong[0]
+        if (host && restoredIds.size > 0) {
+          attachHost = host
+        } else {
+          skips.push({
+            releaseId,
+            mbid,
+            title: previewDoc.title,
+            reason: 'recording not on dest release',
+          })
+          continue
+        }
       }
       const filtered = filterPreviewSampleLinks(
         previewDoc,
@@ -1400,14 +1412,38 @@ async function planCopies(options: {
       for (const drop of filtered.dropped) {
         droppedLinks.push({ ...drop, releaseId })
       }
-      const previewFiltered = filtered.recording
-      const prodDoc = prodDocEarly
+      const previewFiltered = attachHost
+        ? {
+            ...attachHost,
+            samplesFrom: mergeSampleLinks(
+              attachHost.samplesFrom,
+              filtered.recording.samplesFrom.filter((link) => restoredIds.has(link.mbid))
+            ),
+            sampledIn: mergeSampleLinks(
+              attachHost.sampledIn,
+              filtered.recording.sampledIn.filter((link) => restoredIds.has(link.mbid))
+            ),
+          }
+        : filtered.recording
+      if (attachHost) {
+        skips.push({
+          releaseId,
+          mbid,
+          title: previewDoc.title,
+          reason: 'recording not on dest release',
+        })
+      }
+      const copyMbid = attachHost?.mbid ?? mbid
+      const prodDoc = attachHost
+        ? await loadRecording(prod, nextRecordings[copyMbid] ?? attachHost, copyMbid)
+        : prodDocEarly
+      const copyAlreadyOnMap = attachHost ? true : alreadyOnMap
       if (
         prodDoc &&
         recordingIsCompleteSidecar(prodDoc) &&
         countRecordingLinks(prodDoc).links > countRecordingLinks(previewFiltered).links &&
         addedSampleLinks(prodDoc, previewFiltered).length === 0 &&
-        alreadyOnMap
+        copyAlreadyOnMap
       ) {
         skips.push({
           releaseId,
@@ -1418,9 +1454,12 @@ async function planCopies(options: {
         continue
       }
       const merged = preferCompleteRecording(prodDoc, mergePromoteRecording(prodDoc, previewFiltered))
-      const addedLinks = addedSampleLinks(prodPressing.recordings[mbid] ?? prodDoc, merged)
+      const addedLinks = addedSampleLinks(
+        prodPressing.recordings[copyMbid] ?? prodDoc,
+        merged
+      )
       const mapEntryChanged =
-        !alreadyOnMap || JSON.stringify(nextRecordings[mbid] ?? null) !== JSON.stringify(merged)
+        !copyAlreadyOnMap || JSON.stringify(nextRecordings[copyMbid] ?? null) !== JSON.stringify(merged)
       const redisNeedsWrite =
         !prodDoc || JSON.stringify({
           samplesFrom: prodDoc.samplesFrom,
@@ -1435,12 +1474,12 @@ async function planCopies(options: {
         skips.push({ releaseId, mbid, title: previewDoc.title, reason: 'already present' })
         continue
       }
-      if (!recordingHasSampleMaterial(merged) && !alreadyOnMap) {
+      if (!recordingHasSampleMaterial(merged) && !copyAlreadyOnMap) {
         skips.push({ releaseId, mbid, title: previewDoc.title, reason: 'no sample rels' })
         continue
       }
 
-      nextRecordings[mbid] = merged
+      nextRecordings[copyMbid] = merged
       if (mapEntryChanged) mapChanged = true
       const fit =
         matched[0] != null
@@ -1449,22 +1488,22 @@ async function planCopies(options: {
       const notes = copyBorderline(previewFiltered, fit, matched)
       copies.push({
         releaseId,
-        mbid,
-        recordingTitle: previewDoc.title,
-        recordingArtist: previewDoc.artist,
-        alreadyOnMap,
+        mbid: copyMbid,
+        recordingTitle: attachHost?.title ?? previewDoc.title,
+        recordingArtist: attachHost?.artist ?? previewDoc.artist,
+        alreadyOnMap: copyAlreadyOnMap,
         versionFit: fit,
         matchedTracks: matched.map((track) => ({ position: track.position, title: track.title })),
         addedLinks,
         borderline: notes,
       })
       if (notes.length > 0) {
-        borderline.push({ releaseId, mbid, title: previewDoc.title, notes })
+        borderline.push({ releaseId, mbid: copyMbid, title: attachHost?.title ?? previewDoc.title, notes })
       }
       for (const link of addedLinks) {
         if (link.versionFlags.length > 0) remixLiveEdit.push({ ...link, releaseId })
       }
-      if (versionFlags(previewDoc.title).length > 0) {
+      if (!attachHost && versionFlags(previewDoc.title).length > 0) {
         remixLiveEdit.push({
           source: 'sidecar-title',
           releaseId,
@@ -1476,12 +1515,12 @@ async function planCopies(options: {
           versionFlags: versionFlags(previewDoc.title),
         })
       }
-      if (redisNeedsWrite && !recordingWriteMbids.has(mbid)) {
-        recordingWriteMbids.add(mbid)
+      if (redisNeedsWrite && !recordingWriteMbids.has(copyMbid)) {
+        recordingWriteMbids.add(copyMbid)
         writes.push({
-          key: assertProdPromoteKey(prodKeys.recording(mbid)),
+          key: assertProdPromoteKey(prodKeys.recording(copyMbid)),
           kind: 'recording',
-          mbid,
+          mbid: copyMbid,
           recording: merged,
         })
       }
