@@ -31,16 +31,23 @@ import {
   titleIsLive,
   recordingIsLive,
   destinationIsLive,
+  isDjMixDisambiguation,
   promoteVersionContradicts,
+  selectAnnotateProbeHits,
+  TRACK_LEVEL_EXTRAS_ANNOTATE_RESERVE,
   NEAR_TOP_SCORE_SLACK,
   DURATION_SIDECAR_MS,
 } from './match.ts'
 import {
+  EXTRAS_TYPICAL_REQUESTS_PER_TRACK,
+  EXTRAS_WORST_REQUESTS_PER_TRACK,
   filterExtraSearchHits,
   filterWorkBrowseHits,
   nearTopHasSamples,
   normalizeIsrc,
+  projectExtrasRequestCost,
   projectExtrasTotals,
+  shouldRunSearchExtras,
   uniqueWorkMbid,
 } from './search-extras.ts'
 import { AUTH_RETRY_MS, isoFromMs, keepPriorMatch, nextBackoffMs, preferCompleteRecording, preservePressingOnFailure, shouldRefreshPressing, SUCCESS_REFRESH_MS, TERMINAL_REFRESH_MS, withClearedDeadlineStops, withRecordingLength } from './preserve.ts'
@@ -67,6 +74,8 @@ import {
   readRetryAfterMs,
   RECORDING_SEARCH_LIMIT,
   RECORDING_SEARCH_MAX_PAGES,
+  WORK_BROWSE_LIMIT,
+  WORK_BROWSE_MAX_PAGES,
   secondArtistTitleQuery,
   type MusicBrainzClient,
 } from './musicbrainz.ts'
@@ -10580,15 +10589,23 @@ describe('search extras for missed sampled recordings', () => {
     assert.equal(titleIsLive('Alive!'), false)
     assert.equal(titleIsLive('Hotter Than Hell (live)'), true)
     assert.equal(destinationIsLive({ albumTitle: 'Alive!', trackTitle: 'Hotter Than Hell' }), true)
+    assert.equal(destinationIsLive({ albumTitle: 'Alive II', trackTitle: 'Hotter Than Hell' }), true)
     assert.equal(
       destinationIsLive({ albumTitle: 'Double Platinum', trackTitle: 'Hotter Than Hell' }),
       false
     )
     assert.equal(
+      destinationIsLive({ albumTitle: "Stayin' Alive", trackTitle: 'Stayin’ Alive' }),
+      false
+    )
+    assert.equal(destinationIsLive({ albumTitle: 'Alive 2007', trackTitle: 'Daftendirekt' }), false)
+    assert.equal(
       recordingIsLive({ title: 'Hotter Than Hell', disambiguation: 'live, 1975' }),
       true
     )
     assert.equal(recordingIsLive({ title: 'Hotter Than Hell' }), false)
+    assert.equal(isDjMixDisambiguation('DJ-mix'), true)
+    assert.equal(isDjMixDisambiguation('live, 1975'), false)
   })
 
   it('rejects studio Hotter Than Hell on Alive! and live HTH on a studio dest', () => {
@@ -10675,6 +10692,131 @@ describe('search extras for missed sampled recordings', () => {
       [remix.mbid]
     )
     assert.equal(filterWorkBrowseHits([studio], discogs, dest).length, 0)
+  })
+
+  it('rejects Radio Edit extras that land on a Clubstar remix', () => {
+    const discogs = {
+      artist: 'DJ Casper',
+      title: 'Cha-Cha Slide (Radio Edit)',
+      durationMs: 220000,
+    }
+    const dest = { albumTitle: 'Cha-Cha Slide', trackTitle: 'Cha-Cha Slide (Radio Edit)' }
+    const clubstar = {
+      mbid: '67350ade-0000-4000-8000-000000000001',
+      title: 'Cha Cha Slide (Clubstar Remix)',
+      artist: 'DJ Casper',
+      lengthMs: 220000,
+      score: 100,
+    }
+    const radio = {
+      mbid: 'radio-edit-378994',
+      title: 'Cha-Cha Slide (Radio Edit)',
+      artist: 'DJ Casper',
+      lengthMs: 220000,
+      score: 100,
+    }
+    assert.equal(searchVersionFit(discogs.title, clubstar.title), 'wrong')
+    assert.equal(searchVersionFit(discogs.title, radio.title), 'aligned')
+    assert.deepEqual(
+      filterExtraSearchHits([clubstar, radio], discogs, dest).map((hit) => hit.mbid),
+      [radio.mbid]
+    )
+  })
+
+  it('rejects a different-artist extras hit', () => {
+    const discogs = { artist: 'Mtume', title: 'Juicy Fruit (Vocal)', durationMs: 355000 }
+    const dest = { albumTitle: 'Juicy Fruit', trackTitle: 'Juicy Fruit (Vocal)' }
+    const other = {
+      mbid: 'biggie-not-mtume',
+      title: 'Juicy Fruit',
+      artist: 'The Notorious B.I.G.',
+      lengthMs: 355000,
+      score: 100,
+    }
+    const same = {
+      mbid: 'mtume-juicy-fruit',
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      lengthMs: 355000,
+      score: 100,
+    }
+    assert.equal(artistsMatch(discogs.artist, other.artist), false)
+    assert.equal(artistsMatch(discogs.artist, same.artist), true)
+    assert.deepEqual(
+      filterExtraSearchHits([other, same], discogs, dest).map((hit) => hit.mbid),
+      [same.mbid]
+    )
+  })
+
+  it('rejects unknown-length extras unless the hit is on the dest release', () => {
+    const unknown = {
+      mbid: 'unknown-len-extra',
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      lengthMs: null,
+      score: 100,
+    }
+    const discogs = { artist: 'Mtume', title: 'Juicy Fruit (Vocal)', durationMs: 355000 }
+    const dest = { albumTitle: 'Juicy Fruit', trackTitle: 'Juicy Fruit (Vocal)' }
+    assert.equal(filterExtraSearchHits([unknown], discogs, dest).length, 0)
+    assert.equal(
+      filterExtraSearchHits([unknown], discogs, {
+        ...dest,
+        releaseRecordingIds: new Set([unknown.mbid]),
+      }).length,
+      1
+    )
+  })
+
+  it('rejects DJ-mix disambiguations on extras', () => {
+    const mix = {
+      mbid: 'dj-mix',
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      lengthMs: 355000,
+      score: 100,
+      disambiguation: 'DJ-mix',
+    }
+    assert.equal(
+      filterExtraSearchHits(
+        [mix],
+        { artist: 'Mtume', title: 'Juicy Fruit (Vocal)', durationMs: 355000 },
+        { albumTitle: 'Juicy Fruit', trackTitle: 'Juicy Fruit (Vocal)' }
+      ).length,
+      0
+    )
+  })
+
+  it('runs extras only after a known unsampled match', () => {
+    const discogs = { artist: 'Mtume', title: 'Juicy Fruit (Vocal)', durationMs: 355000 }
+    const base = {
+      mbid: 'base',
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      lengthMs: 355000,
+      score: 100,
+    }
+    assert.equal(shouldRunSearchExtras([{ ...base, hasSamples: null }], discogs), false)
+    assert.equal(shouldRunSearchExtras([{ ...base, hasSamples: true }], discogs), false)
+    assert.equal(shouldRunSearchExtras([{ ...base, hasSamples: false }], discogs), true)
+    assert.equal(shouldRunSearchExtras([], discogs), false)
+  })
+
+  it('reserves an annotate slot so extras cannot take all three probes', () => {
+    assert.equal(TRACK_LEVEL_EXTRAS_ANNOTATE_RESERVE, 1)
+    const hit = (mbid: string, extra = false) => ({
+      mbid,
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      lengthMs: 355000,
+      score: 100,
+      extra,
+    })
+    const ordered = [hit('e1', true), hit('e2', true), hit('e3', true), hit('base')]
+    const cap = selectAnnotateProbeHits(ordered, TRACK_LEVEL_ANNOTATE_CAP)
+    assert.equal(cap.length, TRACK_LEVEL_ANNOTATE_CAP)
+    assert.equal(cap.filter((row) => row.extra).length, 2)
+    assert.ok(cap.some((row) => row.mbid === 'base'))
   })
 
   it('mergeRecalledRecordingHits copies extra so a first-search miss is probed first', () => {
@@ -10844,6 +10986,32 @@ describe('search extras for missed sampled recordings', () => {
     assert.ok(urls.some((url) => url.includes('work=work-1')))
   })
 
+  it('paginates work browse while the page is full', async () => {
+    const offsets: number[] = []
+    const client = createMusicBrainzClient({
+      minIntervalMs: 0,
+      fetchImpl: async (url) => {
+        const parsed = new URL(String(url))
+        const offset = Number(parsed.searchParams.get('offset') || '0')
+        offsets.push(offset)
+        const count = offset === 0 ? WORK_BROWSE_LIMIT : 5
+        return Response.json({
+          recordings: Array.from({ length: count }, (_, index) => ({
+            id: `work-rec-${offset + index}`,
+            title: 'Off Point',
+            length: 235000,
+            'artist-credit': [{ name: 'The Beatnuts' }],
+          })),
+        })
+      },
+    })
+    const browsed = await client.browseRecordingsByWork('work-1')
+    assert.equal(offsets[0], 0)
+    assert.equal(offsets[1], WORK_BROWSE_LIMIT)
+    assert.ok(offsets.length <= WORK_BROWSE_MAX_PAGES)
+    assert.equal(browsed.length, WORK_BROWSE_LIMIT + 5)
+  })
+
   it('does not browse recordings when the work search is ambiguous', async () => {
     const urls: string[] = []
     const client = createMusicBrainzClient({
@@ -10944,7 +11112,7 @@ describe('search extras for missed sampled recordings', () => {
       mb,
     })
     assert.ok(fetched.includes(sampledMbid))
-    assert.ok(fetched.length <= TRACK_LEVEL_ANNOTATE_CAP)
+    assert.ok(fetched.length <= TRACK_LEVEL_ANNOTATE_CAP + 1)
     const vocal = result.tracks.find((track) => /vocal/i.test(track.title))
     assert.equal(vocal?.recording.mbid, sampledMbid)
   })
@@ -11150,6 +11318,36 @@ describe('search extras for missed sampled recordings', () => {
     assert.equal(projected.links, 1)
     assert.equal(projected.records, 1)
     assert.equal(projected.sampledBy, 1)
+    const cost = projectExtrasRequestCost([pressing as StoredPressing])
+    assert.equal(EXTRAS_TYPICAL_REQUESTS_PER_TRACK, 1)
+    assert.equal(EXTRAS_WORST_REQUESTS_PER_TRACK, 1 + 1 + 1 + WORK_BROWSE_MAX_PAGES)
+    assert.equal(cost.playableTracks, 1)
+    assert.equal(cost.extrasEligibleTracks, 0)
+    assert.equal(cost.ungatedPlayableTimesWorst, EXTRAS_WORST_REQUESTS_PER_TRACK)
+    assert.equal(cost.typicalExtraRequests, 0)
+    assert.equal(cost.worstExtraRequests, 0)
+  })
+
+  it('does not fire extras when first search has no known match', async () => {
+    let extras = 0
+    const mb = createMusicBrainzClientForTests()
+    mb.searchRecordingsByArtistTitle = async () => []
+    mb.searchRecordingsByArtistNameTitle = async () => {
+      extras += 1
+      return []
+    }
+    mb.searchWorksByArtistTitle = async () => {
+      extras += 1
+      return []
+    }
+    const store = createMemoryCrateStore()
+    await enrichPressing(567894, {
+      store,
+      now: () => Date.parse('2026-10-06T08:00:00.000Z'),
+      fetchDiscogs: async () => mtumeDetail(),
+      mb,
+    })
+    assert.equal(extras, 0)
   })
 })
 

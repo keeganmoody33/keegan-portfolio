@@ -1,15 +1,17 @@
 /**
- * Extra MusicBrainz searches when this-run near-top hits have 0 sampled
- * recordings. Typical +1 (second artistname + unquoted title). Worst +3
- * (second query + work search + work browse, or ISRC instead of one of those).
- * Stop as soon as any new hit has samples. Do not raise TRACK_LEVEL_ANNOTATE_CAP.
- * Do not add work-rels to getRecording. No WhoSampled. No /work/ on getRecording.
+ * Extra MusicBrainz searches after annotate when near-top has 0 sampled hits
+ * and a known unsampled match. Typical +1 (second artistname + unquoted title)
+ * on those eligible tracks. Worst +6 (second + ISRC + unique-work search +
+ * WORK_BROWSE_MAX_PAGES). Stop as soon as any new hit has samples. Do not raise
+ * TRACK_LEVEL_ANNOTATE_CAP. Do not add work-rels to getRecording. No WhoSampled.
+ * No /work/ on getRecording.
  */
 import {
   artistsMatch,
   destinationIsLive,
   durationDeltaMs,
   DURATION_SIDECAR_MS,
+  isDjMixDisambiguation,
   NEAR_TOP_SCORE_SLACK,
   promoteVersionContradicts,
   recordingHasSampleMaterial,
@@ -19,7 +21,11 @@ import {
   titlesSimilar,
   type TrackLevelRecordingHit,
 } from './match.ts'
-import { secondArtistTitleQuery, type MbRecordingSearchHit } from './musicbrainz.ts'
+import {
+  secondArtistTitleQuery,
+  WORK_BROWSE_MAX_PAGES,
+  type MbRecordingSearchHit,
+} from './musicbrainz.ts'
 
 export { secondArtistTitleQuery }
 import { isRecordingOrReleaseSampleLink } from './research.ts'
@@ -29,6 +35,7 @@ import { isPlayableOccurrence } from './lifecycle.ts'
 export type SearchExtrasDest = {
   albumTitle?: string | null
   trackTitle: string
+  releaseRecordingIds?: ReadonlySet<string>
 }
 
 export type SearchExtrasClient = {
@@ -86,7 +93,6 @@ export function filterExtraSearchHits(
   options?: { requireKnownLength?: boolean }
 ): TrackLevelRecordingHit[] {
   const discogsSong = songTitle(discogs.title)
-  const requireKnown = Boolean(options?.requireKnownLength)
   return hits.filter((hit) => {
     if (!artistsMatch(discogs.artist, hit.artist)) return false
     const titleOk =
@@ -95,9 +101,12 @@ export function filterExtraSearchHits(
     if (!titleOk) return false
     if (searchVersionFit(discogs.title, hit.title) === 'wrong') return false
     if (promoteVersionContradicts(discogs.title, hit.title)) return false
+    if (isDjMixDisambiguation(hit.disambiguation)) return false
     if (!liveStudioCompatible({ ...dest, trackTitle: dest.trackTitle || discogs.title }, hit)) {
       return false
     }
+    const onDestRelease = Boolean(hit.mbid && dest.releaseRecordingIds?.has(hit.mbid))
+    const requireKnown = options?.requireKnownLength !== false && !onDestRelease
     if (requireKnown && (discogs.durationMs == null || hit.lengthMs == null)) return false
     const delta = durationDeltaMs(discogs.durationMs, hit.lengthMs)
     if (delta != null && delta > DURATION_SIDECAR_MS) return false
@@ -135,6 +144,15 @@ export function nearTopHasSamples(
   discogs: { artist: string; title: string; durationMs: number | null }
 ): boolean {
   return nearTopHits(hits, discogs).some((hit) => hit.hasSamples === true)
+}
+
+/** Extras after annotate: 0 sampled near-top and a known unsampled match. */
+export function shouldRunSearchExtras(
+  hits: TrackLevelRecordingHit[],
+  discogs: { artist: string; title: string; durationMs: number | null }
+): boolean {
+  if (nearTopHasSamples(hits, discogs)) return false
+  return nearTopHits(hits, discogs).some((hit) => hit.hasSamples === false)
 }
 
 export function hitFromMbSearch(
@@ -296,4 +314,46 @@ export function projectExtrasTotals(
       return { links, records: links > 0 ? 1 : 0, sampleOf, sampledBy }
     })
   )
+}
+
+export type ExtrasRequestCost = {
+  playableTracks: number
+  extrasEligibleTracks: number
+  typicalExtraRequests: number
+  worstExtraRequests: number
+  ungatedPlayableTimesWorst: number
+}
+
+/** Second `artistname` + unquoted-title search when extras run. */
+export const EXTRAS_TYPICAL_REQUESTS_PER_TRACK = 1
+/**
+ * Second query + ISRC + unique-work search + WORK_BROWSE_MAX_PAGES.
+ * Old ungated ~1,630 was playable×3 (pre-gate, 1 browse page).
+ */
+export const EXTRAS_WORST_REQUESTS_PER_TRACK =
+  EXTRAS_TYPICAL_REQUESTS_PER_TRACK + 1 + 1 + WORK_BROWSE_MAX_PAGES
+
+/** Gated extras: known-unsampled match after annotate. Worst includes paginated work browse. */
+export function projectExtrasRequestCost(pressings: StoredPressing[]): ExtrasRequestCost {
+  let playableTracks = 0
+  let extrasEligibleTracks = 0
+  for (const pressing of pressings) {
+    for (const track of pressing.tracks) {
+      if (!isPlayableOccurrence(track)) continue
+      playableTracks += 1
+      const mbid = track.recording.mbid
+      if (!mbid) continue
+      const recording = pressing.recordings[mbid]
+      if (!recording) continue
+      if (recordingHasSampleMaterial(recording)) continue
+      extrasEligibleTracks += 1
+    }
+  }
+  return {
+    playableTracks,
+    extrasEligibleTracks,
+    typicalExtraRequests: extrasEligibleTracks * EXTRAS_TYPICAL_REQUESTS_PER_TRACK,
+    worstExtraRequests: extrasEligibleTracks * EXTRAS_WORST_REQUESTS_PER_TRACK,
+    ungatedPlayableTimesWorst: playableTracks * EXTRAS_WORST_REQUESTS_PER_TRACK,
+  }
 }

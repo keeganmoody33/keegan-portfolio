@@ -13,6 +13,8 @@ import { songTitle } from './match.ts'
 
 export const RECORDING_SEARCH_LIMIT = 100
 export const RECORDING_SEARCH_MAX_PAGES = 3
+export const WORK_BROWSE_LIMIT = 100
+export const WORK_BROWSE_MAX_PAGES = 3
 
 export { MUSICBRAINZ_INTERVAL_JITTER_MS, MUSICBRAINZ_RETRY_AFTER_CAP_MS, MUSICBRAINZ_MIN_INTERVAL_MS }
 
@@ -635,23 +637,28 @@ export function createMusicBrainzClient(options: MbClientOptions = {}) {
     async browseRecordingsByWork(workMbid: string): Promise<MbRecordingSearchHit[]> {
       const id = workMbid.trim()
       if (!id) return []
-      const params = new URLSearchParams({
-        work: id,
-        inc: 'artist-credits',
-        fmt: 'json',
-        limit: '25',
-        offset: '0',
-      })
-      const data = await getJson<{ recordings?: MbRecordingSearchRow[] }>(
-        `${MUSICBRAINZ_API}/recording?${params.toString()}`
-      )
       const hits: MbRecordingSearchHit[] = []
       const seen = new Set<string>()
-      for (const recording of data.recordings ?? []) {
-        const hit = recordingSearchHitFrom({ ...recording, score: recording.score ?? 100 })
-        if (!hit || seen.has(hit.mbid)) continue
-        seen.add(hit.mbid)
-        hits.push(hit)
+      for (let page = 0; page < WORK_BROWSE_MAX_PAGES; page += 1) {
+        const params = new URLSearchParams({
+          work: id,
+          inc: 'artist-credits',
+          fmt: 'json',
+          limit: String(WORK_BROWSE_LIMIT),
+          offset: String(page * WORK_BROWSE_LIMIT),
+        })
+        const data = await getJson<{ recordings?: MbRecordingSearchRow[] }>(
+          `${MUSICBRAINZ_API}/recording?${params.toString()}`
+        )
+        const pageHits = data.recordings ?? []
+        if (pageHits.length === 0) break
+        for (const recording of pageHits) {
+          const hit = recordingSearchHitFrom({ ...recording, score: recording.score ?? 100 })
+          if (!hit || seen.has(hit.mbid)) continue
+          seen.add(hit.mbid)
+          hits.push(hit)
+        }
+        if (pageHits.length < WORK_BROWSE_LIMIT) break
       }
       return hits
     },

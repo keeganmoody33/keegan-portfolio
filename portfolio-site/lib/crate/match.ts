@@ -69,12 +69,43 @@ export function recordingIsLive(input: {
   return (input.releaseTitles ?? []).some((title) => titleIsLive(title))
 }
 
-/** Live dest: mix-marker live on the track, or an album titled Alive / Alive!. */
+/** KISS Alive! / Alive II only. Stayin' Alive and Alive 2007 are studio dests. */
+const KNOWN_LIVE_ALBUMS = new Set(['alive', 'alive ii'])
+
+/** Live dest: mix-marker live on the track, or a known live album (KISS Alive! / Alive II). */
 export function destinationIsLive(input: { albumTitle?: string | null; trackTitle: string }): boolean {
   if (titleIsLive(input.trackTitle)) return true
-  const album = input.albumTitle ?? ''
-  if (titleIsLive(album)) return true
-  return Boolean(album) && /\balive\b/.test(normalizeTitle(album))
+  const album = normalizeTitle(input.albumTitle ?? '')
+  return KNOWN_LIVE_ALBUMS.has(album)
+}
+
+/** MB disambiguation `DJ-mix` / `dj mix` is a different version. */
+export function isDjMixDisambiguation(value?: string | null): boolean {
+  if (!value) return false
+  return /\bdj mix\b/.test(normalizeTitle(value))
+}
+
+/** Extra hits may take at most cap-1 annotate slots so a base hit still gets a probe. */
+export const TRACK_LEVEL_EXTRAS_ANNOTATE_RESERVE = 1
+
+export function selectAnnotateProbeHits(
+  ordered: TrackLevelRecordingHit[],
+  cap: number,
+  extrasReserve = TRACK_LEVEL_EXTRAS_ANNOTATE_RESERVE
+): TrackLevelRecordingHit[] {
+  const extras = ordered.filter((hit) => hit.extra)
+  const bases = ordered.filter((hit) => !hit.extra)
+  const reserved = bases.slice(0, Math.max(0, extrasReserve))
+  const extraSlots = Math.max(0, cap - reserved.length)
+  const picked: TrackLevelRecordingHit[] = []
+  const seen = new Set<string>()
+  for (const hit of [...extras.slice(0, extraSlots), ...reserved, ...bases]) {
+    if (seen.has(hit.mbid)) continue
+    seen.add(hit.mbid)
+    picked.push(hit)
+    if (picked.length >= cap) break
+  }
+  return picked
 }
 
 export function searchVersionFit(discogsTitle: string, hitTitle: string): SearchVersionFit {

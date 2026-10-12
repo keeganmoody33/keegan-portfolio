@@ -6,6 +6,7 @@
  */
 import {
   countPressingMapLinks,
+  projectExtrasRequestCost,
   projectExtrasTotals,
   sumTotals,
 } from '../lib/crate/search-extras.ts'
@@ -74,6 +75,7 @@ for (const id of [...ids].sort((a, b) => a - b)) {
 const current = sumTotals(pressings.map(countPressingMapLinks))
 const extras = projectExtrasTotals(pressings)
 const workBrowse = projectExtrasTotals(pressings, { requireKnownLength: true })
+const requestCost = projectExtrasRequestCost(pressings)
 
 const report = {
   wrote: false,
@@ -82,6 +84,7 @@ const report = {
   currentPreview: current,
   extrasAdmissible: extras,
   workBrowseAdmissible: workBrowse,
+  requestCost,
   vs360: extras.links - 360,
   vs389: extras.links - 389,
 }
