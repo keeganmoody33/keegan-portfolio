@@ -304,6 +304,22 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   .house-text-button[hidden] {
     display: none;
   }
+
+  .sleeve-gallery-scroller {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    aspect-ratio: var(--sleeve-gallery-aspect);
+    overscroll-behavior-x: contain;
+  }
+
+  .sleeve-gallery-scroller::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sleeve-gallery-slide {
+    flex: 0 0 100%;
+    aspect-ratio: var(--sleeve-gallery-aspect);
+  }
 }
 
 .house-skip {

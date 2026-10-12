@@ -1,13 +1,19 @@
 import IssuePlate from '@/components/house/IssuePlate'
+import SleeveGallery from '@/components/house/SleeveGallery'
 import type { Sleeve } from '@/lib/catalog'
+import { resolveSleeveMedia } from '@/lib/sleeve-gallery'
 
 export default function Sleeve({ sleeve }: { sleeve: Sleeve }) {
-  const cover = sleeve.cover ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={sleeve.cover} alt={`${sleeve.title} cover`} className="aspect-square w-full object-cover" />
-  ) : (
-    <IssuePlate sleeve={sleeve} />
-  )
+  const media = resolveSleeveMedia(sleeve)
+  const cover =
+    media.kind === 'gallery' ? (
+      <SleeveGallery slug={sleeve.slug} title={sleeve.title} images={media.images} />
+    ) : media.kind === 'cover' ? (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={media.src} alt={media.alt} className="aspect-square w-full object-cover" />
+    ) : (
+      <IssuePlate sleeve={sleeve} />
+    )
 
   return (
     <article>

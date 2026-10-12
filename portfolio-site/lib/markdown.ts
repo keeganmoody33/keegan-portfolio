@@ -92,7 +92,7 @@ export function catalogIndexMarkdown(): string {
 
   return `# catalog — lecturesfrom
 
-a catalog item is a record sleeve that holds artifacts. front = cover. back = liner notes. contents = numbered tracks.
+a catalog item is a record sleeve that holds artifacts. front = cover or image gallery. back = liner notes. contents = numbered tracks.
 
 ${rows}
 `

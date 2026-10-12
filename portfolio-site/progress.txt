@@ -1,3 +1,10 @@
+COMPLETED (2026-10-12 — catalog sleeve gallery + copy refresh, preview only):
+- `Sleeve.images[]` (`src`, `alt`, `width`, `height`, optional `caption`). `cover` still works when `images` is empty.
+- `SleeveGallery`: native scroll-snap, swipe, visible prev/next (`.house-text-button`), arrow keys, no autoplay, reduced-motion `auto` scroll, first-frame aspect so the slot cannot shift. House chrome only.
+- Proper Respect (`lf-02`): liner rewritten from proper-respect.com + README (measurements / imports). Four self-hosted frames under `public/catalog/proper-respect/` (mark/cover, bump-art, fists-blueprint, share-image).
+- Punch2Pen (`lf-01`): honesty gates from punch2pen.com (unsigned pkg, no prices, sign-in not in this build, Logic-first, never a browser engine). Still `IssuePlate` — no screenshots.
+- yadiggg untouched. Do not merge.
+
 COMPLETED (2026-10-08 — leftover preview re-walk of 5 ids on lf:preview:):
 - Serialized `--retry --ids` on 378994, 21093352, 1921824, 14851267, 28896664. Back-to-back. One real invocation each. 429 / 0-MB did not burn the 3-invocation budget. Prefix `lf:preview:`. DISCOGS unset. Never prod.
 - Totals **389 / 75 / 101 / 288** vs #54 360/72/111/249 and vs P2b 389 (unchanged: `carryPriorRecordings` kept old sampled docs as sidecars). Unknown 0, work URLs 0.

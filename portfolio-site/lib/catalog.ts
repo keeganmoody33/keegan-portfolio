@@ -12,6 +12,14 @@ export type SleeveFormat = 'software' | 'system' | 'publication' | 'physical' | 
 
 export type SleeveStatus = 'in build' | 'issued' | 'parked'
 
+export type SleeveImage = {
+  src: string
+  alt: string
+  width: number
+  height: number
+  caption?: string
+}
+
 export type Sleeve = {
   slug: string
   catno: string
@@ -24,7 +32,10 @@ export type Sleeve = {
   why: string
   notThis: string
   credits: string[]
+  /** Single cover path. Used when `images` is empty. Kept for back-compat. */
   cover?: string
+  /** Owned art for the sleeve gallery. When set, this wins over `cover`. */
+  images?: SleeveImage[]
   tracks: Track[]
 }
 
@@ -54,11 +65,11 @@ export const sleeves: Sleeve[] = [
     format: 'software',
     status: 'in build',
     year: 2026,
-    aside: 'vocals become a living transcript inside the DAW',
+    aside: 'after a punch-in, the take is already written.',
     notes:
-      'a mac plugin (au, vst3) that listens while the track plays. the line under the playhead is the title. click a wrong word, the correction feeds the model. local or cloud. built for the booth, not the standup.',
+      'a mac au + vst3 plugin with a local engine. living transcript: the word under the playhead, the active line as the title, click a mis-hear. free is local whisper, session-only dictionary, no account, no cloud. pro and studio seats are planned; sign-in is not in this build; prices are not published. unsigned pkg from github release — gatekeeper will warn. logic is the host they run; the site daw list is interest, not a compatibility chart. never a browser engine.',
     why: 'studio work still dies as memory. a take should leave a receipt.',
-    notThis: 'a meeting notetaker with a music skin',
+    notThis: 'a meeting notetaker with a music skin. not a windows build.',
     credits: [],
     tracks: [
       {
@@ -82,25 +93,67 @@ export const sleeves: Sleeve[] = [
     format: 'software',
     status: 'in build',
     year: 2026,
-    aside: 'evidence proposes. the person confirms.',
+    aside: 'your tools. your track record.',
     notes:
-      'a private collection of the tools you use, with notes and evidence. you choose which cards go public, with who put you on. not a scrape of a whole digital life.',
+      'evidence proposes; the person confirms. a private collection of tools you use, test, or have moved on from — notes, proof, and who put you on. add a tool by hand or connect a supported source. measurements keep their native units: github contribution snapshots, sanitized claude code and codex packets, a strict proper-measurements-v1 file. usage does not rank. you preview the exact cards, then approve publication. private by default.',
     why: 'affiliate links and receipts are scattered. advocacy should have one sleeve.',
     notThis: 'spyware, link-in-bio, or a score you did not approve',
     credits: [],
     cover: '/catalog/proper-respect/cover.png',
+    images: [
+      {
+        src: '/catalog/proper-respect/cover.png',
+        alt: 'Proper Respect mark: PR letters in black on paper',
+        width: 1024,
+        height: 856,
+        caption: 'proper respect mark',
+      },
+      {
+        src: '/catalog/proper-respect/bump-art.webp',
+        alt: 'Proper Respect bump art: two figures on a lime field with a red respect mark',
+        width: 1536,
+        height: 1024,
+        caption: 'homepage bump art',
+      },
+      {
+        src: '/catalog/proper-respect/fists-blueprint.webp',
+        alt: 'Proper Respect fists blueprint: facing fists on lined paper',
+        width: 1600,
+        height: 900,
+        caption: 'fists blueprint',
+      },
+      {
+        src: '/catalog/proper-respect/share-image.png',
+        alt: 'Proper Respect share image: wordmark and tagline on paper',
+        width: 1200,
+        height: 630,
+        caption: 'share image',
+      },
+    ],
     tracks: [
       {
         no: '01',
-        title: 'live profile site',
+        title: 'proper-respect.com',
         kind: 'site',
         href: 'https://proper-respect.com',
       },
       {
         no: '02',
+        title: 'lecturesfrom profile',
+        kind: 'site',
+        href: 'https://proper-respect.com/lecturesfrom',
+      },
+      {
+        no: '03',
         title: 'keeganmoody33/PROPER-RESPECT',
         kind: 'repo',
         href: 'https://github.com/keeganmoody33/PROPER-RESPECT',
+      },
+      {
+        no: '04',
+        title: 'agents.md',
+        kind: 'note',
+        href: 'https://proper-respect.com/agents.md',
       },
     ],
   },
