@@ -1090,6 +1090,82 @@ describe('Integrations: live/studio pairing and dest-release', () => {
     )
     assert.equal(report.records[0]?.copies.some((copy) => copy.mbid === debutDiamond), false)
   })
+
+  it('does not dest-release-skip a sampled sidecar when the mapped same-song pick has no samples', async () => {
+    const emptyPick = '2d2752c8-empty-pick-same-song-no-samples'
+    const sampledSidecar = '9cb859c8-284d-4433-8a3a-6f083533e004'
+    const pick = completeRecording({
+      mbid: emptyPick,
+      title: 'Props Over Here',
+      artist: 'The Beatnuts',
+      lengthMs: 180000,
+      samplesFrom: [],
+      sampledIn: [],
+    })
+    const sidecar = completeRecording({
+      mbid: sampledSidecar,
+      title: 'Props Over Here',
+      artist: 'The Beatnuts',
+      lengthMs: 181000,
+      sampledIn: [sampleLink('Watch Out Now', 'watch-out-now')],
+    })
+    const prodPressing = pressingOf(
+      { [pick.mbid]: pick },
+      [{ position: 'A2', title: 'Props Over Here', durationMs: 180000, mbid: pick.mbid }],
+      1679157
+    )
+    prodPressing.facts.title = 'The Beatnuts'
+    prodPressing.facts.artist = 'The Beatnuts'
+    const previewPressing = pressingOf(
+      { [pick.mbid]: pick, [sidecar.mbid]: sidecar },
+      [{ position: 'A2', title: 'Props Over Here', durationMs: 180000, mbid: pick.mbid }],
+      1679157
+    )
+    previewPressing.facts.title = 'The Beatnuts'
+    previewPressing.facts.artist = 'The Beatnuts'
+    const prod = createMemoryCrateStore({
+      pressings: { [1679157]: prodPressing },
+      recordings: { [pick.mbid]: pick },
+      seen: [1679157],
+    })
+    const preview = createMemoryCrateStore({
+      pressings: { [1679157]: previewPressing },
+      recordings: { [pick.mbid]: pick, [sidecar.mbid]: sidecar },
+      seen: [1679157],
+    })
+    const report = await runPromotePreview({
+      prod,
+      preview,
+      prodEnv: PROD_ENV,
+      previewEnv: PREVIEW_ENV,
+      ids: [1679157],
+      verifyRecording: async (mbid) => {
+        if (mbid === sampledSidecar) {
+          return {
+            lengthMs: 181000,
+            samplesFrom: new Set(),
+            sampledIn: new Set(['watch-out-now']),
+            live: false,
+            releaseTitles: ['The Verbal Massacre'],
+          }
+        }
+        return {
+          lengthMs: 180000,
+          samplesFrom: new Set(),
+          sampledIn: new Set(),
+          live: false,
+          releaseTitles: ['The Beatnuts'],
+        }
+      },
+    })
+    assert.equal(
+      report.records[0]?.skips.some(
+        (skip) => skip.mbid === sampledSidecar && skip.reason === 'recording not on dest release'
+      ),
+      false
+    )
+    assert.equal(report.records[0]?.copies.some((copy) => copy.mbid === sampledSidecar), true)
+  })
 })
 
 describe('QA fold: WATCH CAS, rollback refuse, multi errors, recall', () => {

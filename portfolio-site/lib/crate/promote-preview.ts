@@ -1403,18 +1403,21 @@ async function planCopies(options: {
           songTitle(doc.title) === songTitle(previewDoc.title) &&
           artistsMatch(doc.artist, previewDoc.artist)
       )
+      const mappedSameSongWithSamples = mappedSameSong.filter((doc) =>
+        recordingHasSampleMaterial(doc)
+      )
       const destReleaseMismatch =
         Boolean(verified) &&
         (verified?.releaseTitles?.length ?? 0) > 0 &&
         artistsMatch(prodPressing.facts.artist, previewDoc.artist) &&
         !recordingAppearsOnPressing(verified?.releaseTitles, prodPressing.facts.title) &&
-        mappedSameSong.length > 0
+        mappedSameSongWithSamples.length > 0
       const restoredIds = new Set(
         recallRows.filter((row) => row.status === 'restored').map((row) => row.targetMbid)
       )
       let attachHost: StoredRecording | null = null
       if (destReleaseMismatch) {
-        const host = mappedSameSong[0]
+        const host = mappedSameSongWithSamples[0]
         if (host && restoredIds.size > 0) {
           attachHost = host
         } else {
