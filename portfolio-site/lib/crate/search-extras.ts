@@ -1,10 +1,11 @@
 /**
  * Extra MusicBrainz searches after annotate when near-top has 0 sampled hits
- * and a known unsampled match. Typical +1 (second artistname + unquoted title)
- * on those eligible tracks. Worst +6 (second + ISRC + unique-work search +
- * WORK_BROWSE_MAX_PAGES). Stop as soon as any new hit has samples. Do not raise
- * TRACK_LEVEL_ANNOTATE_CAP. Do not add work-rels to getRecording. No WhoSampled.
- * No /work/ on getRecording.
+ * and a known unsampled match. Typical +3 (second query + extra annotate slots).
+ * Worst +12 (second/ISRC/work each with extra annotate, plus 3 work-browse pages).
+ * Known 5s on every extras path — no stored-pick dest-release exemption
+ * (Intro 47a16400 self-confirms). Stop as soon as any new hit has samples.
+ * Do not raise TRACK_LEVEL_ANNOTATE_CAP. Do not add work-rels to getRecording.
+ * No WhoSampled. No /work/ on getRecording.
  */
 import {
   artistsMatch,
@@ -19,6 +20,7 @@ import {
   searchVersionFit,
   songTitle,
   titlesSimilar,
+  TRACK_LEVEL_EXTRAS_ANNOTATE_RESERVE,
   type TrackLevelRecordingHit,
 } from './match.ts'
 import {
@@ -35,7 +37,6 @@ import { isPlayableOccurrence } from './lifecycle.ts'
 export type SearchExtrasDest = {
   albumTitle?: string | null
   trackTitle: string
-  releaseRecordingIds?: ReadonlySet<string>
 }
 
 export type SearchExtrasClient = {
@@ -89,8 +90,7 @@ export function liveStudioCompatible(
 export function filterExtraSearchHits(
   hits: TrackLevelRecordingHit[],
   discogs: { artist: string; title: string; durationMs: number | null },
-  dest: SearchExtrasDest,
-  options?: { requireKnownLength?: boolean }
+  dest: SearchExtrasDest
 ): TrackLevelRecordingHit[] {
   const discogsSong = songTitle(discogs.title)
   return hits.filter((hit) => {
@@ -105,9 +105,7 @@ export function filterExtraSearchHits(
     if (!liveStudioCompatible({ ...dest, trackTitle: dest.trackTitle || discogs.title }, hit)) {
       return false
     }
-    const onDestRelease = Boolean(hit.mbid && dest.releaseRecordingIds?.has(hit.mbid))
-    const requireKnown = options?.requireKnownLength !== false && !onDestRelease
-    if (requireKnown && (discogs.durationMs == null || hit.lengthMs == null)) return false
+    if (discogs.durationMs == null || hit.lengthMs == null) return false
     const delta = durationDeltaMs(discogs.durationMs, hit.lengthMs)
     if (delta != null && delta > DURATION_SIDECAR_MS) return false
     return true
@@ -119,7 +117,7 @@ export function filterWorkBrowseHits(
   discogs: { artist: string; title: string; durationMs: number | null },
   dest: SearchExtrasDest
 ): TrackLevelRecordingHit[] {
-  return filterExtraSearchHits(hits, discogs, dest, { requireKnownLength: true })
+  return filterExtraSearchHits(hits, discogs, dest)
 }
 
 export function nearTopHits(
@@ -324,14 +322,16 @@ export type ExtrasRequestCost = {
   ungatedPlayableTimesWorst: number
 }
 
-/** Second `artistname` + unquoted-title search when extras run. */
-export const EXTRAS_TYPICAL_REQUESTS_PER_TRACK = 1
+/** Extra annotate slots per extras wave (cap 3 minus reserved base). */
+export const EXTRAS_EXTRA_ANNOTATE_SLOTS = 3 - TRACK_LEVEL_EXTRAS_ANNOTATE_RESERVE
+/** Second query + extra annotate lookups. */
+export const EXTRAS_TYPICAL_REQUESTS_PER_TRACK = 1 + EXTRAS_EXTRA_ANNOTATE_SLOTS
 /**
- * Second query + ISRC + unique-work search + WORK_BROWSE_MAX_PAGES.
- * Old ungated ~1,630 was playable×3 (pre-gate, 1 browse page).
+ * Second, ISRC, and work each with extra annotate, plus WORK_BROWSE_MAX_PAGES.
+ * 3 + 3 + (1 + 3 + 2) = 12. Old ungated ~1,630 was playable×3 (pre-gate, no annotate).
  */
 export const EXTRAS_WORST_REQUESTS_PER_TRACK =
-  EXTRAS_TYPICAL_REQUESTS_PER_TRACK + 1 + 1 + WORK_BROWSE_MAX_PAGES
+  EXTRAS_TYPICAL_REQUESTS_PER_TRACK * 3 + WORK_BROWSE_MAX_PAGES
 
 /** Gated extras: known-unsampled match after annotate. Worst includes paginated work browse. */
 export function projectExtrasRequestCost(pressings: StoredPressing[]): ExtrasRequestCost {

@@ -1444,9 +1444,6 @@ async function applyTrackLevelSamples(
     const dest = {
       albumTitle,
       trackTitle: track.title,
-      releaseRecordingIds: new Set(
-        tracks.map((row) => row.recording.mbid).filter((id): id is string => Boolean(id))
-      ),
     }
     const filtered = filterTrackLevelRecordings(hits, discogs)
     // Force ranking may only use hits that survived this-run filter. A raw

@@ -10748,24 +10748,18 @@ describe('search extras for missed sampled recordings', () => {
     )
   })
 
-  it('rejects unknown-length extras unless the hit is on the dest release', () => {
+  it('rejects unknown-length extras even when the MBID matches a stored dest pick', () => {
     const unknown = {
-      mbid: 'unknown-len-extra',
-      title: 'Juicy Fruit',
-      artist: 'Mtume',
+      mbid: '47a16400-0000-0000-0000-000000000001',
+      title: 'Intro',
+      artist: 'De La Soul',
       lengthMs: null,
       score: 100,
     }
-    const discogs = { artist: 'Mtume', title: 'Juicy Fruit (Vocal)', durationMs: 355000 }
-    const dest = { albumTitle: 'Juicy Fruit', trackTitle: 'Juicy Fruit (Vocal)' }
+    const discogs = { artist: 'De La Soul', title: 'Intro', durationMs: 29960 }
+    const dest = { albumTitle: 'AOI: Bionix', trackTitle: 'Intro' }
     assert.equal(filterExtraSearchHits([unknown], discogs, dest).length, 0)
-    assert.equal(
-      filterExtraSearchHits([unknown], discogs, {
-        ...dest,
-        releaseRecordingIds: new Set([unknown.mbid]),
-      }).length,
-      1
-    )
+    assert.equal(filterWorkBrowseHits([unknown], discogs, dest).length, 0)
   })
 
   it('rejects DJ-mix disambiguations on extras', () => {
@@ -11337,13 +11331,28 @@ describe('search extras for missed sampled recordings', () => {
     assert.equal(projected.records, 1)
     assert.equal(projected.sampledBy, 1)
     const cost = projectExtrasRequestCost([pressing as StoredPressing])
-    assert.equal(EXTRAS_TYPICAL_REQUESTS_PER_TRACK, 1)
-    assert.equal(EXTRAS_WORST_REQUESTS_PER_TRACK, 1 + 1 + 1 + WORK_BROWSE_MAX_PAGES)
+    assert.equal(EXTRAS_TYPICAL_REQUESTS_PER_TRACK, 3)
+    assert.equal(EXTRAS_WORST_REQUESTS_PER_TRACK, 12)
+    assert.equal(
+      EXTRAS_WORST_REQUESTS_PER_TRACK,
+      EXTRAS_TYPICAL_REQUESTS_PER_TRACK * 3 + WORK_BROWSE_MAX_PAGES
+    )
     assert.equal(cost.playableTracks, 1)
     assert.equal(cost.extrasEligibleTracks, 0)
     assert.equal(cost.ungatedPlayableTimesWorst, EXTRAS_WORST_REQUESTS_PER_TRACK)
     assert.equal(cost.typicalExtraRequests, 0)
     assert.equal(cost.worstExtraRequests, 0)
+    const eligibleCost = projectExtrasRequestCost([
+      {
+        ...pressing,
+        recordings: {
+          'e144dd90-live': { ...liveHth, samplesFrom: [], sampledIn: [] },
+        },
+      } as StoredPressing,
+    ])
+    assert.equal(eligibleCost.extrasEligibleTracks, 1)
+    assert.equal(eligibleCost.typicalExtraRequests, EXTRAS_TYPICAL_REQUESTS_PER_TRACK)
+    assert.equal(eligibleCost.worstExtraRequests, EXTRAS_WORST_REQUESTS_PER_TRACK)
   })
 
   it('does not fire extras when first search has no known match', async () => {
