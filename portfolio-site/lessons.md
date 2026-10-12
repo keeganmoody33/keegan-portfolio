@@ -1,6 +1,12 @@
 # Lessons Learned
 
-Updated: 2026-10-08
+Updated: 2026-10-12
+
+## Do not invent MusicBrainz UUID suffixes (2026-10-12)
+
+- Short prefixes in `progress.txt` (`1d890c2b`, `181c0a32`) are not full MBIDs. The live Redis vocal is `1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc` and Juicy is `181c0a32-6e3f-4680-8a7d-1daf0b42e43b` (same as `crate.test.ts`). A guessed suffix made the promote dry-run report `juicyLinked: false` while the prod doc still had Juicy. Copy full MBIDs from Redis or fixtures; never pad a prefix.
+
+## Collection research match-quality gates (2026-10-07)
 
 ## Collection research match-quality gates (2026-10-07)
 

@@ -34,8 +34,8 @@ export const GAP_RELEASE_IDS = [
 ] as const
 
 export const MTUME_RELEASE_ID = 567894
-export const MTUME_VOCAL_MBID = '1d890c2b-d330-40aa-8e41-07aaffe653b9'
-export const JUICY_MBID = '181c0a32-07a7-4c47-b482-ba0dc31994f7'
+export const MTUME_VOCAL_MBID = '1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc'
+export const JUICY_MBID = '181c0a32-6e3f-4680-8a7d-1daf0b42e43b'
 
 export const PROD_BAR = 360
 export const PREVIEW_BAR = 389

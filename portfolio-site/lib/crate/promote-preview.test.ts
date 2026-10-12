@@ -11,6 +11,8 @@ import { INCOMPLETE_RECORDING_MESSAGE, TRACK_LEVEL_REASON } from './enrich.ts'
 import { DURATION_SIDECAR_MS } from './match.ts'
 import {
   GAP_RELEASE_IDS,
+  JUICY_MBID,
+  MTUME_VOCAL_MBID,
   assertPromotePrefixes,
   countPressingMapLinks,
   isPromoteSidecarMatch,
@@ -137,6 +139,12 @@ describe('promote-preview args and prefixes', () => {
   it('hardcodes the 23 gap records', () => {
     assert.equal(GAP_RELEASE_IDS.length, 23)
     assert.equal(new Set(GAP_RELEASE_IDS).size, 23)
+    assert.equal(GAP_RELEASE_IDS.includes(567894), false)
+  })
+
+  it('uses the live Redis Mtume vocal and Juicy recording MBIDs', () => {
+    assert.equal(MTUME_VOCAL_MBID, '1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc')
+    assert.equal(JUICY_MBID, '181c0a32-6e3f-4680-8a7d-1daf0b42e43b')
   })
 })
 
