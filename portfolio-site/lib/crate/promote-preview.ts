@@ -44,7 +44,11 @@ import { isRecordingOrReleaseSampleLink, mergeSampleLinks } from './research.ts'
 import { crateRedisKeys, selectEnrichLockToken, type CrateStore } from './store.ts'
 import { assertPrefixedRedisKey, isProductionRedisNamespace } from '../redis-env.ts'
 import type { SampleLink, StoredPressing, StoredRecording, TrackOccurrence } from './types.ts'
-import type { MusicBrainzClient } from './musicbrainz.ts'
+import {
+  MUSICBRAINZ_RETRY_AFTER_CAP_MS,
+  isMusicBrainzRateLimitError,
+  type MusicBrainzClient,
+} from './musicbrainz.ts'
 
 export const GAP_RELEASE_IDS = [
   106712, 266650, 378994, 451558, 550972, 903960, 1575060, 1679157, 1930841, 3018422,
@@ -746,13 +750,32 @@ function mergePromoteRecording(
   }
 }
 
+async function sleepPromoteMb(ms: number): Promise<void> {
+  await new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
+
 export function createPromoteMbLookup(
   mb: Pick<MusicBrainzClient, 'getRecordingSampleRels'>,
   cache = new Map<string, PromoteVerifiedRels | null>()
 ): PromoteVerifyRecording {
   return async (mbid: string) => {
     if (cache.has(mbid)) return cache.get(mbid) ?? null
-    const facts = await mb.getRecordingSampleRels(mbid)
+    let facts: Awaited<ReturnType<MusicBrainzClient['getRecordingSampleRels']>> | undefined
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        facts = await mb.getRecordingSampleRels(mbid)
+        break
+      } catch (error) {
+        if (!isMusicBrainzRateLimitError(error) || attempt === 3) throw error
+        const wait = Math.min(
+          Math.max(error.retryAfterMs || 60_000, 15_000),
+          MUSICBRAINZ_RETRY_AFTER_CAP_MS
+        )
+        await sleepPromoteMb(wait)
+      }
+    }
     if (!facts) {
       cache.set(mbid, null)
       return null
