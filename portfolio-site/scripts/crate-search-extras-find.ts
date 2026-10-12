@@ -335,6 +335,28 @@ let extrasIsrc = 0
 let extrasWork = 0
 let stoppedOnError: string | null = null
 let stoppedOnBudget = false
+let lastFoundCount = 0
+
+function progress(note: string): void {
+  console.error(
+    JSON.stringify({
+      note,
+      at: new Date().toISOString(),
+      prefix: keys.prefix,
+      lock: PREVIEW_LOCK,
+      eligibleVisited,
+      foundTracks: found.length,
+      mbRequests: mb.requestCount,
+      stopAt,
+      estimate,
+      extrasSecond,
+      extrasIsrc,
+      extrasWork,
+    })
+  )
+}
+
+progress('start')
 
 async function probeExtras(
   hits: ReturnType<typeof filterExtraSearchHits>,
@@ -403,6 +425,11 @@ try {
       if (!destRecording || recordingHasSampleMaterial(destRecording)) continue
       if (mb.requestCount > stopAt) throw new BudgetExceededError(mb.requestCount, stopAt)
       eligibleVisited += 1
+      const foundChanged = found.length !== lastFoundCount
+      if (eligibleVisited === 1 || eligibleVisited % 25 === 0 || foundChanged) {
+        lastFoundCount = found.length
+        progress(foundChanged ? 'found' : 'tick')
+      }
       const discogs = {
         artist: (track.artist ?? '').trim() || artist,
         title: track.title,
@@ -455,9 +482,11 @@ try {
   } else {
     stoppedOnError = error instanceof Error ? `${error.name}: ${error.message}` : String(error)
   }
+  progress(stoppedOnBudget ? 'budget' : 'error')
 } finally {
   assertPreviewWriteKey(keys.enrichLock)
   await store.releaseEnrichLock(token)
+  progress('release')
 }
 
 const newLinks = found.reduce((sum, row) => sum + row.newLinks, 0)
