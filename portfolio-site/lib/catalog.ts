@@ -12,6 +12,14 @@ export type SleeveFormat = 'software' | 'system' | 'publication' | 'physical' | 
 
 export type SleeveStatus = 'in build' | 'issued' | 'parked'
 
+export type SleeveImage = {
+  src: string
+  alt: string
+  width: number
+  height: number
+  caption?: string
+}
+
 export type Sleeve = {
   slug: string
   catno: string
@@ -24,7 +32,10 @@ export type Sleeve = {
   why: string
   notThis: string
   credits: string[]
+  /** Single cover path. Used when `images` is empty. Kept for back-compat. */
   cover?: string
+  /** Owned art for the sleeve gallery. When set, this wins over `cover`. */
+  images?: SleeveImage[]
   tracks: Track[]
 }
 
@@ -54,11 +65,11 @@ export const sleeves: Sleeve[] = [
     format: 'software',
     status: 'in build',
     year: 2026,
-    aside: 'vocals become a living transcript inside the DAW',
+    aside: 'after a punch-in, the take is already written.',
     notes:
-      'a mac plugin (au, vst3) that listens while the track plays. the line under the playhead is the title. click a wrong word, the correction feeds the model. local or cloud. built for the booth, not the standup.',
+      'a mac au + vst3 plugin with a local engine. living transcript: the word under the playhead, the active line as the title, click a mis-hear. free is local whisper, session-only dictionary, no account, no cloud. pro and studio seats are planned; sign-in is not in this build; prices are not published. unsigned pkg from github release — gatekeeper will warn. logic is the host they run; the site daw list is interest, not a compatibility chart. never a browser engine.',
     why: 'studio work still dies as memory. a take should leave a receipt.',
-    notThis: 'a meeting notetaker with a music skin',
+    notThis: 'a meeting notetaker with a music skin. not a windows build.',
     credits: [],
     tracks: [
       {
@@ -82,25 +93,67 @@ export const sleeves: Sleeve[] = [
     format: 'software',
     status: 'in build',
     year: 2026,
-    aside: 'evidence proposes. the person confirms.',
+    aside: 'your tools. your track record.',
     notes:
-      'a private collection of the tools you use, with notes and evidence. you choose which cards go public, with who put you on. not a scrape of a whole digital life.',
+      'evidence proposes; the person confirms. a private collection of tools you use, test, or have moved on from — notes, proof, and who put you on. add a tool by hand or connect a supported source. measurements keep their native units: github contribution snapshots, sanitized claude code and codex packets, a strict proper-measurements-v1 file. usage does not rank. you preview the exact cards, then approve publication. private by default.',
     why: 'affiliate links and receipts are scattered. advocacy should have one sleeve.',
     notThis: 'spyware, link-in-bio, or a score you did not approve',
     credits: [],
-    cover: '/catalog/proper-respect/cover.png',
+    cover: '/catalog/proper-respect/profile.png',
+    images: [
+      {
+        src: '/catalog/proper-respect/profile.png',
+        alt: 'Public Proper Respect profile for Keegan Moody at /lecturesfrom: shared product collection with four cards — Wispr Flow, NotebookLM, Devin Desktop, and GitHub showing a 1,304-contribution calendar.',
+        width: 2880,
+        height: 1920,
+        caption: 'shared lecturesfrom collection',
+      },
+      {
+        src: '/catalog/proper-respect/item-detail.png',
+        alt: 'Wispr Flow item detail on the lecturesfrom Proper Respect profile, open to the canonical note, since date, and product link beside the other collection cards.',
+        width: 2880,
+        height: 1920,
+        caption: 'wispr flow item detail',
+      },
+      {
+        src: '/catalog/proper-respect/measurements.png',
+        alt: 'GitHub card on the lecturesfrom Proper Respect profile with details open: 1,304 contributions, contribution calendar, personal-activity period, and a stale snapshot recorded 2026-10-09.',
+        width: 2880,
+        height: 1920,
+        caption: 'github contribution snapshot',
+      },
+      {
+        src: '/catalog/proper-respect/import.png',
+        alt: 'Proper Respect public import screen titled Start with one source, with GitHub, Claude Code, Codex, another product, and add a tool manually — no mailbox or public profile required.',
+        width: 2880,
+        height: 1920,
+        caption: 'start with one source',
+      },
+    ],
     tracks: [
       {
         no: '01',
-        title: 'live profile site',
+        title: 'proper-respect.com',
         kind: 'site',
         href: 'https://proper-respect.com',
       },
       {
         no: '02',
+        title: 'lecturesfrom profile',
+        kind: 'site',
+        href: 'https://proper-respect.com/lecturesfrom',
+      },
+      {
+        no: '03',
         title: 'keeganmoody33/PROPER-RESPECT',
         kind: 'repo',
         href: 'https://github.com/keeganmoody33/PROPER-RESPECT',
+      },
+      {
+        no: '04',
+        title: 'agents.md',
+        kind: 'note',
+        href: 'https://proper-respect.com/agents.md',
       },
     ],
   },

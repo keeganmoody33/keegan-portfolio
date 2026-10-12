@@ -1,7 +1,7 @@
 # Implementation Plan — lecturesfrom.com Portfolio
 
 **Last Updated:** 2026-10-06
-**Status:** House cut implemented (title card, sleeves, full crate, signal cut, agent files, logo mark). Person page frozen except wordmark. Live lockup is Chakra Petch; the last `o` is the static LogoMark. Hathaway (`public/brand/wordmark-hathaway.svg`) and nameplate (`brand/lecturesfrom-wordmark.svg`) vectors are assets only and are not mounted.
+**Status:** House cut implemented (title card, sleeves, full crate, signal cut, agent files, logo mark). Sleeve pages accept `images[]` (scroll-snap gallery) with `cover` back-compat; Punch2Pen keeps `IssuePlate`. Person page frozen except wordmark. Live lockup is Chakra Petch; the last `o` is the static LogoMark. Hathaway (`public/brand/wordmark-hathaway.svg`) and nameplate (`brand/lecturesfrom-wordmark.svg`) vectors are assets only and are not mounted.
 **Previous plan:** `IMPLEMENTATION_PLAN_DISCOGS_ARCHIVED.md` (completed Discogs widget build)
 
 ---

@@ -1,6 +1,6 @@
 # App Flow — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-10-07
+**Last Updated:** 2026-10-12
 **Framework:** Next.js (App Router)
 **Deployment:** Vercel (auto-deploy on push to main)
 
@@ -14,7 +14,7 @@
 |------------------|------------------------------|-----------------------------------------------------------------|
 | `/`              | `app/(house)/page.tsx`               | House title card + crate (Server Component). The last `o` in the wordmark `from` is a static `LogoMark` (owner line-only PNG geometry; `variant="line"` — ink strokes, no fills; house palette fills on hold; no `LogoGlobe`, no spin) at Chakra Petch x-height on the alphabetic baseline; there is no standalone coin above the wordmark. Wordmark (`HouseWordmark`, Chakra Petch) entrance is a 700ms opacity fade. HouseFooter does not render the Motion switch while the o is static; `MotionSwitch.tsx`, head bootstrap, and pause CSS stay in the repo. Nameplate and Hathaway SVGs are not mounted. No page turntable. No return-visit redirect. |
 | `/catalog`       | `app/(house)/catalog/page.tsx`       | Crate permalink (same spines as `/`)                            |
-| `/catalog/[slug]`| `app/(house)/catalog/[slug]/page.tsx`| Sleeve (cover, liner, tracks). Unknown slugs 404.               |
+| `/catalog/[slug]`| `app/(house)/catalog/[slug]/page.tsx`| Sleeve (gallery or cover or issue plate, liner, tracks). Unknown slugs 404. |
 | `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate (ISR 300s; durable last-good in Redis when configured). Cover click opens `/collection/[releaseId]`. Under the `{n} releases` line: **shuffle** (client Fisher-Yates of the whole grid; reload restores ISR order; no server cost) and **pull one** (random listed id → existing overlay/route). Grid `next/image` uses a stored CAA Blob URL when the cover manifest has one; otherwise the current Discogs hotlink. |
 | `/collection/[releaseId]` | `app/(house)/collection/[releaseId]/page.tsx` | Record detail (overview / tracks). Intercepting overlay at `@detail/(.)[releaseId]` when opened from the grid; full page on direct visit / refresh. |
 | `/legal`         | `app/(house)/legal/page.tsx`         | Entity + long about + Data sources (Discogs API non-affiliation). Markdown twin `/legal.md`. Organization JSON-LD is not a /legal twin. |
@@ -317,6 +317,25 @@ Land on /keeganmoody33
 **Empty states:** Missing field drops its row (never `N/A` / `Unknown` / `—`). Empty section: `nothing on file yet`. No track picked: `pick a track for credits and samples`. Checked, no MusicBrainz pressing match: dim mono lowercase `{reason} · checked YYYY-MM-DD` (example: `no musicbrainz release for this pressing · checked 2026-10-05`). Unmatched may still show Discogs and Wikidata credit and sample facts with `.house-source` labels under that line — do not gate facts until matched (Mtume extraartists fallback). If there are no such facts, do not add `nothing on file yet` under credits/samples or Overview connections. No guessing in the reason. Missing cover: `#242424` square with catno centered in house ink `#ececec` (13.1:1 on that square, not dim `#7a7a7a`). Title, artist, fact values, placeholder catno, sample rows, and credit lines use `overflow-wrap: anywhere`. Layout holds with hairlines; content fades in (`.house-fade`; instant under reduced motion). After the fact rows: lowercase `.house-source` `discogs` plus exact-case `.house-credit` `Data provided by Discogs.`, both linking the pressing URL (not discogs.com, no `nofollow`). `/collection` repeats the credit on the `{n} releases` line and again at the bottom of the grid, both to the lecturesfrom Discogs collection page. Source lines are lowercase 0.16em; the TOU credit is not lowercased; section labels stay uppercase `.house-meta`. The Discogs API non-affiliation / Zink Media trademark sentence lives on `/legal` Data sources (`/legal.md` twin), not in HouseFooter. Tab panels use the house 2px ink focus outline.
 
 **PostHog events:** `collection_record_open`, `collection_record_tab`, `collection_record_track`, `collection_record_close`
+
+---
+
+### 8c. Sleeve gallery (`/catalog/[slug]`)
+
+**Trigger:** Open a catalog sleeve.
+
+**Steps:**
+
+1. `resolveSleeveMedia` picks `images[]` when present, else `cover`, else `IssuePlate`.
+2. A gallery is a native `overflow-x` scroller with `scroll-snap-type: x mandatory`. No autoplay. Prev / next are `.house-text-button` (house orange on hover, 2px ink focus). Arrow keys on the focused scroller wrap. Swipe works on the scroller itself.
+3. The first frame's width/height set `--sleeve-gallery-aspect` so the slot cannot shift. Later frames `object-contain` in that box. Chrome is house tokens only (Chakra Petch / Space Grotesk / Roboto Mono / Doto; paper ink/line). Project color lives in the images.
+4. `prefers-reduced-motion: reduce` uses `scroll-behavior: auto` (no smooth). Punch2Pen (`lf-01`) has no `images` and no `cover` — it keeps `IssuePlate`. yadiggg stays a single square `cover`.
+
+**Success state:** Proper Respect (`lf-02`) shows four self-hosted product screenshots from live proper-respect.com (public `/lecturesfrom` collection, Wispr Flow item detail, GitHub contribution snapshot, `/app/collection` import picker) with alt text and captions. No logo, mark, bump art, or share image.
+
+**Empty state:** No `images` and no `cover` → issue plate. No tracks → `empty pocket`.
+
+**PostHog events:** `sleeve_gallery_nav` (`slug`, `index`, `method` button | keyboard)
 
 ---
 
