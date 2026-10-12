@@ -40,6 +40,43 @@ const SEARCH_VERSION_TOKENS = new Set<string>([
 
 export type SearchVersionFit = 'aligned' | 'unmarked_fallback' | 'wrong'
 
+/** Mix-marker `live` only. Album titles like Alive! are not a mix marker. */
+export function titleIsLive(title: string): boolean {
+  return tokensFrom(title, SEARCH_VERSION_TOKENS).has('live')
+}
+
+export function titleHasInstrumental(title: string): boolean {
+  const tokens = tokensFrom(title, SEARCH_VERSION_TOKENS)
+  return tokens.has('instrumental') || tokens.has('inst')
+}
+
+/** Vocal vs instrumental (or instrumental vs unmarked) is a different version. */
+export function promoteVersionContradicts(leftTitle: string, rightTitle: string): boolean {
+  if (titleHasInstrumental(leftTitle) !== titleHasInstrumental(rightTitle)) return true
+  return versionContradicts(leftTitle, rightTitle)
+}
+
+/** Recording live-ness from title, MB disambiguation (`live, 1975`), or the releases it appears on. */
+export function recordingIsLive(input: {
+  title: string
+  disambiguation?: string | null
+  releaseTitles?: string[]
+  live?: boolean
+}): boolean {
+  if (input.live === true) return true
+  if (titleIsLive(input.title)) return true
+  if (input.disambiguation && titleIsLive(input.disambiguation)) return true
+  return (input.releaseTitles ?? []).some((title) => titleIsLive(title))
+}
+
+/** Live dest: mix-marker live on the track, or an album titled Alive / Alive!. */
+export function destinationIsLive(input: { albumTitle?: string | null; trackTitle: string }): boolean {
+  if (titleIsLive(input.trackTitle)) return true
+  const album = input.albumTitle ?? ''
+  if (titleIsLive(album)) return true
+  return Boolean(album) && /\balive\b/.test(normalizeTitle(album))
+}
+
 export function searchVersionFit(discogsTitle: string, hitTitle: string): SearchVersionFit {
   const want = tokensFrom(discogsTitle, SEARCH_VERSION_TOKENS)
   const got = tokensFrom(hitTitle, SEARCH_VERSION_TOKENS)
@@ -147,6 +184,10 @@ export type TrackLevelRecordingHit = {
   lengthMs: number | null
   score?: number
   hasSamples?: boolean
+  disambiguation?: string
+  releaseTitles?: string[]
+  isrcs?: string[]
+  extra?: boolean
 }
 
 export function recordingHasSampleMaterial(
@@ -242,6 +283,16 @@ export function mergeRecalledRecordingHits(
     if (existing.lengthMs == null && hit.lengthMs != null) {
       existing.lengthMs = hit.lengthMs
     }
+    if (hit.extra) existing.extra = true
+    if (!existing.disambiguation && hit.disambiguation) {
+      existing.disambiguation = hit.disambiguation
+    }
+    if (!existing.isrcs?.length && hit.isrcs?.length) {
+      existing.isrcs = hit.isrcs
+    }
+    if (!existing.releaseTitles?.length && hit.releaseTitles?.length) {
+      existing.releaseTitles = hit.releaseTitles
+    }
   }
   return [...byMbid.values()]
 }
@@ -278,6 +329,7 @@ export function compareTrackLevelProbeOrder(
   discogsDurationMs: number | null = null,
   discogsTitle?: string
 ): number {
+  if (Boolean(left.extra) !== Boolean(right.extra)) return left.extra ? -1 : 1
   if (discogsTitle) {
     const leftFit = searchVersionRank(discogsTitle, left.title)
     const rightFit = searchVersionRank(discogsTitle, right.title)
@@ -359,6 +411,11 @@ export function filterTrackLevelRecordings(
     if (delta == null) return true
     return delta <= DURATION_FAR_MS
   })
+}
+
+export function durationDeltaMs(a: number | null, b: number | null): number | null {
+  if (a == null || b == null) return null
+  return Math.abs(a - b)
 }
 
 export function titlesMatchExactly(left: string, right: string): boolean {
@@ -472,11 +529,6 @@ function titleEquals(a: string, b: string): boolean {
   const right = normalizeTitle(b)
   if (!left || !right) return false
   return left === right
-}
-
-function durationDeltaMs(a: number | null, b: number | null): number | null {
-  if (a == null || b == null) return null
-  return Math.abs(a - b)
 }
 
 /** Missing lengths rank after any known duration so the comparator stays transitive. */

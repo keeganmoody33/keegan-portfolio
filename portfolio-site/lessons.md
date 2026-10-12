@@ -1,6 +1,12 @@
 # Lessons Learned
 
-Updated: 2026-10-08
+Updated: 2026-10-12
+
+## Search extras for missed sampled recordings (2026-10-12)
+
+- Fire extras **only when this-run near-top has 0 sampled hits** after Redis fill. Cold first-search hits that are already sampled in Redis must not spend the +1. Typical +1 (`artistname` + unquoted title). Worst +3 (that plus unique-work search + browse, or ISRC instead of one of those). Stop as soon as any new hit has samples. Do not raise `TRACK_LEVEL_ANNOTATE_CAP` 3. Do not add `work-rels` to `getRecording` (`isrcs` only).
+- Extra hits use 5s + `searchVersionFit` + `promoteVersionContradicts` (vocal vs instrumental, including instrumental vs unmarked) + live/studio (`recordingIsLive` from title / disambiguation `live, 1975` / release titles; album Alive! is a live dest; `titleIsLive` is the `live` token, not Alive!). Work-browse hits also need a **known** length within 5s. Studio HTH stays off Alive!; live HTH stays off Double Platinum; Bourgié vocal stays off an instrumental dest; Black Diamond studio (59s) stays off the remix dest.
+- Unique work means **exactly one** work search hit. Ambiguous work search skips browse. Browse is `recording?work=` (not `getRecording` `/work/`).
 
 ## Collection research match-quality gates (2026-10-07)
 

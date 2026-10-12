@@ -28,9 +28,21 @@ import {
   isStrictSidecarMatch,
   compareSidecarHits,
   searchVersionFit,
+  titleIsLive,
+  recordingIsLive,
+  destinationIsLive,
+  promoteVersionContradicts,
   NEAR_TOP_SCORE_SLACK,
   DURATION_SIDECAR_MS,
 } from './match.ts'
+import {
+  filterExtraSearchHits,
+  filterWorkBrowseHits,
+  nearTopHasSamples,
+  normalizeIsrc,
+  projectExtrasTotals,
+  uniqueWorkMbid,
+} from './search-extras.ts'
 import { AUTH_RETRY_MS, isoFromMs, keepPriorMatch, nextBackoffMs, preferCompleteRecording, preservePressingOnFailure, shouldRefreshPressing, SUCCESS_REFRESH_MS, TERMINAL_REFRESH_MS, withClearedDeadlineStops, withRecordingLength } from './preserve.ts'
 import { createMemoryCrateStore, crateRedisKeys, DRAFT_TTL_SECONDS, FORCE_SERIES_TTL_SECONDS, INFLIGHT_TTL_SECONDS, TAKE_LUA, ENQUEUE_LUA, NACK_LUA, RELEASE_LOCK_LUA, REFRESH_LOCK_LUA, selectEnrichLockToken, type CrateStore } from './store.ts'
 import { queueNewAndMissing } from './sync.ts'
@@ -55,6 +67,7 @@ import {
   readRetryAfterMs,
   RECORDING_SEARCH_LIMIT,
   RECORDING_SEARCH_MAX_PAGES,
+  secondArtistTitleQuery,
   type MusicBrainzClient,
 } from './musicbrainz.ts'
 import { CRATE_MAX_ATTEMPTS, CRATE_SCHEMA_VERSION, type ResearchFact, type SampleLink, type StoredPressing, type StoredRecording, type TrackOccurrence } from './types.ts'
@@ -1741,6 +1754,18 @@ function createMusicBrainzClientForTests(): MusicBrainzClient {
       client.requestCount += 1
       return []
     },
+    async searchRecordingsByArtistNameTitle() {
+      return []
+    },
+    async searchRecordingsByIsrc() {
+      return []
+    },
+    async searchWorksByArtistTitle() {
+      return []
+    },
+    async browseRecordingsByWork() {
+      return []
+    },
     async getRelease() {
       client.requestCount += 1
       return null
@@ -1764,6 +1789,10 @@ function throwingMb(message = 'musicbrainz down'): MusicBrainzClient {
     searchReleaseByCatno: boom,
     searchReleaseByArtistTitle: boom,
     searchRecordingsByArtistTitle: boom,
+    searchRecordingsByArtistNameTitle: boom,
+    searchRecordingsByIsrc: boom,
+    searchWorksByArtistTitle: boom,
+    browseRecordingsByWork: boom,
     getRelease: boom,
     getRecording: boom,
   }
@@ -10355,7 +10384,7 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
     const src = readFileSync(fileURLToPath(new URL('./musicbrainz.ts', import.meta.url)), 'utf8')
     const start = src.indexOf('async getRecording')
     const body = src.slice(start, src.indexOf('export type MusicBrainzClient', start))
-    assert.match(body, /recording-rels\+release-rels/)
+    assert.match(body, /recording-rels\+release-rels\+url-rels\+isrcs/)
     assert.doesNotMatch(body, /\/work\//)
     assert.doesNotMatch(body, /work-rels/)
   })
@@ -10517,6 +10546,594 @@ describe('release-group backfill, unresolved clear, and track-level samples', ()
       mb,
     })
     assert.equal(result.provenance.refreshAfter, isoFromMs(clock + 10_000))
+  })
+})
+
+describe('search extras for missed sampled recordings', () => {
+  const juicyLink = {
+    title: 'Juicy',
+    artist: 'The Notorious B.I.G.',
+    mbid: '181c0a32-6e3f-4680-8a7d-1daf0b42e43b',
+    sourceUrl: 'https://musicbrainz.org/recording/181c0a32-6e3f-4680-8a7d-1daf0b42e43b',
+    source: 'musicbrainz' as const,
+    providerId: '181c0a32-6e3f-4680-8a7d-1daf0b42e43b',
+  }
+
+  it('treats Alive! as a live dest and mix-marker live only on titles', () => {
+    assert.equal(titleIsLive('alive'), false)
+    assert.equal(titleIsLive('Alive!'), false)
+    assert.equal(titleIsLive('Hotter Than Hell (live)'), true)
+    assert.equal(destinationIsLive({ albumTitle: 'Alive!', trackTitle: 'Hotter Than Hell' }), true)
+    assert.equal(
+      destinationIsLive({ albumTitle: 'Double Platinum', trackTitle: 'Hotter Than Hell' }),
+      false
+    )
+    assert.equal(
+      recordingIsLive({ title: 'Hotter Than Hell', disambiguation: 'live, 1975' }),
+      true
+    )
+    assert.equal(recordingIsLive({ title: 'Hotter Than Hell' }), false)
+  })
+
+  it('rejects studio Hotter Than Hell on Alive! and live HTH on a studio dest', () => {
+    const studio = {
+      mbid: '6e4909b0-0000-0000-0000-000000000001',
+      title: 'Hotter Than Hell',
+      artist: 'Kiss',
+      lengthMs: 196000,
+      score: 100,
+    }
+    const live = {
+      mbid: 'e144dd90-0000-0000-0000-000000000001',
+      title: 'Hotter Than Hell',
+      artist: 'Kiss',
+      lengthMs: 196000,
+      score: 100,
+      disambiguation: 'live, 1975',
+    }
+    const discogs = { artist: 'Kiss', title: 'Hotter Than Hell', durationMs: 196000 }
+    assert.deepEqual(
+      filterExtraSearchHits([studio, live], discogs, {
+        albumTitle: 'Alive!',
+        trackTitle: 'Hotter Than Hell',
+      }).map((hit) => hit.mbid),
+      [live.mbid]
+    )
+    assert.deepEqual(
+      filterExtraSearchHits([studio, live], discogs, {
+        albumTitle: 'Double Platinum',
+        trackTitle: 'Hotter Than Hell',
+      }).map((hit) => hit.mbid),
+      [studio.mbid]
+    )
+  })
+
+  it('rejects Bourgié vocal on an instrumental dest', () => {
+    assert.equal(promoteVersionContradicts('Bourgié, Bourgié', 'Bourgié, Bourgié'), false)
+    assert.equal(
+      promoteVersionContradicts('Bourgié, Bourgié (instrumental)', 'Bourgié, Bourgié'),
+      true
+    )
+    const vocal = {
+      mbid: '83c21345-afcf-44b0-b619-f0f7c5f9b2a1',
+      title: 'Bourgié, Bourgié',
+      artist: 'Ashford & Simpson',
+      lengthMs: 367000,
+      score: 100,
+    }
+    const kept = filterExtraSearchHits(
+      [vocal],
+      {
+        artist: 'Ashford & Simpson',
+        title: 'Bourgié, Bourgié (instrumental)',
+        durationMs: 367000,
+      },
+      { albumTitle: 'Send It', trackTitle: 'Guitarra G (instrumental)' }
+    )
+    assert.equal(kept.length, 0)
+  })
+
+  it('rejects Black Diamond studio cut on a remix dest (59s / unmarked vs remix)', () => {
+    const studio = {
+      mbid: '6e4909b0-0000-0000-0000-000000000002',
+      title: 'Black Diamond',
+      artist: 'Kiss',
+      lengthMs: 312920,
+      score: 100,
+    }
+    const remix = {
+      mbid: '3fcae502-0000-0000-0000-000000000001',
+      title: 'Black Diamond (remix)',
+      artist: 'Kiss',
+      lengthMs: 255240,
+      score: 100,
+    }
+    const discogs = {
+      artist: 'Kiss',
+      title: 'Black Diamond (remix)',
+      durationMs: 255240,
+    }
+    const dest = { albumTitle: 'Double Platinum', trackTitle: 'Black Diamond (remix)' }
+    assert.deepEqual(
+      filterExtraSearchHits([studio, remix], discogs, dest).map((hit) => hit.mbid),
+      [remix.mbid]
+    )
+    assert.equal(filterWorkBrowseHits([studio], discogs, dest).length, 0)
+  })
+
+  it('mergeRecalledRecordingHits copies extra so a first-search miss is probed first', () => {
+    const already = {
+      mbid: 'sampled-in-search',
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      lengthMs: 360000,
+      score: 95,
+    }
+    const merged = mergeRecalledRecordingHits(
+      [already],
+      [{ ...already, extra: true, disambiguation: 'album version' }]
+    )
+    assert.equal(merged[0]?.extra, true)
+    assert.equal(merged[0]?.disambiguation, 'album version')
+    const earlier = {
+      mbid: 'earlier',
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      lengthMs: 355000,
+      score: 100,
+    }
+    const probe = [earlier, merged[0]!].sort((left, right) =>
+      compareTrackLevelProbeOrder(left, right, 355000, 'Juicy Fruit (Vocal)')
+    )
+    assert.equal(probe[0]?.mbid, 'sampled-in-search')
+  })
+
+  it('rejects work-browse hits with unknown length or more than 5s off', () => {
+    const dest = { albumTitle: 'AOI: Bionix', trackTitle: 'Intro' }
+    const discogs = { artist: 'De La Soul', title: 'Intro', durationMs: 29960 }
+    const unknown = {
+      mbid: 'unknown-len',
+      title: 'Intro',
+      artist: 'De La Soul',
+      lengthMs: null,
+      score: 100,
+    }
+    const far = {
+      mbid: '47a16400-0000-0000-0000-000000000001',
+      title: 'Intro',
+      artist: 'De La Soul',
+      lengthMs: 52520,
+      score: 100,
+    }
+    const close = {
+      mbid: 'close-intro',
+      title: 'Intro',
+      artist: 'De La Soul',
+      lengthMs: 31000,
+      score: 100,
+    }
+    assert.equal(filterWorkBrowseHits([unknown, far], discogs, dest).length, 0)
+    assert.deepEqual(
+      filterWorkBrowseHits([unknown, far, close], discogs, dest).map((hit) => hit.mbid),
+      [close.mbid]
+    )
+  })
+
+  it('skips extras when near-top already has sampled hits', () => {
+    const hits = [
+      {
+        mbid: 'sampled',
+        title: 'Juicy Fruit',
+        artist: 'Mtume',
+        lengthMs: 355000,
+        score: 100,
+        hasSamples: true,
+      },
+      {
+        mbid: 'empty',
+        title: 'Juicy Fruit',
+        artist: 'Mtume',
+        lengthMs: 355000,
+        score: 99,
+        hasSamples: false,
+      },
+    ]
+    assert.equal(
+      nearTopHasSamples(hits, { artist: 'Mtume', title: 'Juicy Fruit (Vocal)', durationMs: 355000 }),
+      true
+    )
+  })
+
+  it('builds artistname + unquoted title and unique-work only', () => {
+    assert.match(
+      secondArtistTitleQuery('The Beatnuts', "Off Point (Props)"),
+      /artistname:"The Beatnuts" AND recording:\(off point\)/
+    )
+    assert.equal(uniqueWorkMbid([{ mbid: 'work-1', score: 100 }]), 'work-1')
+    assert.equal(
+      uniqueWorkMbid([
+        { mbid: 'work-1', score: 100 },
+        { mbid: 'work-2', score: 90 },
+      ]),
+      null
+    )
+    assert.equal(normalizeIsrc('us-rc1-7607839'), 'USRC17607839')
+    assert.equal(normalizeIsrc('nope'), null)
+  })
+
+  it('puts isrcs on getRecording and never work-rels', async () => {
+    const urls: string[] = []
+    const client = createMusicBrainzClient({
+      minIntervalMs: 0,
+      fetchImpl: async (url) => {
+        urls.push(String(url))
+        return Response.json({
+          id: 'rec-1',
+          title: 'Song',
+          isrcs: ['USRC17607839'],
+          'artist-credit': [{ name: 'Artist' }],
+          relations: [],
+        })
+      },
+    })
+    const doc = await client.getRecording('rec-1')
+    assert.deepEqual(doc?.isrcs, ['USRC17607839'])
+    assert.ok(urls[0]?.includes('isrcs'))
+    assert.equal(urls.some((url) => url.includes('work-rels')), false)
+    assert.equal(urls.some((url) => url.includes('/work/')), false)
+  })
+
+  it('second query is one unpaged search; work browse only after a unique work', async () => {
+    const urls: string[] = []
+    const client = createMusicBrainzClient({
+      minIntervalMs: 0,
+      fetchImpl: async (url) => {
+        urls.push(String(url))
+        const href = String(url)
+        if (href.includes('/work?')) {
+          return Response.json({
+            works: [{ id: 'work-1', title: 'Props', score: 100 }],
+          })
+        }
+        if (href.includes('work=work-1')) {
+          return Response.json({
+            recordings: [
+              {
+                id: '9cb859c8-284d-4433-8a3a-6f083533e004',
+                title: 'Off Point',
+                length: 235000,
+                'artist-credit': [{ name: 'The Beatnuts' }],
+              },
+            ],
+          })
+        }
+        return Response.json({ recordings: [] })
+      },
+    })
+    const second = await client.searchRecordingsByArtistNameTitle({
+      artist: 'The Beatnuts',
+      title: 'Off Point (Props)',
+    })
+    assert.equal(second.length, 0)
+    assert.equal(urls.filter((url) => url.includes('artistname')).length, 1)
+    assert.equal(urls[0]?.includes('offset=100'), false)
+    const works = await client.searchWorksByArtistTitle({
+      artist: 'The Beatnuts',
+      title: 'Off Point (Props)',
+    })
+    assert.equal(uniqueWorkMbid(works), 'work-1')
+    const browsed = await client.browseRecordingsByWork('work-1')
+    assert.equal(browsed[0]?.mbid, '9cb859c8-284d-4433-8a3a-6f083533e004')
+    assert.ok(urls.some((url) => url.includes('/work?')))
+    assert.ok(urls.some((url) => url.includes('work=work-1')))
+  })
+
+  it('does not browse recordings when the work search is ambiguous', async () => {
+    const urls: string[] = []
+    const client = createMusicBrainzClient({
+      minIntervalMs: 0,
+      fetchImpl: async (url) => {
+        urls.push(String(url))
+        return Response.json({
+          works: [
+            { id: 'work-1', title: 'Jamming', score: 100 },
+            { id: 'work-2', title: 'Jamming', score: 99 },
+          ],
+        })
+      },
+    })
+    const works = await client.searchWorksByArtistTitle({
+      artist: 'Bob Marley & The Wailers',
+      title: 'Jamming',
+    })
+    assert.equal(uniqueWorkMbid(works), null)
+    assert.equal(urls.some((url) => url.includes('work=')), false)
+  })
+
+  it('finds a sampled hit from the second query when first search near-top is empty of samples', async () => {
+    const sampledMbid = '9cb859c8-284d-4433-8a3a-6f083533e004'
+    const mb = createMusicBrainzClientForTests()
+    mb.searchRecordingsByArtistTitle = async () => [
+      {
+        mbid: 'unsampled-quote-miss',
+        title: 'Juicy Fruit',
+        artist: 'Mtume',
+        lengthMs: 355000,
+        score: 100,
+      },
+    ]
+    mb.searchRecordingsByArtistNameTitle = async () => [
+      {
+        mbid: sampledMbid,
+        title: 'Juicy Fruit',
+        artist: 'Mtume',
+        lengthMs: 355000,
+        score: 100,
+      },
+    ]
+    mb.getRecording = async (id) => ({
+      mbid: id,
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      credits: [],
+      samplesFrom: [],
+      sampledIn: id === sampledMbid ? [juicyLink] : [],
+    })
+    const store = createMemoryCrateStore()
+    const result = await enrichPressing(567894, {
+      store,
+      now: () => Date.parse('2026-10-06T08:00:00.000Z'),
+      fetchDiscogs: async () => mtumeDetail(),
+      mb,
+    })
+    const vocal = result.tracks.find((track) => /vocal/i.test(track.title))
+    assert.equal(vocal?.recording.mbid, sampledMbid)
+    assert.equal(result.recordings[sampledMbid]?.sampledIn[0]?.mbid, juicyLink.mbid)
+  })
+
+  it('probes a first-search sampled miss via extra flag without raising the annotate cap', async () => {
+    const fetched: string[] = []
+    const sampledMbid = 'a0000000-0000-0000-0000-000000000009'
+    const hits = Array.from({ length: 10 }, (_, index) => ({
+      mbid: `a0000000-0000-0000-0000-00000000000${index}`,
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      lengthMs: index === 9 ? 360000 : 355000,
+      score: 100,
+    }))
+    const mb = createMusicBrainzClientForTests()
+    mb.searchRecordingsByArtistTitle = async () => hits
+    mb.searchRecordingsByArtistNameTitle = async () => [
+      hits.find((hit) => hit.mbid === sampledMbid)!,
+    ]
+    mb.searchWorksByArtistTitle = async () => {
+      throw new Error('work extras should not run after second query finds samples')
+    }
+    mb.getRecording = async (id) => {
+      fetched.push(id)
+      return {
+        mbid: id,
+        title: 'Juicy Fruit',
+        artist: 'Mtume',
+        credits: [],
+        samplesFrom: [],
+        sampledIn: id === sampledMbid ? [juicyLink] : [],
+      }
+    }
+    const store = createMemoryCrateStore()
+    const result = await enrichPressing(567894, {
+      store,
+      now: () => Date.parse('2026-10-06T08:00:00.000Z'),
+      fetchDiscogs: async () => mtumeDetail(),
+      mb,
+    })
+    assert.ok(fetched.includes(sampledMbid))
+    assert.ok(fetched.length <= TRACK_LEVEL_ANNOTATE_CAP)
+    const vocal = result.tracks.find((track) => /vocal/i.test(track.title))
+    assert.equal(vocal?.recording.mbid, sampledMbid)
+  })
+
+  it('skips work extras when an ISRC search finds samples', async () => {
+    let works = 0
+    const firstMbid = 'first-unsampled'
+    const sampledMbid = 'isrc-sampled'
+    const mb = createMusicBrainzClientForTests()
+    mb.searchRecordingsByArtistTitle = async () => [
+      {
+        mbid: firstMbid,
+        title: 'Juicy Fruit',
+        artist: 'Mtume',
+        lengthMs: 355000,
+        score: 100,
+      },
+    ]
+    mb.searchRecordingsByIsrc = async () => [
+      {
+        mbid: sampledMbid,
+        title: 'Juicy Fruit',
+        artist: 'Mtume',
+        lengthMs: 355000,
+        score: 100,
+      },
+    ]
+    mb.searchWorksByArtistTitle = async () => {
+      works += 1
+      return []
+    }
+    mb.getRecording = async (id) => ({
+      mbid: id,
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      credits: [],
+      samplesFrom: [],
+      sampledIn: id === sampledMbid ? [juicyLink] : [],
+      isrcs: id === firstMbid ? ['USRC17607839'] : undefined,
+    })
+    const store = createMemoryCrateStore()
+    const result = await enrichPressing(567894, {
+      store,
+      now: () => Date.parse('2026-10-06T08:00:00.000Z'),
+      fetchDiscogs: async () => mtumeDetail(),
+      mb,
+    })
+    assert.equal(works, 0)
+    const vocal = result.tracks.find((track) => /vocal/i.test(track.title))
+    assert.equal(vocal?.recording.mbid, sampledMbid)
+  })
+
+  it('does not call extras when Redis already stamped a sampled near-top hit', async () => {
+    let extras = 0
+    const sampledMbid = '1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc'
+    const store = createMemoryCrateStore()
+    await store.setRecording({
+      mbid: sampledMbid,
+      title: 'Juicy Fruit',
+      artist: 'Mtume',
+      lengthMs: 354866,
+      credits: [],
+      samplesFrom: [],
+      sampledIn: [juicyLink],
+      provenance: {
+        sourceUrls: [`https://musicbrainz.org/recording/${sampledMbid}`],
+        matchStatus: 'matched',
+        confidence: 0.7,
+        reason: 'recording-level artist+title',
+        checkedAt: '2026-10-06T08:00:00.000Z',
+        refreshAfter: '2027-04-07T08:00:00.000Z',
+        lastError: null,
+        verifiedAt: '2026-10-06T08:00:00.000Z',
+        lastAttemptAt: '2026-10-06T08:00:00.000Z',
+      },
+    })
+    const mb = createMusicBrainzClientForTests()
+    mb.searchRecordingsByArtistTitle = async () => [
+      {
+        mbid: sampledMbid,
+        title: 'Juicy Fruit',
+        artist: 'Mtume',
+        lengthMs: 355000,
+        score: 100,
+      },
+    ]
+    mb.searchRecordingsByArtistNameTitle = async (input) => {
+      if (/vocal/i.test(input.title)) extras += 1
+      return []
+    }
+    mb.searchWorksByArtistTitle = async (input) => {
+      if (/vocal/i.test(input.title)) extras += 1
+      return []
+    }
+    const result = await enrichPressing(567894, {
+      store,
+      now: () => Date.parse('2026-10-06T08:00:00.000Z'),
+      fetchDiscogs: async () => mtumeDetail(),
+      mb,
+    })
+    assert.equal(extras, 0)
+    const vocal = result.tracks.find((track) => /vocal/i.test(track.title))
+    assert.equal(vocal?.recording.mbid, sampledMbid)
+  })
+
+  it('projects extras-admissible sample totals from a pressing map', () => {
+    const liveHth = {
+      mbid: 'e144dd90-live',
+      title: 'Hotter Than Hell',
+      artist: 'Kiss',
+      lengthMs: 196000,
+      disambiguation: 'live, 1975',
+      credits: [],
+      samplesFrom: [],
+      sampledIn: [
+        {
+          title: 'Gimme Sheldon',
+          artist: 'Bran Van 3000',
+          mbid: 'gs',
+          sourceUrl: 'https://musicbrainz.org/recording/gs',
+          source: 'musicbrainz',
+          providerId: 'gs',
+        },
+      ],
+      provenance: {
+        sourceUrls: [],
+        matchStatus: 'matched',
+        confidence: 0.7,
+        reason: 'x',
+        checkedAt: '2026-10-06T08:00:00.000Z',
+        refreshAfter: '2027-04-07T08:00:00.000Z',
+        lastError: null,
+        verifiedAt: '2026-10-06T08:00:00.000Z',
+        lastAttemptAt: '2026-10-06T08:00:00.000Z',
+      },
+    } as StoredRecording
+    const studioHth: StoredRecording = {
+      ...liveHth,
+      mbid: 'studio-hth',
+      disambiguation: undefined,
+      sampledIn: [
+        {
+          title: 'Should Not Copy',
+          artist: 'X',
+          mbid: 'x',
+          sourceUrl: 'https://musicbrainz.org/recording/x',
+          source: 'musicbrainz',
+          providerId: 'x',
+        },
+      ],
+    }
+    const pressing = {
+      schemaVersion: 2,
+      releaseId: 3221873,
+      entryInstanceIds: [],
+      facts: {
+        releaseId: 3221873,
+        title: 'Alive!',
+        artist: 'Kiss',
+        label: 'Casablanca',
+        catno: null,
+        format: null,
+        country: null,
+        released: null,
+        year: 1975,
+        cover: '',
+        thumbnail: '',
+        discogsUrl: '',
+        barcode: null,
+      },
+      description: null,
+      tracks: [
+        {
+          position: 'A4',
+          title: 'Hotter Than Hell',
+          duration: '3:16',
+          durationMs: 196000,
+          index: 0,
+          type_: 'track',
+          recording: {
+            matchStatus: 'matched' as const,
+            confidence: 0.7,
+            reason: 'x',
+            mbid: 'e144dd90-live',
+            recordingUrl: null,
+          },
+        },
+      ],
+      mbRelease: {
+        mbid: null,
+        url: null,
+        matchStatus: 'unmatched' as const,
+        confidence: 0,
+        reason: '',
+      },
+      recordings: {
+        'e144dd90-live': liveHth,
+        'studio-hth': studioHth,
+      },
+      provenance: liveHth.provenance,
+    }
+    const projected = projectExtrasTotals([pressing])
+    assert.equal(projected.links, 1)
+    assert.equal(projected.records, 1)
+    assert.equal(projected.sampledBy, 1)
   })
 })
 

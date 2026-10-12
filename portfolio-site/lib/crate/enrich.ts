@@ -52,6 +52,15 @@ import {
   type MusicBrainzClient,
 } from './musicbrainz.ts'
 import {
+  fetchIsrcHits,
+  fetchSecondQueryHits,
+  fetchWorkBrowseHits,
+  filterExtraSearchHits,
+  filterWorkBrowseHits,
+  liveStudioCompatible,
+  nearTopHasSamples,
+} from './search-extras.ts'
+import {
   AUTH_RETRY_MS,
   copyCheckpoint,
   countsTowardAttempts,
@@ -1064,19 +1073,14 @@ function storedRecordingFromLookup(
   }
 }
 
-async function annotateTrackLevelHits(
+async function fillTrackLevelHasSamples(
   hits: TrackLevelRecordingHit[],
   recordings: Record<string, StoredRecording>,
   store: CrateStore,
-  mb: MusicBrainzClient,
   deps: EnrichDeps,
-  nowIso: string,
   nowMs: number,
   takeFloorMs: number,
-  probeCache: Record<string, StoredRecording>,
-  discogsDurationMs: number | null,
-  priorMbid: string | null,
-  discogsTitle?: string
+  probeCache: Record<string, StoredRecording>
 ): Promise<TrackLevelRecordingHit[]> {
   const annotated: TrackLevelRecordingHit[] = hits.map((hit) => ({ ...hit }))
   const remainingNow = () =>
@@ -1117,6 +1121,36 @@ async function annotateTrackLevelHits(
       }
     }
   }
+  return annotated
+}
+
+async function annotateTrackLevelHits(
+  hits: TrackLevelRecordingHit[],
+  recordings: Record<string, StoredRecording>,
+  store: CrateStore,
+  mb: MusicBrainzClient,
+  deps: EnrichDeps,
+  nowIso: string,
+  nowMs: number,
+  takeFloorMs: number,
+  probeCache: Record<string, StoredRecording>,
+  discogsDurationMs: number | null,
+  priorMbid: string | null,
+  discogsTitle?: string
+): Promise<TrackLevelRecordingHit[]> {
+  const annotated = await fillTrackLevelHasSamples(
+    hits,
+    recordings,
+    store,
+    deps,
+    nowMs,
+    takeFloorMs,
+    probeCache
+  )
+  const remainingNow = () =>
+    deps.deadlineMs == null
+      ? Number.POSITIVE_INFINITY
+      : remainingBudgetMs(deps.deadlineMs, (deps.now ?? Date.now)())
   const prior = priorMbid ? annotated.find((hit) => hit.mbid === priorMbid) : undefined
   if (shouldSkipTrackLevelProbes(annotated, prior, Boolean(deps.forceRefresh))) {
     return annotated
@@ -1146,6 +1180,8 @@ async function annotateTrackLevelHits(
       probeCache[hit.mbid] = recording
       applyStoredLengthToHit(hit, recording)
       hit.hasSamples = recordingHasSampleMaterial(recording)
+      if (doc.isrcs?.length) hit.isrcs = doc.isrcs
+      if (doc.disambiguation && !hit.disambiguation) hit.disambiguation = doc.disambiguation
     } catch (error) {
       throwIfDeadlineExceededTimeout(error)
       if (isMusicBrainzRateLimitError(error) || isMusicBrainzTimeoutError(error)) {
@@ -1162,6 +1198,10 @@ async function annotateTrackLevelHits(
           probeCache[partial.mbid] = recording
           applyStoredLengthToHit(hit, recording)
           hit.hasSamples = recordingHasSampleMaterial(recording)
+          if (partial.isrcs?.length) hit.isrcs = partial.isrcs
+          if (partial.disambiguation && !hit.disambiguation) {
+            hit.disambiguation = partial.disambiguation
+          }
         }
         if (isMusicBrainzRateLimitError(error)) throw error
         continue
@@ -1306,6 +1346,7 @@ async function applyTrackLevelSamples(
   tracks: TrackOccurrence[],
   recordings: Record<string, StoredRecording>,
   artist: string,
+  albumTitle: string,
   mb: MusicBrainzClient,
   deps: EnrichDeps,
   nowIso: string,
@@ -1398,10 +1439,13 @@ async function applyTrackLevelSamples(
       artist: queryArtist,
       title: queryTitle,
     })
-    const filtered = filterTrackLevelRecordings(hits, discogs)
+    const dest = { albumTitle, trackTitle: track.title }
+    const filtered = filterTrackLevelRecordings(hits, discogs).filter((hit) =>
+      liveStudioCompatible(dest, hit)
+    )
     // Force ranking may only use hits that survived this-run filter. A raw
     // search MBID that failed version/duration must not re-enter via Redis recall.
-    const searchMbids = new Set(filtered.map((hit) => hit.mbid))
+    let searchMbids = new Set(filtered.map((hit) => hit.mbid))
     const priorMbid = sampledSidecarPriorMbid(savedMbid, sidecars, {
       forceRefresh: Boolean(deps.forceRefresh),
       searchMbids,
@@ -1412,21 +1456,66 @@ async function applyTrackLevelSamples(
       .map((doc) => hitFromStoredRecording(doc, topScore))
       .filter((hit) => isStrictSidecarMatch(discogs, hit))
       .filter((hit) => !deps.forceRefresh || searchMbids.has(hit.mbid))
-    const merged = mergeRecalledRecordingHits(filtered, recalled)
-    const annotated = await annotateTrackLevelHits(
-      merged,
+    let merged = await fillTrackLevelHasSamples(
+      mergeRecalledRecordingHits(filtered, recalled),
       recordings,
       deps.store,
-      mb,
       deps,
-      nowIso,
       nowMs,
       takeFloorMs,
-      probeCache,
-      track.durationMs,
-      priorMbid,
-      track.title
+      probeCache
     )
+    merged = merged.filter((hit) => liveStudioCompatible(dest, hit))
+    if (!nearTopHasSamples(merged, discogs)) {
+      const extraHits = filterExtraSearchHits(
+        await fetchSecondQueryHits(mb, discogs),
+        discogs,
+        dest
+      )
+      if (extraHits.length > 0) {
+        merged = mergeRecalledRecordingHits(merged, extraHits)
+        for (const hit of extraHits) searchMbids.add(hit.mbid)
+      }
+    }
+    const annotate = (pool: TrackLevelRecordingHit[]) =>
+      annotateTrackLevelHits(
+        pool,
+        recordings,
+        deps.store,
+        mb,
+        deps,
+        nowIso,
+        nowMs,
+        takeFloorMs,
+        probeCache,
+        track.durationMs,
+        priorMbid,
+        track.title
+      )
+    let annotated = await annotate(merged)
+    if (!nearTopHasSamples(annotated, discogs)) {
+      const isrcHits = filterExtraSearchHits(await fetchIsrcHits(mb, annotated), discogs, dest)
+      if (isrcHits.length > 0) {
+        annotated = mergeRecalledRecordingHits(annotated, isrcHits)
+        for (const hit of isrcHits) searchMbids.add(hit.mbid)
+        annotated = await annotate(annotated)
+      }
+    }
+    if (!nearTopHasSamples(annotated, discogs)) {
+      const workHits = filterWorkBrowseHits(
+        await fetchWorkBrowseHits(mb, discogs),
+        discogs,
+        dest
+      )
+      if (workHits.length > 0) {
+        annotated = mergeRecalledRecordingHits(annotated, workHits)
+        for (const hit of workHits) searchMbids.add(hit.mbid)
+      }
+    }
+    if (annotated.some((hit) => hit.extra && hit.hasSamples == null)) {
+      annotated = await annotate(annotated)
+    }
+    annotated = annotated.filter((hit) => liveStudioCompatible(dest, hit))
     const picked = overrideEmptyPickWithSampled(
       pickTrackLevelRecordings(annotated, discogs, {
         priorMbid,
@@ -2039,6 +2128,7 @@ export async function enrichPressing(
       tracks,
       recordings,
       facts.artist,
+      facts.title,
       mb,
       deps,
       nowIso,

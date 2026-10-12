@@ -1,3 +1,8 @@
+IN PROGRESS (2026-10-12 — search extras so prod finds same-song sampled recordings):
+- New branch off main (not #67). Extras only when this-run near-top has 0 sampled after Redis fill: (1) `artistname:"X" AND recording:(unquoted song title)` +1; (2) `isrcs` on existing `getRecording` inc, then `isrc:` +0/+1; (3) unique work search + `recording?work=` browse +2. Work-browse needs version fit and a known 5s length. All extra hits also use live/studio disambiguation from #67. Annotate cap stays 3. 1.1s pacing. No `--new-series`. No prod writes.
+- Tests: HTH live-vs-studio, Bourgié vocal/instrumental, Black Diamond remix negatives; second query finds a sampled miss; extras skip when Redis already has samples; unique work only; `isrcs` not `work-rels`.
+- Read-only preview-prefix measure: `npm run crate:search-extras-measure`. Do not walk prod.
+
 COMPLETED (2026-10-08 — leftover preview re-walk of 5 ids on lf:preview:):
 - Serialized `--retry --ids` on 378994, 21093352, 1921824, 14851267, 28896664. Back-to-back. One real invocation each. 429 / 0-MB did not burn the 3-invocation budget. Prefix `lf:preview:`. DISCOGS unset. Never prod.
 - Totals **389 / 75 / 101 / 288** vs #54 360/72/111/249 and vs P2b 389 (unchanged: `carryPriorRecordings` kept old sampled docs as sidecars). Unknown 0, work URLs 0.
