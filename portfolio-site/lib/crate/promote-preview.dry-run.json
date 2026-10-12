@@ -5,7 +5,6 @@
   "wrote": false,
   "keys": [
     "lf:crate:pressing:10416361:v1",
-    "lf:crate:pressing:106712:v1",
     "lf:crate:pressing:11449230:v1",
     "lf:crate:pressing:13694938:v1",
     "lf:crate:pressing:14851267:v1",
@@ -13,30 +12,24 @@
     "lf:crate:pressing:1930841:v1",
     "lf:crate:pressing:21093352:v1",
     "lf:crate:pressing:23467838:v1",
-    "lf:crate:pressing:3018422:v1",
     "lf:crate:pressing:3221873:v1",
     "lf:crate:pressing:451558:v1",
     "lf:crate:pressing:4666933:v1",
     "lf:crate:pressing:550972:v1",
     "lf:crate:pressing:6625293:v1",
     "lf:crate:pressing:6729400:v1",
-    "lf:crate:pressing:7482706:v1",
     "lf:crate:pressing:903960:v1",
     "lf:crate:recording:12db7ceb-c8f8-4220-8ea4-906226896b1f:v1",
     "lf:crate:recording:13ef609a-ceb6-44c5-b1cd-6ed05b8948cf:v1",
     "lf:crate:recording:33b9b9fd-15a1-4e1f-a10a-3d15df5e58f0:v1",
-    "lf:crate:recording:47a16400-4e94-4a15-912d-b5a6b2f174ba:v1",
-    "lf:crate:recording:4e1974cc-aaf4-46b7-9634-7aa9899b70e2:v1",
     "lf:crate:recording:5461c08e-3b9d-4da0-96cd-ade17b241654:v1",
     "lf:crate:recording:5b85db52-5955-4f46-9114-b34caac195f9:v1",
     "lf:crate:recording:5bd8736d-1f1b-4666-8050-4cc03a128af5:v1",
-    "lf:crate:recording:723a6918-f337-4d60-8b9a-8cc89eab9a43:v1",
     "lf:crate:recording:755ea925-c364-4e59-b21f-8d0f4f73f821:v1",
     "lf:crate:recording:824e104c-4406-46c8-b74f-bf79ef968633:v1",
     "lf:crate:recording:8f540449-337b-4e4f-ab72-acbf4b1a7c85:v1",
     "lf:crate:recording:9cb859c8-284d-4433-8a3a-6f083533e004:v1",
     "lf:crate:recording:a2f908dd-bcea-4336-bc30-e1b4d00fde80:v1",
-    "lf:crate:recording:a2fa4d74-5dab-4df8-a52a-635e3c294ed8:v1",
     "lf:crate:recording:c85cb2ba-d592-4e55-8487-c304e4d07bf8:v1",
     "lf:crate:recording:e007b469-f424-490b-b3f2-ff21f12d1989:v1",
     "lf:crate:recording:e144dd90-9720-4117-b695-9382008defa4:v1",
@@ -58,13 +51,13 @@
     "sampledBy": 288
   },
   "projectedProd": {
-    "links": 328,
-    "records": 75,
-    "sampleOf": 101,
-    "sampledBy": 227
+    "links": 323,
+    "records": 73,
+    "sampleOf": 98,
+    "sampledBy": 225
   },
-  "vs360": -32,
-  "vs389": -61,
+  "vs360": -37,
+  "vs389": -66,
   "records": [
     {
       "releaseId": 106712,
@@ -83,39 +76,12 @@
         "sampledBy": 0
       },
       "projectedProd": {
-        "links": 1,
-        "records": 1,
-        "sampleOf": 1,
+        "links": 0,
+        "records": 0,
+        "sampleOf": 0,
         "sampledBy": 0
       },
-      "copies": [
-        {
-          "releaseId": 106712,
-          "mbid": "47a16400-4e94-4a15-912d-b5a6b2f174ba",
-          "recordingTitle": "Intro",
-          "recordingArtist": "De La Soul",
-          "alreadyOnMap": false,
-          "versionFit": "aligned",
-          "matchedTracks": [
-            {
-              "position": "1",
-              "title": "Intro"
-            }
-          ],
-          "addedLinks": [
-            {
-              "source": "sample-target",
-              "direction": "sample_of",
-              "title": "Deep Gully",
-              "artist": "The Outlaw Blues Band",
-              "mbid": "9e8504da-5855-4392-90ae-af310e869b76",
-              "sourceUrl": "https://musicbrainz.org/recording/9e8504da-5855-4392-90ae-af310e869b76",
-              "versionFlags": []
-            }
-          ],
-          "borderline": []
-        }
-      ],
+      "copies": [],
       "skips": [
         {
           "releaseId": 106712,
@@ -218,6 +184,12 @@
           "mbid": "116ded73-4268-4ac3-ac2d-801bebc52a94",
           "title": "Intro",
           "reason": "no sample rels"
+        },
+        {
+          "releaseId": 106712,
+          "mbid": "47a16400-4e94-4a15-912d-b5a6b2f174ba",
+          "title": "Intro",
+          "reason": "recording not on dest release"
         },
         {
           "releaseId": 106712,
@@ -634,12 +606,6 @@
           "mbid": "d2637c43-cb52-419a-9a6d-3e1fa1b9be30",
           "title": "Pastime Paradise",
           "reason": "recording not on dest release"
-        },
-        {
-          "releaseId": 266650,
-          "mbid": "d2637c43-cb52-419a-9a6d-3e1fa1b9be30",
-          "title": "Pastime Paradise",
-          "reason": "already present"
         },
         {
           "releaseId": 266650,
@@ -1334,10 +1300,10 @@
         "sampledBy": 39
       },
       "projectedProd": {
-        "links": 2,
+        "links": 1,
         "records": 1,
         "sampleOf": 0,
-        "sampledBy": 2
+        "sampledBy": 1
       },
       "copies": [
         {
@@ -1376,22 +1342,6 @@
           "borderline": [
             "recording length unknown"
           ]
-        },
-        {
-          "releaseId": 903960,
-          "mbid": "6e4909b0-49b2-454b-89e6-8b83f1114b4a",
-          "recordingTitle": "Black Diamond",
-          "recordingArtist": "KISS",
-          "alreadyOnMap": false,
-          "versionFit": "aligned",
-          "matchedTracks": [
-            {
-              "position": "D5",
-              "title": "Black Diamond"
-            }
-          ],
-          "addedLinks": [],
-          "borderline": []
         }
       ],
       "skips": [
@@ -1862,6 +1812,12 @@
           "mbid": "104682a2-4a62-4801-9994-9dc43cd8bbf4",
           "title": "Cold Gin",
           "reason": "no sample rels"
+        },
+        {
+          "releaseId": 903960,
+          "mbid": "6e4909b0-49b2-454b-89e6-8b83f1114b4a",
+          "title": "Black Diamond",
+          "reason": "recording not on dest release"
         }
       ]
     },
@@ -1974,9 +1930,9 @@
         "sampledBy": 1
       },
       "projectedProd": {
-        "links": 8,
+        "links": 7,
         "records": 1,
-        "sampleOf": 7,
+        "sampleOf": 6,
         "sampledBy": 1
       },
       "copies": [
@@ -2014,38 +1970,6 @@
               "artist": "Joe Farrell",
               "mbid": "643de17c-2732-408d-a368-28a52520f297",
               "sourceUrl": "https://musicbrainz.org/recording/643de17c-2732-408d-a368-28a52520f297",
-              "versionFlags": []
-            }
-          ],
-          "borderline": [
-            "track duration unknown"
-          ]
-        },
-        {
-          "releaseId": 1679157,
-          "mbid": "a2fa4d74-5dab-4df8-a52a-635e3c294ed8",
-          "recordingTitle": "Watch Out Now",
-          "recordingArtist": "The Beatnuts",
-          "alreadyOnMap": false,
-          "versionFit": "aligned",
-          "matchedTracks": [
-            {
-              "position": "A17",
-              "title": "Watch Out Now"
-            },
-            {
-              "position": "B17",
-              "title": "Watch Out Now"
-            }
-          ],
-          "addedLinks": [
-            {
-              "source": "sample-target",
-              "direction": "sample_of",
-              "title": "Hijack",
-              "artist": "Enoch Light and the Light Brigade",
-              "mbid": "1bafd0a8-8888-4236-af75-3714d9037eea",
-              "sourceUrl": "https://musicbrainz.org/recording/1bafd0a8-8888-4236-af75-3714d9037eea",
               "versionFlags": []
             }
           ],
@@ -2240,6 +2164,12 @@
           "mbid": "aea1e572-27aa-4d5b-a778-84ead1823665",
           "title": "Beatnuts Forever",
           "reason": "already present"
+        },
+        {
+          "releaseId": 1679157,
+          "mbid": "a2fa4d74-5dab-4df8-a52a-635e3c294ed8",
+          "title": "Watch Out Now",
+          "reason": "recording not on dest release"
         },
         {
           "releaseId": 1679157,
@@ -2560,39 +2490,12 @@
         "sampledBy": 0
       },
       "projectedProd": {
-        "links": 1,
-        "records": 1,
-        "sampleOf": 1,
+        "links": 0,
+        "records": 0,
+        "sampleOf": 0,
         "sampledBy": 0
       },
-      "copies": [
-        {
-          "releaseId": 3018422,
-          "mbid": "4e1974cc-aaf4-46b7-9634-7aa9899b70e2",
-          "recordingTitle": "I Love You",
-          "recordingArtist": "Mary J. Blige",
-          "alreadyOnMap": false,
-          "versionFit": "aligned",
-          "matchedTracks": [
-            {
-              "position": "8",
-              "title": "I Love You (Yes I Du)"
-            }
-          ],
-          "addedLinks": [
-            {
-              "source": "sample-target",
-              "direction": "sample_of",
-              "title": "Ike\u2019s Mood 1",
-              "artist": "Isaac Hayes",
-              "mbid": "af9262b0-dbb2-4bad-80e5-482f14150d78",
-              "sourceUrl": "https://musicbrainz.org/recording/af9262b0-dbb2-4bad-80e5-482f14150d78",
-              "versionFlags": []
-            }
-          ],
-          "borderline": []
-        }
-      ],
+      "copies": [],
       "skips": [
         {
           "releaseId": 3018422,
@@ -2731,6 +2634,12 @@
           "mbid": "d87b3fee-877f-4fda-bd15-925f5defa190",
           "title": "I Am (single version)",
           "reason": "no sample rels"
+        },
+        {
+          "releaseId": 3018422,
+          "mbid": "4e1974cc-aaf4-46b7-9634-7aa9899b70e2",
+          "title": "I Love You",
+          "reason": "recording not on dest release"
         },
         {
           "releaseId": 3018422,
@@ -4217,39 +4126,12 @@
         "sampledBy": 3
       },
       "projectedProd": {
-        "links": 2,
+        "links": 1,
         "records": 1,
         "sampleOf": 0,
-        "sampledBy": 2
+        "sampledBy": 1
       },
-      "copies": [
-        {
-          "releaseId": 7482706,
-          "mbid": "723a6918-f337-4d60-8b9a-8cc89eab9a43",
-          "recordingTitle": "Bourgi\u00e9 Bourgi\u00e9 (instrumental)",
-          "recordingArtist": "Ashford & Simpson",
-          "alreadyOnMap": true,
-          "versionFit": "aligned",
-          "matchedTracks": [
-            {
-              "position": "B3",
-              "title": "Bourgi\u00e9 Bourgi\u00e9 (Instrumental)"
-            }
-          ],
-          "addedLinks": [
-            {
-              "source": "sample-target",
-              "direction": "sampled_by",
-              "title": "Guitarra G (Afterlife mix)",
-              "artist": "Banda Sonora",
-              "mbid": "a048a0d5-54de-4dd8-b79a-747539e2ecfc",
-              "sourceUrl": "https://musicbrainz.org/recording/a048a0d5-54de-4dd8-b79a-747539e2ecfc",
-              "versionFlags": []
-            }
-          ],
-          "borderline": []
-        }
-      ],
+      "copies": [],
       "skips": [
         {
           "releaseId": 7482706,
@@ -4277,6 +4159,12 @@
         },
         {
           "releaseId": 7482706,
+          "mbid": "723a6918-f337-4d60-8b9a-8cc89eab9a43",
+          "title": "Bourgi\u00e9 Bourgi\u00e9 (instrumental)",
+          "reason": "already present"
+        },
+        {
+          "releaseId": 7482706,
           "mbid": "3d5b4510-2254-4561-9b7b-e89bdd3f091b",
           "title": "Too Bad",
           "reason": "already present"
@@ -4285,7 +4173,7 @@
           "releaseId": 7482706,
           "mbid": "83c21345-afcf-44b0-b619-f0f7c5f9b2a1",
           "title": "Bourgi\u00e9, Bourgi\u00e9",
-          "reason": "recording not on dest release"
+          "reason": "no matching prod track"
         },
         {
           "releaseId": 7482706,
@@ -6744,14 +6632,6 @@
       ]
     },
     {
-      "releaseId": 1679157,
-      "mbid": "a2fa4d74-5dab-4df8-a52a-635e3c294ed8",
-      "title": "Watch Out Now",
-      "notes": [
-        "track duration unknown"
-      ]
-    },
-    {
       "releaseId": 6729400,
       "mbid": "a2f908dd-bcea-4336-bc30-e1b4d00fde80",
       "title": "Girlfriend",
@@ -6947,6 +6827,15 @@
       "mbid": "f653c1b1-a993-4f86-b6a0-5b92afe73e6c",
       "reason": "not on source recording",
       "releaseId": 6625293
+    },
+    {
+      "sourceMbid": "723a6918-f337-4d60-8b9a-8cc89eab9a43",
+      "sourceTitle": "Bourgi\u00e9 Bourgi\u00e9 (instrumental)",
+      "direction": "sampled_by",
+      "title": "Guitarra G (Afterlife mix)",
+      "mbid": "a048a0d5-54de-4dd8-b79a-747539e2ecfc",
+      "reason": "not on source recording",
+      "releaseId": 7482706
     }
   ],
   "lengthAudit": [
@@ -7342,20 +7231,6 @@
       ]
     },
     {
-      "mbid": "83c21345-afcf-44b0-b619-f0f7c5f9b2a1",
-      "title": "Bourgi\u00e9, Bourgi\u00e9",
-      "storedLengthMs": null,
-      "mbLengthMs": 367000,
-      "samplesFrom": 0,
-      "sampledIn": 1,
-      "disambiguation": "",
-      "live": false,
-      "releaseTitles": [
-        "Disco Connection, Volume 2: Authentic Classic Disco 1974\u20131981",
-        "Disco Fever: Just a Touch of Love"
-      ]
-    },
-    {
       "mbid": "eb0e73b7-902d-4ecf-b8ee-7fc27ca7629e",
       "title": "Fantasy",
       "storedLengthMs": 278000,
@@ -7627,7 +7502,7 @@
       "targetMbid": "a048a0d5-54de-4dd8-b79a-747539e2ecfc",
       "targetTitle": "Guitarra G (Afterlife mix)",
       "direction": "sampled_by",
-      "status": "restored",
+      "status": "confirmed_false",
       "relId": "9efd9ce9-e702-448b-8e76-641515e8fe62",
       "siblingMbid": "83c21345-afcf-44b0-b619-f0f7c5f9b2a1"
     },
