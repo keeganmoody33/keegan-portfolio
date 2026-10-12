@@ -12,7 +12,7 @@
 | `nav.personalProjects.vinylGrid` | Opens vinyl grid overlay | `true` |
 | `nav.stackOfWax.vinylGrid` | Opens vinyl grid overlay (Discogs) | `true` |
 | `nav.physicalProducts.placeholder` | Shows "coming soon" treatment | `true` |
-| `nav.staticPages` | Who I Am, About LecturesFrom, Contact, Work With Me | `true` |
+| `nav.staticPages` | Who I Am, About lecturesfrom, Contact, Work With Me | `true` |
 | `nav.projectRouting.builtOut` | Built-out projects → `/projects/[id]` | `true` |
 | `nav.projectRouting.overlay` | Non-built projects stay in overlay | `true` |
 

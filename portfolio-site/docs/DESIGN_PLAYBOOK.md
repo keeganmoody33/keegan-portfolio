@@ -1,4 +1,4 @@
-# Lecturesfrom Design Playbook
+# lecturesfrom Design Playbook
 
 **Created:** Feb 3, 2026
 **Version:** 1.0

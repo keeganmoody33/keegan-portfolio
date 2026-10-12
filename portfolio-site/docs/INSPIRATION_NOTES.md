@@ -42,7 +42,7 @@ Captured: Feb 3, 2026
 
 ---
 
-## Apply to Lecturesfrom
+## Apply to lecturesfrom
 
 ### CTAs — Reframe
 - Not "Contact Me" → something with conviction
