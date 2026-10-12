@@ -30,6 +30,8 @@ import {
   restoreCommandsForEntry,
   runPromotePreview,
   runWatchedPromoteCommands,
+  snapshotWrittenDumps,
+  stampSnapshotWritten,
   withPreviewNamespace,
   withProdNamespace,
 } from './promote-preview.ts'
@@ -1082,13 +1084,79 @@ describe('Integrations: live/studio pairing and dest-release', () => {
         }
       },
     })
+    assert.equal(report.records[0]?.copies.some((copy) => copy.mbid === debutDiamond), false)
     assert.equal(
       report.records[0]?.skips.some(
-        (skip) => skip.mbid === debutDiamond && skip.reason === 'recording not on dest release'
+        (skip) =>
+          skip.mbid === debutDiamond &&
+          (skip.reason === 'no matching prod track' || skip.reason === 'recording not on dest release')
       ),
       true
     )
+  })
+
+  it('does not copy 6e4909b0 onto D5 when the mapped remix has no sample rels', async () => {
+    const debut = completeRecording({
+      mbid: debutDiamond,
+      title: 'Black Diamond',
+      lengthMs: null,
+      sampledIn: [sampleLink('Out on the Street', 'out-street')],
+    })
+    const remix = completeRecording({
+      mbid: remixDiamond,
+      title: 'Black Diamond',
+      lengthMs: 255240,
+      samplesFrom: [],
+      sampledIn: [],
+    })
+    const prodPressing = pressingOf(
+      { [remix.mbid]: remix },
+      [{ position: 'D5', title: 'Black Diamond', durationMs: 254000, mbid: remix.mbid }]
+    )
+    const previewPressing = pressingOf(
+      { [debut.mbid]: debut, [remix.mbid]: remix },
+      [{ position: 'D5', title: 'Black Diamond', durationMs: 254000, mbid: remix.mbid }]
+    )
+    const prod = createMemoryCrateStore({
+      pressings: { [RELEASE_ID]: prodPressing },
+      recordings: { [remix.mbid]: remix },
+      seen: [RELEASE_ID],
+    })
+    const preview = createMemoryCrateStore({
+      pressings: { [RELEASE_ID]: previewPressing },
+      recordings: { [debut.mbid]: debut, [remix.mbid]: remix },
+      seen: [RELEASE_ID],
+    })
+    const report = await runPromotePreview({
+      prod,
+      preview,
+      prodEnv: PROD_ENV,
+      previewEnv: PREVIEW_ENV,
+      ids: [RELEASE_ID],
+      verifyRecording: async (mbid) => {
+        if (mbid === debutDiamond) {
+          return {
+            lengthMs: 312920,
+            samplesFrom: new Set(),
+            sampledIn: new Set(['out-street']),
+            live: false,
+            releaseTitles: ['KISS', 'The Originals'],
+          }
+        }
+        return {
+          lengthMs: 255240,
+          samplesFrom: new Set(),
+          sampledIn: new Set(),
+          live: false,
+          releaseTitles: ['Double Platinum'],
+        }
+      },
+    })
     assert.equal(report.records[0]?.copies.some((copy) => copy.mbid === debutDiamond), false)
+    assert.equal(
+      report.records[0]?.skips.some((skip) => skip.mbid === debutDiamond),
+      true
+    )
   })
 
   it('does not dest-release-skip a sampled sidecar when the mapped same-song pick has no samples', async () => {
@@ -1227,6 +1295,13 @@ describe('QA fold: WATCH CAS, rollback refuse, multi errors, recall', () => {
       recallSameSongOrVersion({ title: 'Pastime Paradise' }, { title: 'Pastime Paradise' }),
       true
     )
+    assert.equal(
+      recallSameSongOrVersion(
+        { title: 'Bourgié Bourgié (instrumental)' },
+        { title: 'Bourgié, Bourgié' }
+      ),
+      false
+    )
     const sourceMbid = 'd2637c43-cb52-419a-9a6d-3e1fa1b9be30'
     const targetMbid = '2f7a6735-2e09-4ce2-81e4-b148e6c39a55'
     const siblingMbid = 'e97bedfc-b0ee-4cb6-8343-03a714caab15'
@@ -1355,7 +1430,7 @@ describe('QA fold: WATCH CAS, rollback refuse, multi errors, recall', () => {
       verifyRecording: async (mbid) => {
         if (mbid === sourceMbid) {
           return {
-            lengthMs: 200000,
+            lengthMs: 207000,
             samplesFrom: new Set(),
             sampledIn: new Set(),
             live: false,
@@ -1454,6 +1529,193 @@ describe('QA fold: WATCH CAS, rollback refuse, multi errors, recall', () => {
       report.droppedLinks.some((drop) => drop.mbid === targetMbid && drop.reason === 'not on source recording'),
       true
     )
+  })
+
+  it('does not restore Guitarra G onto the Bourgié instrumental from the vocal sibling', async () => {
+    const instrumentalMbid = '723a6918-f337-4d60-8b9a-8cc89eab9a43'
+    const vocalMbid = '83c21345-afcf-44b0-b619-f0f7c5f9b2a1'
+    const guitarraMbid = 'a048a0d5-54de-4dd8-b79a-747539e2ecfc'
+    const releaseId = 7482706
+    const instrumental = completeRecording({
+      mbid: instrumentalMbid,
+      title: 'Bourgié Bourgié (instrumental)',
+      artist: 'Ashford & Simpson',
+      lengthMs: 367000,
+      sampledIn: [sampleLink('Guitarra G (Afterlife mix)', guitarraMbid)],
+    })
+    const vocal = completeRecording({
+      mbid: vocalMbid,
+      title: 'Bourgié, Bourgié',
+      artist: 'Ashford & Simpson',
+      lengthMs: 367000,
+      sampledIn: [sampleLink('Guitarra G (Afterlife mix)', guitarraMbid)],
+    })
+    const prodPressing = pressingOf(
+      {},
+      [{ position: 'B3', title: 'Bourgié Bourgié (instrumental)', durationMs: 367000 }],
+      releaseId
+    )
+    prodPressing.facts.title = 'Send It'
+    prodPressing.facts.artist = 'Ashford & Simpson'
+    const previewPressing = pressingOf(
+      { [instrumental.mbid]: instrumental, [vocal.mbid]: vocal },
+      [
+        {
+          position: 'B3',
+          title: 'Bourgié Bourgié (instrumental)',
+          durationMs: 367000,
+          mbid: instrumental.mbid,
+        },
+      ],
+      releaseId
+    )
+    previewPressing.facts.title = 'Send It'
+    previewPressing.facts.artist = 'Ashford & Simpson'
+    const prod = createMemoryCrateStore({
+      pressings: { [releaseId]: prodPressing },
+      seen: [releaseId],
+    })
+    const preview = createMemoryCrateStore({
+      pressings: { [releaseId]: previewPressing },
+      recordings: { [instrumental.mbid]: instrumental, [vocal.mbid]: vocal },
+      seen: [releaseId],
+    })
+    const report = await runPromotePreview({
+      prod,
+      preview,
+      prodEnv: PROD_ENV,
+      previewEnv: PREVIEW_ENV,
+      ids: [releaseId],
+      verifyRecording: async (mbid) => {
+        if (mbid === instrumentalMbid) {
+          return {
+            lengthMs: 367000,
+            samplesFrom: new Set(),
+            sampledIn: new Set(),
+            live: false,
+            releaseTitles: ['Send It'],
+          }
+        }
+        if (mbid === vocalMbid) {
+          return {
+            lengthMs: 367000,
+            samplesFrom: new Set(),
+            sampledIn: new Set([guitarraMbid]),
+            sampledInLinks: [sampleLink('Guitarra G (Afterlife mix)', guitarraMbid)],
+            relIds: new Map([[guitarraMbid, MB_SAMPLES_MATERIAL_REL_ID]]),
+            live: false,
+            releaseTitles: ['Send It'],
+          }
+        }
+        return {
+          lengthMs: 241000,
+          samplesFrom: new Set([vocalMbid]),
+          sampledIn: new Set(),
+          samplesFromLinks: [sampleLink('Bourgié, Bourgié', vocalMbid)],
+          relIds: new Map([[vocalMbid, MB_SAMPLES_MATERIAL_REL_ID]]),
+          live: false,
+          releaseTitles: ['Guitarra G'],
+        }
+      },
+    })
+    const recalled = report.recallReview.find((row) => row.targetMbid === guitarraMbid)
+    assert.equal(recalled?.status, 'confirmed_false')
+    assert.equal(
+      report.records[0]?.copies.some((copy) =>
+        copy.addedLinks.some((link) => link.mbid === guitarraMbid)
+      ),
+      false
+    )
+  })
+
+  it('rollback CAS expects post-apply written values and refuses a mismatch', async () => {
+    const sampled = completeRecording({ mbid: 'written-cas', title: 'Strutter' })
+    const prod = createMemoryCrateStore({
+      pressings: {
+        [RELEASE_ID]: pressingOf({}, [{ position: 'A1', title: 'Strutter', durationMs: 180000 }]),
+      },
+      seen: [RELEASE_ID],
+    })
+    const preview = createMemoryCrateStore({
+      pressings: {
+        [RELEASE_ID]: pressingOf({ [sampled.mbid]: sampled }, [
+          { position: 'A1', title: 'Strutter', durationMs: 180000, mbid: sampled.mbid },
+        ]),
+      },
+      recordings: { [sampled.mbid]: sampled },
+      seen: [RELEASE_ID],
+    })
+    const raw = memoryPromoteRawStore(prod, PROD_ENV)
+    const backupPath = join(mkdtempSync(join(tmpdir(), 'crate-promote-')), 'backup.json')
+    await runPromotePreview({
+      prod,
+      preview,
+      prodEnv: PROD_ENV,
+      previewEnv: PREVIEW_ENV,
+      ids: [RELEASE_ID],
+      ...APPLY,
+      backupPath,
+      raw,
+    })
+    const snapshot = JSON.parse(readFileSync(backupPath, 'utf8')) as {
+      keys: Array<{ key: string; dump: string | null; written?: string | null }>
+    }
+    assert.equal(
+      snapshot.keys.every((entry) => Object.prototype.hasOwnProperty.call(entry, 'written')),
+      true
+    )
+    const pressingKey = `lf:crate:pressing:${RELEASE_ID}:v1`
+    const mutated = JSON.parse((await raw.dumpKey(pressingKey)) ?? '{}') as StoredPressing
+    mutated.description = 'changed after apply'
+    await raw.setRaw(pressingKey, JSON.stringify(mutated))
+    await assert.rejects(
+      () =>
+        runPromotePreview({
+          prod,
+          preview,
+          prodEnv: PROD_ENV,
+          previewEnv: PREVIEW_ENV,
+          rollbackPath: backupPath,
+          allowProd: true,
+          runId: APPLY.runId,
+          raw,
+        }),
+      /watched key changed/
+    )
+    assert.throws(
+      () =>
+        snapshotWrittenDumps({
+          createdAt: new Date().toISOString(),
+          runId: APPLY.runId,
+          prefix: 'lf:',
+          keys: [
+            {
+              key: 'lf:crate:recording:missing-written:v1',
+              type: 'string',
+              pttl: -1,
+              dump: '{}',
+            },
+          ],
+        }),
+      /missing post-apply written value/
+    )
+    const stamped = stampSnapshotWritten(
+      {
+        createdAt: new Date().toISOString(),
+        runId: APPLY.runId,
+        prefix: 'lf:',
+        keys: [
+          {
+            key: 'lf:crate:recording:stamped:v1',
+            type: 'none',
+            pttl: -2,
+            dump: null,
+          },
+        ],
+      },
+      [['SET', 'lf:crate:recording:stamped:v1', '{"ok":true}']]
+    )
+    assert.equal(stamped.keys[0]?.written, '{"ok":true}')
   })
 })
 

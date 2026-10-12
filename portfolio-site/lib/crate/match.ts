@@ -40,10 +40,20 @@ const SEARCH_VERSION_TOKENS = new Set<string>([
 
 export type SearchVersionFit = 'aligned' | 'unmarked_fallback' | 'wrong'
 
-/** Mix-marker live, or an album/track titled Alive / Alive!. */
+/** Mix-marker `live` only. Album titles like Alive! are not a mix marker. */
 export function titleIsLive(title: string): boolean {
-  if (tokensFrom(title, SEARCH_VERSION_TOKENS).has('live')) return true
-  return /\balive\b/.test(normalizeTitle(title))
+  return tokensFrom(title, SEARCH_VERSION_TOKENS).has('live')
+}
+
+export function titleHasInstrumental(title: string): boolean {
+  const tokens = tokensFrom(title, SEARCH_VERSION_TOKENS)
+  return tokens.has('instrumental') || tokens.has('inst')
+}
+
+/** Vocal vs instrumental (or instrumental vs unmarked) is a different version. */
+export function promoteVersionContradicts(leftTitle: string, rightTitle: string): boolean {
+  if (titleHasInstrumental(leftTitle) !== titleHasInstrumental(rightTitle)) return true
+  return versionContradicts(leftTitle, rightTitle)
 }
 
 /** Recording live-ness from title, MB disambiguation (`live, 1975`), or the releases it appears on. */

@@ -28,6 +28,8 @@ import {
   isStrictSidecarMatch,
   compareSidecarHits,
   searchVersionFit,
+  titleIsLive,
+  promoteVersionContradicts,
   NEAR_TOP_SCORE_SLACK,
   DURATION_SIDECAR_MS,
 } from './match.ts'
@@ -655,6 +657,17 @@ describe('duration and title helpers', () => {
     assert.equal(searchVersionFit('Colour My World', 'Colour My World (Remix)'), 'wrong')
     assert.equal(searchVersionFit('Juicy Fruit (Vocal)', 'Juicy Fruit'), 'aligned')
     assert.equal(searchVersionFit('Brazilian Rhyme (Interlude)', 'Brazilian Rhyme'), 'aligned')
+  })
+
+  it('titleIsLive is the live mix marker, not album Alive!', () => {
+    assert.equal(titleIsLive('Hotter Than Hell (live)'), true)
+    assert.equal(titleIsLive('live, 1975'), true)
+    assert.equal(titleIsLive('Alive!'), false)
+    assert.equal(titleIsLive('KISS Alive! 1975–2000'), false)
+    assert.equal(titleIsLive('Hotter Than Hell'), false)
+    assert.equal(promoteVersionContradicts('Bourgié Bourgié (instrumental)', 'Bourgié, Bourgié'), true)
+    assert.equal(promoteVersionContradicts('Bourgié, Bourgié', 'Bourgié Bourgié (instrumental)'), true)
+    assert.equal(promoteVersionContradicts('Pastime Paradise', 'Pastime Paradise'), false)
   })
 
   it('378994 B1 Radio Edit never lands on a Clubstar remix', () => {

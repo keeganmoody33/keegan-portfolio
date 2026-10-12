@@ -15,8 +15,11 @@
  * to a live destination. --apply holds the enrich lock, plans after acquire,
  * and requires --prod --backup=<path> --run-id. Snapshot is TYPE/PTTL/GET.
  * REST WATCH is connection-scoped, so writes use EVAL CAS against snapshot
- * dumps (equivalent). Rollback refuses DEL of a non-string type with a null
- * dump. getRecordingSampleRels shares the 1.1s getJson limiter on one client.
+ * dumps (equivalent). The backup stores post-apply written values; rollback
+ * CAS-compares those and refuses on mismatch. Rollback refuses DEL of a
+ * non-string type with a null dump. A remix with no rels does not license
+ * another version's rels (duration >5s or vocal vs instrumental).
+ * getRecordingSampleRels shares the 1.1s getJson limiter on one client.
  */
 import { writeFileSync, readFileSync, mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
@@ -33,6 +36,7 @@ import {
   hitFromStoredRecording,
   recordingHasSampleMaterial,
   normalizeTitle,
+  promoteVersionContradicts,
   recordingIsLive,
   searchVersionFit,
   songTitle,
@@ -204,6 +208,8 @@ export type PromoteSnapshotEntry = {
   type: string
   pttl: number
   dump: string | null
+  /** Post-apply GET bytes. Rollback CAS expects this; missing → refuse. */
+  written?: string | null
 }
 
 export type PromoteSnapshot = {
@@ -498,6 +504,7 @@ export function isPromoteMbSampleLink(link: SampleLink): boolean {
 
 export function destinationIsLive(pressing: StoredPressing, tracks: TrackOccurrence[]): boolean {
   if (titleIsLive(pressing.facts.title)) return true
+  if (/\balive\b/.test(normalizeTitle(pressing.facts.title))) return true
   return tracks.some((track) => titleIsLive(track.title))
 }
 
@@ -571,6 +578,7 @@ export function isPromoteSidecarMatch(
   const hitSong = songTitle(hit.title)
   if (!discogsSong || discogsSong !== hitSong) return false
   if (titleIsLive(discogs.title) && !titleIsLive(hit.title)) return false
+  if (promoteVersionContradicts(discogs.title, hit.title)) return false
   if (searchVersionFit(discogs.title, hit.title) === 'wrong') return false
   if (discogs.durationMs != null && hit.lengthMs != null) {
     if (Math.abs(discogs.durationMs - hit.lengthMs) > DURATION_SIDECAR_MS) return false
@@ -1054,13 +1062,43 @@ export async function runWatchedPromoteCommands(
   raw: PromoteRawStore,
   keys: string[],
   commands: string[][],
-  expectedDumps?: Array<string | null>
+  expectedDumps: Array<string | null>
 ): Promise<void> {
   if (commands.length === 0) return
   const guarded = keys.map((key) => assertProdPromoteKey(key))
-  const expected =
-    expectedDumps ?? (await Promise.all(guarded.map((key) => raw.dumpKey(key))))
-  await raw.casExec(guarded, expected, commands)
+  await raw.casExec(guarded, expectedDumps, commands)
+}
+
+export function stampSnapshotWritten(
+  snapshot: PromoteSnapshot,
+  commands: string[][]
+): PromoteSnapshot {
+  const written = new Map<string, string | null>()
+  for (const command of commands) {
+    const op = command[0]
+    const key = command[1]
+    if (!op || !key) continue
+    if (op === 'DEL') written.set(key, null)
+    if (op === 'SET' && command[2] != null) written.set(key, command[2])
+  }
+  return {
+    ...snapshot,
+    keys: snapshot.keys.map((entry) => {
+      if (!written.has(entry.key)) {
+        throw new Error(`apply snapshot missing post-apply written value for ${entry.key}`)
+      }
+      return { ...entry, written: written.get(entry.key) ?? null }
+    }),
+  }
+}
+
+export function snapshotWrittenDumps(snapshot: PromoteSnapshot): Array<string | null> {
+  return snapshot.keys.map((entry) => {
+    if (!Object.prototype.hasOwnProperty.call(entry, 'written')) {
+      throw new Error(`refusing rollback: ${entry.key} missing post-apply written value`)
+    }
+    return entry.written ?? null
+  })
 }
 
 export function recallSameSongOrVersion(
@@ -1070,7 +1108,21 @@ export function recallSameSongOrVersion(
   const left = songTitle(source.title)
   const right = songTitle(sibling.title)
   if (!left || !right || left !== right) return false
+  if (promoteVersionContradicts(source.title, sibling.title)) return false
   return searchVersionFit(source.title, sibling.title) !== 'wrong'
+}
+
+function samePromotePerformance(
+  preview: { title: string; lengthMs?: number | null },
+  host: { title: string; lengthMs?: number | null }
+): boolean {
+  if (!recallSameSongOrVersion(preview, host)) return false
+  const previewLength = preview.lengthMs ?? null
+  const hostLength = host.lengthMs ?? null
+  if (previewLength != null && hostLength != null) {
+    if (Math.abs(previewLength - hostLength) > DURATION_SIDECAR_MS) return false
+  }
+  return true
 }
 
 export function memoryPromoteRawStore(
@@ -1251,7 +1303,8 @@ export async function restorePromoteSnapshot(
   await runWatchedPromoteCommands(
     raw,
     snapshot.keys.map((entry) => entry.key),
-    commands
+    commands,
+    snapshotWrittenDumps(snapshot)
   )
   return snapshot.keys.map((entry) => assertProdPromoteKey(entry.key))
 }
@@ -1339,7 +1392,7 @@ async function planCopies(options: {
         continue
       }
       const alreadyOnMap = Boolean(prodPressing.recordings[mbid])
-      const matched = matchingTracks(prodPressing, previewDoc)
+      let matched = matchingTracks(prodPressing, previewDoc)
       if (matched.length === 0) {
         skips.push({ releaseId, mbid, title: previewDoc.title, reason: 'no matching prod track' })
         continue
@@ -1397,6 +1450,9 @@ async function planCopies(options: {
         recallRows = recall.rows
         recallReview.push(...recall.rows)
       }
+      const previewLength = coalesceRecordingLengthMs(previewDoc.lengthMs, verified?.lengthMs ?? null)
+      const previewForMatch = { ...previewDoc, lengthMs: previewLength }
+      matched = matchingTracks(prodPressing, previewForMatch)
       const mappedSameSong = Object.values(nextRecordings).filter(
         (doc) =>
           doc.mbid !== previewDoc.mbid &&
@@ -1406,18 +1462,23 @@ async function planCopies(options: {
       const mappedSameSongWithSamples = mappedSameSong.filter((doc) =>
         recordingHasSampleMaterial(doc)
       )
+      const mappedIncompatible = mappedSameSong.filter(
+        (doc) => !samePromotePerformance(previewForMatch, doc)
+      )
       const destReleaseMismatch =
         Boolean(verified) &&
         (verified?.releaseTitles?.length ?? 0) > 0 &&
         artistsMatch(prodPressing.facts.artist, previewDoc.artist) &&
         !recordingAppearsOnPressing(verified?.releaseTitles, prodPressing.facts.title) &&
-        mappedSameSongWithSamples.length > 0
+        (mappedSameSongWithSamples.length > 0 || mappedIncompatible.length > 0)
       const restoredIds = new Set(
         recallRows.filter((row) => row.status === 'restored').map((row) => row.targetMbid)
       )
       let attachHost: StoredRecording | null = null
       if (destReleaseMismatch) {
-        const host = mappedSameSongWithSamples[0]
+        const host = mappedSameSongWithSamples.find((doc) =>
+          samePromotePerformance(previewForMatch, doc)
+        )
         if (host && restoredIds.size > 0) {
           attachHost = host
         } else {
@@ -1429,6 +1490,10 @@ async function planCopies(options: {
           })
           continue
         }
+      }
+      if (matched.length === 0 && !attachHost) {
+        skips.push({ releaseId, mbid, title: previewDoc.title, reason: 'no matching prod track' })
+        continue
       }
       const filtered = filterPreviewSampleLinks(
         previewDoc,
@@ -1777,12 +1842,14 @@ export async function runPromotePreview(options: {
     writePromoteSnapshotFile(backupPath, snapshot)
     try {
       await heartbeat()
+      const applyCommands = applyCommandsForWrites(planned.writes)
       await runWatchedPromoteCommands(
         options.raw,
         snapshot.keys.map((entry) => entry.key),
-        applyCommandsForWrites(planned.writes),
+        applyCommands,
         snapshot.keys.map((entry) => entry.dump)
       )
+      writePromoteSnapshotFile(backupPath, stampSnapshotWritten(snapshot, applyCommands))
     } catch (error) {
       const applyError = new PromoteApplyError(backupPath, error, runId)
       console.error(applyError.message)

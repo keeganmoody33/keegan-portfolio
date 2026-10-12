@@ -299,7 +299,7 @@ Resumable research backfill independent of visitor traffic. Same Bearer `CRON_SE
 
 Also: `npm run crate:backfill` (`scripts/crate-backfill.ts`) with `--ids=`, `--retry`, `--new-series`, `--limit=`, `--budget-ms=` (default 600000; cron/workers stay 45s). `--new-series` mints a fresh per-record `forceSeriesId` and resets `deadlineStops`. Cron `GET /api/cron/crate-backfill` never mints or resets a series.
 
-One-off `npm run crate:promote-preview` (`scripts/crate-promote-preview.ts`) copies audited `lf:preview:` sidecars onto `lf:` for the closed 23 gap ids. Default dry-run. `--apply` requires `--prod --backup= --run-id` and the enrich lock. Upstash REST WATCH is connection-scoped, so writes use EVAL CAS against snapshot dumps, then SET/DEL. Rollback refuses DEL of a non-string snapshot type with a null dump. `getRecordingSampleRels` shares the 1.1s `getJson` limiter on a single client; lookups are cached by MBID. No WhoSampled. Do not `--apply` until reviewers sign off.
+One-off `npm run crate:promote-preview` (`scripts/crate-promote-preview.ts`) copies audited `lf:preview:` sidecars onto `lf:` for the closed 23 gap ids. Default dry-run. `--apply` requires `--prod --backup= --run-id` and the enrich lock. Upstash REST WATCH is connection-scoped, so writes use EVAL CAS against snapshot dumps, then SET/DEL. The backup stores post-apply written values; rollback CAS-compares those and refuses on mismatch. Rollback refuses DEL of a non-string snapshot type with a null dump. `getRecordingSampleRels` shares the 1.1s `getJson` limiter on a single client; lookups are cached by MBID. No WhoSampled. Do not `--apply` until reviewers sign off.
 
 ---
 
