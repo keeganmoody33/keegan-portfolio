@@ -172,7 +172,7 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
   return (
     <section
       ref={sectionRef}
-      className="mt-12 border-t border-[var(--house-line)] pt-6"
+      className="mt-0"
       aria-label={viewer.title}
     >
       <div className="house-sleeve-workbench">

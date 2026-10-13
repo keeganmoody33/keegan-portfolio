@@ -324,6 +324,40 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
     color: var(--house-stage-ink);
   }
 
+  /* Square cream cover cropped to the horizontal lockup, under the 3D study.
+     Plate hugs the mark so it reads as a skinny wordmark, not a 1:1 hero
+     and not a full-width empty cream field. Lockup is 741×182 in the 1024 cover. */
+  .house-sleeve-wordmark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: max-content;
+    max-width: 100%;
+    height: 3.25rem;
+    padding: 0 1.25rem;
+    margin: 2rem auto 0;
+    background-color: #fdfaf5;
+  }
+
+  .house-sleeve-wordmark img {
+    height: 2.25rem;
+    width: auto;
+    max-width: min(16rem, calc(100vw - 4.5rem));
+    aspect-ratio: 741 / 182;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  @media (min-width: 640px) {
+    .house-sleeve-wordmark {
+      height: 3.5rem;
+    }
+
+    .house-sleeve-wordmark img {
+      height: 2.5rem;
+    }
+  }
+
   /* Offset sits on the paper (11.8:1), not the #0a0a0a page. */
   .house-sleeve-stage:focus-visible {
     outline: 2px solid var(--house-stage-ink);

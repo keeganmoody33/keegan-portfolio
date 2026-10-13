@@ -1,3 +1,7 @@
+COMPLETED (2026-10-13 — study-first skinny wordmark, PR #75 preview only):
+- Same branch. Draft. Do not merge.
+- `/catalog/yadiggg` lands on the 3D study. Cream cover is `.house-sleeve-wordmark` under the workbench (`max-content` plate, 3.25–3.5rem, lockup 2.25–2.5rem). Liner + contents follow. Other sleeves still square cover | liner.
+
 COMPLETED (2026-10-13 — defer lost-on-create poster handoff, PR #75 preview only):
 - Same branch. Draft. Do not merge.
 - Sync `onError` unmounted the Canvas container before R3F onCreated `events.connect` → `addEventListener` of null. Factory now `setTimeout(onError, 0)`. onCreated guarded if `gl.xr` is missing. No-pageerror test fails when handoff is sync (container nulled) and passes when deferred.

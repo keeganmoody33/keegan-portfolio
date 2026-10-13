@@ -5,6 +5,7 @@ Updated: 2026-10-13
 ## YADIGGG sleeve viewer (2026-10-13)
 
 - Crate click stays `/catalog/yadiggg`. Do not point `crateHref` at the Vercel workbench. The GitHub repo is contents track 01, not the 3D study.
+- `/catalog/yadiggg` lands on the 3D study. The cream cover is a skinny horizontal wordmark under the workbench (`.house-sleeve-wordmark`), not a square hero. Other sleeves keep the 1:1 cover. Do not invent a second wordmark asset — crop `cover.jpg` (lockup 741×182 in 1024).
 - There is no `yadiggg-viewer` source repo under keeganmoody33. `keeganmoody33/YADIGGG` is C / CAD / docs (OpenSCAD 105×60×15), not the three.js workbench. Prod `yadiggg-viewer.vercel.app` is a single HTML with base64 GLBs — not cleanly fetchable as `/models/*.glb`. Extract GLBs and the concept image once and host them; do not iframe the paper/amber Arial chrome.
 - Never embed `_vercel_share` / SSO preview URLs. Prefer a ported house-token study (`--house-*`, Chakra Petch / Space Grotesk / Roboto Mono / Doto).
 - Match workbench *density* (modes including Reference, presets, hover/select readout, geometry mm callouts, side rail, LCD-style Doto panel, smoke-clear shell / orange control, damped orbit). Do **not** ship recorder-screen UI (Identify / Read / Save, simulated capture, scenario picker, rocker demo). Do **not** ship Candidate B (`control_capture` / `controls_candidate_b.glb`) — it contradicts the locked one orange side button.

@@ -41,6 +41,30 @@ describe('yadiggg catalog wiring', () => {
     )
   })
 
+  it('lands yadiggg on the study, then a skinny wordmark, not a square cover hero', () => {
+    const sleeve = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '..', 'components/house/Sleeve.tsx'),
+      'utf8'
+    )
+    const css = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '..', 'app/globals.css'),
+      'utf8'
+    )
+    const ifStudy = sleeve.indexOf('if (study)')
+    const studyReturn = sleeve.indexOf('return (', ifStudy)
+    const otherReturn = sleeve.indexOf('return (', studyReturn + 1)
+    const studyBranch = sleeve.slice(ifStudy, otherReturn)
+    assert.match(studyBranch, /\{study\}/)
+    assert.match(studyBranch, /WordmarkCover/)
+    assert.ok(studyBranch.indexOf('{study}') < studyBranch.indexOf('WordmarkCover'))
+    assert.doesNotMatch(studyBranch, /SquareCover/)
+    assert.doesNotMatch(studyBranch, /aspect-square/)
+    assert.match(sleeve, /function SquareCover/)
+    assert.match(css, /\.house-sleeve-wordmark/)
+    assert.match(css, /width: max-content/)
+    assert.match(css, /aspect-ratio: 741 \/ 182/)
+  })
+
   it('keeps SleeveViewer off the shared slug route and Sleeve shell', () => {
     const root = join(dirname(fileURLToPath(import.meta.url)), '..')
     assert.equal(
