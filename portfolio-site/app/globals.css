@@ -315,12 +315,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
      warm paper + ink). No named Electroscrum set exists. */
   .house-sleeve-stage {
     --bg-body: var(--house-stage-paper);
-    --bg-surface: #DCD5C3;
-    --border-dim: #C5BCAE;
     --text-bright: var(--house-stage-ink);
-    --text-main: #42382F;
-    --text-muted: #857A6E;
-    --grid-line: #DCD5C3;
     height: min(420px, 55vh);
     min-height: 280px;
     max-width: 860px;

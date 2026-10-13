@@ -1,3 +1,7 @@
+COMPLETED (2026-10-13 — live-only lost-on-create xr stub, PR #75 preview only):
+- Same branch. Draft. Do not merge.
+- Probe can succeed while the live canvas context is lost. Factory still cannot throw (R3F would construct WebGLRenderer). Cannot skip `<Canvas>` on that tick; `onError` posters. Stub now no-ops `xr.addEventListener` and the other R3F / ContactShadows surfaces so there is no pageerror. Test: live-only lost-on-create, pageerrors [].
+
 COMPLETED (2026-10-13 — context-loss + stage tokens batch, PR #75 preview only):
 - Same branch. Draft. Do not merge.
 - QA: `gl` factory never rethrows (stub with `.render` → poster). `webglcontextlost` preventDefault + poster/error/hide chrome; restore stays on poster. Dummy probe calls `WEBGL_lose_context.loseContext()` and checks `isContextLost`. Tests: lost-on-create, lost-after-mount, probe release.

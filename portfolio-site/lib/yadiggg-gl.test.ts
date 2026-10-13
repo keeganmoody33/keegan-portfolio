@@ -77,6 +77,69 @@ describe('lost-on-create', () => {
     assert.equal(gl, live)
     assert.equal(errors, 0)
   })
+
+  it('live-only lost-on-create does not pageerror when R3F binds xr', () => {
+    const probe = {
+      getExtension() {
+        return null
+      },
+      isContextLost() {
+        return false
+      },
+    }
+    assert.equal(probe.isContextLost(), false)
+
+    const pageerrors: unknown[] = []
+    let errors = 0
+    const gl = studyGlFromCreate(
+      () => ({
+        render() {},
+        dispose() {},
+        getContext() {
+          return {
+            getExtension() {
+              return null
+            },
+            isContextLost() {
+              return true
+            },
+          }
+        },
+      }),
+      () => {
+        errors += 1
+      }
+    )
+    assert.equal(errors, 1)
+    try {
+      const xr = gl.xr
+      if (xr == null) throw new TypeError("Cannot read properties of undefined (reading 'addEventListener')")
+      xr.addEventListener('sessionstart', () => {})
+      xr.addEventListener('sessionend', () => {})
+      xr.enabled = xr.isPresenting
+      xr.setAnimationLoop(null)
+      gl.setPixelRatio?.(1)
+      gl.setSize?.(1, 1, false)
+      if (gl.shadowMap) gl.shadowMap.enabled = false
+      gl.outputColorSpace = ''
+      gl.toneMapping = 0
+      gl.render()
+      const oldEnabled = xr.enabled
+      const oldPresenting = xr.isPresenting
+      gl.autoClear = true
+      xr.enabled = false
+      xr.isPresenting = false
+      gl.getRenderTarget?.()
+      gl.setRenderTarget?.(null)
+      xr.enabled = oldEnabled
+      xr.isPresenting = oldPresenting
+      xr.removeEventListener('sessionstart', () => {})
+      xr.removeEventListener('sessionend', () => {})
+    } catch (error) {
+      pageerrors.push(error)
+    }
+    assert.equal(pageerrors.length, 0)
+  })
 })
 
 describe('lost-after-mount', () => {
