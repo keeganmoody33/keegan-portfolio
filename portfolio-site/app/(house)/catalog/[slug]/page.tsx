@@ -3,7 +3,7 @@ import HouseFooter from '@/components/house/HouseFooter'
 import HouseRail from '@/components/house/HouseRail'
 import HouseShell from '@/components/house/HouseShell'
 import Sleeve from '@/components/house/Sleeve'
-import { getCatalogPageSleeves, getSleeveBySlug } from '@/lib/catalog'
+import { getSharedCatalogSlugParams, getSleeveBySlug } from '@/lib/catalog'
 import { JsonLd, sleeveJsonLd } from '@/lib/jsonld'
 import { houseMetadata } from '@/lib/metadata'
 import type { Metadata } from 'next'
@@ -16,7 +16,7 @@ type PageProps = {
 }
 
 export function generateStaticParams() {
-  return getCatalogPageSleeves().map((sleeve) => ({ slug: sleeve.slug }))
+  return getSharedCatalogSlugParams()
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

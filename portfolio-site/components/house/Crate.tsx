@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import SignalCut from '@/components/SignalCut'
-import { getCrateRows } from '@/lib/catalog'
+import { crateLinkPrefetch, getCrateRows } from '@/lib/catalog'
 
 function formatTag(row: ReturnType<typeof getCrateRows>[number]): string {
   if (row.kind === 'principal') return row.row.formatLabel
@@ -70,7 +70,7 @@ export default function Crate() {
             <li key={row.sleeve.slug}>
               <Link
                 href={row.href}
-                prefetch={row.href === '/collection' ? false : undefined}
+                prefetch={crateLinkPrefetch(row.href)}
                 className={className}
               >
                 {inner}

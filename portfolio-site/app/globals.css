@@ -189,6 +189,21 @@ html:has(.house[data-theme="light"]) {
   --house-line: #242424;    /*  1.28:1  hairlines only */
   --house-orange: #e23d00;  /*  4.62:1  the one key: hover, issue plates */
 
+  /* Drafting-table island (yadiggg). Person-light paper + ink; defined once. */
+  --house-stage-paper: #E8E2D2;
+  --house-stage-ink: #2B241D;
+  /* Mode + preset row min-height. `.house-sleeve-stage-stack` always
+     includes both tracks so fallback can fold them into the poster
+     without moving the well. 5.75rem / 2.5rem. */
+  --house-sleeve-stage-h: min(420px, 55vh);
+  --house-sleeve-chrome-row: 5.75rem;
+  --house-sleeve-modes-gap: 1.5rem;
+  --house-sleeve-presets-gap: 0.75rem;
+  --house-sleeve-modes-track: calc(var(--house-sleeve-chrome-row) + var(--house-sleeve-modes-gap));
+  --house-sleeve-presets-track: calc(var(--house-sleeve-chrome-row) + var(--house-sleeve-presets-gap));
+
+
+
   /* add ons, official Sep 27 2026. Same in both modes. */
   --house-stripe-red: #ea4d30;
   --house-stripe-orange: #ec7c3a;
@@ -212,6 +227,12 @@ html:has(.house[data-theme="light"]) {
   background: var(--house-bg);
   color: var(--house-ink);
   font-family: var(--house-font-sans);
+}
+
+@media (min-width: 951px) {
+  .house {
+    --house-sleeve-chrome-row: 2.5rem;
+  }
 }
 
 .house[data-theme="light"] {
@@ -303,6 +324,433 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
 
   .house-text-button[hidden] {
     display: none;
+  }
+
+  /* Reserved stage for the optional sleeve 3D study (yadiggg). Holds the poster
+     so the canvas overlay cannot collapse layout. Tailwind does not scan lib/.
+     Drafting-table window: `--house-stage-paper` / `--house-stage-ink` (person-light
+     warm paper + ink). No named Electroscrum set exists.
+     Stack height is always stage + both chrome tracks. The stage spans the
+     stack; live chips overlay the tracks. Fallback drops the overlays and the
+     CSS grid/ruler so the cover-cropped poster is one surface — the well box
+     never moves (CLS). Mode row is first in the DOM (WCAG 2.4.3). */
+  .house-sleeve-stage-stack {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows:
+      var(--house-sleeve-modes-track)
+      minmax(0, 1fr)
+      var(--house-sleeve-presets-track);
+    height: calc(
+      var(--house-sleeve-stage-h) + var(--house-sleeve-modes-track) + var(--house-sleeve-presets-track)
+    );
+    min-height: calc(280px + var(--house-sleeve-modes-track) + var(--house-sleeve-presets-track));
+    max-width: 860px;
+  }
+
+  .house-sleeve-stage {
+    --bg-body: var(--house-stage-paper);
+    --text-bright: var(--house-stage-ink);
+    grid-column: 1;
+    grid-row: 1 / -1;
+    height: auto;
+    min-height: 0;
+    isolation: isolate;
+    background-color: var(--house-stage-paper);
+    color: var(--house-stage-ink);
+  }
+
+  .house-sleeve-modes-pad {
+    position: relative;
+    grid-column: 1;
+    grid-row: 1;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 0;
+    max-width: 860px;
+    background: var(--house-bg);
+  }
+
+  .house-sleeve-presets-pad {
+    position: relative;
+    grid-column: 1;
+    grid-row: 3;
+    z-index: 3;
+    min-height: 0;
+    max-width: 860px;
+    background: var(--house-bg);
+  }
+
+  .house-sleeve-live-slot {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  .house-sleeve-stage-stack:not(.house-sleeve-stage-stack-fallback) .house-sleeve-live-slot {
+    top: var(--house-sleeve-modes-track);
+    bottom: var(--house-sleeve-presets-track);
+  }
+
+  /* Keegan wordmark (shovel/signal + yadiggg) under the study, after H1.
+     Cut-out PNG on a --house-stage-paper plate. Even 5px padding hugs the mark.
+     Native lockup is 323×80 — cap CSS height at 40px so 2x screens never upscale.
+     Original inbox PNG is 360×112 cream field, not extra mark pixels; no 2x srcset. */
+  .house-sleeve-wordmark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: max-content;
+    max-width: 100%;
+    margin: 2rem auto 0;
+    padding: 5px;
+    background-color: var(--house-stage-paper);
+  }
+
+  .house-sleeve-wordmark img {
+    height: 40px;
+    width: auto;
+    max-height: 40px;
+    max-width: min(20rem, calc(100vw - 4.5rem));
+    aspect-ratio: 323 / 80;
+    object-fit: contain;
+  }
+
+  /* Inset to the live canvas so mode/camera rows do not cover the ring (2.4.7).
+     Offset sits on the paper (11.8:1), not the #0a0a0a page. */
+  .house-sleeve-focus-ring {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+  }
+
+  .house-sleeve-stage-stack:not(.house-sleeve-stage-stack-fallback) .house-sleeve-focus-ring {
+    top: var(--house-sleeve-modes-track);
+    bottom: var(--house-sleeve-presets-track);
+  }
+
+  .house-sleeve-stage:focus-visible {
+    outline: none;
+  }
+
+  .house-sleeve-stage:focus-visible .house-sleeve-focus-ring {
+    outline: 2px solid var(--house-stage-ink);
+    outline-offset: -4px;
+  }
+
+  .house-sleeve-stage-stack-fallback .house-sleeve-stage::before,
+  .house-sleeve-stage-stack-fallback .house-sleeve-stage::after {
+    content: none;
+  }
+
+  /* Fine minor grid (~10%) + heavier major (~28%). Fade behind the device so
+     the smoke shell outline reads. Ink is --house-stage-ink. */
+  .house-sleeve-stage::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+      repeating-linear-gradient(
+        to right,
+        color-mix(in srgb, var(--house-stage-ink) 10%, transparent) 0 1px,
+        transparent 1px 8px
+      ),
+      repeating-linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--house-stage-ink) 10%, transparent) 0 1px,
+        transparent 1px 8px
+      ),
+      repeating-linear-gradient(
+        to right,
+        color-mix(in srgb, var(--house-stage-ink) 28%, transparent) 0 1px,
+        transparent 1px 40px
+      ),
+      repeating-linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--house-stage-ink) 28%, transparent) 0 1px,
+        transparent 1px 40px
+      );
+    -webkit-mask-image: radial-gradient(ellipse 56% 60% at 50% 48%, transparent 0 42%, #000 78%);
+    mask-image: radial-gradient(ellipse 56% 60% at 50% 48%, transparent 0 42%, #000 78%);
+  }
+
+  /* Corner crop marks + mm ticks along the top and left edges. */
+  .house-sleeve-stage::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background-image:
+      linear-gradient(var(--house-stage-ink), var(--house-stage-ink)),
+      linear-gradient(var(--house-stage-ink), var(--house-stage-ink)),
+      linear-gradient(var(--house-stage-ink), var(--house-stage-ink)),
+      linear-gradient(var(--house-stage-ink), var(--house-stage-ink)),
+      linear-gradient(var(--house-stage-ink), var(--house-stage-ink)),
+      linear-gradient(var(--house-stage-ink), var(--house-stage-ink)),
+      linear-gradient(var(--house-stage-ink), var(--house-stage-ink)),
+      linear-gradient(var(--house-stage-ink), var(--house-stage-ink)),
+      repeating-linear-gradient(
+        to right,
+        color-mix(in srgb, var(--house-stage-ink) 72%, transparent) 0 1px,
+        transparent 1px 8px
+      ),
+      repeating-linear-gradient(
+        to right,
+        var(--house-stage-ink) 0 1px,
+        transparent 1px 40px
+      ),
+      repeating-linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--house-stage-ink) 72%, transparent) 0 1px,
+        transparent 1px 8px
+      ),
+      repeating-linear-gradient(
+        to bottom,
+        var(--house-stage-ink) 0 1px,
+        transparent 1px 40px
+      );
+    background-size:
+      14px 1px, 1px 14px,
+      14px 1px, 1px 14px,
+      14px 1px, 1px 14px,
+      14px 1px, 1px 14px,
+      100% 5px, 100% 9px,
+      5px 100%, 9px 100%;
+    background-position:
+      8px 8px, 8px 8px,
+      calc(100% - 8px) 8px, calc(100% - 8px) 8px,
+      8px calc(100% - 8px), 8px calc(100% - 8px),
+      calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) calc(100% - 8px),
+      0 5px, 0 5px,
+      5px 0, 5px 0;
+    background-repeat:
+      no-repeat, no-repeat,
+      no-repeat, no-repeat,
+      no-repeat, no-repeat,
+      no-repeat, no-repeat,
+      repeat-x, repeat-x,
+      repeat-y, repeat-y;
+  }
+
+  .house-sleeve-workbench {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 21.875rem;
+    border: 1px solid var(--house-line);
+  }
+
+  .house-sleeve-stage-col {
+    min-width: 0;
+    padding: 1.75rem 1.6rem 0;
+    border-right: 1px solid var(--house-line);
+  }
+
+  .house-sleeve-rail {
+    padding: 1.75rem 1.35rem 1.5rem;
+  }
+
+  .house-sleeve-measure {
+    font-family: var(--house-font-mono);
+    white-space: nowrap;
+    padding-top: 1.6rem;
+    text-align: right;
+  }
+
+  .house-sleeve-measure small {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--house-muted);
+  }
+
+  .house-sleeve-readout {
+    min-height: 2.9rem;
+    margin: 0.9rem 0;
+    border-top: 1px solid var(--house-line);
+    padding-top: 0.65rem;
+    font-family: var(--house-font-mono);
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--house-muted);
+  }
+
+  .house-sleeve-geometry {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.9rem;
+    border-top: 1px solid var(--house-line);
+    padding: 1.15rem 0 1.5rem;
+  }
+
+  .house-sleeve-geometry b {
+    display: block;
+    font-family: var(--house-font-lcd);
+    font-size: 1.2rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--house-ink);
+  }
+
+  .house-sleeve-geometry span {
+    display: block;
+    margin-top: 0.2rem;
+    font-family: var(--house-font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--house-muted);
+  }
+
+  .house-sleeve-geometry p {
+    grid-column: 1 / -1;
+    margin: 0;
+    max-width: 38rem;
+    font-family: var(--house-font-mono);
+    font-size: 11px;
+    line-height: 1.55;
+    color: var(--house-dim);
+  }
+
+  /* Keep 5.75rem through 950px so wrapped mode chips do not CLS. */
+  .house-sleeve-modes,
+  .house-sleeve-presets {
+    min-height: var(--house-sleeve-chrome-row);
+  }
+
+  .house-sleeve-lcd {
+    background: var(--house-lcd);
+    color: var(--house-lcd-ink);
+    font-family: var(--house-font-lcd);
+    font-weight: 800;
+    margin-top: 1.15rem;
+    padding: 0.9rem 0.75rem;
+    min-height: 16rem;
+    border: 1px solid var(--house-lcd-ink);
+    box-shadow: none;
+  }
+
+  .house-sleeve-lcd-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--house-lcd-ink) 28%, var(--house-lcd));
+    padding-bottom: 0.4rem;
+    font-size: 8px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .house-sleeve-lcd p.house-sleeve-lcd-title {
+    margin: 0.75rem 0 0.45rem;
+    font-family: var(--house-font-lcd);
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    white-space: normal;
+  }
+
+  .house-sleeve-lcd p:not(.house-sleeve-lcd-title) {
+    margin: 0;
+    font-family: var(--house-font-mono);
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.45;
+    white-space: pre-line;
+  }
+
+  .house-sleeve-lcd ol {
+    list-style: none;
+    margin: 0.7rem 0 0;
+    padding: 0;
+    font-family: var(--house-font-mono);
+    font-size: 11px;
+    font-weight: 400;
+  }
+
+  .house-sleeve-lcd li {
+    padding: 0.2rem 0.3rem;
+    line-height: 1.35;
+  }
+
+  .house-sleeve-lcd li.selected {
+    background: var(--house-lcd-ink);
+    color: var(--house-lcd);
+  }
+
+  .house-sleeve-modeled {
+    margin-top: 1.1rem;
+    border-top: 1px solid var(--house-line);
+    padding-top: 0.8rem;
+    font-family: var(--house-font-mono);
+    font-size: 11px;
+    line-height: 1.55;
+    color: var(--house-muted);
+  }
+
+  .house-sleeve-modeled summary {
+    display: flex;
+    align-items: center;
+    min-height: 2.75rem;
+    color: var(--house-ink);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-size: 10px;
+  }
+
+  .house-sleeve-modeled p {
+    margin: 0.65rem 0 0;
+  }
+
+  @media (min-width: 1500px) {
+    .house-sleeve-workbench {
+      grid-template-columns: minmax(0, 1fr) 24.375rem;
+    }
+  }
+
+  @media (max-width: 950px) {
+    .house-sleeve-workbench {
+      grid-template-columns: minmax(0, 1fr) 19.7rem;
+    }
+
+    .house-sleeve-measure {
+      display: none;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .house-sleeve-workbench {
+      display: block;
+    }
+
+    .house-sleeve-stage-col {
+      padding: 1.25rem 1.1rem 0;
+      border-right: 0;
+      border-bottom: 1px solid var(--house-line);
+    }
+
+    .house-sleeve-rail {
+      padding: 1.35rem 1.1rem 1.25rem;
+    }
+
+    .house-sleeve-lcd {
+      max-width: 25rem;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .house-sleeve-geometry {
+      grid-template-columns: 1fr;
+    }
   }
 }
 

@@ -14,7 +14,7 @@
 |------------------|------------------------------|-----------------------------------------------------------------|
 | `/`              | `app/(house)/page.tsx`               | House title card + crate (Server Component). The last `o` in the wordmark `from` is a static `LogoMark` (owner line-only PNG geometry; `variant="line"` — ink strokes, no fills; house palette fills on hold; no `LogoGlobe`, no spin) at Chakra Petch x-height on the alphabetic baseline; there is no standalone coin above the wordmark. Wordmark (`HouseWordmark`, Chakra Petch) entrance is a 700ms opacity fade. HouseFooter does not render the Motion switch while the o is static; `MotionSwitch.tsx`, head bootstrap, and pause CSS stay in the repo. Nameplate and Hathaway SVGs are not mounted. No page turntable. No return-visit redirect. |
 | `/catalog`       | `app/(house)/catalog/page.tsx`       | Crate permalink (same spines as `/`)                            |
-| `/catalog/[slug]`| `app/(house)/catalog/[slug]/page.tsx`| Sleeve (cover, liner, tracks). Unknown slugs 404.               |
+| `/catalog/[slug]`| `app/(house)/catalog/[slug]/page.tsx`| Sleeve (cover, liner, optional viewer, tracks). Unknown slugs 404. yadiggg mounts a lazy house-styled R1 3D study first (`Sleeve.viewer`), then a skinny horizontal cover wordmark; crate click stays `/catalog/yadiggg`. |
 | `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate (ISR 300s; durable last-good in Redis when configured). Cover click opens `/collection/[releaseId]`. Under the `{n} releases` line: **shuffle** (client Fisher-Yates of the whole grid; reload restores ISR order; no server cost) and **pull one** (random listed id → existing overlay/route). Grid `next/image` uses a stored CAA Blob URL when the cover manifest has one; otherwise the current Discogs hotlink. |
 | `/collection/[releaseId]` | `app/(house)/collection/[releaseId]/page.tsx` | Record detail (overview / tracks). Intercepting overlay at `@detail/(.)[releaseId]` when opened from the grid; full page on direct visit / refresh. |
 | `/legal`         | `app/(house)/legal/page.tsx`         | Entity + long about + Data sources (Discogs API non-affiliation). Markdown twin `/legal.md`. Organization JSON-LD is not a /legal twin. |
@@ -337,6 +337,26 @@ Land on /keeganmoody33
 
 ---
 
+### 8c. YADIGGG sleeve 3D study
+
+**Trigger:** Open `/catalog/yadiggg` from the crate (`crateHref` stays on-site). Optional `sleeve.viewer` on catalog data; only yadiggg sets it.
+
+**Steps:**
+
+1. **Keegan:** study first, title below. The 3D study is first. H1 `yadiggg` (cat no · format · year above it) follows the workbench, then Keegan’s shovel/signal wordmark (`.house-sleeve-wordmark`, `/catalog/yadiggg/wordmark.png`, cream cut-out trimmed 323×80 on a `--house-stage-paper` plate, even `5px` padding, CSS height `40px` so 2x never upscales, `alt="yadiggg"`) and the liner notes. Study chrome copy (`made for the dig.`, `locked product.`, LCD readout) stays `<p>` because it sits before H1; h2/h3/h4 there would precede the title. The study column and the rail are `<section aria-labelledby>` those `<p>` ids. Outline starts at H1, then `contents` H2. Contents track 01 remains `https://github.com/keeganmoody33/YADIGGG`. Other sleeves still render square cover + liner first.
+2. `/catalog/yadiggg` is a dedicated page that loads `SleeveViewer`. Shared `[slug]` and `Sleeve.tsx` never import it, so `/`, `/catalog`, and other sleeves stay +0. Crate links from `/` and `/catalog` set `prefetch={false}`. The workbench stage is `.house-sleeve-stage` (`min(420px, 55vh)`, max-width 860px at 1280+) — a drafting-table window on `--house-stage-paper` `#E8E2D2` with `--house-stage-ink` grids (minor ~10%, major ~28%, faded behind the device). A 2× live-canvas paper-ground poster (`poster.jpg` at `sm+`, `object-cover` into the full stack so the 1720×840 asset is not letterboxed at ~1.48:1; `poster-portrait.jpg` 580×840 below 640px so the landscape asset is not squeezed into a ~290×420 stage) holds layout. Not the cream cover. IntersectionObserver + `next/dynamic(..., { ssr: false })` loads `YadigggViewer` only on this sleeve when in view. `loading the model…` then a 150ms fade onto the canvas.
+3. three.js is not in the homepage or other sleeve bundles. Reduced motion keeps the canvas with damping off. No-WebGL / GLB 404 / lost-on-create / blocked hide live chrome (no hint, no stage `tabIndex`) — poster + one caption, no dead controls. Mode/preset **overlays** are reserved only while the WebGL check is pending, then drop; `.house-sleeve-stage-stack` always includes the `5.75rem` (below 951px) / `2.5rem` (above) tracks plus stack gaps so fallback folds that height into the stage. Fallback also hides the CSS grid/ruler (`::before`/`::after`) so the cover-cropped poster is one surface (no letterbox seams, no separate paper tiles). Mode row is first in the DOM (WCAG 2.4.3). Share-token preview URLs are rejected.
+4. View modes: assembled / x-ray / exploded / open front / reference (concept image). Camera presets: front / rear / side / ports / reset view, with damped orbit and lerped presets. Hover and click inspect a part (readout + LCD). One orange side-button rocker on the reserved opening — no Candidate B / capture GLB, no recorder-screen / Identify·Read·Save. Geometry strip is the R1 CAD study (21 parts / 1.5 mm wall / 70.8 mm). The rail LCD + measure chip keep locked product facts (105 × 60 × 15 mm locked product, 2.7" memory LCD, one orange side button, USB-C · 3.5 mm ports) separate from the 70 × 110 × 18 mm R1 model envelope. `What is modeled?` stays on the rail.
+5. Viewport is keyboard-focusable when the study is live (arrows orbit, +/- zoom). `touch-action: pan-y`; one-finger vertical swipes scroll the page; two-finger orbit and pinch dolly. Wheel zooms only while the stage is focused or with ctrl/cmd. Below `sm` the hint is only `two-finger orbit · pinch to zoom`. Stage focus-visible is `.house-sleeve-focus-ring` inset to the live canvas (2px `--house-stage-ink`, `outline-offset: -4px` on the paper) so mode/camera rows do not cover it (WCAG 2.4.7). Probe WebGL (`getExtension`) on a dummy canvas then `loseContext()`; `gl` factory never rethrows. Context lost on create or after mount (`webglcontextlost` + preventDefault) → poster + error caption, live chrome hidden; restore stays on the poster. `Bounds fit` frames the device; RoomEnvironment + ink `ContactShadows` (`#000`, `frames={1}`) on the light ground; shells stay smoke-clear; only `display_module` is pad-tinted (not the bezel). Hover/select uses stronger orange emissive plus an ink edge outline. Mode/preset rows reserve `5.75rem` through 950px.
+
+**Success state:** House-token 3D workbench in the sleeve. GitHub link still in contents.
+
+**Error / empty:** Other sleeves omit `viewer` (no SleeveViewer chunk). Load failure / no WebGL / Canvas throw → paper-ground poster + one caption, collapsed mode/preset rows, no hint. Never iframe a `_vercel_share` URL.
+
+**PostHog events:** `sleeve_viewer_loaded`, `sleeve_viewer_mode`, `sleeve_viewer_preset`, `sleeve_viewer_part`
+
+---
+
 ## Mobile vs Desktop Differences
 
 | Element | Desktop | Mobile |
@@ -346,6 +366,7 @@ Land on /keeganmoody33
 | BannerRotator | Full-bleed bar; `pr-16` on content only when dots show | Same |
 | Timeline | Full-width cards | Same layout (no responsive changes) |
 | Record detail | At 1280: cover left, rows right | At 375/768: stacked cover capped at 480px, then rows |
+| YADIGGG study | Two-column workbench; viewport `min(420px, 55vh)` capped 860px; landscape `poster.jpg`; modes, presets, geometry, LCD rail; full gesture hint | Stacks under 700px; stage `min(420px, 55vh)`; `poster-portrait.jpg` below 640px; mode/preset wrap (`5.75rem` while live or probe-pending, collapse on fallback); tap targets `min-h-11`; LCD centered; one-finger pan-y scrolls; hint is `two-finger orbit · pinch to zoom` below `sm` |
 
 ---
 
