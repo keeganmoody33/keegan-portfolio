@@ -10,7 +10,9 @@ import { join } from 'node:path'
 import { INCOMPLETE_RECORDING_MESSAGE, TRACK_LEVEL_REASON } from './enrich.ts'
 import { DURATION_SIDECAR_MS } from './match.ts'
 import {
+  FIND_EXTRAS_RELEASE_IDS,
   GAP_RELEASE_IDS,
+  GAP_RELEASE_ID_SET,
   JUICY_MBID,
   MB_SAMPLES_MATERIAL_REL_ID,
   MTUME_VOCAL_MBID,
@@ -25,6 +27,7 @@ import {
   filterPreviewSampleLinks,
   isPromoteSidecarMatch,
   memoryPromoteRawStore,
+  PROMOTE_ALLOWED_ID_SET,
   parsePromoteArgs,
   promoteRollbackCommand,
   recallSameSongOrVersion,
@@ -163,7 +166,7 @@ describe('promote-preview args and prefixes', () => {
 
   it('validates --ids= against the closed 23-id list with strict integer parsing', () => {
     assert.throws(() => parsePromoteArgs(['--ids=567894oops']), /567894oops/)
-    assert.throws(() => parsePromoteArgs(['--ids=567894']), /closed 23/)
+    assert.throws(() => parsePromoteArgs(['--ids=567894']), /closed promote id list/)
     assert.throws(() => parsePromoteArgs(['--ids=378994,567894oops']), /567894oops/)
     assert.deepEqual(parsePromoteArgs(['--ids=378994']).ids, [378994])
     assert.deepEqual(parsePromoteArgs(['--ids=378994,903960']).ids, [378994, 903960])
@@ -181,6 +184,15 @@ describe('promote-preview args and prefixes', () => {
     assert.equal(GAP_RELEASE_IDS.length, 23)
     assert.equal(new Set(GAP_RELEASE_IDS).size, 23)
     assert.equal(GAP_RELEASE_IDS.includes(567894), false)
+  })
+
+  it('allows the 3 FIND extras ids without opening Mtume', () => {
+    assert.deepEqual([...FIND_EXTRAS_RELEASE_IDS], [875352, 2679499, 12563641])
+    assert.deepEqual(parsePromoteArgs(['--ids=875352,2679499,12563641']).ids, [
+      875352, 2679499, 12563641,
+    ])
+    assert.equal(GAP_RELEASE_ID_SET.has(875352), false)
+    assert.equal(PROMOTE_ALLOWED_ID_SET.has(567894), false)
   })
 
   it('audits ten unknown-length recording MBIDs', () => {

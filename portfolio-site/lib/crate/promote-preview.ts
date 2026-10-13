@@ -64,6 +64,16 @@ export const GAP_RELEASE_IDS = [
 
 export const GAP_RELEASE_ID_SET = new Set<number>(GAP_RELEASE_IDS)
 
+/** Audited preview FIND extras (Keegan 2026-10-12). Default promote still uses the 23. */
+export const FIND_EXTRAS_RELEASE_IDS = [875352, 2679499, 12563641] as const
+
+export const FIND_EXTRAS_RELEASE_ID_SET = new Set<number>(FIND_EXTRAS_RELEASE_IDS)
+
+export const PROMOTE_ALLOWED_ID_SET = new Set<number>([
+  ...GAP_RELEASE_IDS,
+  ...FIND_EXTRAS_RELEASE_IDS,
+])
+
 export const MTUME_RELEASE_ID = 567894
 export const MTUME_VOCAL_MBID = '1d890c2b-2ba3-4b34-9196-64d5cb0cc0dc'
 export const JUICY_MBID = '181c0a32-6e3f-4680-8a7d-1daf0b42e43b'
@@ -382,8 +392,8 @@ export function parsePromoteIds(raw: string): number[] {
     if (id === null) {
       throw new Error(`--ids= rejects ${token}`)
     }
-    if (!GAP_RELEASE_ID_SET.has(id)) {
-      throw new Error(`--ids= ${id} is not in the closed 23-id list`)
+    if (!PROMOTE_ALLOWED_ID_SET.has(id)) {
+      throw new Error(`--ids= ${id} is not in the closed promote id list`)
     }
     if (!seen.has(id)) {
       seen.add(id)
@@ -399,8 +409,8 @@ export function parsePromoteIds(raw: string): number[] {
 export function closedGapIds(ids: Iterable<number> | undefined): number[] {
   const wanted = uniquePositive(ids ?? GAP_RELEASE_IDS)
   for (const id of wanted) {
-    if (!GAP_RELEASE_ID_SET.has(id)) {
-      throw new Error(`id ${id} is not in the closed 23-id list`)
+    if (!PROMOTE_ALLOWED_ID_SET.has(id)) {
+      throw new Error(`id ${id} is not in the closed promote id list`)
     }
   }
   return wanted
