@@ -1,4 +1,5 @@
 import { Children, isValidElement, type ReactElement, type ReactNode } from 'react'
+import HouseBannerCard from '@/components/house/HouseBannerCard'
 import HouseFooter from '@/components/house/HouseFooter'
 import HouseRail from '@/components/house/HouseRail'
 import TitleCard from '@/components/house/TitleCard'
@@ -20,7 +21,7 @@ export default function HouseShell({ children }: { children: ReactNode }) {
       after.push(child)
       return
     }
-    if (isElementOf(child, TitleCard)) {
+    if (isElementOf(child, TitleCard) || isElementOf(child, HouseBannerCard)) {
       before.push(child)
       return
     }

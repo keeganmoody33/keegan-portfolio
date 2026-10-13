@@ -54,6 +54,7 @@ Everything that serves the core purpose: help visitors understand who Keegan is,
 | Full Discogs crate | `/collection`, `/api/discogs/collection` | **Shipped** — durable Redis last-good when Upstash env is set; shuffle / pull one on the crate |
 | Collection record detail | `/collection/[releaseId]`, intercepting overlay `@detail/(.)[releaseId]` | **In progress (this PR)** — stored Discogs pressing + MusicBrainz/Discogs/Wikidata research facts; visitors never hit live research or write Redis |
 | Collection covers | `CrateCover`, `npm run covers:sync`, Vercel Blob | **In progress (preview)** — `lecturesfrom-covers` linked. Preview sync: 17 CAA on Blob, 258 Discogs hotlinks. Production token exists from auto-link; do not merge. |
+| House banner prototype | `HouseBanner`, `/preview/banner` | **Preview only — do not merge.** Powers-on-and-plays banner: Doto boot, Chakra Petch glyph assemble, now-playing readout from live collection data, faint cursor shader. Production `/` unchanged; route 404s when `VERCEL_ENV=production`. |
 
 | SignalCut | `components/SignalCut.tsx` | **Shipped (this PR)** — house ↔ person only |
 | lecturesfrom nameplate wordmark (assets) | `brand/lecturesfrom-wordmark.svg`, `scripts/generate-wordmark.py` | **Assets only.** Not wired into header or pages. Hathaway vectors in `public/brand/` are a separate unused direction. |

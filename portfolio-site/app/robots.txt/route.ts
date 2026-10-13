@@ -1,5 +1,6 @@
 const GROUP = `Allow: /
-Disallow: /api/`
+Disallow: /api/
+Disallow: /preview/`
 
 const BODY = `User-agent: *
 ${GROUP}

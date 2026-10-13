@@ -719,3 +719,243 @@ html[data-lf-signal-cut='active'] .lf-logo-globe-rim-wall,
 html[data-logo-paused='true'] .lf-logo-globe-rim-wall {
   animation-play-state: paused;
 }
+
+/* Preview-only house banner (`/preview/banner`). Slot height is reserved
+ * from first paint so boot → assemble → readout does not shift the crate. */
+.house-banner {
+  position: relative;
+  isolation: isolate;
+}
+
+.house-banner-shader {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.house-banner-shader-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.house-banner-stage {
+  position: relative;
+  z-index: 1;
+  min-height: 13.5rem;
+  border: 1px solid var(--house-line);
+  padding: 1rem 1rem 1.15rem;
+}
+
+.house-banner-boot {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 1rem 1.1rem;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 3px,
+      color-mix(in srgb, var(--house-lcd-ink) 10%, transparent) 3px 4px
+    ),
+    var(--house-lcd);
+  color: var(--house-lcd-ink);
+  font-family: var(--house-font-lcd), monospace;
+  font-weight: 800;
+  font-size: clamp(1.05rem, 3.4vw, 1.55rem);
+  letter-spacing: 0.1em;
+  line-height: 1.15;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.house-banner[data-phase='boot'] .house-banner-boot {
+  opacity: 1;
+  visibility: visible;
+}
+
+.house-banner-boot-line {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.house-banner[data-phase='boot'] .house-banner-boot-line {
+  animation: houseBannerBootLine 480ms ease-out both;
+}
+
+.house-banner[data-phase='boot'] .house-banner-boot-line:nth-child(2) {
+  animation-delay: 220ms;
+}
+
+.house-banner[data-phase='boot'] .house-banner-boot-line:nth-child(3) {
+  animation-delay: 440ms;
+}
+
+.house-banner-wordmark {
+  margin: 0;
+  min-height: 1.15em;
+  font-family: var(--house-font-display);
+  font-weight: 600;
+  font-size: clamp(1.75rem, 7vw, 3.25rem);
+  letter-spacing: -0.01em;
+  line-height: 0.9;
+  color: var(--house-ink);
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+
+.house-banner-glyph {
+  display: inline-block;
+  text-transform: none;
+}
+
+/* Settle only during assemble. Boot is 1800ms and the overlay covers
+ * the wordmark, so starting the 1400ms animation there finishes before
+ * the LCD lifts and the glyphs appear already parked. */
+.house-banner[data-phase='boot'] .house-banner-wordmark {
+  visibility: hidden;
+}
+
+.house-banner[data-phase='boot'] .house-banner-glyph {
+  opacity: 0.35;
+  transform: translate(var(--dx, 0), var(--dy, 0)) rotate(var(--rot, 0deg));
+}
+
+.house-banner[data-phase='assemble'] .house-banner-glyph {
+  animation: houseBannerSettle 1400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.house-banner-glyph:nth-child(1) { --dx: -22px; --dy: 14px; --rot: -11deg; animation-delay: 0ms; }
+.house-banner-glyph:nth-child(2) { --dx: 16px; --dy: -18px; --rot: 8deg; animation-delay: 40ms; }
+.house-banner-glyph:nth-child(3) { --dx: -10px; --dy: 20px; --rot: 6deg; animation-delay: 80ms; }
+.house-banner-glyph:nth-child(4) { --dx: 24px; --dy: 8px; --rot: -7deg; animation-delay: 120ms; }
+.house-banner-glyph:nth-child(5) { --dx: -18px; --dy: -12px; --rot: 9deg; animation-delay: 160ms; }
+.house-banner-glyph:nth-child(6) { --dx: 12px; --dy: 16px; --rot: -5deg; animation-delay: 200ms; }
+.house-banner-glyph:nth-child(7) { --dx: -8px; --dy: -20px; --rot: 7deg; animation-delay: 240ms; }
+.house-banner-glyph:nth-child(8) { --dx: 20px; --dy: 4px; --rot: -9deg; animation-delay: 280ms; }
+.house-banner-glyph:nth-child(9) { --dx: -26px; --dy: 10px; --rot: 4deg; animation-delay: 320ms; }
+.house-banner-glyph:nth-child(10) { --dx: 14px; --dy: -8px; --rot: -6deg; animation-delay: 360ms; }
+.house-banner-glyph:nth-child(11) { --dx: -12px; --dy: 18px; --rot: 10deg; animation-delay: 400ms; }
+.house-banner-glyph:nth-child(12) { --dx: 8px; --dy: -16px; --rot: -4deg; animation-delay: 440ms; }
+
+.house-banner-readout {
+  margin-top: 1rem;
+  min-height: 6.25rem;
+}
+
+.house-banner[data-phase='boot'] .house-banner-readout,
+.house-banner[data-phase='assemble'] .house-banner-readout {
+  opacity: 0;
+}
+
+.house-banner[data-phase='playing'] .house-banner-readout {
+  opacity: 1;
+}
+
+.house-banner-now {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.house-banner-now:hover .house-banner-artist {
+  color: var(--house-orange);
+}
+
+.house-banner-cover {
+  width: 4rem;
+  height: 4rem;
+  flex-shrink: 0;
+  border: 1px solid var(--house-line);
+  object-fit: cover;
+  background: var(--house-line);
+}
+
+.house-banner-cover-empty {
+  display: block;
+}
+
+.house-banner-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-family: var(--house-font-mono), 'Roboto Mono', monospace;
+}
+
+.house-banner-artist {
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: var(--house-ink);
+  overflow-wrap: anywhere;
+}
+
+.house-banner-title,
+.house-banner-label {
+  font-size: 0.6875rem;
+  line-height: 1.3;
+  color: var(--house-muted);
+  overflow-wrap: anywhere;
+}
+
+.house-banner-empty {
+  margin: 0;
+  font-family: var(--house-font-mono), 'Roboto Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--house-dim);
+}
+
+.house-banner-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.house-text-button:disabled {
+  cursor: not-allowed;
+  color: var(--house-dim);
+}
+
+@keyframes houseBannerBootLine {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes houseBannerSettle {
+  from {
+    opacity: 0.35;
+    transform: translate(var(--dx, 0), var(--dy, 0)) rotate(var(--rot, 0deg));
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .house-banner-boot,
+  .house-banner-shader {
+    display: none;
+  }
+
+  .house-banner-glyph {
+    animation: none;
+    transform: none;
+    opacity: 1;
+  }
+
+  .house-banner-readout {
+    opacity: 1;
+  }
+}

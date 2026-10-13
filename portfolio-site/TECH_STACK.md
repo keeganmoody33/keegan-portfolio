@@ -94,6 +94,8 @@ Runtime: **Deno**. Imports use URL specifiers with pinned versions where availab
 
 **Brand asset toolchain (not runtime):** `scripts/generate-wordmark.py` uses Python 3 + fontTools + rsvg-convert (Pillow for proofs). These are not Next.js dependencies. Do not add them to `package.json`.
 
+**Preview banner prototype:** `/preview/banner` reuses `fetchFullCollection()` and canvas/CSS. No new npm packages, no new env vars, no Redis writes. Do not add three / spline / framer to this surface.
+
 ---
 
 ## Related Docs

@@ -229,7 +229,7 @@ Proxies to Supabase `chat` Edge Function.
 
 ### GET /api/discogs/collection
 
-Full paginated Discogs crate for `/collection`. Paginates `per_page=100` until `pagination.pages` is exhausted.
+Full paginated Discogs crate for `/collection`. Paginates `per_page=100` until `pagination.pages` is exhausted. The preview-only `/preview/banner` route also calls `fetchFullCollection()` read-only for the now-playing readout (ISR 300s). It does not add an API, write Redis, or run in production (`notFound()` when `VERCEL_ENV=production`).
 
 **Request:** No params.
 
