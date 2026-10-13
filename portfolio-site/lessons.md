@@ -5,9 +5,11 @@ Updated: 2026-10-13
 ## YADIGGG sleeve viewer (2026-10-13)
 
 - Crate click stays `/catalog/yadiggg`. Do not point `crateHref` at the Vercel workbench. The GitHub repo is contents track 01, not the 3D study.
-- There is no `yadiggg-viewer` source repo under keeganmoody33. `keeganmoody33/YADIGGG` is C / CAD / docs (OpenSCAD 105×60×15), not the three.js workbench. Prod `yadiggg-viewer.vercel.app` is a single HTML with base64 GLBs — not cleanly fetchable as `/models/*.glb`. Extract the GLB once and host it; do not iframe the paper/amber Arial chrome.
+- There is no `yadiggg-viewer` source repo under keeganmoody33. `keeganmoody33/YADIGGG` is C / CAD / docs (OpenSCAD 105×60×15), not the three.js workbench. Prod `yadiggg-viewer.vercel.app` is a single HTML with base64 GLBs — not cleanly fetchable as `/models/*.glb`. Extract GLBs and the concept image once and host them; do not iframe the paper/amber Arial chrome.
 - Never embed `_vercel_share` / SSO preview URLs. Prefer a ported house-token study (`--house-*`, Chakra Petch / Space Grotesk / Roboto Mono / Doto).
-- Do not ship the workbench recorder-screen UI (Identify / Read / Save, control candidate A vs B, simulated LCD capture). Locked product: one orange side button, 2.7" memory LCD, 105 × 60 × 15 mm smoke-clear shell, USB-C, 3.5 mm. R1 CAD envelope in the GLB is an allocation study and must not override those facts in the sleeve chrome.
+- Match workbench *density* (modes including Reference, presets, hover/select readout, geometry mm callouts, side rail, LCD-style Doto panel, Candidate B CAD cluster, smoke-clear shell / orange control, damped orbit). Do **not** ship recorder-screen UI (Identify / Read / Save, simulated capture, scenario picker, rocker demo). Candidate A vs B is a control-layout comparison on the same reserved opening.
+- Keep the cloned R1 GLB shell materials (opacity 0.4 / 0.12 x-ray). Recoloring shells to `--house-pad` turns smoke-clear into gray plastic. Light with a local `RoomEnvironment` PMREM (no CDN HDR). Paint only the side control house-orange; USB/jack may take cable tokens. Device LCD canvas is locked facts in Doto, not Identify/Read/Save.
+- Locked product: one orange side button, 2.7" memory LCD, 105 × 60 × 15 mm smoke-clear shell, USB-C, 3.5 mm. R1 CAD envelope 70 × 110 × 18 mm is an allocation study — label it as CAD, do not let it override locked facts.
 - Lazy: `next/dynamic` `{ ssr: false }` like `TurntableCanvas.tsx`. three.js must not land on `/` or other sleeves. Reduced motion and no-WebGL keep `cover.jpg` in a reserved viewport (no CLS). Stage height lives on `.house-sleeve-stage` in `globals.css` — Tailwind `content` does not scan `lib/`.
 
 ## Search extras for missed sampled recordings (2026-10-12)

@@ -344,16 +344,16 @@ Land on /keeganmoody33
 **Steps:**
 
 1. Sleeve renders cover + liner as before. Contents track 01 remains `https://github.com/keeganmoody33/YADIGGG`.
-2. When `viewer` is present, `SleeveViewer` reserves `min(540px, 70vh)` so the poster (`cover.jpg`) holds layout. IntersectionObserver + `next/dynamic(..., { ssr: false })` loads `YadigggViewer` only on this sleeve when in view.
+2. When `viewer` is present, `SleeveViewer` renders a two-column workbench (stage + allocation rail). The canvas stage reserves `.house-sleeve-stage` (`min(540px, 70vh)`) so the poster (`cover.jpg`) holds layout. IntersectionObserver + `next/dynamic(..., { ssr: false })` loads `YadigggViewer` only on this sleeve when in view.
 3. three.js is not in the homepage or other sleeve bundles. Reduced motion and no-WebGL keep the static poster + caption. Share-token preview URLs are rejected.
-4. View modes: assembled / x-ray / exploded / open front. Camera presets: front / rear / side / ports / reset. Click a part for the allocation readout. No recorder-screen / capture UI. Geometry strip states locked product facts (105 × 60 × 15 mm smoke-clear shell, 2.7" memory LCD, one orange side button, USB-C, 3.5 mm).
+4. View modes: assembled / x-ray / exploded / open front / reference (concept image). Camera presets: front / rear / side / ports / reset view, with damped orbit and lerped presets. Hover and click inspect a part (readout + LCD). Candidate A/B swaps the control cluster GLB on the same reserved opening — CAD comparison only. No recorder-screen / Identify·Read·Save / capture demo. Geometry strip is the R1 CAD study (21 parts / 1.5 mm wall / 70.8 mm). The rail LCD + measure chip keep locked product facts (105 × 60 × 15 mm smoke-clear shell, 2.7" memory LCD, one orange side button, USB-C, 3.5 mm).
 5. Viewport is keyboard-focusable (arrows orbit, +/- zoom). Focus-visible is 2px ink.
 
-**Success state:** House-token 3D study in the sleeve. GitHub link still in contents.
+**Success state:** House-token 3D workbench in the sleeve. GitHub link still in contents.
 
 **Error / empty:** Other sleeves omit `viewer`. Load failure / no WebGL / reduced motion → static cover + caption. Never iframe a `_vercel_share` URL.
 
-**PostHog events:** `sleeve_viewer_loaded`, `sleeve_viewer_mode`, `sleeve_viewer_preset`, `sleeve_viewer_part`
+**PostHog events:** `sleeve_viewer_loaded`, `sleeve_viewer_mode`, `sleeve_viewer_preset`, `sleeve_viewer_part`, `sleeve_viewer_candidate`
 
 ---
 
@@ -366,7 +366,7 @@ Land on /keeganmoody33
 | BannerRotator | Full-bleed bar; `pr-16` on content only when dots show | Same |
 | Timeline | Full-width cards | Same layout (no responsive changes) |
 | Record detail | At 1280: cover left, rows right | At 375/768: stacked cover capped at 480px, then rows |
-| YADIGGG study | Viewport `min(540px, 70vh)` under liner; view modes on one row | Same reserved height; mode/preset wrap; tap targets `min-h-11` |
+| YADIGGG study | Two-column workbench; viewport `min(540px, 70vh)` (620px at 1500, 470px at 950); modes, presets, geometry, LCD rail | Stacks under 700px; stage 420px; mode/preset wrap; tap targets `min-h-11`; LCD centered |
 
 ---
 

@@ -8,11 +8,18 @@ import { useReducedMotion } from '@/hooks/use-reduced-motion'
 import { hasWebGL } from '@/lib/webgl'
 import {
   CAMERA_PRESET_BUTTONS,
-  PART_READOUT_DEFAULT,
+  CONTROL_CANDIDATES,
+  PART_READOUT_IDLE,
   SLEEVE_VIEW_MODES,
+  YADIGGG_CAD_ENVELOPE,
+  YADIGGG_CAD_GEOMETRY,
+  YADIGGG_CANDIDATE_B_SRC,
   YADIGGG_LOCKED_FACTS,
+  YADIGGG_REFERENCE_SRC,
   isBlockedViewerSrc,
   type CameraPreset,
+  type ControlCandidate,
+  type PartReadout,
   type SleeveViewMode,
 } from '@/lib/yadiggg-viewer'
 
@@ -56,6 +63,31 @@ function Poster({ src, title, caption }: { src: string; title: string; caption: 
   )
 }
 
+function ModeButton({
+  selected,
+  label,
+  onClick,
+}: {
+  selected: boolean
+  label: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      className={`house-meta min-h-11 px-3 py-1.5 sm:min-h-8 ${focusRing} ${
+        selected
+          ? 'bg-[var(--house-ink)] text-[var(--house-bg)]'
+          : 'text-[var(--house-muted)] hover:text-[var(--house-orange)]'
+      }`}
+      onClick={onClick}
+    >
+      {label}
+    </button>
+  )
+}
+
 export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveViewerProps) {
   const reducedMotion = useReducedMotion()
   const focusRootId = useId().replace(/:/g, '')
@@ -63,14 +95,19 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
   const [inView, setInView] = useState(false)
   const [webgl, setWebgl] = useState<boolean | null>(null)
   const [view, setView] = useState<SleeveViewMode>('assembled')
+  const [candidate, setCandidate] = useState<ControlCandidate>('A')
   const [preset, setPreset] = useState<CameraPreset>('reset')
   const [presetTick, setPresetTick] = useState(0)
-  const [readout, setReadout] = useState(PART_READOUT_DEFAULT)
+  const [hover, setHover] = useState<PartReadout | null>(null)
+  const [selected, setSelected] = useState<PartReadout | null>(null)
   const [canvasReady, setCanvasReady] = useState(false)
   const [failed, setFailed] = useState(false)
 
   const blocked = isBlockedViewerSrc(viewer.src)
   const poster = viewer.poster ?? posterSrc
+  const readout = hover ?? selected ?? PART_READOUT_IDLE
+  const viewLabel = SLEEVE_VIEW_MODES.find((mode) => mode.id === view)?.label ?? view
+  const candidateMeta = CONTROL_CANDIDATES.find((entry) => entry.id === candidate)
 
   useEffect(() => {
     const node = sectionRef.current
@@ -111,14 +148,25 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
     setFailed(true)
   }, [])
 
-  const onPart = useCallback((label: string, note: string) => {
-    setReadout(`${label} · ${note}`)
+  const onPart = useCallback((label: string, note: string, source: 'hover' | 'select') => {
+    if (source === 'hover') {
+      setHover({ label, note })
+      return
+    }
+    setSelected({ label, note })
+    setHover(null)
     posthog.capture('sleeve_viewer_part', { part: label })
+  }, [])
+
+  const onPartLeave = useCallback(() => {
+    setHover(null)
   }, [])
 
   const caption = fallback
     ? fallbackCaption(fallback, viewer.title)
-    : `${sleeveTitle} r1 allocation study`
+    : view === 'compare'
+      ? 'original concept image. illustration; geometry differs from cad.'
+      : `${sleeveTitle} r1 allocation study`
 
   return (
     <section
@@ -126,115 +174,212 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
       className="mt-12 border-t border-[var(--house-line)] pt-6"
       aria-label={viewer.title}
     >
-      <h2 className="house-meta mb-4">{viewer.title}</h2>
-
-      <div className="flex flex-wrap gap-x-6 gap-y-2 border-b border-[var(--house-line)]" aria-label="assembly view">
-        {SLEEVE_VIEW_MODES.map((mode) => {
-          const selected = view === mode.id
-          return (
-            <button
-              key={mode.id}
-              type="button"
-              aria-pressed={selected}
-              className={`house-meta -mb-px min-h-11 border-b pb-2 sm:min-h-6 ${focusRing} ${
-                selected
-                  ? 'border-[var(--house-ink)] text-[var(--house-ink)]'
-                  : 'border-transparent text-[var(--house-muted)] hover:text-[var(--house-orange)]'
-              }`}
-              onClick={() => {
-                setView(mode.id)
-                posthog.capture('sleeve_viewer_mode', { view: mode.id })
-              }}
-            >
-              {mode.label}
-            </button>
-          )
-        })}
-      </div>
-
-      <div
-        id={focusRootId}
-        tabIndex={0}
-        role="img"
-        aria-label={`${viewer.title}. drag or arrow keys to orbit, plus and minus to zoom.`}
-        className={`house-sleeve-stage relative mt-4 overflow-hidden border border-[var(--house-line)] bg-[var(--house-bg)] ${focusRing}`}
-      >
-        <Poster src={poster} title={viewer.title} caption={caption} />
-        {showStudy && viewer.mode === 'port' ? (
-          <div className={`absolute inset-0 ${canvasReady ? 'opacity-100' : 'opacity-0'}`}>
-            <YadigggStudy
-              src={viewer.src}
-              view={view}
-              preset={preset}
-              presetTick={presetTick}
-              reducedMotion={reducedMotion}
-              focusRootId={focusRootId}
-              onPart={onPart}
-              onReady={onReady}
-              onError={onError}
-            />
+      <div className="house-sleeve-workbench">
+        <div className="house-sleeve-stage-col">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="house-meta">01 / physical study</p>
+              <h2 className="mt-2 font-display text-[clamp(1.6rem,3vw,2.5rem)] font-semibold leading-[1.05] tracking-[-0.01em]">
+                Made for the dig.
+              </h2>
+              <p className="mt-2 max-w-md font-mono text-[12px] leading-relaxed text-[var(--house-muted)]">
+                A revised allocation. An interaction to try — restyled in house.
+              </p>
+            </div>
+            <span className="house-sleeve-measure">
+              <span className="font-[family-name:var(--house-font-lcd)] text-lg font-extrabold tracking-[0.04em]">
+                105 × 60 × 15
+              </span>
+              <small>mm body · locked</small>
+            </span>
           </div>
-        ) : null}
-        {showStudy && viewer.mode === 'iframe' ? (
-          <iframe
-            src={viewer.src}
-            title={viewer.title}
-            loading="lazy"
-            sandbox="allow-scripts allow-same-origin"
-            referrerPolicy="no-referrer"
-            className="absolute inset-0 h-full w-full border-0 bg-[var(--house-bg)]"
-            onLoad={onReady}
-          />
-        ) : null}
-      </div>
-      <p className="mt-2 font-mono text-[11px] leading-relaxed text-[var(--house-dim)]">{caption}</p>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-4" aria-label="camera direction">
-          {CAMERA_PRESET_BUTTONS.map((button) => (
-            <button
-              key={button.id}
-              type="button"
-              className={`house-text-button min-h-11 sm:min-h-6 ${focusRing} ${
-                preset === button.id ? 'text-[var(--house-ink)]' : ''
-              }`}
-              aria-pressed={preset === button.id}
-              onClick={() => {
-                setPreset(button.id)
-                setPresetTick((tick) => tick + 1)
-                posthog.capture('sleeve_viewer_preset', { preset: button.id })
-              }}
-            >
-              {button.label}
-            </button>
-          ))}
+          <div className="mt-6 flex flex-wrap gap-1" aria-label="assembly view">
+            {SLEEVE_VIEW_MODES.map((mode) => (
+              <ModeButton
+                key={mode.id}
+                selected={view === mode.id}
+                label={mode.label}
+                onClick={() => {
+                  setView(mode.id)
+                  posthog.capture('sleeve_viewer_mode', { view: mode.id })
+                }}
+              />
+            ))}
+          </div>
+
+          <div
+            id={focusRootId}
+            tabIndex={0}
+            role="img"
+            aria-label={`${viewer.title}. drag or arrow keys to orbit, plus and minus to zoom. all device facts also appear in the adjacent panel.`}
+            className={`house-sleeve-stage relative mt-0 overflow-hidden bg-[var(--house-bg)] ${focusRing}`}
+          >
+            <Poster src={poster} title={viewer.title} caption={caption} />
+            {showStudy && viewer.mode === 'port' ? (
+              <div
+                className={`absolute inset-0 ${canvasReady && view !== 'compare' ? 'opacity-100' : 'opacity-0'}`}
+              >
+                <YadigggStudy
+                  src={viewer.src}
+                  candidateSrc={YADIGGG_CANDIDATE_B_SRC}
+                  view={view}
+                  candidate={candidate}
+                  preset={preset}
+                  presetTick={presetTick}
+                  reducedMotion={reducedMotion}
+                  focusRootId={focusRootId}
+                  onPart={onPart}
+                  onPartLeave={onPartLeave}
+                  onReady={onReady}
+                  onError={onError}
+                />
+              </div>
+            ) : null}
+            {showStudy && viewer.mode === 'iframe' ? (
+              <iframe
+                src={viewer.src}
+                title={viewer.title}
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin"
+                referrerPolicy="no-referrer"
+                className="absolute inset-0 h-full w-full border-0 bg-[var(--house-bg)]"
+                onLoad={onReady}
+              />
+            ) : null}
+            {view === 'compare' ? (
+              <figure className="absolute inset-0 z-[2] m-0 bg-[var(--house-bg)] text-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={YADIGGG_REFERENCE_SRC}
+                  alt="Original repository concept: smoke-clear portrait YADIGGG with orange side control"
+                  className="h-[90%] w-full object-contain"
+                />
+                <figcaption className="px-3 font-mono text-[11px] text-[var(--house-muted)]">
+                  Original concept image. Illustration; geometry differs from CAD.
+                </figcaption>
+              </figure>
+            ) : null}
+            {showStudy && viewer.mode === 'port' && !canvasReady && view !== 'compare' ? (
+              <p className="pointer-events-none absolute inset-x-0 top-[45%] text-center font-mono text-[11px] text-[var(--house-muted)]">
+                Loading the model…
+              </p>
+            ) : null}
+          </div>
+          <p className="mt-2 font-mono text-[11px] leading-relaxed text-[var(--house-dim)]">{caption}</p>
+
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap gap-1" aria-label="camera direction">
+              {CAMERA_PRESET_BUTTONS.map((button) => (
+                <button
+                  key={button.id}
+                  type="button"
+                  className={`house-meta min-h-11 px-2.5 py-1 sm:min-h-7 ${focusRing} ${
+                    preset === button.id
+                      ? 'bg-[var(--house-ink)] text-[var(--house-bg)]'
+                      : 'text-[var(--house-muted)] hover:text-[var(--house-orange)]'
+                  }`}
+                  aria-pressed={preset === button.id}
+                  onClick={() => {
+                    setPreset(button.id)
+                    setPresetTick((tick) => tick + 1)
+                    posthog.capture('sleeve_viewer_preset', { preset: button.id })
+                  }}
+                >
+                  {button.label}
+                </button>
+              ))}
+            </div>
+            <p className="house-meta hidden sm:block">drag to orbit · scroll to zoom</p>
+          </div>
+
+          <p
+            className="house-sleeve-readout"
+            aria-live="polite"
+          >
+            {readout.label} · {readout.note}
+          </p>
+
+          <div className="house-sleeve-geometry">
+            {YADIGGG_CAD_GEOMETRY.map((fact) => (
+              <div key={fact.label}>
+                <b>{fact.value}</b>
+                <span>{fact.label}</span>
+              </div>
+            ))}
+            <p>
+              Dimensioned study, not manufacturing CAD. Electronics are simplified volumes; hardware,
+              tolerances and assembly remain unvalidated. R1 CAD envelope {YADIGGG_CAD_ENVELOPE}.
+              Locked product stays 105 × 60 × 15 mm, one orange side button, 2.7&quot; memory LCD,
+              USB-C, 3.5 mm.
+            </p>
+          </div>
         </div>
-        <p className="house-meta">drag to orbit · scroll to zoom</p>
-      </div>
 
-      <p
-        className="mt-4 min-h-[2.5rem] border-t border-[var(--house-line)] pt-3 font-mono text-[11px] leading-relaxed text-[var(--house-muted)]"
-        aria-live="polite"
-      >
-        {readout}
-      </p>
+        <aside className="house-sleeve-rail">
+          <p className="house-meta">02 / allocation</p>
+          <h3 className="mt-2 font-display text-[1.45rem] font-semibold leading-[1.15] tracking-[-0.01em]">
+            Locked product.
+          </h3>
+          <p className="mt-3 font-mono text-[12px] leading-relaxed text-[var(--house-muted)]">
+            Hover or click the model. The LCD reads parts and facts — not a capture demo. Candidate B
+            is the same reserved opening, different control layout.
+          </p>
 
-      <dl className="mt-6 grid grid-cols-1 gap-4 border-t border-[var(--house-line)] pt-5 sm:grid-cols-3">
-        {YADIGGG_LOCKED_FACTS.map((fact) => (
-          <div key={fact.label}>
-            <dt className="font-[family-name:var(--house-font-lcd)] text-lg font-extrabold tracking-[0.04em] text-[var(--house-ink)]">
-              {fact.value}
-            </dt>
-            <dd className="mt-1 font-mono text-[10px] tracking-[0.16em] uppercase text-[var(--house-muted)]">
-              {fact.label}
-            </dd>
+          <p className="house-meta mt-6 mb-2" id={`${focusRootId}-candidate`}>
+            control candidate
+          </p>
+          <div className="flex flex-wrap gap-1" role="group" aria-labelledby={`${focusRootId}-candidate`}>
+            {CONTROL_CANDIDATES.map((entry) => (
+              <ModeButton
+                key={entry.id}
+                selected={candidate === entry.id}
+                label={entry.label}
+                onClick={() => {
+                  setCandidate(entry.id)
+                  posthog.capture('sleeve_viewer_candidate', { candidate: entry.id })
+                }}
+              />
+            ))}
           </div>
-        ))}
-      </dl>
-      <p className="mt-4 max-w-xl font-mono text-[11px] leading-relaxed text-[var(--house-dim)]">
-        r1 allocation study. electronics are simplified volumes. locked product: one orange side button, 2.7&quot;
-        memory lcd, 105 × 60 × 15 mm smoke-clear shell, usb-c, 3.5 mm jack.
-      </p>
+          <p className="mt-2 font-mono text-[10px] leading-relaxed text-[var(--house-dim)]">
+            {candidateMeta?.hint}
+          </p>
+
+          <div className="house-sleeve-lcd" aria-label="Device facts readout" aria-live="polite">
+            <div className="house-sleeve-lcd-top">
+              <span>YADIGGG / R1</span>
+              <span>{viewLabel}</span>
+            </div>
+            <h4>{readout.label}</h4>
+            <p>{readout.note}</p>
+            <ol>
+              {YADIGGG_LOCKED_FACTS.map((fact, index) => (
+                <li key={fact.label} className={index === 0 ? 'selected' : undefined}>
+                  {fact.value} · {fact.label}
+                </li>
+              ))}
+              <li>
+                CAD {YADIGGG_CAD_ENVELOPE} · allocation study
+              </li>
+            </ol>
+          </div>
+
+          <details className="house-sleeve-modeled">
+            <summary className={`${focusRing} cursor-pointer`}>What is modeled?</summary>
+            <p>
+              Hollow front and rear shells, display envelope, PCB allocation with control notch,
+              battery, camera and connector reservations. X-ray shows cable and RF allowances. Open
+              front removes the front shell and window for inspection.
+            </p>
+            <p>
+              Camera optics, battery protection, fasteners, sealing, strain relief, PCB routing and
+              thermal paths need engineering. Candidate B is a control layout comparison on the same
+              reserved opening.
+            </p>
+          </details>
+        </aside>
+      </div>
     </section>
   )
 }

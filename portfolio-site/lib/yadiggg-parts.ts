@@ -1,3 +1,5 @@
+import type { ControlCandidate } from './yadiggg-viewer'
+
 export type YadigggPartKind = 'physical' | 'surface' | 'construction'
 
 export type YadigggPart = {
@@ -27,15 +29,36 @@ export const YADIGGG_PARTS: readonly YadigggPart[] = [
   { name: 'mic_allocation_18', kind: 'physical', note: 'Two mic zones and separate ports; acoustic channels/gaskets missing', explodeMm: -8 },
   { name: 'mic_allocation_6', kind: 'physical', note: 'Two mic zones and separate ports; acoustic channels/gaskets missing', explodeMm: -8 },
   { name: 'control_mechanism', kind: 'physical', note: 'Reservation only, compatible with PCB notch', explodeMm: 0 },
-  { name: 'control_down', kind: 'physical', note: 'one orange side button — grouped on a single side opening', explodeMm: 0 },
-  { name: 'control_select', kind: 'physical', note: 'one orange side button — grouped on a single side opening', explodeMm: 0 },
-  { name: 'control_up', kind: 'physical', note: 'one orange side button — grouped on a single side opening', explodeMm: 0 },
+  { name: 'control_down', kind: 'physical', note: 'one orange side button — Candidate A rocker on a single side opening', explodeMm: 0 },
+  { name: 'control_select', kind: 'physical', note: 'one orange side button — Candidate A rocker on a single side opening', explodeMm: 0 },
+  { name: 'control_up', kind: 'physical', note: 'one orange side button — Candidate A rocker on a single side opening', explodeMm: 0 },
   { name: 'rf_reservation', kind: 'construction', note: 'Construction reservation only; antenna copper, ground and hand-loading rules TBD', explodeMm: 0 },
   { name: 'display_flex_reservation', kind: 'construction', note: 'Unrouted FPC allowance; exact connector/bend radius TBD', explodeMm: 0 },
   { name: 'battery_service_reservation', kind: 'construction', note: 'Cable/connector allocation; battery swelling is a separate requirement', explodeMm: 0 },
 ]
 
-export function partByName(name: string): YadigggPart | undefined {
-  return YADIGGG_PARTS.find((part) => part.name === name)
+/** Candidate B occupies the same reserved opening. CAD layout comparison only — not a capture demo. */
+export const YADIGGG_CANDIDATE_B_PARTS: readonly YadigggPart[] = [
+  { name: 'control_capture', kind: 'physical', note: 'one orange side button — Candidate B capture on the same reserved opening', explodeMm: 0 },
+  { name: 'control_down', kind: 'physical', note: 'one orange side button — Candidate B navigation on the same reserved opening', explodeMm: 0 },
+  { name: 'control_select', kind: 'physical', note: 'one orange side button — Candidate B navigation on the same reserved opening', explodeMm: 0 },
+  { name: 'control_up', kind: 'physical', note: 'one orange side button — Candidate B navigation on the same reserved opening', explodeMm: 0 },
+]
+
+const CONTROL_A_NAMES = new Set(['control_up', 'control_select', 'control_down'])
+
+export function isCandidateAControl(name: string): boolean {
+  return CONTROL_A_NAMES.has(name)
 }
 
+export function isCandidateBControl(name: string): boolean {
+  return YADIGGG_CANDIDATE_B_PARTS.some((part) => part.name === name)
+}
+
+export function partByName(name: string, candidate: ControlCandidate = 'A'): YadigggPart | undefined {
+  if (candidate === 'B') {
+    const fromB = YADIGGG_CANDIDATE_B_PARTS.find((part) => part.name === name)
+    if (fromB) return fromB
+  }
+  return YADIGGG_PARTS.find((part) => part.name === name)
+}
