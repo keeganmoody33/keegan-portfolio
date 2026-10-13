@@ -7,9 +7,11 @@ import * as THREE from 'three'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { partByName } from '@/lib/yadiggg-parts'
-import { webglContextIsUsable } from '@/lib/webgl'
+import { webglContextIsLost, webglContextIsUsable } from '@/lib/webgl'
+import { bindStudyContextLoss, studyGlFromCreate, type StudyRendererLike } from '@/lib/yadiggg-gl'
 import {
   CAMERA_PRESETS,
+  YADIGGG_STAGE_INK,
   YADIGGG_STAGE_PAPER,
   formatPartLabel,
   shouldCaptureWheel,
@@ -19,6 +21,7 @@ import {
 
 const HOUSE_ORANGE = 0xe23d00
 const STAGE_PAPER = Number.parseInt(YADIGGG_STAGE_PAPER.slice(1), 16)
+const STAGE_INK = Number.parseInt(YADIGGG_STAGE_INK.slice(1), 16)
 const HOUSE_USB = 0x49b0d3
 const HOUSE_AUDIO = 0xb8c95e
 const HOUSE_PAD = 0x7f8085
@@ -85,12 +88,38 @@ function rememberEmissive(material: THREE.MeshStandardMaterial) {
   }
 }
 
-function setHighlight(mesh: THREE.Mesh, on: boolean) {
+function inkEdge(mesh: THREE.Mesh): THREE.LineSegments {
+  const existing = mesh.userData.inkEdge as THREE.LineSegments | undefined
+  if (existing) return existing
+  const line = new THREE.LineSegments(
+    new THREE.EdgesGeometry(mesh.geometry, 28),
+    new THREE.LineBasicMaterial({
+      color: STAGE_INK,
+      transparent: true,
+      opacity: 0.92,
+      depthTest: false,
+    })
+  )
+  line.renderOrder = 4
+  line.visible = false
+  mesh.add(line)
+  mesh.userData.inkEdge = line
+  return line
+}
+
+function setHighlight(mesh: THREE.Mesh, on: boolean, kind: 'hover' | 'select' = 'hover') {
+  const edge = inkEdge(mesh)
+  edge.visible = on
+  const edgeMaterial = edge.material as THREE.LineBasicMaterial
+  edgeMaterial.opacity = kind === 'select' ? 1 : 0.88
   forEachMaterial(mesh, (material) => {
     rememberEmissive(material)
     if (on) {
       material.emissive.setHex(HOUSE_ORANGE)
-      material.emissiveIntensity = Math.max(material.userData.baseEmissiveIntensity as number, 0.42)
+      material.emissiveIntensity = Math.max(
+        material.userData.baseEmissiveIntensity as number,
+        kind === 'select' ? 1.08 : 0.88
+      )
     } else {
       material.emissive.copy(material.userData.baseEmissive as THREE.Color)
       material.emissiveIntensity = material.userData.baseEmissiveIntensity as number
@@ -226,6 +255,8 @@ function DeviceLcd({ view }: { view: SleeveViewMode }) {
 function RoomEnv() {
   const { gl } = useThree()
   const texture = useMemo(() => {
+    const ctx = gl.getContext()
+    if (!webglContextIsUsable(ctx) || webglContextIsLost(ctx)) return null
     const pmrem = new THREE.PMREMGenerator(gl)
     const room = new RoomEnvironment()
     const rendered = pmrem.fromScene(room, 0.04)
@@ -234,8 +265,9 @@ function RoomEnv() {
     return rendered.texture
   }, [gl])
 
-  useEffect(() => () => texture.dispose(), [texture])
+  useEffect(() => () => texture?.dispose(), [texture])
 
+  if (!texture) return null
   return <primitive object={texture} attach="environment" />
 }
 
@@ -271,7 +303,8 @@ function createStudyRenderer(props: THREE.WebGLRendererParameters): THREE.WebGLR
   renderer.setClearColor(0x000000, 0)
   renderer.toneMapping = THREE.ACESFilmicToneMapping
   renderer.toneMappingExposure = 1.02
-  if (!webglContextIsUsable(renderer.getContext())) {
+  const ctx = renderer.getContext()
+  if (!webglContextIsUsable(ctx) || webglContextIsLost(ctx)) {
     renderer.dispose()
     throw new Error('webgl getExtension unavailable')
   }
@@ -384,6 +417,7 @@ function StudyModel({
   const [r1, setR1] = useState<THREE.Group | null>(null)
   const pointer = useRef<[number, number] | null>(null)
   const hovered = useRef<THREE.Mesh | null>(null)
+  const selected = useRef<THREE.Mesh | null>(null)
   const onPartLeaveRef = useRef(onPartLeave)
 
   useEffect(() => {
@@ -427,7 +461,7 @@ function StudyModel({
 
   const clearHover = () => {
     if (!hovered.current) return
-    setHighlight(hovered.current, false)
+    if (hovered.current !== selected.current) setHighlight(hovered.current, false)
     hovered.current = null
     onPartLeaveRef.current()
   }
@@ -446,10 +480,17 @@ function StudyModel({
     if (!part) return false
     if (source === 'hover') {
       if (hovered.current !== mesh) {
-        if (hovered.current) setHighlight(hovered.current, false)
+        if (hovered.current && hovered.current !== selected.current) {
+          setHighlight(hovered.current, false)
+        }
         hovered.current = mesh
-        setHighlight(mesh, true)
+        setHighlight(mesh, true, mesh === selected.current ? 'select' : 'hover')
       }
+    } else {
+      if (selected.current && selected.current !== mesh) setHighlight(selected.current, false)
+      selected.current = mesh
+      hovered.current = mesh
+      setHighlight(mesh, true, 'select')
     }
     onPart(formatPartLabel(part.name), part.note, source)
     return true
@@ -551,6 +592,16 @@ function GatedOrbit({
   )
 }
 
+function ContextLossGuard({ onLost }: { onLost: () => void }) {
+  const { gl } = useThree()
+  const onLostRef = useRef(onLost)
+  useEffect(() => {
+    onLostRef.current = onLost
+  }, [onLost])
+  useEffect(() => bindStudyContextLoss(gl.domElement, () => onLostRef.current()), [gl])
+  return null
+}
+
 function YadigggCanvas({
   src,
   view,
@@ -569,12 +620,11 @@ function YadigggCanvas({
   }, [onError])
 
   const glFactory = useCallback((props: THREE.WebGLRendererParameters) => {
-    try {
-      return createStudyRenderer(props)
-    } catch {
-      queueMicrotask(() => onErrorRef.current())
-      throw new Error('webgl unavailable')
-    }
+    return studyGlFromCreate(
+      () => createStudyRenderer(props) as unknown as StudyRendererLike,
+      () => onErrorRef.current(),
+      props.canvas instanceof HTMLCanvasElement ? props.canvas : null
+    ) as unknown as THREE.WebGLRenderer
   }, [])
 
   return (
@@ -584,7 +634,8 @@ function YadigggCanvas({
       onCreated={(state) => {
         try {
           state.gl.setClearColor(0x000000, 0)
-          if (!webglContextIsUsable(state.gl.getContext())) onErrorRef.current()
+          const ctx = state.gl.getContext()
+          if (!webglContextIsUsable(ctx) || webglContextIsLost(ctx)) onErrorRef.current()
         } catch {
           onErrorRef.current()
         }
@@ -598,6 +649,7 @@ function YadigggCanvas({
       dpr={[1, 2]}
       aria-hidden
     >
+      <ContextLossGuard onLost={() => onErrorRef.current()} />
       <RoomEnv />
       <hemisphereLight args={[0xffffff, STAGE_PAPER, 1.2]} />
       <directionalLight position={[-0.12, 0.22, 0.24]} intensity={1.85} color="#ffffff" />

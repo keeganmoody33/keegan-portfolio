@@ -5,7 +5,7 @@
 
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { hasWebGL } from './webgl.ts'
+import { hasWebGL, releaseProbedWebGLContext, webglContextIsLost } from './webgl.ts'
 
 describe('hasWebGL', () => {
   it('is false for a null canvas', () => {
@@ -70,5 +70,62 @@ describe('hasWebGL', () => {
       }),
       false
     )
+  })
+
+  it('is false when the probe context is already lost', () => {
+    assert.equal(
+      hasWebGL({
+        getContext: () => ({
+          getExtension: () => null,
+          isContextLost: () => true,
+        }),
+      }),
+      false
+    )
+  })
+
+  it('releases the dummy probe with WEBGL_lose_context.loseContext and checks isContextLost', () => {
+    let lost = false
+    let loseCalls = 0
+    const gl = {
+      getExtension: (name: string) => {
+        if (name !== 'WEBGL_lose_context') return null
+        return {
+          loseContext() {
+            loseCalls += 1
+            lost = true
+          },
+        }
+      },
+      isContextLost: () => lost,
+    }
+    assert.equal(
+      hasWebGL({
+        getContext: (id: string) => (id === 'webgl2' ? gl : null),
+      }),
+      true
+    )
+    assert.equal(loseCalls, 1)
+    assert.equal(lost, true)
+    assert.equal(webglContextIsLost(gl), true)
+  })
+})
+
+describe('releaseProbedWebGLContext', () => {
+  it('calls loseContext and returns isContextLost', () => {
+    let lost = false
+    const released = releaseProbedWebGLContext({
+      getExtension: (name: string) =>
+        name === 'WEBGL_lose_context'
+          ? {
+              loseContext() {
+                lost = true
+              },
+            }
+          : null,
+      isContextLost: () => lost,
+    })
+    assert.equal(lost, true)
+    assert.equal(released, true)
   })
 })

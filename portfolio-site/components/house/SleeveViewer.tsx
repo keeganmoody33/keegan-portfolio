@@ -14,6 +14,7 @@ import {
   YADIGGG_CAD_ENVELOPE,
   YADIGGG_CAD_GEOMETRY,
   YADIGGG_GESTURE_HINT,
+  YADIGGG_GESTURE_HINT_TOUCH,
   YADIGGG_LOCKED_FACTS,
   YADIGGG_MODEL_ENVELOPE,
   YADIGGG_POSTER_SRC,
@@ -260,12 +261,12 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
                 loading="lazy"
                 sandbox="allow-scripts allow-same-origin"
                 referrerPolicy="no-referrer"
-                className="absolute inset-0 z-[1] h-full w-full border-0 bg-[var(--bg-body)]"
+                className="absolute inset-0 z-[1] h-full w-full border-0 bg-[var(--house-stage-paper)]"
                 onLoad={onReady}
               />
             ) : null}
             {showChrome && view === 'compare' ? (
-              <figure className="absolute inset-0 z-[1] m-0 bg-[var(--bg-body)] text-center">
+              <figure className="absolute inset-0 z-[1] m-0 bg-[var(--house-stage-paper)] text-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={YADIGGG_REFERENCE_SRC}
@@ -275,7 +276,7 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
               </figure>
             ) : null}
             {showStudy && viewer.mode === 'port' && !canvasReady && view !== 'compare' ? (
-              <p className="pointer-events-none absolute inset-x-0 top-[45%] z-[3] text-center font-mono text-[11px] text-[var(--text-bright)]">
+              <p className="pointer-events-none absolute inset-x-0 top-[45%] z-[3] text-center font-mono text-[11px] text-[var(--house-stage-ink)]">
                 loading the model…
               </p>
             ) : null}
@@ -307,7 +308,8 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
                       </button>
                     ))}
                   </div>
-                  <p className="house-meta">{YADIGGG_GESTURE_HINT}</p>
+                  <p className="house-meta hidden sm:block">{YADIGGG_GESTURE_HINT}</p>
+                  <p className="house-meta sm:hidden">{YADIGGG_GESTURE_HINT_TOUCH}</p>
                 </>
               ) : null}
             </div>

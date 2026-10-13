@@ -52,13 +52,14 @@ export const YADIGGG_REFERENCE_SRC = '/catalog/yadiggg/reference.jpg'
 export const YADIGGG_POSTER_SRC = '/catalog/yadiggg/poster.jpg'
 
 /**
- * Drafting-table paper. Person-light `--bg-body` (FRONTEND_GUIDELINES: "warm paper").
- * No named Electroscrum token set exists in the repo; this is the lightest
- * beige/paper token. Do not invent a new hex.
+ * Drafting-table paper. Matches CSS `--house-stage-paper` (person-light
+ * `--bg-body`, FRONTEND_GUIDELINES: "warm paper"). No named Electroscrum
+ * token set exists; this is the lightest beige/paper token. Do not invent a
+ * new hex. Three.js cannot read CSS vars — keep this in lockstep with globals.
  */
 export const YADIGGG_STAGE_PAPER = '#E8E2D2'
 
-/** Person-light `--text-bright` — ink on the drafting table. */
+/** Matches CSS `--house-stage-ink` (person-light `--text-bright`). */
 export const YADIGGG_STAGE_INK = '#2B241D'
 export const YADIGGG_MODEL_ENVELOPE = {
   value: YADIGGG_CAD_ENVELOPE,
@@ -114,6 +115,9 @@ export const YADIGGG_RAIL_FALLBACK =
 
 export const YADIGGG_GESTURE_HINT =
   'drag or two-finger orbit · pinch to zoom · focus or ctrl+scroll to zoom'
+
+/** Below `sm` (640px): no drag / ctrl+scroll copy. */
+export const YADIGGG_GESTURE_HINT_TOUCH = 'two-finger orbit · pinch to zoom'
 
 export type PartReadout = {
   label: string

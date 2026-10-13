@@ -20,7 +20,7 @@ All versions are pinned from `portfolio-site/package-lock.json`.
 | posthog-node | 5.21.2 | Server-side analytics (API routes via lib/posthog-server.ts) |
 | @jam.dev/sdk | 1.0.1 | Jam session recording metadata client |
 
-**3D (already in package.json, not a new install):** `three`, `@react-three/fiber`, `@react-three/drei` remain for `TurntableCanvas.tsx` (unmounted) and the yadiggg sleeve study (`YadigggViewer.tsx`, loaded with `next/dynamic` `{ ssr: false }` only from `app/(house)/catalog/yadiggg/page.tsx`). `[slug]` and `Sleeve.tsx` never import `SleeveViewer`, so `/`, `/catalog`, and other sleeves stay +0. Do not add three.js to the homepage bundle. Assets extracted from the public prod workbench HTML (no standalone URLs existed): `public/catalog/yadiggg/yadiggg_r1.glb`, `reference.jpg`, plus a paper-ground device `poster.jpg` (not the cream cover).
+**3D (already in package.json, not a new install):** `three`, `@react-three/fiber`, `@react-three/drei` remain for `TurntableCanvas.tsx` (unmounted) and the yadiggg sleeve study (`YadigggViewer.tsx`, loaded with `next/dynamic` `{ ssr: false }` only from `app/(house)/catalog/yadiggg/page.tsx`). `[slug]` and `Sleeve.tsx` never import `SleeveViewer`, so `/`, `/catalog`, and other sleeves stay +0. Do not add three.js to the homepage bundle. Assets extracted from the public prod workbench HTML (no standalone URLs existed): `public/catalog/yadiggg/yadiggg_r1.glb`, `reference.jpg`, plus a 2× live-canvas paper-ground `poster.jpg` (alpha composite, not the cream cover). Dummy WebGL probes call `WEBGL_lose_context.loseContext()`; the R3F `gl` factory never rethrows on a lost context.
 
 ---
 

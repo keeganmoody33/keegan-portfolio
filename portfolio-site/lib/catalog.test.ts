@@ -10,7 +10,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { getCrateRows, getSharedCatalogSlugParams, getSleeveBySlug, sleeves } from './catalog.ts'
+import { crateLinkPrefetch, getCrateRows, getSharedCatalogSlugParams, getSleeveBySlug, sleeves } from './catalog.ts'
 import { isBlockedViewerSrc } from './yadiggg-viewer.ts'
 
 describe('yadiggg catalog wiring', () => {
@@ -18,6 +18,14 @@ describe('yadiggg catalog wiring', () => {
     const row = getCrateRows().find((entry) => entry.kind === 'sleeve' && entry.sleeve.slug === 'yadiggg')
     assert.ok(row)
     assert.equal(row.href, '/catalog/yadiggg')
+  })
+
+  it('does not prefetch yadiggg from the / and /catalog crate links', () => {
+    assert.equal(crateLinkPrefetch('/catalog/yadiggg'), false)
+    assert.equal(crateLinkPrefetch('/collection'), false)
+    assert.equal(crateLinkPrefetch('/catalog/punch2pen'), undefined)
+    const crate = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'components/house/Crate.tsx'), 'utf8')
+    assert.match(crate, /crateLinkPrefetch\(row\.href\)/)
   })
 
   it('sets a ported viewer only on yadiggg', () => {

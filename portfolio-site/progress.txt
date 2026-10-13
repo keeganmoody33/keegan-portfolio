@@ -1,3 +1,9 @@
+COMPLETED (2026-10-13 — context-loss + stage tokens batch, PR #75 preview only):
+- Same branch. Draft. Do not merge.
+- QA: `gl` factory never rethrows (stub with `.render` → poster). `webglcontextlost` preventDefault + poster/error/hide chrome; restore stays on poster. Dummy probe calls `WEBGL_lose_context.loseContext()` and checks `isContextLost`. Tests: lost-on-create, lost-after-mount, probe release.
+- P1: stage focus `outline-offset: -4px` on `--house-stage-ink` (11.8:1 on paper).
+- P2: `--house-stage-paper` / `--house-stage-ink` defined once; crate `prefetch={false}` for `/catalog/yadiggg`; mode-row `5.75rem` through 950px; 2× live-canvas poster; grid 10%/28% + fade behind device; stronger hover/select (emissive + ink edge); below-sm hint `two-finger orbit · pinch to zoom`.
+
 COMPLETED (2026-10-13 — drafting-table stage + WebGL probe, PR #75 preview only):
 - Same branch. No named Electroscrum token set; stage uses person-light `--bg-body` `#E8E2D2` (warm paper) + `--text-bright` `#2B241D` ink. Fine minor + heavier major grid, mm ticks, corner crop marks. Transparent canvas; lighting and `#000` `frames={1}` contact shadow tuned for the light ground. `poster.jpg` re-rendered on that ground. Overlay copy AA on paper.
 - QA: probe `getExtension` before Canvas + guarded `gl` factory. Dedicated `/catalog/yadiggg` page so `[slug]` / `Sleeve.tsx` never import `SleeveViewer`. Reserve mode/preset row height until WebGL confirms; drop chrome in fallback. Static fallback readout (no "hover or click"). Pinch dolly + gesture hint. `what is modeled?` summary `min-h-11`. Lowercase copy; LCD 1px border.

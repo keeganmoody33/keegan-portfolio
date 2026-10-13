@@ -186,6 +186,12 @@ function crateHref(sleeve: Sleeve): string {
   return `/catalog/${sleeve.slug}`
 }
 
+/** Collection and the yadiggg study are heavy; `/` and `/catalog` must not prefetch them. */
+export function crateLinkPrefetch(href: string): false | undefined {
+  if (href === '/collection' || href === '/catalog/yadiggg') return false
+  return undefined
+}
+
 function crateLabel(sleeve: Sleeve): string {
   if (sleeve.format === 'crate') return 'live'
   return sleeve.status

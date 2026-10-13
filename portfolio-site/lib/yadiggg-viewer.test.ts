@@ -5,6 +5,9 @@
 
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { isCandidateAControl, partByName, YADIGGG_PARTS } from './yadiggg-parts.ts'
 import {
   CAMERA_PRESET_BUTTONS,
@@ -12,6 +15,7 @@ import {
   PART_READOUT_IDLE,
   SLEEVE_VIEW_MODES,
   YADIGGG_GESTURE_HINT,
+  YADIGGG_GESTURE_HINT_TOUCH,
   YADIGGG_LOCKED_FACTS,
   YADIGGG_MODEL_ENVELOPE,
   YADIGGG_POSTER_SRC,
@@ -88,6 +92,18 @@ describe('drafting-table tokens', () => {
     assert.equal(YADIGGG_STAGE_PAPER, '#E8E2D2')
     assert.equal(YADIGGG_STAGE_INK, '#2B241D')
   })
+
+  it('defines --house-stage-paper / --house-stage-ink once and uses them on the stage', () => {
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'app/globals.css'), 'utf8')
+    assert.match(css, /--house-stage-paper:\s*#E8E2D2/)
+    assert.match(css, /--house-stage-ink:\s*#2B241D/)
+    assert.match(css, /background-color:\s*var\(--house-stage-paper\)/)
+    assert.match(css, /outline-offset:\s*-4px/)
+    assert.match(css, /--house-stage-ink\) 10%/)
+    assert.match(css, /--house-stage-ink\) 28%/)
+    assert.match(css, /@media \(min-width: 951px\)/)
+    assert.doesNotMatch(css, /\.house-sleeve-modes[\s\S]{0,80}@media \(min-width: 640px\)/)
+  })
 })
 
 describe('shouldShowViewerChrome', () => {
@@ -120,6 +136,8 @@ describe('fallback copy', () => {
     assert.doesNotMatch(YADIGGG_RAIL_FALLBACK, /hover or click/i)
     assert.match(PART_READOUT_IDLE.note, /hover or click/)
     assert.match(YADIGGG_GESTURE_HINT, /pinch/)
+    assert.equal(YADIGGG_GESTURE_HINT_TOUCH, 'two-finger orbit · pinch to zoom')
+    assert.doesNotMatch(YADIGGG_GESTURE_HINT_TOUCH, /drag|ctrl/i)
   })
 })
 

@@ -189,6 +189,10 @@ html:has(.house[data-theme="light"]) {
   --house-line: #242424;    /*  1.28:1  hairlines only */
   --house-orange: #e23d00;  /*  4.62:1  the one key: hover, issue plates */
 
+  /* Drafting-table island (yadiggg). Person-light paper + ink; defined once. */
+  --house-stage-paper: #E8E2D2;
+  --house-stage-ink: #2B241D;
+
   /* add ons, official Sep 27 2026. Same in both modes. */
   --house-stripe-red: #ea4d30;
   --house-stripe-orange: #ec7c3a;
@@ -307,14 +311,13 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
 
   /* Reserved stage for the optional sleeve 3D study (yadiggg). Holds the poster
      so the canvas overlay cannot collapse layout. Tailwind does not scan lib/.
-     Drafting-table window: person-light warm-paper tokens. No named Electroscrum
-     set exists; `--bg-body` #E8E2D2 is the lightest beige/paper in the repo.
-     Remap those tokens locally so the island reads on house dark. */
+     Drafting-table window: `--house-stage-paper` / `--house-stage-ink` (person-light
+     warm paper + ink). No named Electroscrum set exists. */
   .house-sleeve-stage {
-    --bg-body: #E8E2D2;
+    --bg-body: var(--house-stage-paper);
     --bg-surface: #DCD5C3;
     --border-dim: #C5BCAE;
-    --text-bright: #2B241D;
+    --text-bright: var(--house-stage-ink);
     --text-main: #42382F;
     --text-muted: #857A6E;
     --grid-line: #DCD5C3;
@@ -322,16 +325,18 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
     min-height: 280px;
     max-width: 860px;
     isolation: isolate;
-    background-color: var(--bg-body);
-    color: var(--text-bright);
+    background-color: var(--house-stage-paper);
+    color: var(--house-stage-ink);
   }
 
+  /* Offset sits on the paper (11.8:1), not the #0a0a0a page. */
   .house-sleeve-stage:focus-visible {
-    outline: 2px solid var(--text-bright);
-    outline-offset: 2px;
+    outline: 2px solid var(--house-stage-ink);
+    outline-offset: -4px;
   }
 
-  /* Fine minor grid (~2 mm) + heavier major grid (~10 mm). Ink is --text-bright. */
+  /* Fine minor grid (~10%) + heavier major (~28%). Fade behind the device so
+     the smoke shell outline reads. Ink is --house-stage-ink. */
   .house-sleeve-stage::before {
     content: "";
     position: absolute;
@@ -341,24 +346,26 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
     background-image:
       repeating-linear-gradient(
         to right,
-        color-mix(in srgb, var(--text-bright) 18%, transparent) 0 1px,
+        color-mix(in srgb, var(--house-stage-ink) 10%, transparent) 0 1px,
         transparent 1px 8px
       ),
       repeating-linear-gradient(
         to bottom,
-        color-mix(in srgb, var(--text-bright) 18%, transparent) 0 1px,
+        color-mix(in srgb, var(--house-stage-ink) 10%, transparent) 0 1px,
         transparent 1px 8px
       ),
       repeating-linear-gradient(
         to right,
-        color-mix(in srgb, var(--text-bright) 46%, transparent) 0 1px,
+        color-mix(in srgb, var(--house-stage-ink) 28%, transparent) 0 1px,
         transparent 1px 40px
       ),
       repeating-linear-gradient(
         to bottom,
-        color-mix(in srgb, var(--text-bright) 46%, transparent) 0 1px,
+        color-mix(in srgb, var(--house-stage-ink) 28%, transparent) 0 1px,
         transparent 1px 40px
       );
+    -webkit-mask-image: radial-gradient(ellipse 56% 60% at 50% 48%, transparent 0 42%, #000 78%);
+    mask-image: radial-gradient(ellipse 56% 60% at 50% 48%, transparent 0 42%, #000 78%);
   }
 
   /* Corner crop marks + mm ticks along the top and left edges. */
@@ -369,32 +376,32 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
     z-index: 2;
     pointer-events: none;
     background-image:
-      linear-gradient(var(--text-bright), var(--text-bright)),
-      linear-gradient(var(--text-bright), var(--text-bright)),
-      linear-gradient(var(--text-bright), var(--text-bright)),
-      linear-gradient(var(--text-bright), var(--text-bright)),
-      linear-gradient(var(--text-bright), var(--text-bright)),
-      linear-gradient(var(--text-bright), var(--text-bright)),
-      linear-gradient(var(--text-bright), var(--text-bright)),
-      linear-gradient(var(--text-bright), var(--text-bright)),
+      linear-gradient(var(--house-stage-ink), var(--house-stage-ink)),
+      linear-gradient(var(--house-stage-ink), var(--house-stage-ink)),
+      linear-gradient(var(--house-stage-ink), var(--house-stage-ink)),
+      linear-gradient(var(--house-stage-ink), var(--house-stage-ink)),
+      linear-gradient(var(--house-stage-ink), var(--house-stage-ink)),
+      linear-gradient(var(--house-stage-ink), var(--house-stage-ink)),
+      linear-gradient(var(--house-stage-ink), var(--house-stage-ink)),
+      linear-gradient(var(--house-stage-ink), var(--house-stage-ink)),
       repeating-linear-gradient(
         to right,
-        color-mix(in srgb, var(--text-bright) 72%, transparent) 0 1px,
+        color-mix(in srgb, var(--house-stage-ink) 72%, transparent) 0 1px,
         transparent 1px 8px
       ),
       repeating-linear-gradient(
         to right,
-        var(--text-bright) 0 1px,
+        var(--house-stage-ink) 0 1px,
         transparent 1px 40px
       ),
       repeating-linear-gradient(
         to bottom,
-        color-mix(in srgb, var(--text-bright) 72%, transparent) 0 1px,
+        color-mix(in srgb, var(--house-stage-ink) 72%, transparent) 0 1px,
         transparent 1px 8px
       ),
       repeating-linear-gradient(
         to bottom,
-        var(--text-bright) 0 1px,
+        var(--house-stage-ink) 0 1px,
         transparent 1px 40px
       );
     background-size:
@@ -500,6 +507,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
     color: var(--house-dim);
   }
 
+  /* Keep 5.75rem through 950px so wrapped mode chips do not CLS. */
   .house-sleeve-modes {
     min-height: 5.75rem;
   }
@@ -508,7 +516,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
     min-height: 5.75rem;
   }
 
-  @media (min-width: 640px) {
+  @media (min-width: 951px) {
     .house-sleeve-modes,
     .house-sleeve-presets {
       min-height: 2.5rem;
