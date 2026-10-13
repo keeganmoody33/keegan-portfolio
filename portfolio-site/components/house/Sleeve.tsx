@@ -10,26 +10,12 @@ function SquareCover({ sleeve }: { sleeve: SleeveRecord }) {
   )
 }
 
-function WordmarkCover({ sleeve }: { sleeve: SleeveRecord }) {
-  if (!sleeve.cover) return null
+function WordmarkCover() {
   return (
     <figure className="house-sleeve-wordmark">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={sleeve.cover} alt="yadiggg wordmark" />
+      <img src="/catalog/yadiggg/wordmark.png" alt="yadiggg" />
     </figure>
-  )
-}
-
-function StudyHeader({ sleeve }: { sleeve: SleeveRecord }) {
-  return (
-    <header className="mb-5">
-      <p className="house-meta">
-        {sleeve.catno} · {sleeve.format} · {sleeve.year}
-      </p>
-      <h1 className="mt-1 font-display text-xl font-semibold leading-tight tracking-[-0.01em] sm:text-2xl">
-        {sleeve.title}
-      </h1>
-    </header>
   )
 }
 
@@ -111,9 +97,16 @@ export default function Sleeve({ sleeve, study }: { sleeve: SleeveRecord; study?
   if (study) {
     return (
       <article>
-        <StudyHeader sleeve={sleeve} />
         {study}
-        <WordmarkCover sleeve={sleeve} />
+        <header className="mt-10">
+          <p className="house-meta">
+            {sleeve.catno} · {sleeve.format} · {sleeve.year}
+          </p>
+          <h1 className="mt-4 font-display text-4xl font-semibold tracking-[-0.01em] sm:text-6xl">
+            {sleeve.title}
+          </h1>
+        </header>
+        <WordmarkCover />
         <StudyNotes sleeve={sleeve} />
         {contents}
       </article>

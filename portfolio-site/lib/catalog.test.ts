@@ -41,9 +41,13 @@ describe('yadiggg catalog wiring', () => {
     )
   })
 
-  it('lands yadiggg on a thin H1 liner, then the study, then wordmark and notes', () => {
+  it('lands yadiggg on the study, then H1, then Keegan wordmark and notes', () => {
     const sleeve = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '..', 'components/house/Sleeve.tsx'),
+      'utf8'
+    )
+    const viewer = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '..', 'components/house/SleeveViewer.tsx'),
       'utf8'
     )
     const css = readFileSync(
@@ -54,23 +58,28 @@ describe('yadiggg catalog wiring', () => {
     const studyReturn = sleeve.indexOf('return (', ifStudy)
     const otherReturn = sleeve.indexOf('return (', studyReturn + 1)
     const studyBranch = sleeve.slice(ifStudy, otherReturn)
-    assert.match(studyBranch, /StudyHeader/)
     assert.match(studyBranch, /\{study\}/)
+    assert.match(studyBranch, /<h1/)
     assert.match(studyBranch, /WordmarkCover/)
     assert.match(studyBranch, /StudyNotes/)
-    assert.ok(studyBranch.indexOf('StudyHeader') < studyBranch.indexOf('{study}'))
-    assert.ok(studyBranch.indexOf('{study}') < studyBranch.indexOf('WordmarkCover'))
+    assert.ok(studyBranch.indexOf('{study}') < studyBranch.indexOf('<h1'))
+    assert.ok(studyBranch.indexOf('<h1') < studyBranch.indexOf('WordmarkCover'))
     assert.ok(studyBranch.indexOf('WordmarkCover') < studyBranch.indexOf('StudyNotes'))
+    assert.doesNotMatch(studyBranch, /StudyHeader/)
     assert.doesNotMatch(studyBranch, /SquareCover/)
     assert.doesNotMatch(studyBranch, /aspect-square/)
     assert.doesNotMatch(studyBranch, /<Liner/)
     assert.match(sleeve, /function SquareCover/)
-    assert.match(sleeve, /alt="yadiggg wordmark"/)
+    assert.match(sleeve, /src="\/catalog\/yadiggg\/wordmark\.png"/)
+    assert.match(sleeve, /alt="yadiggg"/)
+    assert.doesNotMatch(sleeve, /alt="yadiggg wordmark"/)
+    assert.doesNotMatch(viewer, /<h[1-6]\b/)
     assert.match(css, /\.house-sleeve-wordmark/)
     assert.match(css, /width: max-content/)
-    assert.match(css, /aspect-ratio: 741 \/ 182/)
-    assert.match(css, /\.house-sleeve-wordmark[\s\S]{0,400}background-color:\s*transparent/)
+    assert.match(css, /aspect-ratio: 360 \/ 112/)
+    assert.match(css, /\.house-sleeve-wordmark[\s\S]{0,500}background-color:\s*var\(--house-stage-paper\)/)
     assert.doesNotMatch(css, /#fdfaf5/)
+    assert.doesNotMatch(css, /aspect-ratio: 741 \/ 182/)
   })
 
   it('keeps SleeveViewer off the shared slug route and Sleeve shell', () => {

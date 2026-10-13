@@ -180,9 +180,9 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="house-meta">01 / physical study</p>
-              <h2 className="mt-2 font-display text-[clamp(1.6rem,3vw,2.5rem)] font-semibold leading-[1.05] tracking-[-0.01em]">
+              <p className="mt-2 font-display text-[clamp(1.6rem,3vw,2.5rem)] font-semibold leading-[1.05] tracking-[-0.01em]">
                 made for the dig.
-              </h2>
+              </p>
               <p className="mt-2 max-w-md font-mono text-[12px] leading-relaxed text-[var(--house-muted)]">
                 a revised allocation. an interaction to try.
               </p>
@@ -336,9 +336,9 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
 
         <aside className="house-sleeve-rail">
           <p className="house-meta">02 / allocation</p>
-          <h3 className="mt-2 font-display text-[1.45rem] font-semibold leading-[1.15] tracking-[-0.01em]">
+          <p className="mt-2 font-display text-[1.45rem] font-semibold leading-[1.15] tracking-[-0.01em]">
             locked product.
-          </h3>
+          </p>
           <p className="mt-3 font-mono text-[12px] leading-relaxed text-[var(--house-muted)]">{railCopy}</p>
 
           <div className="house-sleeve-lcd mt-6" aria-label="Device facts readout" aria-live="polite">
@@ -346,7 +346,7 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
               <span>YADIGGG / R1</span>
               <span>{viewLabel}</span>
             </div>
-            <h4>{readout.label}</h4>
+            <p className="house-sleeve-lcd-title">{readout.label}</p>
             <p>{readout.note}</p>
             <ol>
               {YADIGGG_LOCKED_FACTS.map((fact, index) => (

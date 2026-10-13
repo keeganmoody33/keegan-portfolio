@@ -1,3 +1,9 @@
+COMPLETED (2026-10-13 — Keegan: study first, then H1, then his wordmark, PR #75 preview only):
+- Same branch. Draft. Do not merge.
+- Reverted the thin H1 liner above the study. Order: 3D study → H1 `yadiggg` → Keegan wordmark → notes. Study chrome is not headings so the outline starts at H1. Recorded in APP_FLOW / FRONTEND_GUIDELINES / lessons.
+- Wordmark is `/catalog/yadiggg/wordmark.png` (360×112 shovel/signal + yadiggg, cream knocked out). Plate `--house-stage-paper`. Alt exactly `yadiggg`.
+- Kept empty reserved fallback rows and `queueStudyError` timer clear.
+
 COMPLETED (2026-10-13 — UX/UI review pass: H1 liner, fallback CLS, wordmark plate, PR #75 preview only):
 - Same branch. Draft. Do not merge. Rebased onto main `3b46efa` (#76, Next 16.4.0).
 - Thin liner header above the study: cat no · format · year + compact H1 `yadiggg` (one or two lines). Study stays essentially first. Notes + skinny wordmark follow. Heading order starts at H1.
