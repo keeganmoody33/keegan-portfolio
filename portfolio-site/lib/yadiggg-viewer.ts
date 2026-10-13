@@ -92,7 +92,7 @@ export function shouldShowViewerChrome(
   return webgl === true
 }
 
-/** Reserve mode/preset chip overlays only while the WebGL probe is in flight (or the study is live). Collapse them on fallback; `.house-sleeve-stage-stack` already includes both chrome tracks so the poster fills one surface. */
+/** Reserve mode/preset chip overlays only while the WebGL probe is in flight (or the study is live). Collapse them on fallback; `.house-sleeve-stage-stack` already includes both chrome tracks so the cover-cropped poster fills one surface (CSS ruler hidden). */
 export function shouldReserveViewerChrome(
   fallback: ViewerFallbackReason | null,
   webgl: boolean | null,

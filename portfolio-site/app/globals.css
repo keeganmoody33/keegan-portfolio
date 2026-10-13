@@ -331,8 +331,9 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
      Drafting-table window: `--house-stage-paper` / `--house-stage-ink` (person-light
      warm paper + ink). No named Electroscrum set exists.
      Stack height is always stage + both chrome tracks. The stage spans the
-     stack; live chips overlay the tracks. Fallback drops the overlays so the
-     poster is one surface — the well box never moves (CLS). */
+     stack; live chips overlay the tracks. Fallback drops the overlays and the
+     CSS grid/ruler so the cover-cropped poster is one surface — the well box
+     never moves (CLS). Mode row is first in the DOM (WCAG 2.4.3). */
   .house-sleeve-stage-stack {
     position: relative;
     display: grid;
@@ -418,10 +419,32 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
     object-fit: contain;
   }
 
-  /* Offset sits on the paper (11.8:1), not the #0a0a0a page. */
+  /* Inset to the live canvas so mode/camera rows do not cover the ring (2.4.7).
+     Offset sits on the paper (11.8:1), not the #0a0a0a page. */
+  .house-sleeve-focus-ring {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+  }
+
+  .house-sleeve-stage-stack:not(.house-sleeve-stage-stack-fallback) .house-sleeve-focus-ring {
+    top: var(--house-sleeve-modes-track);
+    bottom: var(--house-sleeve-presets-track);
+  }
+
   .house-sleeve-stage:focus-visible {
+    outline: none;
+  }
+
+  .house-sleeve-stage:focus-visible .house-sleeve-focus-ring {
     outline: 2px solid var(--house-stage-ink);
     outline-offset: -4px;
+  }
+
+  .house-sleeve-stage-stack-fallback .house-sleeve-stage::before,
+  .house-sleeve-stage-stack-fallback .house-sleeve-stage::after {
+    content: none;
   }
 
   /* Fine minor grid (~10%) + heavier major (~28%). Fade behind the device so

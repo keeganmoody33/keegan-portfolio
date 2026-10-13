@@ -161,6 +161,10 @@ describe('shouldReserveViewerChrome', () => {
     assert.match(css, /\.house-sleeve-stage-stack/)
     assert.match(css, /\.house-sleeve-stage-stack-fallback/)
     assert.match(css, /grid-row:\s*1\s*\/\s*-1/)
+    assert.match(
+      css,
+      /\.house-sleeve-stage-stack-fallback \.house-sleeve-stage::before[\s\S]{0,80}content:\s*none/
+    )
     assert.doesNotMatch(css, /house-sleeve-modes-pad-fallback/)
     assert.doesNotMatch(css, /house-sleeve-presets-pad-fallback/)
     const viewer = readFileSync(
@@ -170,6 +174,16 @@ describe('shouldReserveViewerChrome', () => {
     assert.match(viewer, /house-sleeve-stage-stack/)
     assert.match(viewer, /house-sleeve-modes-pad/)
     assert.match(viewer, /house-sleeve-presets-pad/)
+    const modesIdx = viewer.indexOf('house-sleeve-modes-pad')
+    const stageIdx = viewer.indexOf('className="house-sleeve-stage ')
+    const presetsIdx = viewer.indexOf('house-sleeve-presets-pad')
+    assert.ok(modesIdx > 0 && stageIdx > modesIdx && presetsIdx > stageIdx)
+    assert.match(viewer, /house-sleeve-focus-ring/)
+    assert.match(css, /\.house-sleeve-focus-ring/)
+    assert.match(
+      css,
+      /\.house-sleeve-stage:focus-visible \.house-sleeve-focus-ring[\s\S]{0,80}outline-offset:\s*-4px/
+    )
     assert.match(viewer, /aria-labelledby="yadiggg-study-heading"/)
     assert.match(viewer, /aria-labelledby="yadiggg-rail-heading"/)
   })
@@ -206,7 +220,9 @@ describe('portrait poster', () => {
     const viewer = readFileSync(join(root, 'components/house/SleeveViewer.tsx'), 'utf8')
     assert.match(viewer, /media="\(max-width: 639px\)"/)
     assert.match(viewer, /YADIGGG_POSTER_PORTRAIT_SRC/)
-    assert.match(viewer, /sm:object-contain/)
+    assert.match(viewer, /object-cover object-center/)
+    assert.doesNotMatch(viewer, /sm:object-contain/)
+    assert.doesNotMatch(viewer, /eslint-disable-next-line @next\/next\/no-img-element[\s\S]{0,80}<img src=\{src\}/)
   })
 })
 

@@ -1,3 +1,9 @@
+COMPLETED (2026-10-13 — 1280 poster surface + focus order, PR #75 preview only):
+- Same branch. Draft. Do not merge.
+- Cover-crop `poster.jpg` (`object-cover`, drop `sm:object-contain`) and hide fallback CSS `::before`/`::after` so the 1720×840 asset fills the ~1.48:1 stack as one surface (no letterbox seams, no doubled ruler).
+- Mode row first in the DOM so Tab matches visual order (WCAG 2.4.3).
+- `.house-sleeve-focus-ring` inset to the live canvas tracks so mode/camera rows do not cover it (WCAG 2.4.7). Drop unused eslint-disable on the picture img. Target CLS < 0.01.
+
 COMPLETED (2026-10-13 — UX P2 last pass, PR #75 preview only):
 - Same branch. Draft. Do not merge.
 - Fallback folds reserved chrome into `.house-sleeve-stage-stack` (stage spans the stack from first paint; live chips overlay; fallback drops overlays). Poster is one surface — no paper tiles / floating strip. Target CLS < 0.01.

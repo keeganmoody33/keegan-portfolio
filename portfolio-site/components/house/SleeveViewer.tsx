@@ -72,8 +72,7 @@ function Poster({
     <figure className={`absolute inset-0 z-0 m-0 ${hidden ? 'opacity-0' : 'opacity-100'}`}>
       <picture>
         <source media="(max-width: 639px)" srcSet={portraitSrc} />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt="" className="h-full w-full object-cover object-center sm:object-contain" />
+        <img src={src} alt="" className="h-full w-full object-cover object-center" />
       </picture>
       <figcaption className="sr-only">{title} study poster</figcaption>
     </figure>
@@ -212,6 +211,30 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
           <div
             className={`house-sleeve-stage-stack${reserveChrome ? '' : ' house-sleeve-stage-stack-fallback'}`}
           >
+            {reserveChrome ? (
+              <div className="house-sleeve-modes-pad">
+                <div
+                  className="house-sleeve-modes flex flex-wrap gap-1"
+                  aria-hidden={!showChrome}
+                  aria-label={showChrome ? 'assembly view' : undefined}
+                >
+                  {showChrome
+                    ? SLEEVE_VIEW_MODES.map((mode) => (
+                        <ModeButton
+                          key={mode.id}
+                          selected={view === mode.id}
+                          label={mode.label}
+                          onClick={() => {
+                            setView(mode.id)
+                            posthog.capture('sleeve_viewer_mode', { view: mode.id })
+                          }}
+                        />
+                      ))
+                    : null}
+                </div>
+              </div>
+            ) : null}
+
             <div
               id={focusRootId}
               tabIndex={showChrome ? 0 : undefined}
@@ -223,6 +246,7 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
               }
               className="house-sleeve-stage relative mt-0 overflow-hidden"
             >
+              <span className="house-sleeve-focus-ring" aria-hidden="true" />
               <Poster
                 src={poster}
                 portraitSrc={YADIGGG_POSTER_PORTRAIT_SRC}
@@ -277,30 +301,6 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
                 </p>
               ) : null}
             </div>
-
-            {reserveChrome ? (
-              <div className="house-sleeve-modes-pad">
-                <div
-                  className="house-sleeve-modes flex flex-wrap gap-1"
-                  aria-hidden={!showChrome}
-                  aria-label={showChrome ? 'assembly view' : undefined}
-                >
-                  {showChrome
-                    ? SLEEVE_VIEW_MODES.map((mode) => (
-                        <ModeButton
-                          key={mode.id}
-                          selected={view === mode.id}
-                          label={mode.label}
-                          onClick={() => {
-                            setView(mode.id)
-                            posthog.capture('sleeve_viewer_mode', { view: mode.id })
-                          }}
-                        />
-                      ))
-                    : null}
-                </div>
-              </div>
-            ) : null}
 
             {reserveChrome ? (
               <div className="house-sleeve-presets-pad">
