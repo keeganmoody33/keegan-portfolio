@@ -192,6 +192,15 @@ html:has(.house[data-theme="light"]) {
   /* Drafting-table island (yadiggg). Person-light paper + ink; defined once. */
   --house-stage-paper: #E8E2D2;
   --house-stage-ink: #2B241D;
+  /* Mode + preset row min-height. Pads keep this height even after the
+     rows collapse; fallback paints them as stage paper so the well top
+     never moves (CLS) and no dark empty band remains. 5.75rem / 2.5rem. */
+  --house-sleeve-stage-h: min(420px, 55vh);
+  --house-sleeve-chrome-row: 5.75rem;
+  --house-sleeve-modes-gap: 1.5rem;
+  --house-sleeve-presets-gap: 0.75rem;
+
+
 
   /* add ons, official Sep 27 2026. Same in both modes. */
   --house-stripe-red: #ea4d30;
@@ -216,6 +225,12 @@ html:has(.house[data-theme="light"]) {
   background: var(--house-bg);
   color: var(--house-ink);
   font-family: var(--house-font-sans);
+}
+
+@media (min-width: 951px) {
+  .house {
+    --house-sleeve-chrome-row: 2.5rem;
+  }
 }
 
 .house[data-theme="light"] {
@@ -316,7 +331,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   .house-sleeve-stage {
     --bg-body: var(--house-stage-paper);
     --text-bright: var(--house-stage-ink);
-    height: min(420px, 55vh);
+    height: var(--house-sleeve-stage-h);
     min-height: 280px;
     max-width: 860px;
     isolation: isolate;
@@ -324,18 +339,41 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
     color: var(--house-stage-ink);
   }
 
+  /* Constant tracks for mode/preset chrome. Empty on fallback; paper fill
+     so the collapsed 5.75rem / 2.5rem sits on the stage, not as a dark band. */
+  .house-sleeve-modes-pad {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: calc(var(--house-sleeve-chrome-row) + var(--house-sleeve-modes-gap));
+    max-width: 860px;
+    background: var(--house-bg);
+  }
+
+  .house-sleeve-presets-pad {
+    min-height: calc(var(--house-sleeve-chrome-row) + var(--house-sleeve-presets-gap));
+    max-width: 860px;
+    background: var(--house-bg);
+  }
+
+  .house-sleeve-modes-pad-fallback,
+  .house-sleeve-presets-pad-fallback {
+    position: relative;
+    overflow: hidden;
+    background: var(--house-stage-paper);
+  }
+
   /* Keegan wordmark (shovel/signal + yadiggg) under the study, after H1.
-     Plate is --house-stage-paper so the dark-on-light mark reads; no raw hex.
-     Asset is 360×112 with knocked-out cream. */
+     PNG is used unchanged (baked cream ground, no knockout). No CSS plate. */
   .house-sleeve-wordmark {
     display: flex;
     align-items: center;
     justify-content: center;
     width: max-content;
     max-width: 100%;
-    padding: 0.75rem 1.25rem;
     margin: 2rem auto 0;
-    background-color: var(--house-stage-paper);
+    padding: 0;
+    background: none;
   }
 
   .house-sleeve-wordmark img {
@@ -360,7 +398,9 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
 
   /* Fine minor grid (~10%) + heavier major (~28%). Fade behind the device so
      the smoke shell outline reads. Ink is --house-stage-ink. */
-  .house-sleeve-stage::before {
+  .house-sleeve-stage::before,
+  .house-sleeve-modes-pad-fallback::before,
+  .house-sleeve-presets-pad-fallback::before {
     content: "";
     position: absolute;
     inset: 0;
@@ -531,19 +571,9 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   }
 
   /* Keep 5.75rem through 950px so wrapped mode chips do not CLS. */
-  .house-sleeve-modes {
-    min-height: 5.75rem;
-  }
-
+  .house-sleeve-modes,
   .house-sleeve-presets {
-    min-height: 5.75rem;
-  }
-
-  @media (min-width: 951px) {
-    .house-sleeve-modes,
-    .house-sleeve-presets {
-      min-height: 2.5rem;
-    }
+    min-height: var(--house-sleeve-chrome-row);
   }
 
   .house-sleeve-lcd {
@@ -636,25 +666,11 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
     .house-sleeve-workbench {
       grid-template-columns: minmax(0, 1fr) 24.375rem;
     }
-
-    .house-sleeve-stage {
-      height: min(420px, 55vh);
-      max-width: 860px;
-    }
-
-    .house-sleeve-modes,
-    .house-sleeve-presets {
-      min-height: 2.5rem;
-    }
   }
 
   @media (max-width: 950px) {
     .house-sleeve-workbench {
       grid-template-columns: minmax(0, 1fr) 19.7rem;
-    }
-
-    .house-sleeve-stage {
-      height: min(420px, 55vh);
     }
 
     .house-sleeve-measure {
@@ -675,10 +691,6 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
 
     .house-sleeve-rail {
       padding: 1.35rem 1.1rem 1.25rem;
-    }
-
-    .house-sleeve-stage {
-      height: min(420px, 55vh);
     }
 
     .house-sleeve-lcd {

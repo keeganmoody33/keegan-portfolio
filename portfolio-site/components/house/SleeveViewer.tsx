@@ -194,6 +194,7 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="house-meta">01 / physical study</p>
+              {/* Not h2: this study is before H1 yadiggg (Keegan: study first). */}
               <p className="mt-2 font-display text-[clamp(1.6rem,3vw,2.5rem)] font-semibold leading-[1.05] tracking-[-0.01em]">
                 made for the dig.
               </p>
@@ -209,27 +210,31 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
             </span>
           </div>
 
-          {reserveChrome ? (
-            <div
-              className="house-sleeve-modes mt-6 flex flex-wrap gap-1"
-              aria-hidden={!showChrome}
-              aria-label={showChrome ? 'assembly view' : undefined}
-            >
-              {showChrome
-                ? SLEEVE_VIEW_MODES.map((mode) => (
-                    <ModeButton
-                      key={mode.id}
-                      selected={view === mode.id}
-                      label={mode.label}
-                      onClick={() => {
-                        setView(mode.id)
-                        posthog.capture('sleeve_viewer_mode', { view: mode.id })
-                      }}
-                    />
-                  ))
-                : null}
-            </div>
-          ) : null}
+          <div
+            className={`house-sleeve-modes-pad${reserveChrome ? '' : ' house-sleeve-modes-pad-fallback'}`}
+          >
+            {reserveChrome ? (
+              <div
+                className="house-sleeve-modes flex flex-wrap gap-1"
+                aria-hidden={!showChrome}
+                aria-label={showChrome ? 'assembly view' : undefined}
+              >
+                {showChrome
+                  ? SLEEVE_VIEW_MODES.map((mode) => (
+                      <ModeButton
+                        key={mode.id}
+                        selected={view === mode.id}
+                        label={mode.label}
+                        onClick={() => {
+                          setView(mode.id)
+                          posthog.capture('sleeve_viewer_mode', { view: mode.id })
+                        }}
+                      />
+                    ))
+                  : null}
+              </div>
+            ) : null}
+          </div>
 
           <div
             id={focusRootId}
@@ -298,37 +303,41 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
           </div>
           <p className="mt-2 font-mono text-[11px] leading-relaxed text-[var(--house-dim)]">{caption}</p>
 
-          {reserveChrome ? (
-            <div className="house-sleeve-presets mt-3 flex flex-wrap items-center justify-between gap-3">
-              {showChrome ? (
-                <>
-                  <div className="flex flex-wrap gap-1" aria-label="camera direction">
-                    {CAMERA_PRESET_BUTTONS.map((button) => (
-                      <button
-                        key={button.id}
-                        type="button"
-                        className={`house-meta min-h-11 px-2.5 py-1 sm:min-h-7 ${focusRing} ${
-                          preset === button.id
-                            ? 'bg-[var(--house-ink)] text-[var(--house-bg)]'
-                            : 'text-[var(--house-muted)] hover:text-[var(--house-orange)]'
-                        }`}
-                        aria-pressed={preset === button.id}
-                        onClick={() => {
-                          setPreset(button.id)
-                          setPresetTick((tick) => tick + 1)
-                          posthog.capture('sleeve_viewer_preset', { preset: button.id })
-                        }}
-                      >
-                        {button.label}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="house-meta hidden sm:block">{YADIGGG_GESTURE_HINT}</p>
-                  <p className="house-meta sm:hidden">{YADIGGG_GESTURE_HINT_TOUCH}</p>
-                </>
-              ) : null}
-            </div>
-          ) : null}
+          <div
+            className={`house-sleeve-presets-pad${reserveChrome ? '' : ' house-sleeve-presets-pad-fallback'}`}
+          >
+            {reserveChrome ? (
+              <div className="house-sleeve-presets flex flex-wrap items-center justify-between gap-3">
+                {showChrome ? (
+                  <>
+                    <div className="flex flex-wrap gap-1" aria-label="camera direction">
+                      {CAMERA_PRESET_BUTTONS.map((button) => (
+                        <button
+                          key={button.id}
+                          type="button"
+                          className={`house-meta min-h-11 px-2.5 py-1 sm:min-h-7 ${focusRing} ${
+                            preset === button.id
+                              ? 'bg-[var(--house-ink)] text-[var(--house-bg)]'
+                              : 'text-[var(--house-muted)] hover:text-[var(--house-orange)]'
+                          }`}
+                          aria-pressed={preset === button.id}
+                          onClick={() => {
+                            setPreset(button.id)
+                            setPresetTick((tick) => tick + 1)
+                            posthog.capture('sleeve_viewer_preset', { preset: button.id })
+                          }}
+                        >
+                          {button.label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="house-meta hidden sm:block">{YADIGGG_GESTURE_HINT}</p>
+                    <p className="house-meta sm:hidden">{YADIGGG_GESTURE_HINT_TOUCH}</p>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
 
           <p className="house-sleeve-readout" aria-live="polite">
             {readout.label} · {readout.note}
@@ -351,6 +360,7 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
 
         <aside className="house-sleeve-rail">
           <p className="house-meta">02 / allocation</p>
+          {/* Not h3: rail copy is still before H1 yadiggg. */}
           <p className="mt-2 font-display text-[1.45rem] font-semibold leading-[1.15] tracking-[-0.01em]">
             locked product.
           </p>

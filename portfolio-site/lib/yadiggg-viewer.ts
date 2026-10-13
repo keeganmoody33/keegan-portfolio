@@ -92,7 +92,7 @@ export function shouldShowViewerChrome(
   return webgl === true
 }
 
-/** Reserve mode/preset row height only while the WebGL probe is in flight (or the study is live). Collapse on fallback so empty ~92px bands do not sit at 375. */
+/** Reserve mode/preset row height only while the WebGL probe is in flight (or the study is live). Collapse chip content on fallback; `.house-sleeve-modes-pad` / `.house-sleeve-presets-pad` keep the 5.75rem / 2.5rem tracks and paint them as stage paper. */
 export function shouldReserveViewerChrome(
   fallback: ViewerFallbackReason | null,
   webgl: boolean | null,

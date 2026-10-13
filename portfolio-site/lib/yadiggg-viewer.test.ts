@@ -5,6 +5,7 @@
 
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -120,6 +121,7 @@ describe('drafting-table tokens', () => {
     assert.match(css, /--house-stage-ink\) 28%/)
     assert.match(css, /@media \(min-width: 951px\)/)
     assert.doesNotMatch(css, /\.house-sleeve-modes[\s\S]{0,80}@media \(min-width: 640px\)/)
+    assert.match(css, /--house-sleeve-chrome-row:\s*5\.75rem/)
     assert.doesNotMatch(css, /#fdfaf5/)
   })
 })
@@ -147,6 +149,34 @@ describe('shouldReserveViewerChrome', () => {
     assert.equal(shouldReserveViewerChrome('no-webgl', false, 'port'), false)
     assert.equal(shouldReserveViewerChrome('error', true, 'port'), false)
     assert.equal(shouldReserveViewerChrome('blocked', null, 'iframe'), false)
+  })
+
+  it('keeps collapsed row height on paper pads so the well does not move', () => {
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'app/globals.css'), 'utf8')
+    assert.match(css, /--house-sleeve-chrome-row:\s*5\.75rem/)
+    assert.match(css, /@media \(min-width: 951px\)[\s\S]{0,120}--house-sleeve-chrome-row:\s*2\.5rem/)
+    assert.match(css, /--house-sleeve-modes-gap:\s*1\.5rem/)
+    assert.match(css, /--house-sleeve-presets-gap:\s*0\.75rem/)
+    assert.match(css, /\.house-sleeve-modes-pad-fallback/)
+    assert.match(css, /\.house-sleeve-presets-pad-fallback/)
+    const viewer = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '..', 'components/house/SleeveViewer.tsx'),
+      'utf8'
+    )
+    assert.match(viewer, /house-sleeve-modes-pad/)
+    assert.match(viewer, /house-sleeve-presets-pad/)
+  })
+})
+
+describe('keegan wordmark png', () => {
+  it('is the unmodified 360×112 shovel/signal lockup', () => {
+    const png = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '..', 'public/catalog/yadiggg/wordmark.png')
+    )
+    assert.equal(createHash('sha256').update(png).digest('hex'), 'a7a5df6fc85ac927d31a8dd4ca057c63330e45ee302a908c4acffccee5311667')
+    assert.equal(png.readUInt32BE(16), 360)
+    assert.equal(png.readUInt32BE(20), 112)
+    assert.equal(png[25], 6)
   })
 })
 
