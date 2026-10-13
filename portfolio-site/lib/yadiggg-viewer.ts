@@ -90,15 +90,15 @@ export function shouldShowViewerChrome(
   return webgl === true
 }
 
-/** Keep mode/preset row height while the WebGL probe is in flight (no CLS). */
+/** Keep mode/preset row height while the WebGL probe is in flight and in no-WebGL / lost-on-create fallbacks (no CLS). Drop only when the src is blocked. */
 export function shouldReserveViewerChrome(
   fallback: ViewerFallbackReason | null,
   webgl: boolean | null,
   mode: 'port' | 'iframe'
 ): boolean {
-  if (fallback !== null) return false
+  if (fallback === 'blocked') return false
   if (mode === 'iframe') return true
-  return webgl === null || webgl === true
+  return webgl === null || webgl === true || fallback === 'no-webgl' || fallback === 'error'
 }
 
 export const PART_READOUT_DEFAULT =

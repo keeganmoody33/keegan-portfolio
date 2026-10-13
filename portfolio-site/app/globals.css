@@ -325,8 +325,8 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   }
 
   /* Square cream cover cropped to the horizontal lockup, under the 3D study.
-     Plate hugs the mark so it reads as a skinny wordmark, not a 1:1 hero
-     and not a full-width empty cream field. Lockup is 741×182 in the 1024 cover. */
+     Transparent plate — no untokened cream hex. Hugs the mark so it reads as
+     a skinny wordmark, not a 1:1 hero. Lockup is 741×182 in the 1024 cover. */
   .house-sleeve-wordmark {
     display: flex;
     align-items: center;
@@ -336,7 +336,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
     height: 3.25rem;
     padding: 0 1.25rem;
     margin: 2rem auto 0;
-    background-color: #fdfaf5;
+    background-color: transparent;
   }
 
   .house-sleeve-wordmark img {

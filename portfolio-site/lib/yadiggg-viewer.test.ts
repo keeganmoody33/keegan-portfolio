@@ -103,6 +103,7 @@ describe('drafting-table tokens', () => {
     assert.match(css, /--house-stage-ink\) 28%/)
     assert.match(css, /@media \(min-width: 951px\)/)
     assert.doesNotMatch(css, /\.house-sleeve-modes[\s\S]{0,80}@media \(min-width: 640px\)/)
+    assert.doesNotMatch(css, /#fdfaf5/)
   })
 })
 
@@ -125,8 +126,13 @@ describe('shouldReserveViewerChrome', () => {
     assert.equal(shouldReserveViewerChrome(null, true, 'port'), true)
   })
 
-  it('drops the reserved rows in fallback', () => {
-    assert.equal(shouldReserveViewerChrome('no-webgl', false, 'port'), false)
+  it('keeps the reserved rows empty in no-WebGL and lost-on-create fallbacks', () => {
+    assert.equal(shouldReserveViewerChrome('no-webgl', false, 'port'), true)
+    assert.equal(shouldReserveViewerChrome('error', true, 'port'), true)
+  })
+
+  it('drops the reserved rows when the src is blocked', () => {
+    assert.equal(shouldReserveViewerChrome('blocked', null, 'iframe'), false)
   })
 })
 
