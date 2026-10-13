@@ -1,6 +1,6 @@
 # Implementation Plan — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-10-06
+**Last Updated:** 2026-10-13
 **Status:** House cut implemented (title card, sleeves, full crate, signal cut, agent files, logo mark). Person page frozen except wordmark. Live lockup is Chakra Petch; the last `o` is the static LogoMark. Hathaway (`public/brand/wordmark-hathaway.svg`) and nameplate (`brand/lecturesfrom-wordmark.svg`) vectors are assets only and are not mounted.
 **Previous plan:** `IMPLEMENTATION_PLAN_DISCOGS_ARCHIVED.md` (completed Discogs widget build)
 
@@ -231,6 +231,18 @@
 - **Goal:** Machine mode turntable shows runtime config panel instead of visual turntable
 - **Output:** Config panel component showing schema version, sample request
 - **Validation:** Toggle instantly swaps all content, scroll position preserved
+
+---
+
+## Preview-only `/flip` (this PR — do not merge)
+
+**Goal:** One moveable room (`FLIP_PATH`) to look up a song on everysong.site and request a sample flip. Preview Redis only (`lf:preview:flip:`). No production env. No collaborators.
+
+**Inputs:** PRD / APP_FLOW / FRONTEND_GUIDELINES / BACKEND_STRUCTURE flip sections. LF Direction copy.
+
+**Outputs:** `lib/flip/*`, `app/(house)/flip/page.tsx`, `components/house/FlipRoom.tsx`, `/api/flip/lookup`, `/api/flip/request`, footer + record-detail links, `lib/flip/flip.test.ts`.
+
+**Validation:** `npm test` (includes flip), `npx tsc --noEmit`, `npm run lint`, `npm run build`. Screenshots 375 and 1280 of idle / results / empty / nomatch / down / success, including the product mailto under the form. Fixture `?stub=` when the key is unset.
 
 ---
 

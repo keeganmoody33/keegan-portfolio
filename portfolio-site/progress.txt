@@ -1,3 +1,9 @@
+COMPLETED (2026-10-13 — preview-only `/flip`, draft PR, do not merge):
+- Room at `FLIP_PATH` `/flip`: lookup any song via everysong.site (search + sample history), request a sample flip. No collaborators. Preview Redis `lf:preview:flip:` only. Prod namespace refuses cache and request writes. `EVERYSONG_API_KEY` is not added to Vercel production; missing key → `couldn't reach everysong.` Non-prod `?stub=` fixtures for screenshots, marked fixture.
+- Form: email or phone (both allowed). Phone non-empty shows unchecked `text me the beat`; phone-only requires it. Privacy under the button. Success `got it. if i make it, it comes to you.` Quiet product line under the form: `building something? 33@lecturesfrom.com` mailto in `.house-source`. No extra button, no GTM/Morph/sales copy.
+- Footer `flip`. Record detail per-track `ask for a flip` → `/flip?track=`. Rate-limit lookup 10/min, request 6/min. Cache 6h. Cover/remix edges dropped. `robots` noindex. Not in the sitemap.
+- Tests: `lib/flip/flip.test.ts`. Canonical docs + lessons + `.env.local.example` updated. Do not merge. No prod Redis / crons / visitor research.
+
 COMPLETED (2026-10-12 — merge #67 + #68 to go live):
 - Combined PR #67 (prod promote already applied: live **323 / 73 / 98 / 225**) and PR #68 (search extras). `destinationIsLive` is the KISS Alive! / Alive II list (Stayin' Alive / Alive 2007 stay studio). Promote dest-live uses that list, not `/\\balive\\b/`. `musicbrainz.ts` keeps extras search/browse **and** `getRecordingSampleRels`. `package.json` keeps `crate:promote-preview`, `crate:search-extras-measure`, `crate:search-extras-find`; `npm test` includes `promote-preview.test.ts`.
 - Combined tree: `unset VERCEL_ENV` + KV unset, `npm test` **524 / 0**, `npx tsc --noEmit` pass, `npm run lint` pass.

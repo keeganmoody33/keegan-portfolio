@@ -14,7 +14,7 @@ All versions are pinned from `portfolio-site/package-lock.json`.
 | react | 19.2.4 | UI library |
 | react-dom | 19.2.4 | React DOM renderer |
 | @supabase/supabase-js | 2.90.1 | Supabase client; queries candidate_profile, experiences, etc. |
-| @upstash/redis | 1.35.6 | REST Redis client for the durable Discogs last-good snapshot and the footer request tally. REST URL/token resolution lives in `lib/redis-env.ts` (Edge-safe); `discogs-store` re-exports it. |
+| @upstash/redis | 1.35.6 | REST Redis client for the durable Discogs last-good snapshot, the footer request tally, and preview `/flip` lookup cache + requests (`lf:preview:flip:`). REST URL/token resolution lives in `lib/redis-env.ts` (Edge-safe); `discogs-store` re-exports it. |
 | @vercel/blob | 2.8.1 | Public object store for Cover Art Archive fronts (`BLOB_READ_WRITE_TOKEN`). No-op when the token is unset. |
 | posthog-js | 1.436.0 | Client-side analytics (components, page events) |
 | posthog-node | 5.21.2 | Server-side analytics (API routes via lib/posthog-server.ts) |
@@ -63,6 +63,7 @@ Runtime: **Deno**. Imports use URL specifiers with pinned versions where availab
 | Vercel Blob | `@vercel/blob` put | Header token | BLOB_READ_WRITE_TOKEN (Next.js env; optional) |
 | Wikidata SPARQL | <https://query.wikidata.org/sparql> | User-Agent with contact; ~1 req/s; 5s timeout; honors Retry-After; CC0 | (none — fallback after Discogs extraartists; P1954 / P436 / P2206 / P5813 MB release id) |
 | GitHub | <https://api.github.com/users/keeganmoody33/events/public> | None (unauthenticated, 60 req/hr) | (none — `/api/github` does not read a token) |
+| everysong.site | `GET /api/v2/spine/search`, `GET /api/v2/samples/song` | Header `x-api-key` | `EVERYSONG_API_KEY` (Next.js server-only). **Preview `/flip` only. Do not add to Vercel production.** Unset → `couldn't reach everysong.` Free tier 1000/day, 60/min. |
 | Upstash Redis | REST (`KV_REST_API_URL` / `UPSTASH_REDIS_REST_URL`) | Bearer token | KV_REST_API_URL, KV_REST_API_TOKEN (preferred); UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN (fallback) |
 | Supabase | NEXT_PUBLIC_SUPABASE_URL/functions/v1/* | Header: `Authorization: Bearer <anon_key>` | NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY |
 

@@ -1,6 +1,15 @@
 # Lessons Learned
 
-Updated: 2026-10-12
+Updated: 2026-10-13
+
+## Preview `/flip` (2026-10-13)
+
+- **One route constant.** `FLIP_PATH` in `lib/flip/route.ts` is the only path. Footer, record-detail `ask for a flip`, and the page all import it so the room is easy to move.
+- **Always `lf:preview:flip:`.** Prod Redis namespace (`VERCEL_ENV=production` + ref `main`) must not cache or RPUSH. `assertPrefixedRedisKey` already refuses `lf:preview:` on prod — keep the prefix anyway so a mistaken prod deploy cannot write flip data under `lf:`.
+- **Missing `EVERYSONG_API_KEY` is down copy, not a 500.** Do not add the key to Vercel production. Non-prod `?stub=` fixtures are marked `everysong.site · fixture`.
+- **Email or phone, not both required.** Phone-only needs the SMS checkbox. Email+phone may skip SMS. Never log or echo contact fields; PostHog only gets `has_email` / `has_phone`.
+- **Product line is not a CTA.** Under the form, dim mono `building something? 33@lecturesfrom.com` mailto. No button, no GTM/Morph/sales wording.
+- **Covers and remixes are not samples.** everysong `family: cover|remix` is dropped. Sample history is hairlines, not cards; orange is hover only.
 
 ## Search extras for missed sampled recordings (2026-10-12)
 

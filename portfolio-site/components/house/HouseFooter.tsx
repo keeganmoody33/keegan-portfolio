@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import RequestTally from '@/components/house/RequestTally'
+import { FLIP_COPY } from '@/lib/flip/copy.ts'
+import { FLIP_PATH } from '@/lib/flip/route.ts'
 
 /**
  * Shared house footer. `MotionSwitch` stays in the repo (preference
@@ -25,6 +27,9 @@ export default function HouseFooter() {
         </Link>
         <Link href="/collection" prefetch={false} className="hover:text-[var(--house-orange)]">
           collection
+        </Link>
+        <Link href={FLIP_PATH} className="hover:text-[var(--house-orange)]">
+          {FLIP_COPY.nav}
         </Link>
         <Link href="/legal" className="hover:text-[var(--house-orange)]">
           legal
