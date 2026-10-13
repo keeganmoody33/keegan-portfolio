@@ -25,7 +25,7 @@
 
 A toggle that switches between **Human mode** (traditional visual web design) and **Machine mode** (structured data, API schemas, AI-readable formats). Shows visitors how the same content is consumed by humans vs. AI agents.
 
-**Why this matters for LecturesFrom:**
+**Why this matters for lecturesfrom:**
 
 - The portfolio is already AI-queryable (Supabase + Claude integration)
 - This feature makes that architecture *visible* and *educational*

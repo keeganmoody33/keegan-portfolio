@@ -176,7 +176,7 @@
 
 - **Goal:** Implement 7 top-level nav items per spec
 - **Output:** Updated nav component, new page routes
-- **Pages:** Personal Projects, Physical Products (placeholder), My Stack of Wax, Who I Am, About LecturesFrom, Contact, Work With Me
+- **Pages:** Personal Projects, Physical Products (placeholder), My Stack of Wax, Who I Am, About lecturesfrom, Contact, Work With Me
 
 ### Step 4.2 — Vinyl Grid Overlay
 

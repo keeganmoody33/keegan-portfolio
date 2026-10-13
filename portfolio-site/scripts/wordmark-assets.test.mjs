@@ -72,7 +72,7 @@ describe('lecturesfrom wordmark SVGs', () => {
       assert.match(svg, /<path /)
       assert.match(svg, /<rect /)
       assert.doesNotMatch(svg, /<text[\s>]/)
-      assert.doesNotMatch(svg, /LecturesFrom|LECTURESFROM/)
+      assert.doesNotMatch(svg, /Lecturesfrom|LecturesFrom|LECTURESFROM/)
       for (const token of FORBIDDEN) {
         assert.equal(svg.includes(token), false, `must not contain ${token}`)
       }

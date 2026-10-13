@@ -45,7 +45,7 @@ function cloneLayer(svg: LogoGlobeSvg, extra: string): LogoGlobeSvg {
 }
 
 /**
- * Lecturesfrom logo globe. Ring and core stay stacked and face-on to
+ * lecturesfrom logo globe. Ring and core stay stacked and face-on to
  * each other. The shared `.lf-logo-globe-spin` wrapper turns the whole
  * mark as one coin (`rotateY` 12s linear infinite, west→east, `flat`
  * so Chrome rasterizes the SVG at device DPR). Core stays

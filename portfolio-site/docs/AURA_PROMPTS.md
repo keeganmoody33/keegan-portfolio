@@ -69,7 +69,7 @@ NAV ITEMS (7 total):
 2. Physical Products — placeholder page (greyed out or "coming soon" treatment)
 3. My Stack of Wax — opens vinyl grid overlay (Discogs collection)
 4. Who I Am — routes to page
-5. About LecturesFrom — routes to page
+5. About lecturesfrom — routes to page
 6. Contact — routes to page
 7. Work With Me — routes to page
 
@@ -175,7 +175,7 @@ STYLE:
 - Code blocks for technical content
 - Stack chips as pills/badges
 
-TONE: Honest, not polished. This is LecturesFrom — real talk about what worked and didn't.
+TONE: Honest, not polished. This is lecturesfrom — real talk about what worked and didn't.
 
 Export as HTML/Tailwind.
 ```

@@ -13,7 +13,7 @@
 |----------|--------|
 | **Vinyl grid overlay** | Personal Projects + My Stack of Wax ONLY |
 | **Physical Products** | Placeholder page for now (no content yet) |
-| **Other nav items** | Just pages (Who I Am, About LecturesFrom, Contact, Work With Me) |
+| **Other nav items** | Just pages (Who I Am, About lecturesfrom, Contact, Work With Me) |
 | **Built-out project click** | Route to `/projects/[id]` page |
 | **Non-built project click** | Stay in overlay (simpler treatment) |
 | **UX/UI transitions** | TBD in Aura — not specifying now |
@@ -38,7 +38,7 @@ This spec defines the header navigation system, vinyl stack pathway model, proje
 | 2 | Physical Products | `/physical-products` | page | **PLACEHOLDER** — no content yet |
 | 3 | My Stack of Wax | `/stack-of-wax` | collection | Discogs API — **VINYL GRID** |
 | 4 | Who I Am | `/about` | page | About me |
-| 5 | About LecturesFrom | `/about-lecturesfrom` | page | The business side |
+| 5 | About lecturesfrom | `/about-lecturesfrom` | page | The business side |
 | 6 | Contact | `/contact` | page | Contact form/info |
 | 7 | Work With Me | `/work-with-me` | page | For hire, collab, contract inquiries |
 
@@ -146,7 +146,7 @@ export const navItems: NavItem[] = [
   },
   {
     id: "about-lecturesfrom",
-    label: "About LecturesFrom",
+    label: "About lecturesfrom",
     slug: "/about-lecturesfrom",
     type: "page"
   },
@@ -326,7 +326,7 @@ interface VinylTileProps {
 
 #### 2. Narrative: "Why I Built It"
 
-- Tie into LecturesFrom context (honest, not polished)
+- Tie into lecturesfrom context (honest, not polished)
 - Personal motivation
 - Problem being solved
 
@@ -466,7 +466,7 @@ Discogs releases → VinylTile format:
 
 - [ ] Create dynamic route `app/projects/[id]/page.tsx`
 - [ ] Render 4 main sections using projects metadata
-- [ ] Apply LecturesFrom "honest context" tone
+- [ ] Apply lecturesfrom "honest context" tone
 
 ### Phase 3 — Aura Integration
 
