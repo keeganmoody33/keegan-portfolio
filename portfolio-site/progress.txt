@@ -1,3 +1,7 @@
+COMPLETED (2026-10-13 — tighten wordmark plate, PR #75 preview only):
+- Same branch. Draft. Do not merge. Same HEAD family as the CLS pads + heading restore.
+- Keegan: tighten up. Cut-out `wordmark.png` (323×80, cream unblended) on `--house-stage-paper` with even `5px` padding. No light fringe.
+
 COMPLETED (2026-10-13 — fallback CLS height transfer, PR #75 preview only):
 - Same branch. Draft. Do not merge.
 - When reserved mode/preset chips collapse into fallback, `.house-sleeve-modes-pad` / `.house-sleeve-presets-pad` keep the `5.75rem` (below 951px) / `2.5rem` (above) tracks plus `1.5rem` / `0.75rem` gaps and paint them as `--house-stage-paper`. Height goes to the stage; the well top does not move (avoids `::after` CLS). Target CLS < 0.01 at 375 and 1280 for no-WebGL and lost-on-create.
