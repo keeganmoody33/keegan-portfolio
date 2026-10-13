@@ -1,3 +1,9 @@
+COMPLETED (2026-10-13 — UX P2 last pass, PR #75 preview only):
+- Same branch. Draft. Do not merge.
+- Fallback folds reserved chrome into `.house-sleeve-stage-stack` (stage spans the stack from first paint; live chips overlay; fallback drops overlays). Poster is one surface — no paper tiles / floating strip. Target CLS < 0.01.
+- Wordmark CSS height `40px` (native 323×80 / 2). Original inbox PNG is 360×112 cream field, not 2x mark pixels — no srcset.
+- Study column and rail are `<section aria-labelledby>` the `made for the dig.` / `locked product.` `<p>` ids.
+
 COMPLETED (2026-10-13 — tighten wordmark plate, PR #75 preview only):
 - Same branch. Draft. Do not merge. Same HEAD family as the CLS pads + heading restore.
 - Keegan: tighten up. Cut-out `wordmark.png` (323×80, cream unblended) on `--house-stage-paper` with even `5px` padding. No light fringe.

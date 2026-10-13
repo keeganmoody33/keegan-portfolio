@@ -150,20 +150,28 @@ describe('shouldReserveViewerChrome', () => {
     assert.equal(shouldReserveViewerChrome('blocked', null, 'iframe'), false)
   })
 
-  it('keeps collapsed row height on paper pads so the well does not move', () => {
+  it('folds collapsed chrome tracks into the stage stack so the poster is one surface', () => {
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'app/globals.css'), 'utf8')
     assert.match(css, /--house-sleeve-chrome-row:\s*5\.75rem/)
     assert.match(css, /@media \(min-width: 951px\)[\s\S]{0,120}--house-sleeve-chrome-row:\s*2\.5rem/)
     assert.match(css, /--house-sleeve-modes-gap:\s*1\.5rem/)
     assert.match(css, /--house-sleeve-presets-gap:\s*0\.75rem/)
-    assert.match(css, /\.house-sleeve-modes-pad-fallback/)
-    assert.match(css, /\.house-sleeve-presets-pad-fallback/)
+    assert.match(css, /--house-sleeve-modes-track:/)
+    assert.match(css, /--house-sleeve-presets-track:/)
+    assert.match(css, /\.house-sleeve-stage-stack/)
+    assert.match(css, /\.house-sleeve-stage-stack-fallback/)
+    assert.match(css, /grid-row:\s*1\s*\/\s*-1/)
+    assert.doesNotMatch(css, /house-sleeve-modes-pad-fallback/)
+    assert.doesNotMatch(css, /house-sleeve-presets-pad-fallback/)
     const viewer = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '..', 'components/house/SleeveViewer.tsx'),
       'utf8'
     )
+    assert.match(viewer, /house-sleeve-stage-stack/)
     assert.match(viewer, /house-sleeve-modes-pad/)
     assert.match(viewer, /house-sleeve-presets-pad/)
+    assert.match(viewer, /aria-labelledby="yadiggg-study-heading"/)
+    assert.match(viewer, /aria-labelledby="yadiggg-rail-heading"/)
   })
 })
 
@@ -178,7 +186,15 @@ describe('keegan wordmark png', () => {
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'app/globals.css'), 'utf8')
     assert.match(css, /padding:\s*5px/)
     assert.match(css, /aspect-ratio: 323 \/ 80/)
+    assert.match(css, /\.house-sleeve-wordmark img[\s\S]{0,200}height:\s*40px/)
     assert.match(css, /\.house-sleeve-wordmark[\s\S]{0,400}background-color:\s*var\(--house-stage-paper\)/)
+    assert.doesNotMatch(css, /\.house-sleeve-wordmark img[\s\S]{0,200}2\.75rem/)
+    assert.doesNotMatch(css, /\.house-sleeve-wordmark img[\s\S]{0,200}3\.25rem/)
+    const sleeve = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '..', 'components/house/Sleeve.tsx'),
+      'utf8'
+    )
+    assert.doesNotMatch(sleeve, /srcSet/)
   })
 })
 

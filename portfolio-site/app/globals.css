@@ -192,13 +192,15 @@ html:has(.house[data-theme="light"]) {
   /* Drafting-table island (yadiggg). Person-light paper + ink; defined once. */
   --house-stage-paper: #E8E2D2;
   --house-stage-ink: #2B241D;
-  /* Mode + preset row min-height. Pads keep this height even after the
-     rows collapse; fallback paints them as stage paper so the well top
-     never moves (CLS) and no dark empty band remains. 5.75rem / 2.5rem. */
+  /* Mode + preset row min-height. `.house-sleeve-stage-stack` always
+     includes both tracks so fallback can fold them into the poster
+     without moving the well. 5.75rem / 2.5rem. */
   --house-sleeve-stage-h: min(420px, 55vh);
   --house-sleeve-chrome-row: 5.75rem;
   --house-sleeve-modes-gap: 1.5rem;
   --house-sleeve-presets-gap: 0.75rem;
+  --house-sleeve-modes-track: calc(var(--house-sleeve-chrome-row) + var(--house-sleeve-modes-gap));
+  --house-sleeve-presets-track: calc(var(--house-sleeve-chrome-row) + var(--house-sleeve-presets-gap));
 
 
 
@@ -327,44 +329,75 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   /* Reserved stage for the optional sleeve 3D study (yadiggg). Holds the poster
      so the canvas overlay cannot collapse layout. Tailwind does not scan lib/.
      Drafting-table window: `--house-stage-paper` / `--house-stage-ink` (person-light
-     warm paper + ink). No named Electroscrum set exists. */
+     warm paper + ink). No named Electroscrum set exists.
+     Stack height is always stage + both chrome tracks. The stage spans the
+     stack; live chips overlay the tracks. Fallback drops the overlays so the
+     poster is one surface — the well box never moves (CLS). */
+  .house-sleeve-stage-stack {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows:
+      var(--house-sleeve-modes-track)
+      minmax(0, 1fr)
+      var(--house-sleeve-presets-track);
+    height: calc(
+      var(--house-sleeve-stage-h) + var(--house-sleeve-modes-track) + var(--house-sleeve-presets-track)
+    );
+    min-height: calc(280px + var(--house-sleeve-modes-track) + var(--house-sleeve-presets-track));
+    max-width: 860px;
+  }
+
   .house-sleeve-stage {
     --bg-body: var(--house-stage-paper);
     --text-bright: var(--house-stage-ink);
-    height: var(--house-sleeve-stage-h);
-    min-height: 280px;
-    max-width: 860px;
+    grid-column: 1;
+    grid-row: 1 / -1;
+    height: auto;
+    min-height: 0;
     isolation: isolate;
     background-color: var(--house-stage-paper);
     color: var(--house-stage-ink);
   }
 
-  /* Constant tracks for mode/preset chrome. Empty on fallback; paper fill
-     so the collapsed 5.75rem / 2.5rem sits on the stage, not as a dark band. */
   .house-sleeve-modes-pad {
+    position: relative;
+    grid-column: 1;
+    grid-row: 1;
+    z-index: 3;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    height: calc(var(--house-sleeve-chrome-row) + var(--house-sleeve-modes-gap));
+    min-height: 0;
     max-width: 860px;
     background: var(--house-bg);
   }
 
   .house-sleeve-presets-pad {
-    min-height: calc(var(--house-sleeve-chrome-row) + var(--house-sleeve-presets-gap));
+    position: relative;
+    grid-column: 1;
+    grid-row: 3;
+    z-index: 3;
+    min-height: 0;
     max-width: 860px;
     background: var(--house-bg);
   }
 
-  .house-sleeve-modes-pad-fallback,
-  .house-sleeve-presets-pad-fallback {
-    position: relative;
-    overflow: hidden;
-    background: var(--house-stage-paper);
+  .house-sleeve-live-slot {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  .house-sleeve-stage-stack:not(.house-sleeve-stage-stack-fallback) .house-sleeve-live-slot {
+    top: var(--house-sleeve-modes-track);
+    bottom: var(--house-sleeve-presets-track);
   }
 
   /* Keegan wordmark (shovel/signal + yadiggg) under the study, after H1.
-     Cut-out PNG on a --house-stage-paper plate. Even 5px padding hugs the mark. */
+     Cut-out PNG on a --house-stage-paper plate. Even 5px padding hugs the mark.
+     Native lockup is 323×80 — cap CSS height at 40px so 2x screens never upscale.
+     Original inbox PNG is 360×112 cream field, not extra mark pixels; no 2x srcset. */
   .house-sleeve-wordmark {
     display: flex;
     align-items: center;
@@ -377,17 +410,12 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   }
 
   .house-sleeve-wordmark img {
-    height: 2.75rem;
+    height: 40px;
     width: auto;
+    max-height: 40px;
     max-width: min(20rem, calc(100vw - 4.5rem));
     aspect-ratio: 323 / 80;
     object-fit: contain;
-  }
-
-  @media (min-width: 640px) {
-    .house-sleeve-wordmark img {
-      height: 3.25rem;
-    }
   }
 
   /* Offset sits on the paper (11.8:1), not the #0a0a0a page. */
@@ -398,9 +426,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
 
   /* Fine minor grid (~10%) + heavier major (~28%). Fade behind the device so
      the smoke shell outline reads. Ink is --house-stage-ink. */
-  .house-sleeve-stage::before,
-  .house-sleeve-modes-pad-fallback::before,
-  .house-sleeve-presets-pad-fallback::before {
+  .house-sleeve-stage::before {
     content: "";
     position: absolute;
     inset: 0;
