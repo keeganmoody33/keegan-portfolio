@@ -2,7 +2,7 @@ COMPLETED (2026-10-13 — fallback CLS height transfer, PR #75 preview only):
 - Same branch. Draft. Do not merge.
 - When reserved mode/preset chips collapse into fallback, `.house-sleeve-modes-pad` / `.house-sleeve-presets-pad` keep the `5.75rem` (below 951px) / `2.5rem` (above) tracks plus `1.5rem` / `0.75rem` gaps and paint them as `--house-stage-paper`. Height goes to the stage; the well top does not move (avoids `::after` CLS). Target CLS < 0.01 at 375 and 1280 for no-WebGL and lost-on-create.
 - Study chrome stays `<p>` (`made for the dig.`, `locked product.`, LCD title). Demotion is required: Keegan’s study-first DOM puts that copy before H1 `yadiggg`; h2/h3/h4 would precede the title. Outline: H1 → contents H2.
-- Wordmark is Keegan’s PNG unchanged (`wordmark.png` sha256 a7a5df6f…, 360×112, opaque cream ground, no knockout). No CSS paper plate. Alt `yadiggg`.
+- Wordmark is Keegan’s shovel/signal PNG, cream knocked out and trimmed to 323×80 (fringe unblended). Plate is `--house-stage-paper` with even `5px` padding so it hugs the mark. Alt `yadiggg`.
 
 COMPLETED (2026-10-13 — Keegan: study first, then H1, then his wordmark, PR #75 preview only):
 - Same branch. Draft. Do not merge.

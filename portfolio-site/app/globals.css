@@ -364,7 +364,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   }
 
   /* Keegan wordmark (shovel/signal + yadiggg) under the study, after H1.
-     PNG is used unchanged (baked cream ground, no knockout). No CSS plate. */
+     Cut-out PNG on a --house-stage-paper plate. Even 5px padding hugs the mark. */
   .house-sleeve-wordmark {
     display: flex;
     align-items: center;
@@ -372,15 +372,15 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
     width: max-content;
     max-width: 100%;
     margin: 2rem auto 0;
-    padding: 0;
-    background: none;
+    padding: 5px;
+    background-color: var(--house-stage-paper);
   }
 
   .house-sleeve-wordmark img {
     height: 2.75rem;
     width: auto;
     max-width: min(20rem, calc(100vw - 4.5rem));
-    aspect-ratio: 360 / 112;
+    aspect-ratio: 323 / 80;
     object-fit: contain;
   }
 

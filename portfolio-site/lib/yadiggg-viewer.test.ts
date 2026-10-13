@@ -5,7 +5,6 @@
 
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -169,14 +168,17 @@ describe('shouldReserveViewerChrome', () => {
 })
 
 describe('keegan wordmark png', () => {
-  it('is the unmodified 360×112 shovel/signal lockup', () => {
+  it('is a trimmed cut-out lockup on a hugging paper plate', () => {
     const png = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '..', 'public/catalog/yadiggg/wordmark.png')
     )
-    assert.equal(createHash('sha256').update(png).digest('hex'), 'a7a5df6fc85ac927d31a8dd4ca057c63330e45ee302a908c4acffccee5311667')
-    assert.equal(png.readUInt32BE(16), 360)
-    assert.equal(png.readUInt32BE(20), 112)
+    assert.equal(png.readUInt32BE(16), 323)
+    assert.equal(png.readUInt32BE(20), 80)
     assert.equal(png[25], 6)
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'app/globals.css'), 'utf8')
+    assert.match(css, /padding:\s*5px/)
+    assert.match(css, /aspect-ratio: 323 \/ 80/)
+    assert.match(css, /\.house-sleeve-wordmark[\s\S]{0,400}background-color:\s*var\(--house-stage-paper\)/)
   })
 })
 
