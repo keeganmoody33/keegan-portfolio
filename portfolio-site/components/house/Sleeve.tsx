@@ -1,10 +1,8 @@
-import dynamic from 'next/dynamic'
 import IssuePlate from '@/components/house/IssuePlate'
-import type { Sleeve } from '@/lib/catalog'
+import type { Sleeve as SleeveRecord } from '@/lib/catalog'
+import type { ReactNode } from 'react'
 
-const SleeveViewer = dynamic(() => import('@/components/house/SleeveViewer'))
-
-export default function Sleeve({ sleeve }: { sleeve: Sleeve }) {
+export default function Sleeve({ sleeve, study }: { sleeve: SleeveRecord; study?: ReactNode }) {
   const cover = sleeve.cover ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img src={sleeve.cover} alt={`${sleeve.title} cover`} className="aspect-square w-full object-cover" />
@@ -35,13 +33,7 @@ export default function Sleeve({ sleeve }: { sleeve: Sleeve }) {
         </div>
       </div>
 
-      {sleeve.viewer ? (
-        <SleeveViewer
-          viewer={sleeve.viewer}
-          posterSrc={sleeve.viewer.poster ?? sleeve.cover ?? ''}
-          sleeveTitle={sleeve.title}
-        />
-      ) : null}
+      {study}
 
       <section className="mt-12 border-t border-[var(--house-line)] pt-6" aria-label="contents">
         <h2 className="house-meta mb-4">contents</h2>

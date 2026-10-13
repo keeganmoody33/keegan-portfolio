@@ -1,3 +1,8 @@
+COMPLETED (2026-10-13 — drafting-table stage + WebGL probe, PR #75 preview only):
+- Same branch. No named Electroscrum token set; stage uses person-light `--bg-body` `#E8E2D2` (warm paper) + `--text-bright` `#2B241D` ink. Fine minor + heavier major grid, mm ticks, corner crop marks. Transparent canvas; lighting and `#000` `frames={1}` contact shadow tuned for the light ground. `poster.jpg` re-rendered on that ground. Overlay copy AA on paper.
+- QA: probe `getExtension` before Canvas + guarded `gl` factory. Dedicated `/catalog/yadiggg` page so `[slug]` / `Sleeve.tsx` never import `SleeveViewer`. Reserve mode/preset row height until WebGL confirms; drop chrome in fallback. Static fallback readout (no "hover or click"). Pinch dolly + gesture hint. `what is modeled?` summary `min-h-11`. Lowercase copy; LCD 1px border.
+- Do not merge until preview QA.
+
 COMPLETED (2026-10-13 — QA Gate + UX/UI review on PR #75, preview only):
 - Same branch. Dropped Candidate B (`B · capture + nav`, `control_capture`, `controls_candidate_b.glb`) — locked product is one orange side button, no recorder UI. `partByName(name)` only. No `sleeve_viewer_candidate`.
 - Class error boundary around the Canvas: WebGL / `getExtension` / GLB throws call `onError` → poster + one error caption. Fallback (no WebGL / GLB 404 / blocked) hides mode/preset/hint and drops stage `tabIndex`.

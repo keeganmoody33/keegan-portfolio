@@ -8,13 +8,20 @@ import assert from 'node:assert/strict'
 import { isCandidateAControl, partByName, YADIGGG_PARTS } from './yadiggg-parts.ts'
 import {
   CAMERA_PRESET_BUTTONS,
+  PART_READOUT_FALLBACK,
+  PART_READOUT_IDLE,
   SLEEVE_VIEW_MODES,
+  YADIGGG_GESTURE_HINT,
   YADIGGG_LOCKED_FACTS,
   YADIGGG_MODEL_ENVELOPE,
   YADIGGG_POSTER_SRC,
+  YADIGGG_RAIL_FALLBACK,
+  YADIGGG_STAGE_INK,
+  YADIGGG_STAGE_PAPER,
   formatPartLabel,
   isBlockedViewerSrc,
   shouldCaptureWheel,
+  shouldReserveViewerChrome,
   shouldShowViewerChrome,
 } from './yadiggg-viewer.ts'
 
@@ -76,6 +83,13 @@ describe('locked facts vs model envelope', () => {
   })
 })
 
+describe('drafting-table tokens', () => {
+  it('uses the person-light warm-paper and ink tokens, not a new hex', () => {
+    assert.equal(YADIGGG_STAGE_PAPER, '#E8E2D2')
+    assert.equal(YADIGGG_STAGE_INK, '#2B241D')
+  })
+})
+
 describe('shouldShowViewerChrome', () => {
   it('hides mode/preset/hint until WebGL is confirmed on a ported study', () => {
     assert.equal(shouldShowViewerChrome(null, null, 'port'), false)
@@ -86,6 +100,26 @@ describe('shouldShowViewerChrome', () => {
     assert.equal(shouldShowViewerChrome('no-webgl', false, 'port'), false)
     assert.equal(shouldShowViewerChrome('error', true, 'port'), false)
     assert.equal(shouldShowViewerChrome('blocked', null, 'iframe'), false)
+  })
+})
+
+describe('shouldReserveViewerChrome', () => {
+  it('reserves mode/preset row height while the WebGL probe is in flight', () => {
+    assert.equal(shouldReserveViewerChrome(null, null, 'port'), true)
+    assert.equal(shouldReserveViewerChrome(null, true, 'port'), true)
+  })
+
+  it('drops the reserved rows in fallback', () => {
+    assert.equal(shouldReserveViewerChrome('no-webgl', false, 'port'), false)
+  })
+})
+
+describe('fallback copy', () => {
+  it('does not tell a poster visitor to hover or click', () => {
+    assert.doesNotMatch(PART_READOUT_FALLBACK.note, /hover or click/i)
+    assert.doesNotMatch(YADIGGG_RAIL_FALLBACK, /hover or click/i)
+    assert.match(PART_READOUT_IDLE.note, /hover or click/)
+    assert.match(YADIGGG_GESTURE_HINT, /pinch/)
   })
 })
 

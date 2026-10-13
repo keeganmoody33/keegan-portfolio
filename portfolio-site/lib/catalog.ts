@@ -207,6 +207,16 @@ export function getCatalogPageSleeves(): Sleeve[] {
   return [...sleeves, ...parkedSleeves].filter((sleeve) => sleeve.slug !== 'collection')
 }
 
+/**
+ * Shared `/catalog/[slug]` params. yadiggg has a dedicated page so SleeveViewer
+ * is never imported from the slug route (or from Sleeve).
+ */
+export function getSharedCatalogSlugParams(): { slug: string }[] {
+  return getCatalogPageSleeves()
+    .filter((sleeve) => sleeve.slug !== 'yadiggg')
+    .map((sleeve) => ({ slug: sleeve.slug }))
+}
+
 export function getCrateRows(): CrateRow[] {
   const bySlug = new Map(sleeves.map((sleeve) => [sleeve.slug, sleeve]))
   const rows: CrateRow[] = []

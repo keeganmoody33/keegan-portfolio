@@ -1,22 +1,24 @@
 'use client'
 
-import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Component, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Bounds, ContactShadows, OrbitControls, useBounds } from '@react-three/drei'
 import * as THREE from 'three'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { partByName } from '@/lib/yadiggg-parts'
+import { webglContextIsUsable } from '@/lib/webgl'
 import {
   CAMERA_PRESETS,
+  YADIGGG_STAGE_PAPER,
   formatPartLabel,
   shouldCaptureWheel,
   type CameraPreset,
   type SleeveViewMode,
 } from '@/lib/yadiggg-viewer'
 
-const HOUSE_BG = 0x0a0a0a
 const HOUSE_ORANGE = 0xe23d00
+const STAGE_PAPER = Number.parseInt(YADIGGG_STAGE_PAPER.slice(1), 16)
 const HOUSE_USB = 0x49b0d3
 const HOUSE_AUDIO = 0xb8c95e
 const HOUSE_PAD = 0x7f8085
@@ -123,11 +125,11 @@ function applyView(root: THREE.Object3D, view: SleeveViewMode) {
     forEachMaterial(mesh, (material) => {
       if (mesh.name.startsWith('shell_')) {
         material.transparent = true
-        material.opacity = view === 'xray' ? 0.1 : 0.28
+        material.opacity = view === 'xray' ? 0.12 : 0.34
         material.depthWrite = false
         material.roughness = view === 'xray' ? 0.12 : 0.16
-        material.metalness = 0.02
-        material.envMapIntensity = view === 'xray' ? 1.6 : 1.45
+        material.metalness = 0.04
+        material.envMapIntensity = view === 'xray' ? 1.8 : 1.7
       }
       if (mesh.name === 'display_window') {
         material.transparent = true
@@ -242,13 +244,38 @@ function InkContactShadow({ visible }: { visible: boolean }) {
   return (
     <ContactShadows
       position={[0, -0.058, 0]}
-      opacity={0.45}
-      scale={0.2}
-      blur={1.8}
-      far={0.14}
-      color="#ececec"
+      opacity={0.58}
+      scale={0.22}
+      blur={2.1}
+      far={0.16}
+      frames={1}
+      color="#000"
     />
   )
+}
+
+function createStudyRenderer(props: THREE.WebGLRendererParameters): THREE.WebGLRenderer {
+  const canvas = props.canvas
+  if (!(canvas instanceof HTMLCanvasElement)) {
+    throw new Error('webgl probe failed')
+  }
+  // Do not call getContext on this canvas before WebGLRenderer — the first
+  // attribute set wins, and hasWebGL() used to lock in alpha:false.
+  const renderer = new THREE.WebGLRenderer({
+    ...props,
+    canvas,
+    antialias: true,
+    alpha: true,
+    premultipliedAlpha: true,
+  })
+  renderer.setClearColor(0x000000, 0)
+  renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.toneMappingExposure = 1.02
+  if (!webglContextIsUsable(renderer.getContext())) {
+    renderer.dispose()
+    throw new Error('webgl getExtension unavailable')
+  }
+  return renderer
 }
 
 function KeyboardOrbit({
@@ -486,9 +513,9 @@ function GatedOrbit({
 
     const onWheel = (event: WheelEvent) => {
       if (!orbitOn) return
+      event.stopImmediatePropagation()
       if (!shouldCaptureWheel(stageFocused(), event.ctrlKey || event.metaKey)) return
       event.preventDefault()
-      event.stopImmediatePropagation()
       const orbit = controls as ControlsApi | null
       const target = orbit?.target ?? new THREE.Vector3()
       const offset = camera.position.clone().sub(target)
@@ -515,7 +542,7 @@ function GatedOrbit({
       dampingFactor={0.05}
       enablePan={false}
       enableRotate={orbitOn}
-      enableZoom={false}
+      enableZoom={orbitOn}
       enabled={orbitOn}
       minDistance={0.14}
       maxDistance={0.48}
@@ -536,10 +563,32 @@ function YadigggCanvas({
   onReady,
   onError,
 }: YadigggViewerProps) {
+  const onErrorRef = useRef(onError)
+  useEffect(() => {
+    onErrorRef.current = onError
+  }, [onError])
+
+  const glFactory = useCallback((props: THREE.WebGLRendererParameters) => {
+    try {
+      return createStudyRenderer(props)
+    } catch {
+      queueMicrotask(() => onErrorRef.current())
+      throw new Error('webgl unavailable')
+    }
+  }, [])
+
   return (
     <Canvas
-      className="absolute inset-0 h-full w-full cursor-grab !touch-pan-y active:cursor-grabbing"
-      gl={{ antialias: true, alpha: false, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.08 }}
+      className="absolute inset-0 h-full w-full bg-transparent cursor-grab !touch-pan-y active:cursor-grabbing"
+      gl={glFactory}
+      onCreated={(state) => {
+        try {
+          state.gl.setClearColor(0x000000, 0)
+          if (!webglContextIsUsable(state.gl.getContext())) onErrorRef.current()
+        } catch {
+          onErrorRef.current()
+        }
+      }}
       camera={{
         position: [...CAMERA_PRESETS.reset],
         fov: 31,
@@ -549,12 +598,12 @@ function YadigggCanvas({
       dpr={[1, 2]}
       aria-hidden
     >
-      <color attach="background" args={[HOUSE_BG]} />
       <RoomEnv />
-      <hemisphereLight args={[0xffffff, 0x444444, 1.05]} />
-      <directionalLight position={[-0.12, 0.22, 0.24]} intensity={1.7} color="#ffffff" />
-      <directionalLight position={[0.22, 0.08, -0.16]} intensity={0.42} color="#e23d00" />
-      <directionalLight position={[0, 0.3, 0.05]} intensity={0.35} color="#ffffff" />
+      <hemisphereLight args={[0xffffff, STAGE_PAPER, 1.2]} />
+      <directionalLight position={[-0.12, 0.22, 0.24]} intensity={1.85} color="#ffffff" />
+      <directionalLight position={[0.22, 0.08, -0.16]} intensity={0.28} color="#e23d00" />
+      <directionalLight position={[0.18, 0.2, -0.22]} intensity={0.55} color="#ffffff" />
+      <directionalLight position={[0, 0.32, 0.05]} intensity={0.4} color="#ffffff" />
       <Bounds fit clip margin={1.28} maxDuration={0}>
         <StudyModel
           src={src}

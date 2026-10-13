@@ -50,6 +50,16 @@ export const YADIGGG_CAD_ENVELOPE = '70 × 110 × 18 mm'
 
 export const YADIGGG_REFERENCE_SRC = '/catalog/yadiggg/reference.jpg'
 export const YADIGGG_POSTER_SRC = '/catalog/yadiggg/poster.jpg'
+
+/**
+ * Drafting-table paper. Person-light `--bg-body` (FRONTEND_GUIDELINES: "warm paper").
+ * No named Electroscrum token set exists in the repo; this is the lightest
+ * beige/paper token. Do not invent a new hex.
+ */
+export const YADIGGG_STAGE_PAPER = '#E8E2D2'
+
+/** Person-light `--text-bright` — ink on the drafting table. */
+export const YADIGGG_STAGE_INK = '#2B241D'
 export const YADIGGG_MODEL_ENVELOPE = {
   value: YADIGGG_CAD_ENVELOPE,
   label: 'r1 model envelope',
@@ -79,8 +89,31 @@ export function shouldShowViewerChrome(
   return webgl === true
 }
 
+/** Keep mode/preset row height while the WebGL probe is in flight (no CLS). */
+export function shouldReserveViewerChrome(
+  fallback: ViewerFallbackReason | null,
+  webgl: boolean | null,
+  mode: 'port' | 'iframe'
+): boolean {
+  if (fallback !== null) return false
+  if (mode === 'iframe') return true
+  return webgl === null || webgl === true
+}
+
 export const PART_READOUT_DEFAULT =
   'hover or click a part to inspect its allocation. dimensioned study, not manufacturing cad.'
+
+export const PART_READOUT_FALLBACK_NOTE =
+  'dimensioned study, not manufacturing cad. poster when the live canvas cannot run.'
+
+export const YADIGGG_RAIL_LIVE =
+  'hover or click the model. the lcd reads parts and facts — not a capture demo. one orange side button on the reserved opening.'
+
+export const YADIGGG_RAIL_FALLBACK =
+  'locked product facts on the poster. one orange side button on the reserved opening. live canvas is not running on this device.'
+
+export const YADIGGG_GESTURE_HINT =
+  'drag or two-finger orbit · pinch to zoom · focus or ctrl+scroll to zoom'
 
 export type PartReadout = {
   label: string
@@ -90,6 +123,11 @@ export type PartReadout = {
 export const PART_READOUT_IDLE: PartReadout = {
   label: 'YADIGGG',
   note: PART_READOUT_DEFAULT,
+}
+
+export const PART_READOUT_FALLBACK: PartReadout = {
+  label: 'YADIGGG',
+  note: PART_READOUT_FALLBACK_NOTE,
 }
 
 export function formatPartLabel(name: string): string {

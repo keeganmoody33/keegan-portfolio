@@ -7,7 +7,10 @@
 
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { getCrateRows, getSleeveBySlug, sleeves } from './catalog.ts'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { getCrateRows, getSharedCatalogSlugParams, getSleeveBySlug, sleeves } from './catalog.ts'
 import { isBlockedViewerSrc } from './yadiggg-viewer.ts'
 
 describe('yadiggg catalog wiring', () => {
@@ -27,6 +30,23 @@ describe('yadiggg catalog wiring', () => {
     assert.equal(
       sleeves.filter((sleeve) => sleeve.viewer).map((sleeve) => sleeve.slug).join(','),
       'yadiggg'
+    )
+  })
+
+  it('keeps SleeveViewer off the shared slug route and Sleeve shell', () => {
+    const root = join(dirname(fileURLToPath(import.meta.url)), '..')
+    assert.equal(
+      getSharedCatalogSlugParams().some((entry) => entry.slug === 'yadiggg'),
+      false
+    )
+    assert.doesNotMatch(readFileSync(join(root, 'components/house/Sleeve.tsx'), 'utf8'), /SleeveViewer/)
+    assert.doesNotMatch(
+      readFileSync(join(root, 'app/(house)/catalog/[slug]/page.tsx'), 'utf8'),
+      /SleeveViewer/
+    )
+    assert.match(
+      readFileSync(join(root, 'app/(house)/catalog/yadiggg/page.tsx'), 'utf8'),
+      /SleeveViewer/
     )
   })
 
