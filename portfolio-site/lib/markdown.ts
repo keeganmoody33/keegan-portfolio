@@ -34,7 +34,7 @@ export function llmsTxt(): string {
 - [ai-catalog.json](${SITE_URL}/.well-known/ai-catalog.json): well-known list of house urls and markdown mirrors.
 - [ard.json](${SITE_URL}/.well-known/ard.json): agentic resource discovery catalog with the same discovery info.
 - [sitemap](${SITE_URL}/sitemap.xml): xml sitemap of indexable house and principal urls.
-- [robots](${SITE_URL}/robots.txt): crawl rules. allow all listed user-agents; disallow only /api/.
+- [robots](${SITE_URL}/robots.txt): crawl rules. allow all listed user-agents; disallow /api/ and /preview/.
 - [keegan-portfolio](${SOURCE_REPO}): public source for this site. agent rules live in CLAUDE.md and .cursorrules.
 
 ## when to use

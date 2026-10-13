@@ -1,3 +1,11 @@
+IN PROGRESS (2026-10-13 — preview-only house banner prototype, do not merge):
+- `/preview/banner` only. Production `/` still `TitleCard`. 404 when `VERCEL_ENV=production`. `noindex` + robots `Disallow: /preview/`. No env vars, no prod Redis, no audio, no new libs.
+- First visit: Doto LCD boot → Chakra Petch `lecturesfrom` (lowercase l) glyphs settle → compact now-playing readout from `fetchFullCollection()` (artist / title / label, Discogs hotlink thumb, prev / play=pull one / next → `/collection/<id>`).
+- Return visit skips boot (`sessionStorage lf:house-banner:seen`; `?boot=1` replays). `prefers-reduced-motion`: static wordmark + readout, no boot, no shader.
+- Faint two-tone cursor stroke (`--house-ink` / `--house-orange`) on canvas, lazy via `requestIdleCallback`, idles when the pointer stops.
+- Files: `lib/house-banner.ts`, `components/house/HouseBanner*.tsx`, `app/(house)/preview/banner/page.tsx`.
+- Local verify: `npm test` **539 / 0**, `npx tsc --noEmit` pass, `npm run lint` pass. `/` still TitleCard. Glyph settle runs only in assemble. `useSyncExternalStore` getSnapshot is cached.
+
 COMPLETED (2026-10-12 — merge #67 + #68 to go live):
 - Combined PR #67 (prod promote already applied: live **323 / 73 / 98 / 225**) and PR #68 (search extras). `destinationIsLive` is the KISS Alive! / Alive II list (Stayin' Alive / Alive 2007 stay studio). Promote dest-live uses that list, not `/\\balive\\b/`. `musicbrainz.ts` keeps extras search/browse **and** `getRecordingSampleRels`. `package.json` keeps `crate:promote-preview`, `crate:search-extras-measure`, `crate:search-extras-find`; `npm test` includes `promote-preview.test.ts`.
 - Combined tree: `unset VERCEL_ENV` + KV unset, `npm test` **524 / 0**, `npx tsc --noEmit` pass, `npm run lint` pass.

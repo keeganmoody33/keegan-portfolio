@@ -262,6 +262,24 @@ Phases 1 and 4 can run in parallel after Phase 0. Phase 3 is cancelled.
 
 ---
 
+## Preview-only house banner (DRAFT — do not merge)
+
+**Goal:** Prototype a "powers on and plays" home banner for lecturesfrom.com without touching production `/`, env vars, Redis, or crons.
+
+**Inputs:** `FRONTEND_GUIDELINES.md` house tokens and faces (Chakra Petch / Space Grotesk / Roboto Mono / Doto). Collection listing via existing `fetchFullCollection()`.
+
+**Outputs:**
+
+- `/preview/banner` — 404 when `VERCEL_ENV=production`; `noindex`; robots `Disallow: /preview/`
+- `components/house/HouseBanner.tsx` + `HouseBannerShader.tsx` + `HouseBannerCard.tsx`
+- `lib/house-banner.ts` + tests
+
+**Validation:** `npm test` includes `lib/house-banner.test.ts`. `tsc --noEmit`. `eslint .`. Production `/` still renders `TitleCard`. Replay boot with `?boot=1`.
+
+**Not in this step:** merging to main, audio, new npm libraries, env vars, prod Redis.
+
+---
+
 ## Related Docs
 
 - [PRD.md](PRD.md) -- Product definition, features, scope

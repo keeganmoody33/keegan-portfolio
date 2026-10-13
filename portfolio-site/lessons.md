@@ -1,6 +1,16 @@
 # Lessons Learned
 
-Updated: 2026-10-12
+Updated: 2026-10-13
+
+## Preview-only house banner (2026-10-13)
+
+- Gate draft UI with `VERCEL_ENV !== 'production'` *and* a dedicated `/preview/...` route that `notFound()`s in prod. Do not swap production `/`. Robots `Disallow: /preview/` plus `robots: { index: false }`.
+- Banner slot height is reserved from first paint (`min-height` on the framed stage and readout). Boot is an overlay; readout stays in flow at `opacity: 0` until playing. Do not unmount a loading chip.
+- Wordmark is the string `lecturesfrom` (lowercase **l**). Scatter offsets live as CSS `nth-child` custom properties, not inline styles. Faces: Doto boot, Chakra Petch assemble, Roboto Mono readout.
+- Colors are house tokens only (`--house-lcd` for the boot screen, `--house-ink` / `--house-orange` for the faint canvas stroke). Discogs covers are hotlinked `unoptimized`. Canvas only — no three / spline / framer on this surface.
+- `prefers-reduced-motion: reduce` is CSS-first (hide boot + shader, freeze glyphs) plus `useSyncExternalStore` so the first visit does not start a boot the media query already forbade. `getSnapshot` must return a cached object (React 19 loops if it allocates a new snapshot every call). Controls are real buttons with labels; the polite live region updates on pull/prev/next.
+
+---
 
 ## Search extras for missed sampled recordings (2026-10-12)
 
