@@ -304,6 +304,13 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   .house-text-button[hidden] {
     display: none;
   }
+
+  /* Reserved stage for the optional sleeve 3D study (yadiggg). Holds the poster
+     so the canvas overlay cannot collapse layout. Tailwind does not scan lib/. */
+  .house-sleeve-stage {
+    height: min(540px, 70vh);
+    min-height: 280px;
+  }
 }
 
 .house-skip {

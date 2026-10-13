@@ -12,6 +12,16 @@ export type SleeveFormat = 'software' | 'system' | 'publication' | 'physical' | 
 
 export type SleeveStatus = 'in build' | 'issued' | 'parked'
 
+/** Optional inline 3D / CAD study, rendered inside Sleeve (not the crate click target). */
+export type SleeveViewerConfig = {
+  /** Public origin or hosted asset. Never a share-token preview URL. */
+  src: string
+  title: string
+  /** `iframe` until the three.js study is ported; `port` loads a house-styled client chunk. */
+  mode: 'iframe' | 'port'
+  poster?: string
+}
+
 export type Sleeve = {
   slug: string
   catno: string
@@ -25,6 +35,7 @@ export type Sleeve = {
   notThis: string
   credits: string[]
   cover?: string
+  viewer?: SleeveViewerConfig
   tracks: Track[]
 }
 
@@ -118,6 +129,12 @@ export const sleeves: Sleeve[] = [
     notThis: 'a phone app',
     credits: ['hardware'],
     cover: '/catalog/yadiggg/cover.jpg',
+    viewer: {
+      src: '/catalog/yadiggg/yadiggg_r1.glb',
+      title: 'r1 design study',
+      mode: 'port',
+      poster: '/catalog/yadiggg/cover.jpg',
+    },
     tracks: [
       {
         no: '01',

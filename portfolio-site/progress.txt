@@ -1,3 +1,9 @@
+COMPLETED (2026-10-13 — yadiggg sleeve 3D study, preview only):
+- Optional `Sleeve.viewer` in `lib/catalog.ts`, set only for yadiggg (`mode: 'port'`, src `/catalog/yadiggg/yadiggg_r1.glb`). `crateHref` still `/catalog/yadiggg`. GitHub track 01 unchanged.
+- No `yadiggg-viewer` GitHub repo. Prod workbench is one 3.5 MB HTML with inlined GLBs (no standalone asset URLs). Ported R1 `yadiggg_r1.glb` (~157 KB) into `public/catalog/yadiggg/` and a house-styled `YadigggViewer` (R3F, `next/dynamic` `ssr: false`). Did **not** iframe `yadiggg-viewer.vercel.app` (Arial/paper/amber + recorder-screen UI). Never use share-token preview URLs.
+- `SleeveViewer`: IntersectionObserver + reduced-motion / no-WebGL poster (`cover.jpg`), reserved `min(540px, 70vh)`, keyboard orbit, locked facts 105 × 60 × 15 mm / 2.7" LCD / one orange side button / USB-C / 3.5 mm. No capture/LCD demo chrome.
+- Do not merge until preview QA.
+
 COMPLETED (2026-10-12 — merge #67 + #68 to go live):
 - Combined PR #67 (prod promote already applied: live **323 / 73 / 98 / 225**) and PR #68 (search extras). `destinationIsLive` is the KISS Alive! / Alive II list (Stayin' Alive / Alive 2007 stay studio). Promote dest-live uses that list, not `/\\balive\\b/`. `musicbrainz.ts` keeps extras search/browse **and** `getRecordingSampleRels`. `package.json` keeps `crate:promote-preview`, `crate:search-extras-measure`, `crate:search-extras-find`; `npm test` includes `promote-preview.test.ts`.
 - Combined tree: `unset VERCEL_ENV` + KV unset, `npm test` **524 / 0**, `npx tsc --noEmit` pass, `npm run lint` pass.

@@ -1,6 +1,14 @@
 # Lessons Learned
 
-Updated: 2026-10-12
+Updated: 2026-10-13
+
+## YADIGGG sleeve viewer (2026-10-13)
+
+- Crate click stays `/catalog/yadiggg`. Do not point `crateHref` at the Vercel workbench. The GitHub repo is contents track 01, not the 3D study.
+- There is no `yadiggg-viewer` source repo under keeganmoody33. `keeganmoody33/YADIGGG` is C / CAD / docs (OpenSCAD 105×60×15), not the three.js workbench. Prod `yadiggg-viewer.vercel.app` is a single HTML with base64 GLBs — not cleanly fetchable as `/models/*.glb`. Extract the GLB once and host it; do not iframe the paper/amber Arial chrome.
+- Never embed `_vercel_share` / SSO preview URLs. Prefer a ported house-token study (`--house-*`, Chakra Petch / Space Grotesk / Roboto Mono / Doto).
+- Do not ship the workbench recorder-screen UI (Identify / Read / Save, control candidate A vs B, simulated LCD capture). Locked product: one orange side button, 2.7" memory LCD, 105 × 60 × 15 mm smoke-clear shell, USB-C, 3.5 mm. R1 CAD envelope in the GLB is an allocation study and must not override those facts in the sleeve chrome.
+- Lazy: `next/dynamic` `{ ssr: false }` like `TurntableCanvas.tsx`. three.js must not land on `/` or other sleeves. Reduced motion and no-WebGL keep `cover.jpg` in a reserved viewport (no CLS). Stage height lives on `.house-sleeve-stage` in `globals.css` — Tailwind `content` does not scan `lib/`.
 
 ## Search extras for missed sampled recordings (2026-10-12)
 

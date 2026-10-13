@@ -1,4 +1,5 @@
 import IssuePlate from '@/components/house/IssuePlate'
+import SleeveViewer from '@/components/house/SleeveViewer'
 import type { Sleeve } from '@/lib/catalog'
 
 export default function Sleeve({ sleeve }: { sleeve: Sleeve }) {
@@ -31,6 +32,14 @@ export default function Sleeve({ sleeve }: { sleeve: Sleeve }) {
           </div>
         </div>
       </div>
+
+      {sleeve.viewer ? (
+        <SleeveViewer
+          viewer={sleeve.viewer}
+          posterSrc={sleeve.cover ?? sleeve.viewer.poster ?? ''}
+          sleeveTitle={sleeve.title}
+        />
+      ) : null}
 
       <section className="mt-12 border-t border-[var(--house-line)] pt-6" aria-label="contents">
         <h2 className="house-meta mb-4">contents</h2>

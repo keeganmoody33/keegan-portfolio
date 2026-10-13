@@ -14,7 +14,7 @@
 |------------------|------------------------------|-----------------------------------------------------------------|
 | `/`              | `app/(house)/page.tsx`               | House title card + crate (Server Component). The last `o` in the wordmark `from` is a static `LogoMark` (owner line-only PNG geometry; `variant="line"` — ink strokes, no fills; house palette fills on hold; no `LogoGlobe`, no spin) at Chakra Petch x-height on the alphabetic baseline; there is no standalone coin above the wordmark. Wordmark (`HouseWordmark`, Chakra Petch) entrance is a 700ms opacity fade. HouseFooter does not render the Motion switch while the o is static; `MotionSwitch.tsx`, head bootstrap, and pause CSS stay in the repo. Nameplate and Hathaway SVGs are not mounted. No page turntable. No return-visit redirect. |
 | `/catalog`       | `app/(house)/catalog/page.tsx`       | Crate permalink (same spines as `/`)                            |
-| `/catalog/[slug]`| `app/(house)/catalog/[slug]/page.tsx`| Sleeve (cover, liner, tracks). Unknown slugs 404.               |
+| `/catalog/[slug]`| `app/(house)/catalog/[slug]/page.tsx`| Sleeve (cover, liner, optional viewer, tracks). Unknown slugs 404. yadiggg mounts a lazy house-styled R1 3D study (`Sleeve.viewer`); crate click stays `/catalog/yadiggg`. |
 | `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate (ISR 300s; durable last-good in Redis when configured). Cover click opens `/collection/[releaseId]`. Under the `{n} releases` line: **shuffle** (client Fisher-Yates of the whole grid; reload restores ISR order; no server cost) and **pull one** (random listed id → existing overlay/route). Grid `next/image` uses a stored CAA Blob URL when the cover manifest has one; otherwise the current Discogs hotlink. |
 | `/collection/[releaseId]` | `app/(house)/collection/[releaseId]/page.tsx` | Record detail (overview / tracks). Intercepting overlay at `@detail/(.)[releaseId]` when opened from the grid; full page on direct visit / refresh. |
 | `/legal`         | `app/(house)/legal/page.tsx`         | Entity + long about + Data sources (Discogs API non-affiliation). Markdown twin `/legal.md`. Organization JSON-LD is not a /legal twin. |
@@ -337,6 +337,26 @@ Land on /keeganmoody33
 
 ---
 
+### 8c. YADIGGG sleeve 3D study
+
+**Trigger:** Open `/catalog/yadiggg` from the crate (`crateHref` stays on-site). Optional `sleeve.viewer` on catalog data; only yadiggg sets it.
+
+**Steps:**
+
+1. Sleeve renders cover + liner as before. Contents track 01 remains `https://github.com/keeganmoody33/YADIGGG`.
+2. When `viewer` is present, `SleeveViewer` reserves `min(540px, 70vh)` so the poster (`cover.jpg`) holds layout. IntersectionObserver + `next/dynamic(..., { ssr: false })` loads `YadigggViewer` only on this sleeve when in view.
+3. three.js is not in the homepage or other sleeve bundles. Reduced motion and no-WebGL keep the static poster + caption. Share-token preview URLs are rejected.
+4. View modes: assembled / x-ray / exploded / open front. Camera presets: front / rear / side / ports / reset. Click a part for the allocation readout. No recorder-screen / capture UI. Geometry strip states locked product facts (105 × 60 × 15 mm smoke-clear shell, 2.7" memory LCD, one orange side button, USB-C, 3.5 mm).
+5. Viewport is keyboard-focusable (arrows orbit, +/- zoom). Focus-visible is 2px ink.
+
+**Success state:** House-token 3D study in the sleeve. GitHub link still in contents.
+
+**Error / empty:** Other sleeves omit `viewer`. Load failure / no WebGL / reduced motion → static cover + caption. Never iframe a `_vercel_share` URL.
+
+**PostHog events:** `sleeve_viewer_loaded`, `sleeve_viewer_mode`, `sleeve_viewer_preset`, `sleeve_viewer_part`
+
+---
+
 ## Mobile vs Desktop Differences
 
 | Element | Desktop | Mobile |
@@ -346,6 +366,7 @@ Land on /keeganmoody33
 | BannerRotator | Full-bleed bar; `pr-16` on content only when dots show | Same |
 | Timeline | Full-width cards | Same layout (no responsive changes) |
 | Record detail | At 1280: cover left, rows right | At 375/768: stacked cover capped at 480px, then rows |
+| YADIGGG study | Viewport `min(540px, 70vh)` under liner; view modes on one row | Same reserved height; mode/preset wrap; tap targets `min-h-11` |
 
 ---
 
