@@ -51,6 +51,10 @@ export function notifyEmailBody(request: FlipStoredRequest): string {
   return [song, who, sms].filter((block) => block.length > 0).join('\n\n')
 }
 
+export function flipNotifyIdempotencyKey(request: FlipStoredRequest): string {
+  return `flip-request/${request.at}`
+}
+
 async function sendEmail(
   request: FlipStoredRequest,
   fetchImpl: FlipNotifyFetch,
@@ -64,6 +68,7 @@ async function sendEmail(
       headers: {
         Authorization: `Bearer ${key}`,
         'Content-Type': 'application/json',
+        'Idempotency-Key': flipNotifyIdempotencyKey(request),
       },
       body: JSON.stringify({
         from: flipNotifyFrom(env),

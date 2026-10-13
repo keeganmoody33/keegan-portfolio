@@ -381,7 +381,7 @@ Missing key, upstream failure, or 429 → `status: "down"` (never red on the pag
 
 ### POST /api/flip/request
 
-**Preview only.** Email and/or phone required (both allowed). Phone-only requires `smsOptIn: true`. After a successful store, best-effort Resend email to `FLIP_NOTIFY_TO` (default `33@lecturesfrom.com`). Skip notify when `RESEND_API_KEY` is unset, on the production Redis namespace, or when a non-prod `stub` fixture accepts without storing. Notify failure still returns `{ ok: true }`. Never `console.log` contact.
+**Preview only.** Email and/or phone required (both allowed). Phone-only requires `smsOptIn: true`. After a successful store, best-effort Resend email to `FLIP_NOTIFY_TO` (default `33@lecturesfrom.com`). `Idempotency-Key` is `flip-request/${at}` (stored ISO, not contact). Skip notify when `RESEND_API_KEY` is unset, on the production Redis namespace, or when a non-prod `stub` fixture accepts without storing. Notify failure still returns `{ ok: true }`. Never `console.log` contact.
 
 **Request:**
 ```json

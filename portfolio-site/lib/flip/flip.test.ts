@@ -37,6 +37,7 @@ import {
 } from './store.ts'
 import { FLIP_REDIS_PREFIX, FLIP_REQUESTS_KEY } from './types.ts'
 import {
+  flipNotifyIdempotencyKey,
   notifyEmailBody,
   notifyEmailEnabled,
   notifyEmailSubject,
@@ -479,12 +480,24 @@ describe('notifyFlipRequest', () => {
     assert.equal(calls, 0)
   })
 
+  it('keys retries from stored at, not contact', () => {
+    const key = flipNotifyIdempotencyKey(payload)
+    assert.equal(key, 'flip-request/2026-10-13T00:00:00.000Z')
+    assert.equal(key.startsWith('flip-request/'), true)
+    assert.equal(key.includes(payload.email), false)
+    assert.equal(key.includes(payload.phone), false)
+  })
+
   it('posts Resend with song and contact, and treats fetch failure as skip', async () => {
-    const calls: Array<{ url: string; body: string }> = []
+    const calls: Array<{ url: string; body: string; idempotency: string }> = []
     const ok = await notifyFlipRequest(
       payload,
       async (url, init) => {
-        calls.push({ url, body: String(init?.body ?? '') })
+        calls.push({
+          url,
+          body: String(init?.body ?? ''),
+          idempotency: String(init?.headers?.['Idempotency-Key'] ?? ''),
+        })
         assert.equal(url, RESEND_EMAILS_URL)
         assert.equal(init?.method, 'POST')
         return { ok: true }
@@ -493,6 +506,7 @@ describe('notifyFlipRequest', () => {
     )
     assert.deepEqual(ok, { email: true })
     assert.equal(calls.length, 1)
+    assert.equal(calls[0]?.idempotency, 'flip-request/2026-10-13T00:00:00.000Z')
     const sent = JSON.parse(calls[0]?.body ?? '{}') as Record<string, unknown>
     assert.deepEqual(sent.to, ['33@lecturesfrom.com'])
     assert.equal(sent.subject, notifyEmailSubject(payload))

@@ -52,7 +52,7 @@
 | `/api/tally` | GET | `app/api/tally/route.ts` | Running totals for the house footer tally (Upstash Redis, `s-maxage=60`; 503s `s-maxage=10`). Hits are recorded in `proxy.ts` via one Redis pipeline in `waitUntil`. |
 | `/api/flip/search` | GET | `app/api/flip/search/route.ts` | **Preview only.** Typeahead proxy to everysong search only (1 GET). Cache `lf:preview:flip:search:*` 6h. Rate-limit 20/min/IP. Returns a list; never auto-picks the first hit. |
 | `/api/flip/lookup` | GET | `app/api/flip/lookup/route.ts` | **Preview only.** Samples for a picked song (`title` + `artist`) or a unique `q` (exactly one hit). Cache `lf:preview:flip:lookup:*` 6h. Rate-limit 10/min/IP. Missing `EVERYSONG_API_KEY` → down. `?stub=` fixtures on non-prod. |
-| `/api/flip/request` | POST | `app/api/flip/request/route.ts` | **Preview only.** Store a flip request on `lf:preview:flip:requests`. Email and/or phone required. After store, best-effort Resend email (skip if key unset or prod). Rate-limit 6/min/IP. Never echoes contact fields. Prod namespace refuses writes. Fixture `?stub=` skips store and notify. |
+| `/api/flip/request` | POST | `app/api/flip/request/route.ts` | **Preview only.** Store a flip request on `lf:preview:flip:requests`. Email and/or phone required. After store, best-effort Resend email with `Idempotency-Key: flip-request/${at}` (skip if key unset or prod). Rate-limit 6/min/IP. Never echoes contact fields. Prod namespace refuses writes. Fixture `?stub=` skips store and notify. |
 
 ---
 
