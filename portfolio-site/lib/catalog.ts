@@ -133,7 +133,7 @@ export const sleeves: Sleeve[] = [
       src: '/catalog/yadiggg/yadiggg_r1.glb',
       title: 'r1 design study',
       mode: 'port',
-      poster: '/catalog/yadiggg/cover.jpg',
+      poster: '/catalog/yadiggg/poster.jpg',
     },
     tracks: [
       {

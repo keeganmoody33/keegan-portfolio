@@ -26,17 +26,6 @@ export const CAMERA_PRESET_BUTTONS: readonly { id: CameraPreset; label: string }
   { id: 'reset', label: 'reset view' },
 ]
 
-export type ControlCandidate = 'A' | 'B'
-
-export const CONTROL_CANDIDATES: readonly {
-  id: ControlCandidate
-  label: string
-  hint: string
-}[] = [
-  { id: 'A', label: 'A · side rocker', hint: 'one visually grouped three-zone rocker on the reserved opening' },
-  { id: 'B', label: 'B · capture + nav', hint: 'capture plus navigation on the same reserved opening' },
-]
-
 /** Share-token and SSO-gated preview URLs must never be embedded. */
 export function isBlockedViewerSrc(src: string): boolean {
   const lower = src.toLowerCase()
@@ -44,9 +33,10 @@ export function isBlockedViewerSrc(src: string): boolean {
 }
 
 export const YADIGGG_LOCKED_FACTS: readonly { value: string; label: string }[] = [
-  { value: '105 × 60 × 15 mm', label: 'smoke-clear shell' },
-  { value: '2.7"', label: 'memory LCD' },
-  { value: 'USB-C · 3.5 mm', label: 'one orange side button' },
+  { value: '105 × 60 × 15 mm', label: 'locked product' },
+  { value: '2.7"', label: 'memory lcd' },
+  { value: 'one orange side button', label: 'side control' },
+  { value: 'USB-C · 3.5 mm', label: 'ports' },
 ]
 
 /** R1 CAD envelope from the workbench geometry strip — allocation study, not the locked product. */
@@ -58,8 +48,36 @@ export const YADIGGG_CAD_GEOMETRY: readonly { value: string; label: string }[] =
 
 export const YADIGGG_CAD_ENVELOPE = '70 × 110 × 18 mm'
 
-export const YADIGGG_CANDIDATE_B_SRC = '/catalog/yadiggg/controls_candidate_b.glb'
 export const YADIGGG_REFERENCE_SRC = '/catalog/yadiggg/reference.jpg'
+export const YADIGGG_POSTER_SRC = '/catalog/yadiggg/poster.jpg'
+export const YADIGGG_MODEL_ENVELOPE = {
+  value: YADIGGG_CAD_ENVELOPE,
+  label: 'r1 model envelope',
+} as const
+
+/**
+ * Canvas wheel zoom is gated so the page can scroll.
+ * Capture only when the stage is focused, or immediately with ctrl/cmd + wheel.
+ */
+export function shouldCaptureWheel(focused: boolean, ctrlOrMeta: boolean): boolean {
+  return focused || ctrlOrMeta
+}
+
+export type ViewerFallbackReason = 'no-webgl' | 'blocked' | 'error'
+
+/**
+ * Mode row, preset row, drag hint, and stage tabIndex are live-study chrome.
+ * Hide them in fallback, and do not flash them before WebGL is confirmed.
+ */
+export function shouldShowViewerChrome(
+  fallback: ViewerFallbackReason | null,
+  webgl: boolean | null,
+  mode: 'port' | 'iframe'
+): boolean {
+  if (fallback !== null) return false
+  if (mode === 'iframe') return true
+  return webgl === true
+}
 
 export const PART_READOUT_DEFAULT =
   'hover or click a part to inspect its allocation. dimensioned study, not manufacturing cad.'

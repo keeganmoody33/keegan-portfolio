@@ -8,19 +8,20 @@ import { useReducedMotion } from '@/hooks/use-reduced-motion'
 import { hasWebGL } from '@/lib/webgl'
 import {
   CAMERA_PRESET_BUTTONS,
-  CONTROL_CANDIDATES,
   PART_READOUT_IDLE,
   SLEEVE_VIEW_MODES,
   YADIGGG_CAD_ENVELOPE,
   YADIGGG_CAD_GEOMETRY,
-  YADIGGG_CANDIDATE_B_SRC,
   YADIGGG_LOCKED_FACTS,
+  YADIGGG_MODEL_ENVELOPE,
+  YADIGGG_POSTER_SRC,
   YADIGGG_REFERENCE_SRC,
   isBlockedViewerSrc,
+  shouldShowViewerChrome,
   type CameraPreset,
-  type ControlCandidate,
   type PartReadout,
   type SleeveViewMode,
+  type ViewerFallbackReason,
 } from '@/lib/yadiggg-viewer'
 
 const focusRing =
@@ -34,18 +35,14 @@ type SleeveViewerProps = {
   sleeveTitle: string
 }
 
-type FallbackReason = 'reduced-motion' | 'no-webgl' | 'blocked' | 'error'
-
-function fallbackCaption(reason: FallbackReason, title: string): string {
+function fallbackCaption(reason: ViewerFallbackReason): string {
   switch (reason) {
-    case 'reduced-motion':
-      return `${title} static study — 3d orbit paused for reduced motion.`
     case 'no-webgl':
-      return `${title} static study — webgl is not available on this device.`
+      return 'webgl is not available on this device.'
     case 'blocked':
-      return `${title} static study — preview urls are not embedded.`
+      return 'preview urls are not embedded.'
     case 'error':
-      return `${title} static study — the 3d study could not load.`
+      return 'the 3d study could not load.'
     default: {
       const _never: never = reason
       return _never
@@ -53,12 +50,12 @@ function fallbackCaption(reason: FallbackReason, title: string): string {
   }
 }
 
-function Poster({ src, title, caption }: { src: string; title: string; caption: string }) {
+function Poster({ src, title }: { src: string; title: string }) {
   return (
     <figure className="absolute inset-0 m-0">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={src} alt="" className="h-full w-full object-contain object-center" />
-      <figcaption className="sr-only">{caption || `${title} study image`}</figcaption>
+      <figcaption className="sr-only">{title} study poster</figcaption>
     </figure>
   )
 }
@@ -95,7 +92,6 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
   const [inView, setInView] = useState(false)
   const [webgl, setWebgl] = useState<boolean | null>(null)
   const [view, setView] = useState<SleeveViewMode>('assembled')
-  const [candidate, setCandidate] = useState<ControlCandidate>('A')
   const [preset, setPreset] = useState<CameraPreset>('reset')
   const [presetTick, setPresetTick] = useState(0)
   const [hover, setHover] = useState<PartReadout | null>(null)
@@ -104,10 +100,9 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
   const [failed, setFailed] = useState(false)
 
   const blocked = isBlockedViewerSrc(viewer.src)
-  const poster = viewer.poster ?? posterSrc
+  const poster = viewer.poster ?? posterSrc ?? YADIGGG_POSTER_SRC
   const readout = hover ?? selected ?? PART_READOUT_IDLE
   const viewLabel = SLEEVE_VIEW_MODES.find((mode) => mode.id === view)?.label ?? view
-  const candidateMeta = CONTROL_CANDIDATES.find((entry) => entry.id === candidate)
 
   useEffect(() => {
     const node = sectionRef.current
@@ -124,20 +119,18 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
     return () => observer.disconnect()
   }, [])
 
-  const fallback: FallbackReason | null = blocked
+  const fallback: ViewerFallbackReason | null = blocked
     ? 'blocked'
-    : reducedMotion
-      ? 'reduced-motion'
-      : webgl === false
-        ? 'no-webgl'
-        : failed
-          ? 'error'
-          : null
+    : webgl === false
+      ? 'no-webgl'
+      : failed
+        ? 'error'
+        : null
 
-  const canPort =
-    viewer.mode === 'port' && !blocked && !failed && !reducedMotion && webgl === true && inView
-  const canFrame = viewer.mode === 'iframe' && !blocked && !failed && !reducedMotion && inView
+  const canPort = viewer.mode === 'port' && !blocked && !failed && webgl === true && inView
+  const canFrame = viewer.mode === 'iframe' && !blocked && !failed && inView
   const showStudy = canPort || canFrame
+  const showChrome = shouldShowViewerChrome(fallback, webgl, viewer.mode)
 
   const onReady = useCallback(() => {
     setCanvasReady(true)
@@ -163,7 +156,7 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
   }, [])
 
   const caption = fallback
-    ? fallbackCaption(fallback, viewer.title)
+    ? fallbackCaption(fallback)
     : view === 'compare'
       ? 'original concept image. illustration; geometry differs from cad.'
       : `${sleeveTitle} r1 allocation study`
@@ -190,41 +183,48 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
               <span className="font-[family-name:var(--house-font-lcd)] text-lg font-extrabold tracking-[0.04em]">
                 105 × 60 × 15
               </span>
-              <small>mm body · locked</small>
+              <small>mm locked product</small>
             </span>
           </div>
 
-          <div className="mt-6 flex flex-wrap gap-1" aria-label="assembly view">
-            {SLEEVE_VIEW_MODES.map((mode) => (
-              <ModeButton
-                key={mode.id}
-                selected={view === mode.id}
-                label={mode.label}
-                onClick={() => {
-                  setView(mode.id)
-                  posthog.capture('sleeve_viewer_mode', { view: mode.id })
-                }}
-              />
-            ))}
-          </div>
+          {showChrome ? (
+            <div className="mt-6 flex flex-wrap gap-1" aria-label="assembly view">
+              {SLEEVE_VIEW_MODES.map((mode) => (
+                <ModeButton
+                  key={mode.id}
+                  selected={view === mode.id}
+                  label={mode.label}
+                  onClick={() => {
+                    setView(mode.id)
+                    posthog.capture('sleeve_viewer_mode', { view: mode.id })
+                  }}
+                />
+              ))}
+            </div>
+          ) : null}
 
           <div
             id={focusRootId}
-            tabIndex={0}
+            tabIndex={showChrome ? 0 : undefined}
             role="img"
-            aria-label={`${viewer.title}. drag or arrow keys to orbit, plus and minus to zoom. all device facts also appear in the adjacent panel.`}
+            aria-label={
+              showChrome
+                ? `${viewer.title}. drag to orbit on a pointer. two-finger orbit on touch. wheel zooms while focused or with control or command. arrow keys orbit, plus and minus zoom. all device facts also appear in the adjacent panel.`
+                : `${viewer.title}. static poster.`
+            }
             className={`house-sleeve-stage relative mt-0 overflow-hidden bg-[var(--house-bg)] ${focusRing}`}
           >
-            <Poster src={poster} title={viewer.title} caption={caption} />
+            <Poster src={poster} title={viewer.title} />
             {showStudy && viewer.mode === 'port' ? (
               <div
-                className={`absolute inset-0 ${canvasReady && view !== 'compare' ? 'opacity-100' : 'opacity-0'}`}
+                className={`absolute inset-0 motion-reduce:transition-none motion-reduce:duration-0 ${
+                  canvasReady && view !== 'compare' ? 'opacity-100' : 'opacity-0'
+                }`}
+                style={{ transition: reducedMotion ? undefined : 'opacity 150ms linear' }}
               >
                 <YadigggStudy
                   src={viewer.src}
-                  candidateSrc={YADIGGG_CANDIDATE_B_SRC}
                   view={view}
-                  candidate={candidate}
                   preset={preset}
                   presetTick={presetTick}
                   reducedMotion={reducedMotion}
@@ -247,7 +247,7 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
                 onLoad={onReady}
               />
             ) : null}
-            {view === 'compare' ? (
+            {showChrome && view === 'compare' ? (
               <figure className="absolute inset-0 z-[2] m-0 bg-[var(--house-bg)] text-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -262,41 +262,42 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
             ) : null}
             {showStudy && viewer.mode === 'port' && !canvasReady && view !== 'compare' ? (
               <p className="pointer-events-none absolute inset-x-0 top-[45%] text-center font-mono text-[11px] text-[var(--house-muted)]">
-                Loading the model…
+                loading the model…
               </p>
             ) : null}
           </div>
           <p className="mt-2 font-mono text-[11px] leading-relaxed text-[var(--house-dim)]">{caption}</p>
 
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap gap-1" aria-label="camera direction">
-              {CAMERA_PRESET_BUTTONS.map((button) => (
-                <button
-                  key={button.id}
-                  type="button"
-                  className={`house-meta min-h-11 px-2.5 py-1 sm:min-h-7 ${focusRing} ${
-                    preset === button.id
-                      ? 'bg-[var(--house-ink)] text-[var(--house-bg)]'
-                      : 'text-[var(--house-muted)] hover:text-[var(--house-orange)]'
-                  }`}
-                  aria-pressed={preset === button.id}
-                  onClick={() => {
-                    setPreset(button.id)
-                    setPresetTick((tick) => tick + 1)
-                    posthog.capture('sleeve_viewer_preset', { preset: button.id })
-                  }}
-                >
-                  {button.label}
-                </button>
-              ))}
+          {showChrome ? (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap gap-1" aria-label="camera direction">
+                {CAMERA_PRESET_BUTTONS.map((button) => (
+                  <button
+                    key={button.id}
+                    type="button"
+                    className={`house-meta min-h-11 px-2.5 py-1 sm:min-h-7 ${focusRing} ${
+                      preset === button.id
+                        ? 'bg-[var(--house-ink)] text-[var(--house-bg)]'
+                        : 'text-[var(--house-muted)] hover:text-[var(--house-orange)]'
+                    }`}
+                    aria-pressed={preset === button.id}
+                    onClick={() => {
+                      setPreset(button.id)
+                      setPresetTick((tick) => tick + 1)
+                      posthog.capture('sleeve_viewer_preset', { preset: button.id })
+                    }}
+                  >
+                    {button.label}
+                  </button>
+                ))}
+              </div>
+              <p className="house-meta hidden sm:block">
+                drag or two-finger orbit · focus or ctrl+scroll to zoom
+              </p>
             </div>
-            <p className="house-meta hidden sm:block">drag to orbit · scroll to zoom</p>
-          </div>
+          ) : null}
 
-          <p
-            className="house-sleeve-readout"
-            aria-live="polite"
-          >
+          <p className="house-sleeve-readout" aria-live="polite">
             {readout.label} · {readout.note}
           </p>
 
@@ -309,9 +310,8 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
             ))}
             <p>
               Dimensioned study, not manufacturing CAD. Electronics are simplified volumes; hardware,
-              tolerances and assembly remain unvalidated. R1 CAD envelope {YADIGGG_CAD_ENVELOPE}.
-              Locked product stays 105 × 60 × 15 mm, one orange side button, 2.7&quot; memory LCD,
-              USB-C, 3.5 mm.
+              tolerances and assembly remain unvalidated. Locked product is 105 × 60 × 15 mm. The R1
+              model envelope is {YADIGGG_CAD_ENVELOPE} — allocation study, not the locked body.
             </p>
           </div>
         </div>
@@ -322,31 +322,11 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
             Locked product.
           </h3>
           <p className="mt-3 font-mono text-[12px] leading-relaxed text-[var(--house-muted)]">
-            Hover or click the model. The LCD reads parts and facts — not a capture demo. Candidate B
-            is the same reserved opening, different control layout.
+            Hover or click the model. The LCD reads parts and facts — not a capture demo. One orange
+            side button on the reserved opening.
           </p>
 
-          <p className="house-meta mt-6 mb-2" id={`${focusRootId}-candidate`}>
-            control candidate
-          </p>
-          <div className="flex flex-wrap gap-1" role="group" aria-labelledby={`${focusRootId}-candidate`}>
-            {CONTROL_CANDIDATES.map((entry) => (
-              <ModeButton
-                key={entry.id}
-                selected={candidate === entry.id}
-                label={entry.label}
-                onClick={() => {
-                  setCandidate(entry.id)
-                  posthog.capture('sleeve_viewer_candidate', { candidate: entry.id })
-                }}
-              />
-            ))}
-          </div>
-          <p className="mt-2 font-mono text-[10px] leading-relaxed text-[var(--house-dim)]">
-            {candidateMeta?.hint}
-          </p>
-
-          <div className="house-sleeve-lcd" aria-label="Device facts readout" aria-live="polite">
+          <div className="house-sleeve-lcd mt-6" aria-label="Device facts readout" aria-live="polite">
             <div className="house-sleeve-lcd-top">
               <span>YADIGGG / R1</span>
               <span>{viewLabel}</span>
@@ -360,7 +340,7 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
                 </li>
               ))}
               <li>
-                CAD {YADIGGG_CAD_ENVELOPE} · allocation study
+                {YADIGGG_MODEL_ENVELOPE.value} · {YADIGGG_MODEL_ENVELOPE.label}
               </li>
             </ol>
           </div>
@@ -370,12 +350,12 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
             <p>
               Hollow front and rear shells, display envelope, PCB allocation with control notch,
               battery, camera and connector reservations. X-ray shows cable and RF allowances. Open
-              front removes the front shell and window for inspection.
+              front removes the front shell and window for inspection. Reference shows the original
+              concept image.
             </p>
             <p>
               Camera optics, battery protection, fasteners, sealing, strain relief, PCB routing and
-              thermal paths need engineering. Candidate B is a control layout comparison on the same
-              reserved opening.
+              thermal paths need engineering.
             </p>
           </details>
         </aside>

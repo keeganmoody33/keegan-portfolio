@@ -22,6 +22,7 @@ describe('yadiggg catalog wiring', () => {
     assert.ok(yadiggg?.viewer)
     assert.equal(yadiggg.viewer.mode, 'port')
     assert.equal(yadiggg.viewer.src, '/catalog/yadiggg/yadiggg_r1.glb')
+    assert.equal(yadiggg.viewer.poster, '/catalog/yadiggg/poster.jpg')
     assert.equal(yadiggg.viewer.title, 'r1 design study')
     assert.equal(
       sleeves.filter((sleeve) => sleeve.viewer).map((sleeve) => sleeve.slug).join(','),

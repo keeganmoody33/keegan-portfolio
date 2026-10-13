@@ -1,6 +1,8 @@
+import dynamic from 'next/dynamic'
 import IssuePlate from '@/components/house/IssuePlate'
-import SleeveViewer from '@/components/house/SleeveViewer'
 import type { Sleeve } from '@/lib/catalog'
+
+const SleeveViewer = dynamic(() => import('@/components/house/SleeveViewer'))
 
 export default function Sleeve({ sleeve }: { sleeve: Sleeve }) {
   const cover = sleeve.cover ? (
@@ -36,7 +38,7 @@ export default function Sleeve({ sleeve }: { sleeve: Sleeve }) {
       {sleeve.viewer ? (
         <SleeveViewer
           viewer={sleeve.viewer}
-          posterSrc={sleeve.cover ?? sleeve.viewer.poster ?? ''}
+          posterSrc={sleeve.viewer.poster ?? sleeve.cover ?? ''}
           sleeveTitle={sleeve.title}
         />
       ) : null}

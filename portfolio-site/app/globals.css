@@ -308,8 +308,9 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   /* Reserved stage for the optional sleeve 3D study (yadiggg). Holds the poster
      so the canvas overlay cannot collapse layout. Tailwind does not scan lib/. */
   .house-sleeve-stage {
-    height: min(540px, 70vh);
+    height: min(420px, 55vh);
     min-height: 280px;
+    max-width: 860px;
   }
 
   .house-sleeve-workbench {
@@ -478,7 +479,8 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
     }
 
     .house-sleeve-stage {
-      height: min(620px, 72vh);
+      height: min(420px, 55vh);
+      max-width: 860px;
     }
   }
 
@@ -488,7 +490,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
     }
 
     .house-sleeve-stage {
-      height: min(470px, 70vh);
+      height: min(420px, 55vh);
     }
 
     .house-sleeve-measure {
@@ -512,7 +514,7 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
     }
 
     .house-sleeve-stage {
-      height: min(420px, 70vh);
+      height: min(420px, 55vh);
     }
 
     .house-sleeve-lcd {

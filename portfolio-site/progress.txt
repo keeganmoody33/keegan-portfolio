@@ -1,3 +1,10 @@
+COMPLETED (2026-10-13 — QA Gate + UX/UI review on PR #75, preview only):
+- Same branch. Dropped Candidate B (`B · capture + nav`, `control_capture`, `controls_candidate_b.glb`) — locked product is one orange side button, no recorder UI. `partByName(name)` only. No `sleeve_viewer_candidate`.
+- Class error boundary around the Canvas: WebGL / `getExtension` / GLB throws call `onError` → poster + one error caption. Fallback (no WebGL / GLB 404 / blocked) hides mode/preset/hint and drops stage `tabIndex`.
+- `!touch-pan-y`, two-finger orbit, wheel zoom only when focused or ctrl/cmd. Reduced motion keeps the canvas with damping off.
+- Dark device `poster.jpg` (not cream cover), `loading the model…`, 150ms fade. Stage `min(420px, 55vh)` capped 860px + `Bounds fit`. RoomEnvironment + ink ContactShadows; smoke-clear shells; pad-tint `display_module` only. USB-C · 3.5 mm labeled as ports, not the orange button. Locked 105×60×15 vs R1 envelope 70×110×18. `Sleeve` `dynamic()`-loads `SleeveViewer` only when `viewer` is set.
+- Do not merge until preview QA.
+
 COMPLETED (2026-10-13 — yadiggg sleeve workbench parity, preview only):
 - Same PR #75 branch. Keegan: study was too stripped; match R1 workbench density in house tokens. Two-column stage + LCD rail. Modes assembled / x-ray / exploded / open front / **reference**. Presets front / rear / side / ports / **reset view**. Hover + click part readout. Geometry mm callouts (21 / 1.5 mm / 70.8 mm) labeled as CAD study. Locked facts stay 105 × 60 × 15 mm / 2.7" / one orange side button / USB-C / 3.5 mm on the measure chip and Doto LCD — not Identify/Read/Save, not capture demo.
 - Candidate B ported (`controls_candidate_b.glb`) as CAD control-layout on the same reserved opening. Reference concept image (`reference.jpg`). Cloned R1 GLB smoke-clear shell (not pad-gray), house-orange side control, local RoomEnvironment PMREM + ACES, damped orbit, lerped presets. Device LCD plane is locked facts in Doto.

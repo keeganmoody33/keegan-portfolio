@@ -1,20 +1,17 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
+import { Bounds, ContactShadows, OrbitControls, useBounds } from '@react-three/drei'
 import * as THREE from 'three'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
-import {
-  isCandidateAControl,
-  partByName,
-} from '@/lib/yadiggg-parts'
+import { partByName } from '@/lib/yadiggg-parts'
 import {
   CAMERA_PRESETS,
   formatPartLabel,
+  shouldCaptureWheel,
   type CameraPreset,
-  type ControlCandidate,
   type SleeveViewMode,
 } from '@/lib/yadiggg-viewer'
 
@@ -22,6 +19,7 @@ const HOUSE_BG = 0x0a0a0a
 const HOUSE_ORANGE = 0xe23d00
 const HOUSE_USB = 0x49b0d3
 const HOUSE_AUDIO = 0xb8c95e
+const HOUSE_PAD = 0x7f8085
 const HIDDEN_ALWAYS = new Set(['display_active'])
 const SECTION_HIDDEN = new Set(['shell_front', 'display_window', 'study_legend'])
 const CONTROL_MESHES = new Set([
@@ -29,7 +27,6 @@ const CONTROL_MESHES = new Set([
   'control_select',
   'control_down',
   'control_mechanism',
-  'control_capture',
 ])
 
 type ControlsApi = {
@@ -40,9 +37,7 @@ type ControlsApi = {
 
 export type YadigggViewerProps = {
   src: string
-  candidateSrc: string
   view: SleeveViewMode
-  candidate: ControlCandidate
   preset: CameraPreset
   presetTick: number
   reducedMotion: boolean
@@ -51,6 +46,27 @@ export type YadigggViewerProps = {
   onPartLeave: () => void
   onReady: () => void
   onError: () => void
+}
+
+class StudyErrorBoundary extends Component<
+  { children: ReactNode; onError: () => void },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode; onError: () => void }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+  componentDidCatch(error: Error) {
+    console.error('YadigggViewer caught:', error)
+    this.props.onError()
+  }
+  render() {
+    if (this.state.hasError) return null
+    return this.props.children
+  }
 }
 
 function forEachMaterial(mesh: THREE.Mesh, fn: (material: THREE.MeshStandardMaterial) => void) {
@@ -88,11 +104,11 @@ function paintControl(material: THREE.MeshStandardMaterial) {
   material.metalness = 0.08
 }
 
-function applyView(root: THREE.Object3D, view: SleeveViewMode, candidate: ControlCandidate) {
+function applyView(root: THREE.Object3D, view: SleeveViewMode) {
   root.traverse((obj) => {
     if (obj.type !== 'Mesh') return
     const mesh = obj as THREE.Mesh
-    const part = partByName(mesh.name, candidate)
+    const part = partByName(mesh.name)
 
     mesh.position.z = view === 'exploded' ? (part?.explodeMm ?? 0) * 0.001 : 0
 
@@ -103,26 +119,26 @@ function applyView(root: THREE.Object3D, view: SleeveViewMode, candidate: Contro
 
     mesh.visible = part?.kind !== 'construction' || view === 'xray'
     if (view === 'section' && SECTION_HIDDEN.has(mesh.name)) mesh.visible = false
-    if (isCandidateAControl(mesh.name)) mesh.visible = candidate === 'A' && mesh.visible
 
     forEachMaterial(mesh, (material) => {
       if (mesh.name.startsWith('shell_')) {
         material.transparent = true
-        material.opacity = view === 'xray' ? 0.12 : 0.4
+        material.opacity = view === 'xray' ? 0.1 : 0.28
         material.depthWrite = false
-        material.roughness = view === 'xray' ? 0.18 : 0.28
-        material.envMapIntensity = view === 'xray' ? 1.35 : 1.05
+        material.roughness = view === 'xray' ? 0.12 : 0.16
+        material.metalness = 0.02
+        material.envMapIntensity = view === 'xray' ? 1.6 : 1.45
       }
       if (mesh.name === 'display_window') {
         material.transparent = true
-        material.opacity = 0.1
+        material.opacity = 0.08
         material.depthWrite = false
       }
     })
   })
 }
 
-function prepareScene(source: THREE.Group, asControls: boolean): THREE.Group {
+function prepareScene(source: THREE.Group): THREE.Group {
   const scene = source.clone(true)
   scene.traverse((obj) => {
     if (obj.type !== 'Mesh') return
@@ -131,8 +147,12 @@ function prepareScene(source: THREE.Group, asControls: boolean): THREE.Group {
     const clones = materials.map((material) => material.clone())
     mesh.material = clones.length === 1 ? clones[0]! : clones
     forEachMaterial(mesh, (material) => {
-      if (asControls || CONTROL_MESHES.has(mesh.name)) {
+      if (CONTROL_MESHES.has(mesh.name)) {
         paintControl(material)
+      } else if (mesh.name === 'display_module') {
+        material.color.setHex(HOUSE_PAD)
+        material.roughness = 0.42
+        material.metalness = 0.12
       } else if (mesh.name === 'usb_reservation') {
         material.color.setHex(HOUSE_USB)
       } else if (mesh.name === 'jack_reservation') {
@@ -217,29 +237,17 @@ function RoomEnv() {
   return <primitive object={texture} attach="environment" />
 }
 
-function GroundBlob({ visible }: { visible: boolean }) {
-  const texture = useMemo(() => {
-    const canvas = document.createElement('canvas')
-    canvas.width = canvas.height = 128
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return null
-    const gradient = ctx.createRadialGradient(64, 64, 1, 64, 64, 64)
-    gradient.addColorStop(0, 'rgba(236, 236, 236, 0.22)')
-    gradient.addColorStop(0.45, 'rgba(226, 61, 0, 0.08)')
-    gradient.addColorStop(1, 'rgba(10, 10, 10, 0)')
-    ctx.fillStyle = gradient
-    ctx.fillRect(0, 0, 128, 128)
-    const map = new THREE.CanvasTexture(canvas)
-    map.colorSpace = THREE.SRGBColorSpace
-    return map
-  }, [])
-
-  if (!texture) return null
+function InkContactShadow({ visible }: { visible: boolean }) {
+  if (!visible) return null
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.056, 0]} visible={visible}>
-      <planeGeometry args={[0.15, 0.075]} />
-      <meshBasicMaterial map={texture} transparent depthWrite={false} toneMapped={false} />
-    </mesh>
+    <ContactShadows
+      position={[0, -0.058, 0]}
+      opacity={0.45}
+      scale={0.2}
+      blur={1.8}
+      far={0.14}
+      color="#ececec"
+    />
   )
 }
 
@@ -331,26 +339,22 @@ function CameraPresetRig({
 
 function StudyModel({
   src,
-  candidateSrc,
   view,
-  candidate,
   onPart,
   onPartLeave,
   onReady,
   onError,
 }: {
   src: string
-  candidateSrc: string
   view: SleeveViewMode
-  candidate: ControlCandidate
   onPart: (label: string, note: string, source: 'hover' | 'select') => void
   onPartLeave: () => void
   onReady: () => void
   onError: () => void
 }) {
   const { gl } = useThree()
+  const bounds = useBounds()
   const [r1, setR1] = useState<THREE.Group | null>(null)
-  const [candidateB, setCandidateB] = useState<THREE.Group | null>(null)
   const pointer = useRef<[number, number] | null>(null)
   const hovered = useRef<THREE.Mesh | null>(null)
   const onPartLeaveRef = useRef(onPartLeave)
@@ -367,8 +371,8 @@ function StudyModel({
       src,
       (gltf) => {
         if (cancelled) return
-        const prepared = prepareScene(gltf.scene, false)
-        applyView(prepared, view, candidate)
+        const prepared = prepareScene(gltf.scene)
+        applyView(prepared, view)
         setR1(prepared)
         onReady()
       },
@@ -377,25 +381,22 @@ function StudyModel({
         if (!cancelled) onError()
       }
     )
-    loader.load(
-      candidateSrc,
-      (gltf) => {
-        if (cancelled) return
-        const prepared = prepareScene(gltf.scene, true)
-        setCandidateB(prepared)
-      }
-    )
 
     return () => {
       cancelled = true
     }
-    // Load once per src; view/candidate applied below.
+    // Load once per src; view applied below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src, candidateSrc, onError, onReady])
+  }, [src, onError, onReady])
 
   useEffect(() => {
-    if (r1) applyView(r1, view, candidate)
-  }, [r1, view, candidate])
+    if (r1) applyView(r1, view)
+  }, [r1, view])
+
+  useEffect(() => {
+    if (!r1) return
+    bounds.refresh().clip().fit()
+  }, [bounds, r1])
 
   const clearHover = () => {
     if (!hovered.current) return
@@ -414,7 +415,7 @@ function StudyModel({
     if (object.type !== 'Mesh') return false
     const mesh = object as THREE.Mesh
     if (!mesh.visible) return false
-    const part = partByName(mesh.name, candidate)
+    const part = partByName(mesh.name)
     if (!part) return false
     if (source === 'hover') {
       if (hovered.current !== mesh) {
@@ -447,22 +448,85 @@ function StudyModel({
 
   if (!r1) return null
 
-  const showR1 = view !== 'compare'
-  const showB = view !== 'compare' && candidate === 'B' && candidateB !== null
-
   return (
     <group onPointerDown={onPointerDown} onPointerUp={onPointerUp} onPointerMove={onPointerMove}>
-      <primitive object={r1} visible={showR1} />
-      {candidateB ? <primitive object={candidateB} visible={showB} /> : null}
+      <primitive object={r1} visible={view !== 'compare'} />
     </group>
   )
 }
 
-export default function YadigggViewer({
-  src,
-  candidateSrc,
+function GatedOrbit({
   view,
-  candidate,
+  reducedMotion,
+  focusRootId,
+}: {
+  view: SleeveViewMode
+  reducedMotion: boolean
+  focusRootId: string
+}) {
+  const { camera, gl, controls } = useThree()
+  const orbitOn = view !== 'compare'
+
+  useEffect(() => {
+    const node = gl.domElement
+    const stageFocused = () => {
+      const root = document.getElementById(focusRootId)
+      if (!root) return false
+      const active = document.activeElement
+      return active === root || root.contains(active)
+    }
+
+    const onPointerDown = () => {
+      document.getElementById(focusRootId)?.focus({ preventScroll: true })
+    }
+
+    const onTouchStart = (event: TouchEvent) => {
+      if (event.touches.length === 1) event.stopImmediatePropagation()
+    }
+
+    const onWheel = (event: WheelEvent) => {
+      if (!orbitOn) return
+      if (!shouldCaptureWheel(stageFocused(), event.ctrlKey || event.metaKey)) return
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      const orbit = controls as ControlsApi | null
+      const target = orbit?.target ?? new THREE.Vector3()
+      const offset = camera.position.clone().sub(target)
+      const factor = event.deltaY > 0 ? 1.08 : 0.92
+      offset.setLength(THREE.MathUtils.clamp(offset.length() * factor, 0.14, 0.48))
+      camera.position.copy(target).add(offset)
+      orbit?.update()
+    }
+
+    node.addEventListener('pointerdown', onPointerDown)
+    node.addEventListener('touchstart', onTouchStart, { capture: true, passive: true })
+    node.addEventListener('wheel', onWheel, { capture: true, passive: false })
+    return () => {
+      node.removeEventListener('pointerdown', onPointerDown)
+      node.removeEventListener('touchstart', onTouchStart, true)
+      node.removeEventListener('wheel', onWheel, true)
+    }
+  }, [camera, controls, focusRootId, gl, orbitOn])
+
+  return (
+    <OrbitControls
+      makeDefault
+      enableDamping={!reducedMotion && orbitOn}
+      dampingFactor={0.05}
+      enablePan={false}
+      enableRotate={orbitOn}
+      enableZoom={false}
+      enabled={orbitOn}
+      minDistance={0.14}
+      maxDistance={0.48}
+      touches={{ ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE }}
+    />
+  )
+}
+
+function YadigggCanvas({
+  src,
+  view,
   preset,
   presetTick,
   reducedMotion,
@@ -474,8 +538,8 @@ export default function YadigggViewer({
 }: YadigggViewerProps) {
   return (
     <Canvas
-      className="absolute inset-0 h-full w-full cursor-grab touch-none active:cursor-grabbing"
-      gl={{ antialias: true, alpha: false, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}
+      className="absolute inset-0 h-full w-full cursor-grab !touch-pan-y active:cursor-grabbing"
+      gl={{ antialias: true, alpha: false, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.08 }}
       camera={{
         position: [...CAMERA_PRESETS.reset],
         fov: 31,
@@ -487,32 +551,33 @@ export default function YadigggViewer({
     >
       <color attach="background" args={[HOUSE_BG]} />
       <RoomEnv />
-      <hemisphereLight args={[0xffffff, 0x555555, 0.8]} />
-      <directionalLight position={[-0.1, 0.2, 0.2]} intensity={1.5} color="#ffffff" />
-      <directionalLight position={[0.22, 0.05, -0.14]} intensity={0.28} color="#e23d00" />
-      <StudyModel
-        src={src}
-        candidateSrc={candidateSrc}
-        view={view}
-        candidate={candidate}
-        onPart={onPart}
-        onPartLeave={onPartLeave}
-        onReady={onReady}
-        onError={onError}
-      />
-      <DeviceLcd view={view} />
-      <GroundBlob visible={view !== 'exploded' && view !== 'compare'} />
-      <OrbitControls
-        makeDefault
-        enableDamping={!reducedMotion}
-        dampingFactor={0.05}
-        enablePan={false}
-        enabled={view !== 'compare'}
-        minDistance={0.14}
-        maxDistance={0.48}
-      />
+      <hemisphereLight args={[0xffffff, 0x444444, 1.05]} />
+      <directionalLight position={[-0.12, 0.22, 0.24]} intensity={1.7} color="#ffffff" />
+      <directionalLight position={[0.22, 0.08, -0.16]} intensity={0.42} color="#e23d00" />
+      <directionalLight position={[0, 0.3, 0.05]} intensity={0.35} color="#ffffff" />
+      <Bounds fit clip margin={1.28} maxDuration={0}>
+        <StudyModel
+          src={src}
+          view={view}
+          onPart={onPart}
+          onPartLeave={onPartLeave}
+          onReady={onReady}
+          onError={onError}
+        />
+        <DeviceLcd view={view} />
+      </Bounds>
+      <InkContactShadow visible={view !== 'exploded' && view !== 'compare'} />
+      <GatedOrbit view={view} reducedMotion={reducedMotion} focusRootId={focusRootId} />
       <CameraPresetRig preset={preset} presetTick={presetTick} reducedMotion={reducedMotion} />
       <KeyboardOrbit focusRootId={focusRootId} reducedMotion={reducedMotion} />
     </Canvas>
+  )
+}
+
+export default function YadigggViewer(props: YadigggViewerProps) {
+  return (
+    <StudyErrorBoundary onError={props.onError}>
+      <YadigggCanvas {...props} />
+    </StudyErrorBoundary>
   )
 }

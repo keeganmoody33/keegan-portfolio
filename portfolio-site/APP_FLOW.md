@@ -344,16 +344,16 @@ Land on /keeganmoody33
 **Steps:**
 
 1. Sleeve renders cover + liner as before. Contents track 01 remains `https://github.com/keeganmoody33/YADIGGG`.
-2. When `viewer` is present, `SleeveViewer` renders a two-column workbench (stage + allocation rail). The canvas stage reserves `.house-sleeve-stage` (`min(540px, 70vh)`) so the poster (`cover.jpg`) holds layout. IntersectionObserver + `next/dynamic(..., { ssr: false })` loads `YadigggViewer` only on this sleeve when in view.
-3. three.js is not in the homepage or other sleeve bundles. Reduced motion and no-WebGL keep the static poster + caption. Share-token preview URLs are rejected.
-4. View modes: assembled / x-ray / exploded / open front / reference (concept image). Camera presets: front / rear / side / ports / reset view, with damped orbit and lerped presets. Hover and click inspect a part (readout + LCD). Candidate A/B swaps the control cluster GLB on the same reserved opening — CAD comparison only. No recorder-screen / Identify·Read·Save / capture demo. Geometry strip is the R1 CAD study (21 parts / 1.5 mm wall / 70.8 mm). The rail LCD + measure chip keep locked product facts (105 × 60 × 15 mm smoke-clear shell, 2.7" memory LCD, one orange side button, USB-C, 3.5 mm).
-5. Viewport is keyboard-focusable (arrows orbit, +/- zoom). Focus-visible is 2px ink.
+2. When `viewer` is present, `Sleeve` `dynamic()`-loads `SleeveViewer` (so `/`, `/catalog`, and other sleeves stay +0). The workbench stage is `.house-sleeve-stage` (`min(420px, 55vh)`, max-width 860px at 1280+). A dark device poster (`poster.jpg`, not the cream cover) holds layout. IntersectionObserver + `next/dynamic(..., { ssr: false })` loads `YadigggViewer` only on this sleeve when in view. `loading the model…` then a 150ms fade onto the canvas.
+3. three.js is not in the homepage or other sleeve bundles. Reduced motion keeps the canvas with damping off. No-WebGL / GLB 404 / blocked URLs drop mode row, preset row, drag hint, and stage `tabIndex` — poster + one caption, no dead controls. Share-token preview URLs are rejected.
+4. View modes: assembled / x-ray / exploded / open front / reference (concept image). Camera presets: front / rear / side / ports / reset view, with damped orbit and lerped presets. Hover and click inspect a part (readout + LCD). One orange side-button rocker on the reserved opening — no Candidate B / capture GLB, no recorder-screen / Identify·Read·Save. Geometry strip is the R1 CAD study (21 parts / 1.5 mm wall / 70.8 mm). The rail LCD + measure chip keep locked product facts (105 × 60 × 15 mm locked product, 2.7" memory LCD, one orange side button, USB-C · 3.5 mm ports) separate from the 70 × 110 × 18 mm R1 model envelope. `What is modeled?` stays on the rail.
+5. Viewport is keyboard-focusable when the study is live (arrows orbit, +/- zoom). `touch-action: pan-y`; one-finger vertical swipes scroll the page; two-finger orbits. Wheel zooms only while the stage is focused or with ctrl/cmd. Focus-visible is 2px ink. A React error boundary around the Canvas falls back to the poster + error caption on WebGL / `getExtension` / GLB throws. `Bounds fit` frames the device; RoomEnvironment + ink `ContactShadows`; shells stay smoke-clear; only `display_module` is pad-tinted (not the bezel).
 
 **Success state:** House-token 3D workbench in the sleeve. GitHub link still in contents.
 
-**Error / empty:** Other sleeves omit `viewer`. Load failure / no WebGL / reduced motion → static cover + caption. Never iframe a `_vercel_share` URL.
+**Error / empty:** Other sleeves omit `viewer` (no SleeveViewer chunk). Load failure / no WebGL / blocked / Canvas throw → dark poster + one caption, no mode/preset/hint. Never iframe a `_vercel_share` URL.
 
-**PostHog events:** `sleeve_viewer_loaded`, `sleeve_viewer_mode`, `sleeve_viewer_preset`, `sleeve_viewer_part`, `sleeve_viewer_candidate`
+**PostHog events:** `sleeve_viewer_loaded`, `sleeve_viewer_mode`, `sleeve_viewer_preset`, `sleeve_viewer_part`
 
 ---
 
@@ -366,7 +366,7 @@ Land on /keeganmoody33
 | BannerRotator | Full-bleed bar; `pr-16` on content only when dots show | Same |
 | Timeline | Full-width cards | Same layout (no responsive changes) |
 | Record detail | At 1280: cover left, rows right | At 375/768: stacked cover capped at 480px, then rows |
-| YADIGGG study | Two-column workbench; viewport `min(540px, 70vh)` (620px at 1500, 470px at 950); modes, presets, geometry, LCD rail | Stacks under 700px; stage 420px; mode/preset wrap; tap targets `min-h-11`; LCD centered |
+| YADIGGG study | Two-column workbench; viewport `min(420px, 55vh)` capped 860px; modes, presets, geometry, LCD rail | Stacks under 700px; stage `min(420px, 55vh)`; mode/preset wrap; tap targets `min-h-11`; LCD centered; one-finger pan-y scrolls |
 
 ---
 
