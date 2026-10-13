@@ -1,4 +1,4 @@
-import type { FlipLookupResult, FlipStub } from './types.ts'
+import type { FlipLookupResult, FlipSearchResult, FlipSong, FlipStub } from './types.ts'
 
 /** Clearly marked stub data for screenshots when EVERYSONG_API_KEY is unset. */
 export const FLIP_FIXTURE_CHECKED = '2026-10-13'
@@ -66,6 +66,83 @@ const DOWN: FlipLookupResult = {
   sampledIn: [],
 }
 
+export const DONNY_HITS: FlipSong[] = [
+  {
+    rid: 19701,
+    title: 'Voices Inside (Everything Is Everything)',
+    artist: 'Donny Hathaway',
+    year: '1970',
+    isrc: null,
+  },
+  {
+    rid: 19702,
+    title: 'The Ghetto',
+    artist: 'Donny Hathaway',
+    year: '1970',
+    isrc: null,
+  },
+  {
+    rid: 19703,
+    title: 'A Song for You',
+    artist: 'Donny Hathaway',
+    year: '1971',
+    isrc: null,
+  },
+  {
+    rid: 19704,
+    title: 'Little Ghetto Boy',
+    artist: 'Donny Hathaway',
+    year: '1972',
+    isrc: null,
+  },
+  {
+    rid: 19705,
+    title: 'This Christmas',
+    artist: 'Donny Hathaway',
+    year: '1970',
+    isrc: null,
+  },
+  {
+    rid: 19706,
+    title: 'Giving Up',
+    artist: 'Donny Hathaway',
+    year: '1971',
+    isrc: null,
+  },
+  {
+    rid: 19707,
+    title: 'Someday We\'ll All Be Free',
+    artist: 'Donny Hathaway',
+    year: '1973',
+    isrc: null,
+  },
+  {
+    rid: 19708,
+    title: 'I Love You More Than You\'ll Ever Know',
+    artist: 'Donny Hathaway',
+    year: '1973',
+    isrc: null,
+  },
+]
+
+const VOICES: FlipLookupResult = {
+  status: 'ok',
+  fixture: true,
+  checked: FLIP_FIXTURE_CHECKED,
+  song: DONNY_HITS[0]!,
+  samples: [],
+  sampledIn: [
+    { title: 'The 6th Sense', artist: 'Common', year: '2000' },
+    { title: 'The Truth', artist: 'Beanie Sigel', year: '2000' },
+    { title: 'Everything', artist: 'Foxy Brown', year: '1996' },
+  ],
+}
+
+function titleLooksLikeVoices(title: string): boolean {
+  const t = title.trim().toLowerCase()
+  return t.includes('voices inside') || t === 'voices'
+}
+
 export function parseFlipStub(raw: string | null | undefined): FlipStub | null {
   if (raw == null) return null
   const value = raw.trim().toLowerCase()
@@ -74,14 +151,15 @@ export function parseFlipStub(raw: string | null | undefined): FlipStub | null {
     value === 'empty' ||
     value === 'nomatch' ||
     value === 'down' ||
-    value === 'success'
+    value === 'success' ||
+    value === 'suggest'
   ) {
     return value
   }
   return null
 }
 
-export function fixtureLookup(stub: FlipStub): FlipLookupResult {
+export function fixtureLookup(stub: FlipStub, title = '', artist = ''): FlipLookupResult {
   switch (stub) {
     case 'results':
     case 'success':
@@ -92,6 +170,52 @@ export function fixtureLookup(stub: FlipStub): FlipLookupResult {
       return NO_MATCH
     case 'down':
       return DOWN
+    case 'suggest':
+      if (titleLooksLikeVoices(title) || artist.toLowerCase().includes('hathaway')) {
+        if (!title || titleLooksLikeVoices(title)) return VOICES
+      }
+      if (title && artist) {
+        const hit = DONNY_HITS.find(
+          (song) =>
+            song.title.toLowerCase() === title.trim().toLowerCase() &&
+            song.artist.toLowerCase() === artist.trim().toLowerCase()
+        )
+        if (hit) {
+          return {
+            status: 'ok',
+            fixture: true,
+            checked: FLIP_FIXTURE_CHECKED,
+            song: hit,
+            samples: [],
+            sampledIn: [],
+          }
+        }
+      }
+      return VOICES
+    default: {
+      const _exhaustive: never = stub
+      return _exhaustive
+    }
+  }
+}
+
+export function fixtureSearch(stub: FlipStub): FlipSearchResult {
+  switch (stub) {
+    case 'suggest':
+      return { status: 'ok', fixture: true, hits: DONNY_HITS }
+    case 'nomatch':
+      return { status: 'no_match', fixture: true, hits: [] }
+    case 'down':
+      return { status: 'down', fixture: true, hits: [] }
+    case 'results':
+    case 'success':
+      return HOTLINE.song
+        ? { status: 'ok', fixture: true, hits: [HOTLINE.song] }
+        : { status: 'no_match', fixture: true, hits: [] }
+    case 'empty':
+      return EMPTY_SAMPLES.song
+        ? { status: 'ok', fixture: true, hits: [EMPTY_SAMPLES.song] }
+        : { status: 'no_match', fixture: true, hits: [] }
     default: {
       const _exhaustive: never = stub
       return _exhaustive

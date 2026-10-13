@@ -1,9 +1,13 @@
 export const FLIP_COPY = {
-  h1: 'flip',
-  lede: "look up a song. see what it sampled and what sampled it. if you want me to flip it, leave a way to reach you and i'll send the beat.",
-  lookup: 'lookup',
+  h1: 'doingflips',
+  h1Mark: 'flip',
+  lede: 'find a song you want me to flip. pick it, leave a way to reach you, i\'ll send the beat.',
+  lookup: 'song',
+  lookupPlaceholder: 'title, artist, a line you remember',
+  lookupHint: 'songs only. if the name is fuzzy, pick from the list.',
   lookupButton: 'look up',
-  lookupAria: 'look up a song',
+  lookupAria: 'search for a song to flip',
+  pick: 'pick the song you mean.',
   samples: 'samples',
   sampledIn: 'sampled in',
   empty: 'nothing on file yet',
@@ -13,7 +17,7 @@ export const FLIP_COPY = {
   email: 'email',
   phone: 'phone',
   smsOptIn: 'text me the beat',
-  submit: 'request flip',
+  submit: 'request a sample flip',
   privacy: 'used only to send you this beat. never shared or added to a list.',
   success: 'got it. if i make it, it comes to you.',
   emailBad: "that email doesn't look right.",
@@ -22,12 +26,13 @@ export const FLIP_COPY = {
   smsRequired: 'check the box to get the beat by text.',
   songRequired: 'look up a song first.',
   storeDown: "couldn't store that.",
-  productLead: 'building something?',
+  connect: 'connect',
+  connectLede: 'jump on a call, or inquire about services.',
   productEmail: '33@lecturesfrom.com',
-  askFlip: 'ask for a flip',
+  askFlip: 'request a sample flip',
   sourceHost: 'everysong.site',
   fixtureMark: 'fixture',
-  nav: 'flip',
+  nav: 'doingflips',
 } as const
 
 export const FLIP_SAMPLE_CAP = 8
@@ -43,7 +48,11 @@ export function sourceLine(checked: string | null, fixture: boolean): string {
 }
 
 export function productInquiryLine(): string {
-  return `${FLIP_COPY.productLead} ${FLIP_COPY.productEmail}`
+  return `${FLIP_COPY.connect} ${FLIP_COPY.connectLede} ${FLIP_COPY.productEmail}`
+}
+
+export function songFieldLabel(song: { title: string; artist: string }): string {
+  return `${song.title} · ${song.artist}`
 }
 
 export const PRODUCT_MAILTO = `mailto:${FLIP_COPY.productEmail}` as const

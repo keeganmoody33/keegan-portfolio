@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPostHogClient } from '@/lib/posthog-server'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { emptyLookup, everysongApiKey, lookupCacheKey, lookupEverysong } from '@/lib/flip/everysong.ts'
+import {
+  emptyLookup,
+  everysongApiKey,
+  lookupCacheKey,
+  lookupEverysong,
+  samplesForSong,
+  songLookupCacheKey,
+} from '@/lib/flip/everysong.ts'
 import { fixtureLookup, parseFlipStub } from '@/lib/flip/fixtures.ts'
 import { readFlipLookupCache, writeFlipLookupCache } from '@/lib/flip/store.ts'
 import {
@@ -19,6 +26,10 @@ function clientIp(request: NextRequest): string {
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     'unknown'
   )
+}
+
+function clip(value: string | null): string {
+  return (value ?? '').trim().slice(0, FLIP_QUERY_MAX)
 }
 
 export async function GET(request: NextRequest) {
@@ -40,7 +51,9 @@ export async function GET(request: NextRequest) {
   }
 
   const url = new URL(request.url)
-  const query = (url.searchParams.get('q') ?? '').trim().slice(0, FLIP_QUERY_MAX)
+  const query = clip(url.searchParams.get('q'))
+  const title = clip(url.searchParams.get('title'))
+  const artist = clip(url.searchParams.get('artist'))
   const stub = parseFlipStub(url.searchParams.get('stub'))
   const production = isProductionRedisNamespace()
 
@@ -50,7 +63,7 @@ export async function GET(request: NextRequest) {
       event: 'api_flip_lookup',
       properties: { source: 'fixture', stub, has_query: query.length > 0 },
     })
-    return NextResponse.json(fixtureLookup(stub), {
+    return NextResponse.json(fixtureLookup(stub, title, artist), {
       headers: { 'Cache-Control': 'no-store' },
     })
   }
@@ -67,13 +80,14 @@ export async function GET(request: NextRequest) {
     })
   }
 
-  if (!query) {
+  const picked = title.length > 0 && artist.length > 0
+  if (!picked && !query) {
     return NextResponse.json(emptyLookup('no_match'), {
       headers: { 'Cache-Control': 'no-store' },
     })
   }
 
-  const hash = lookupCacheKey(query)
+  const hash = picked ? songLookupCacheKey(title, artist) : lookupCacheKey(query)
   const cached = await readFlipLookupCache(hash)
   if (cached) {
     posthog.capture({
@@ -84,7 +98,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(cached, { headers: { 'Cache-Control': 'no-store' } })
   }
 
-  const result = await lookupEverysong(query, { key })
+  const result = picked
+    ? await samplesForSong({ rid: null, title, artist, year: null, isrc: null }, { key })
+    : await lookupEverysong(query, { key })
   if (result.status === 'ok' || result.status === 'no_match') {
     await writeFlipLookupCache(hash, result)
   }

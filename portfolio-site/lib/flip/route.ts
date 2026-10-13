@@ -5,10 +5,11 @@
 export const FLIP_PATH = '/flip' as const
 
 export function flipHrefForTrack(title: string, artist?: string): string {
-  const q = [artist, title]
-    .map((part) => part?.trim() ?? '')
-    .filter((part) => part.length > 0)
-    .join(' ')
-  if (!q) return FLIP_PATH
-  return `${FLIP_PATH}?track=${encodeURIComponent(q)}`
+  const songTitle = title.trim()
+  const songArtist = artist?.trim() ?? ''
+  if (!songTitle && !songArtist) return FLIP_PATH
+  const params = new URLSearchParams()
+  if (songTitle) params.set('title', songTitle)
+  if (songArtist) params.set('artist', songArtist)
+  return `${FLIP_PATH}?${params.toString()}`
 }

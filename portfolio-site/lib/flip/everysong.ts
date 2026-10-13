@@ -6,8 +6,11 @@ import {
   EVERYSONG_TIMEOUT_MS,
   EVERYSONG_USER_AGENT,
   FLIP_QUERY_MAX,
+  FLIP_SEARCH_LIMIT,
+  FLIP_SEARCH_MIN_CHARS,
   type FlipLookupResult,
   type FlipSampleRow,
+  type FlipSearchResult,
   type FlipSong,
 } from './types.ts'
 
@@ -21,6 +24,14 @@ export function everysongApiKey(env: EnvMap = process.env): string | null {
 export function lookupCacheKey(query: string): string {
   const hash = createHash('sha256').update(query.trim().toLowerCase()).digest('hex').slice(0, 24)
   return hash
+}
+
+export function searchCacheKey(query: string): string {
+  return lookupCacheKey(`search\0${query}`)
+}
+
+export function songLookupCacheKey(title: string, artist: string): string {
+  return lookupCacheKey(`song\0${title}\0${artist}`)
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -100,6 +111,7 @@ export function mapSearchResults(payload: unknown): FlipSong[] {
   for (const hit of list) {
     const song = songFromSearchHit(hit)
     if (song) songs.push(song)
+    if (songs.length >= FLIP_SEARCH_LIMIT) break
   }
   return songs
 }
@@ -137,6 +149,10 @@ export function emptyLookup(status: FlipLookupResult['status'], fixture = false)
     samples: [],
     sampledIn: [],
   }
+}
+
+export function emptySearch(status: FlipSearchResult['status'], fixture = false): FlipSearchResult {
+  return { status, fixture, hits: [] }
 }
 
 export function okLookup(
@@ -194,46 +210,88 @@ async function everysongGet(
   }
 }
 
-export async function lookupEverysong(
-  query: string,
-  options: {
-    key: string
-    fetchImpl?: FetchLike
-    now?: Date
-    timeoutMs?: number
-  }
-): Promise<FlipLookupResult> {
-  const q = query.trim().slice(0, FLIP_QUERY_MAX)
-  if (!q) return emptyLookup('no_match')
+type EverysongCallOptions = {
+  key: string
+  fetchImpl?: FetchLike
+  now?: Date
+  timeoutMs?: number
+}
 
-  const fetchImpl = options.fetchImpl ?? fetch
-  const timeoutMs = options.timeoutMs ?? EVERYSONG_TIMEOUT_MS
+async function withTimeout<T>(
+  timeoutMs: number,
+  run: (signal: AbortSignal) => Promise<T>
+): Promise<T> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
-    const search = await everysongGet(
-      EVERYSONG_SEARCH_PATH,
-      { q, limit: '8' },
-      options.key,
-      fetchImpl,
-      controller.signal
-    )
-    if (!search.ok) return emptyLookup('down')
-    const songs = mapSearchResults(search.json)
-    const song = songs[0]
-    if (!song) return emptyLookup('no_match')
-
-    const samplesRes = await everysongGet(
-      EVERYSONG_SAMPLES_PATH,
-      { artist: song.artist, title: song.title },
-      options.key,
-      fetchImpl,
-      controller.signal
-    )
-    if (!samplesRes.ok) return emptyLookup('down')
-    const history = mapSampleHistory(samplesRes.json)
-    return okLookup(song, history.samples, history.sampledIn, false, options.now)
+    return await run(controller.signal)
   } finally {
     clearTimeout(timer)
   }
+}
+
+export async function searchEverysong(
+  query: string,
+  options: EverysongCallOptions
+): Promise<FlipSearchResult> {
+  const q = query.trim().slice(0, FLIP_QUERY_MAX)
+  if (q.length < FLIP_SEARCH_MIN_CHARS) return emptySearch('ok')
+
+  const fetchImpl = options.fetchImpl ?? fetch
+  const timeoutMs = options.timeoutMs ?? EVERYSONG_TIMEOUT_MS
+  return withTimeout(timeoutMs, async (signal) => {
+    const search = await everysongGet(
+      EVERYSONG_SEARCH_PATH,
+      { q, limit: String(FLIP_SEARCH_LIMIT) },
+      options.key,
+      fetchImpl,
+      signal
+    )
+    if (!search.ok) return emptySearch('down')
+    const hits = mapSearchResults(search.json)
+    if (hits.length === 0) return emptySearch('no_match')
+    return { status: 'ok', fixture: false, hits }
+  })
+}
+
+export async function samplesForSong(
+  song: FlipSong,
+  options: EverysongCallOptions
+): Promise<FlipLookupResult> {
+  const title = song.title.trim().slice(0, FLIP_QUERY_MAX)
+  const artist = song.artist.trim().slice(0, FLIP_QUERY_MAX)
+  if (!title || !artist) return emptyLookup('no_match')
+
+  const fetchImpl = options.fetchImpl ?? fetch
+  const timeoutMs = options.timeoutMs ?? EVERYSONG_TIMEOUT_MS
+  return withTimeout(timeoutMs, async (signal) => {
+    const samplesRes = await everysongGet(
+      EVERYSONG_SAMPLES_PATH,
+      { artist, title },
+      options.key,
+      fetchImpl,
+      signal
+    )
+    if (!samplesRes.ok) return emptyLookup('down')
+    const history = mapSampleHistory(samplesRes.json)
+    return okLookup(
+      { ...song, title, artist },
+      history.samples,
+      history.sampledIn,
+      false,
+      options.now
+    )
+  })
+}
+
+export async function lookupEverysong(
+  query: string,
+  options: EverysongCallOptions
+): Promise<FlipLookupResult> {
+  const search = await searchEverysong(query, options)
+  if (search.status === 'down') return emptyLookup('down')
+  if (search.status === 'no_match' || search.hits.length !== 1) {
+    return emptyLookup('no_match')
+  }
+  return samplesForSong(search.hits[0]!, options)
 }

@@ -1,4 +1,4 @@
-import type { FlipLookupResult, FlipSampleRow, FlipSong } from './types.ts'
+import type { FlipLookupResult, FlipSampleRow, FlipSearchResult, FlipSong } from './types.ts'
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -75,6 +75,27 @@ export function parseLookupResult(value: unknown): FlipLookupResult | null {
   }
 }
 
-export function artistYearLine(row: FlipSampleRow): string {
+export function parseSearchResult(value: unknown): FlipSearchResult | null {
+  const rec = asRecord(value)
+  if (!rec) return null
+  const status = rec.status
+  if (status !== 'ok' && status !== 'no_match' && status !== 'down') {
+    return null
+  }
+  const hits: FlipSong[] = []
+  if (Array.isArray(rec.hits)) {
+    for (const item of rec.hits) {
+      const song = asSong(item)
+      if (song) hits.push(song)
+    }
+  }
+  return {
+    status,
+    fixture: rec.fixture === true,
+    hits,
+  }
+}
+
+export function artistYearLine(row: FlipSampleRow | FlipSong): string {
   return [row.artist, row.year].filter((part) => part && part.length > 0).join(' · ')
 }

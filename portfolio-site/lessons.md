@@ -4,14 +4,17 @@ Updated: 2026-10-13
 
 ## Preview `/flip` (2026-10-13)
 
-- **One route constant.** `FLIP_PATH` in `lib/flip/route.ts` is the only path. Footer, record-detail `ask for a flip`, and the page all import it so the room is easy to move.
+- **One route constant.** `FLIP_PATH` in `lib/flip/route.ts` is the only path. Footer, record-detail `request a sample flip`, and the page all import it so the room is easy to move.
 - **Always `lf:preview:flip:`.** Prod Redis namespace (`VERCEL_ENV=production` + ref `main`) must not cache or RPUSH. `assertPrefixedRedisKey` already refuses `lf:preview:` on prod — keep the prefix anyway so a mistaken prod deploy cannot write flip data under `lf:`.
 - **Missing `EVERYSONG_API_KEY` is down copy, not a 500.** Do not add the key to Vercel production. Preview-only + this branch is the allowed scope. Non-prod `?stub=` fixtures are marked `everysong.site · fixture`. Live source line is `everysong.site · checked YYYY-MM-DD`.
 - **everysong first hit is not always the famous cut.** `Funky Drummer` resolved to James Brown 1986 Pt. 1 & 2 with empty sample history. `The Payback` is the Brown track with history (162 sampled-in). Each live lookup is 2 everysong GETs (search + samples); `no_match` is 1.
 - **Cache is Redis; rate limit is not.** Lookup cache 6h on `lf:preview:flip:lookup:` (Payback 17s miss → 236ms hit). `checkRateLimit` is an in-memory Map per isolate: local `next start` 429s the 11th lookup/min; a 12-burst on Vercel preview all 200'd. Do not treat preview 200s as a broken 10/min cap.
-- **Never log the everysong key.** It lives only in `lib/flip/everysong.ts` (header `x-api-key`) and the lookup route. Client `FlipRoom` talks to `/api/flip/lookup` only. Do not print it in logs, HTML, or JSON.
+- **Never log the everysong key.** It lives only in `lib/flip/everysong.ts` (header `x-api-key`) and the search/lookup routes. Client `FlipRoom` talks to `/api/flip/search` and `/api/flip/lookup` only. Do not print it in logs, HTML, or JSON.
 - **Email or phone, not both required.** Phone-only needs the SMS checkbox. Email+phone may skip SMS. Never log or echo contact fields; PostHog only gets `has_email` / `has_phone`.
-- **Product line is not a CTA.** Under the form, dim mono `building something? 33@lecturesfrom.com` mailto. No button, no GTM/Morph/sales wording.
+- **Sample flip is one arm.** Button `request a sample flip`. Connect is a second arm under a hairline: `connect` / `jump on a call, or inquire about services.` / mailto `33@lecturesfrom.com`. No button, no calendar, no GTM/Morph/sales wording.
+- **Page is `doingflips`, not a bare `flip`.** h1 concatenates `doing` + animated `flip` + `s`. Footer nav is `doingflips`. The letters `flip` run `flipLand` once on arrival; `prefers-reduced-motion` skips it. CSS keyframes, not framer-motion.
+- **Never auto-pick the first everysong hit.** Typeahead (`GET /api/flip/search`) returns a list. Lookup samples only after a pick (`title`+`artist`) or when search has exactly one hit. `Funky Drummer` first-hit was the 1986 Pt. 1 & 2 with empty history.
+- **Song field has to read as a search.** Label `song`, placeholder, hint, full-width underline, Look up under the bar. Combobox ARIA. Debounce 300ms. `?stub=suggest` is Donny Hathaway / Voices Inside for screenshots.
 - **Covers and remixes are not samples.** everysong `family: cover|remix` is dropped. Sample history is hairlines, not cards; orange is hover only.
 
 ## Search extras for missed sampled recordings (2026-10-12)

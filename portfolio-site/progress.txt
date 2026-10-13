@@ -1,3 +1,9 @@
+COMPLETED (2026-10-13 — doingflips UX, song typeahead, connect arm, do not merge):
+- h1 is `doingflips`; the inner `flip` runs `flipLand` (clockwise jump-flip-land, CSS, reduced-motion none). Lede: find a song, pick it, leave contact, he'll send the beat. CTA `request a sample flip` (form + record detail). Footer/rail `doingflips`.
+- Song field is a visible search: label `song`, placeholder, hint, full-width bar, Look up under it. Debounced `GET /api/flip/search` listbox. Never auto-picks the first everysong hit (Funky Drummer lesson). Lookup is `title`+`artist` after a pick, or unique `q` only. `?stub=suggest` = Donny Hathaway / Voices Inside.
+- Sample flip is one arm. Connect arm under a hairline: `connect` / `jump on a call, or inquire about services.` / mailto `33@lecturesfrom.com`. Replaces `building something?`. No calendar, no GTM/Morph/sales.
+- Search cache `lf:preview:flip:search:` 20/min. Lookup 10/min. Do not merge. Do not add the key to production.
+
 COMPLETED (2026-10-13 — preview everysong key, live lookup verified, do not merge):
 - `EVERYSONG_API_KEY` is a sensitive Vercel Preview-only var scoped to `cursor/preview-flip-page-9720`. Not production. Empty commit `cc26618` retriggered deploy `dpl_DZCx4n1p948qK7B9wxVbty99gmSb` (READY).
 - Live `/api/flip/lookup` without `?stub=`: Hotline Bling / Drake / 2015, 1 sample + 48 sampled-in, `fixture: false`, source `everysong.site · checked 2026-10-13`. James Brown: `Funky Drummer` first-hit is 1986 Pt. 1 & 2 with empty history; `The Payback` / 1973 has 162 sampled-in. `James Brown Funky Drummer` as a query string is `no_match`.

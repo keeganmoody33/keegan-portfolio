@@ -236,13 +236,13 @@
 
 ## Preview-only `/flip` (this PR — do not merge)
 
-**Goal:** One moveable room (`FLIP_PATH`) to look up a song on everysong.site and request a sample flip. Preview Redis only (`lf:preview:flip:`). No production env. No collaborators.
+**Goal:** One moveable room (`FLIP_PATH`) branded `doingflips`: look up a song on everysong.site (typeahead, pick, never first-hit), request a sample flip, and offer a connect arm (call / services mailto). Preview Redis only (`lf:preview:flip:`). No production env. No collaborators.
 
 **Inputs:** PRD / APP_FLOW / FRONTEND_GUIDELINES / BACKEND_STRUCTURE flip sections. LF Direction copy.
 
-**Outputs:** `lib/flip/*`, `app/(house)/flip/page.tsx`, `components/house/FlipRoom.tsx`, `/api/flip/lookup`, `/api/flip/request`, footer + record-detail links, `lib/flip/flip.test.ts`.
+**Outputs:** `lib/flip/*`, `app/(house)/flip/page.tsx`, `components/house/FlipRoom.tsx`, `/api/flip/search`, `/api/flip/lookup`, `/api/flip/request`, footer + record-detail links, `lib/flip/flip.test.ts`.
 
-**Validation:** `npm test` (includes flip), `npx tsc --noEmit`, `npm run lint`, `npm run build`. Screenshots 375 and 1280 of idle / results / empty / nomatch / down / success, including the product mailto under the form. Fixture `?stub=` when the key is unset.
+**Validation:** `npm test` (includes flip), `npx tsc --noEmit`, `npm run lint`, `npm run build`. Screenshots 375 and 1280 of idle (placeholder + doingflips), Donny suggestions, picked song, connect arm. Fixture `?stub=` when the key is unset.
 
 ---
 

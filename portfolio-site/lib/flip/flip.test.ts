@@ -10,17 +10,29 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { FLIP_COPY, productInquiryLine, showAllLabel, sourceLine } from './copy.ts'
-import { fixtureLookup, parseFlipStub } from './fixtures.ts'
-import { emptyLookup, lookupCacheKey, lookupEverysong, mapSampleHistory, mapSearchResults, songFromSearchHit } from './everysong.ts'
-import { artistYearLine, parseLookupResult } from './result.ts'
+import { DONNY_HITS, fixtureLookup, fixtureSearch, parseFlipStub } from './fixtures.ts'
+import {
+  emptyLookup,
+  lookupCacheKey,
+  lookupEverysong,
+  mapSampleHistory,
+  mapSearchResults,
+  samplesForSong,
+  searchEverysong,
+  songFromSearchHit,
+} from './everysong.ts'
+import { artistYearLine, parseLookupResult, parseSearchResult } from './result.ts'
 import { FLIP_PATH, flipHrefForTrack } from './route.ts'
 import {
   flipLookupCacheKey,
   flipRequestsEnabled,
   flipRequestsKey,
+  flipSearchCacheKey,
   readFlipLookupCache,
+  readFlipSearchCache,
   storeFlipRequest,
   writeFlipLookupCache,
+  writeFlipSearchCache,
   type FlipRedis,
 } from './store.ts'
 import { FLIP_REDIS_PREFIX, FLIP_REQUESTS_KEY } from './types.ts'
@@ -53,23 +65,34 @@ describe('route constant', () => {
   it('is one path so the room is easy to move', () => {
     assert.equal(FLIP_PATH, '/flip')
     assert.equal(flipHrefForTrack(''), '/flip')
-    assert.equal(flipHrefForTrack('Hotline Bling', 'Drake'), '/flip?track=Drake%20Hotline%20Bling')
+    assert.equal(
+      flipHrefForTrack('Hotline Bling', 'Drake'),
+      '/flip?title=Hotline+Bling&artist=Drake'
+    )
   })
 })
 
 describe('copy', () => {
-  it('keeps the LF Direction strings and a quiet product line', () => {
-    assert.equal(FLIP_COPY.h1, 'flip')
+  it('keeps the LF Direction strings, sample-flip CTA, and a connect arm', () => {
+    assert.equal(FLIP_COPY.h1, 'doingflips')
+    assert.equal(FLIP_COPY.h1Mark, 'flip')
     assert.equal(
       FLIP_COPY.lede,
-      "look up a song. see what it sampled and what sampled it. if you want me to flip it, leave a way to reach you and i'll send the beat."
+      "find a song you want me to flip. pick it, leave a way to reach you, i'll send the beat."
     )
+    assert.equal(FLIP_COPY.submit, 'request a sample flip')
+    assert.equal(FLIP_COPY.askFlip, 'request a sample flip')
+    assert.equal(FLIP_COPY.lookup, 'song')
+    assert.equal(FLIP_COPY.lookupPlaceholder, 'title, artist, a line you remember')
     assert.equal(FLIP_COPY.success, 'got it. if i make it, it comes to you.')
     assert.equal(FLIP_COPY.privacy, 'used only to send you this beat. never shared or added to a list.')
     assert.equal(FLIP_COPY.down, "couldn't reach everysong.")
     assert.equal(FLIP_COPY.empty, 'nothing on file yet')
     assert.equal(FLIP_COPY.noMatch, 'no match for that one.')
-    assert.equal(productInquiryLine(), 'building something? 33@lecturesfrom.com')
+    assert.equal(
+      productInquiryLine(),
+      'connect jump on a call, or inquire about services. 33@lecturesfrom.com'
+    )
     assert.equal(showAllLabel(12), 'show all (12)')
     assert.equal(sourceLine('2026-10-13', true), 'everysong.site · fixture')
     assert.equal(sourceLine('2026-10-13', false), 'everysong.site · checked 2026-10-13')
@@ -144,15 +167,17 @@ describe('validateFlipRequest', () => {
 })
 
 describe('everysong mapping', () => {
-  it('takes the first spine search hit', () => {
+  it('keeps every spine search hit instead of auto-picking the first', () => {
     const songs = mapSearchResults({
       results: [
         { rid: 3602, title: 'Hotline Bling', artist: 'Drake', year: 2015, isrc: 'USCM51500238' },
         { rid: 9, title: 'Other', artist: 'Someone', year: 2016 },
       ],
     })
+    assert.equal(songs.length, 2)
     assert.equal(songs[0]?.title, 'Hotline Bling')
     assert.equal(songs[0]?.year, '2015')
+    assert.equal(songs[1]?.title, 'Other')
     assert.equal(songFromSearchHit({ title: 'x' }), null)
   })
 
@@ -182,18 +207,70 @@ describe('everysong mapping', () => {
   })
 
   it('returns down when search fails and no_match when empty', async () => {
-    const down = await lookupEverysong('x', {
+    const down = await lookupEverysong('xx', {
       key: 'k',
       timeoutMs: 50,
       fetchImpl: async () => new Response('no', { status: 503 }),
     })
     assert.equal(down.status, 'down')
-    const none = await lookupEverysong('x', {
+    const none = await lookupEverysong('xx', {
       key: 'k',
       fetchImpl: async () => new Response(JSON.stringify({ results: [] }), { status: 200 }),
     })
     assert.equal(none.status, 'no_match')
     assert.equal(emptyLookup('down').status, 'down')
+  })
+
+  it('does not fetch samples when search returns more than one hit', async () => {
+    let calls = 0
+    const many = await lookupEverysong('Funky Drummer', {
+      key: 'k',
+      fetchImpl: async (input) => {
+        calls += 1
+        const url = String(input)
+        assert.equal(url.includes('/samples/song'), false)
+        return new Response(
+          JSON.stringify({
+            results: [
+              { rid: 1, title: 'Funky Drummer (Part 1 & 2)', artist: 'James Brown', year: 1986 },
+              { rid: 2, title: 'Funky Drummer', artist: 'James Brown', year: 1970 },
+            ],
+          }),
+          { status: 200 }
+        )
+      },
+    })
+    assert.equal(many.status, 'no_match')
+    assert.equal(calls, 1)
+  })
+
+  it('searchEverysong returns the list; samplesForSong is a second call', async () => {
+    const search = await searchEverysong('Donny Pathway Voices', {
+      key: 'k',
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            results: DONNY_HITS.slice(0, 2).map((hit) => ({
+              rid: hit.rid,
+              title: hit.title,
+              artist: hit.artist,
+              year: hit.year,
+            })),
+          }),
+          { status: 200 }
+        ),
+    })
+    assert.equal(search.status, 'ok')
+    assert.equal(search.hits.length, 2)
+    assert.equal(search.hits[0]?.title.includes('Voices Inside'), true)
+
+    const history = await samplesForSong(search.hits[0]!, {
+      key: 'k',
+      fetchImpl: async () =>
+        new Response(JSON.stringify({ upstream: [], downstream: [] }), { status: 200 }),
+    })
+    assert.equal(history.status, 'ok')
+    assert.equal(history.song?.artist, 'Donny Hathaway')
   })
 
   it('hashes lookup queries without storing the raw string in the key', () => {
@@ -208,6 +285,7 @@ describe('fixtures', () => {
   it('parses stub names and marks fixture data', () => {
     assert.equal(parseFlipStub('results'), 'results')
     assert.equal(parseFlipStub('SUCCESS'), 'success')
+    assert.equal(parseFlipStub('suggest'), 'suggest')
     assert.equal(parseFlipStub('nope'), null)
     const hotline = fixtureLookup('results')
     assert.equal(hotline.fixture, true)
@@ -216,6 +294,14 @@ describe('fixtures', () => {
     assert.equal(fixtureLookup('nomatch').status, 'no_match')
     assert.equal(fixtureLookup('down').status, 'down')
     assert.equal(fixtureLookup('empty').samples.length, 0)
+    const donny = fixtureSearch('suggest')
+    assert.equal(donny.status, 'ok')
+    assert.equal(donny.hits[0]?.title, 'Voices Inside (Everything Is Everything)')
+    assert.equal(donny.hits[0]?.artist, 'Donny Hathaway')
+    assert.ok(donny.hits.length > 1)
+    const voices = fixtureLookup('suggest', 'Voices Inside (Everything Is Everything)', 'Donny Hathaway')
+    assert.equal(voices.song?.title, 'Voices Inside (Everything Is Everything)')
+    assert.equal(voices.fixture, true)
   })
 })
 
@@ -226,6 +312,9 @@ describe('parseLookupResult / artistYearLine', () => {
     assert.equal(parseLookupResult({ status: 'weird' }), null)
     assert.equal(artistYearLine({ title: 'A', artist: 'B', year: '1972' }), 'B · 1972')
     assert.equal(artistYearLine({ title: 'A', artist: '', year: '1972' }), '1972')
+    const search = parseSearchResult(fixtureSearch('suggest'))
+    assert.equal(search?.hits[0]?.artist, 'Donny Hathaway')
+    assert.equal(parseSearchResult({ status: 'weird' }), null)
   })
 })
 
@@ -234,6 +323,7 @@ describe('preview Redis prefix', () => {
     assert.equal(FLIP_REQUESTS_KEY.startsWith('lf:preview:flip:'), true)
     const preview = { VERCEL_ENV: 'preview' }
     assert.equal(flipLookupCacheKey('abc', preview).startsWith(FLIP_REDIS_PREFIX), true)
+    assert.equal(flipSearchCacheKey('abc', preview).startsWith(`${FLIP_REDIS_PREFIX}search:`), true)
     assert.equal(flipRequestsKey(preview), FLIP_REQUESTS_KEY)
     const prod = { VERCEL_ENV: 'production', VERCEL_GIT_COMMIT_REF: 'main' }
     assert.equal(flipRequestsEnabled(prod), false)
@@ -280,6 +370,9 @@ describe('preview Redis prefix', () => {
     await writeFlipLookupCache('abc', fixtureLookup('results'), previewStore.db, preview)
     const cached = await readFlipLookupCache('abc', previewStore.db, preview)
     assert.equal(cached?.song?.title, 'Hotline Bling')
+    await writeFlipSearchCache('abc', fixtureSearch('suggest'), previewStore.db, preview)
+    const searchCached = await readFlipSearchCache('abc', previewStore.db, preview)
+    assert.equal(searchCached?.hits[0]?.artist, 'Donny Hathaway')
   })
 })
 
@@ -294,18 +387,28 @@ describe('privacy in the room and APIs', () => {
   it('everysong key stays on the server and is never logged', () => {
     const room = readSite('../../components/house/FlipRoom.tsx')
     const lookup = readSite('../../app/api/flip/lookup/route.ts')
+    const search = readSite('../../app/api/flip/search/route.ts')
     const everysong = readSite('./everysong.ts')
     assert.equal(room.includes('EVERYSONG_API_KEY'), false)
     assert.equal(room.includes('everysongApiKey'), false)
     assert.equal(lookup.includes('console.log'), false)
+    assert.equal(search.includes('console.log'), false)
     assert.equal(everysong.includes('console.log'), false)
   })
 
-  it('FlipRoom keeps the product mailto and privacy line', () => {
+  it('FlipRoom keeps the connect mailto, privacy line, and song combobox', () => {
     const room = readSite('../../components/house/FlipRoom.tsx')
+    const page = readSite('../../app/(house)/flip/page.tsx')
+    const css = readSite('../../app/globals.css')
     assert.equal(room.includes('PRODUCT_MAILTO'), true)
     assert.equal(room.includes('FLIP_COPY.privacy'), true)
     assert.equal(room.includes('ProductInquiry'), true)
+    assert.equal(room.includes('FLIP_COPY.connect'), true)
+    assert.equal(room.includes('role="combobox"'), true)
+    assert.equal(room.includes('/api/flip/search'), true)
+    assert.equal(page.includes('doing'), true)
+    assert.equal(page.includes('flip-h1'), true)
+    assert.equal(css.includes('@keyframes flipLand'), true)
     assert.equal(/GTM|Morph/.test(room), false)
   })
 

@@ -8,7 +8,9 @@ import {
   FLIP_LOOKUP_CACHE_TTL_SECONDS,
   FLIP_REDIS_PREFIX,
   FLIP_REQUESTS_KEY,
+  FLIP_SEARCH_CACHE_TTL_SECONDS,
   type FlipLookupResult,
+  type FlipSearchResult,
   type FlipStoredRequest,
 } from './types.ts'
 
@@ -38,6 +40,10 @@ export function flipRequestsEnabled(env: EnvMap = process.env): boolean {
 
 export function flipLookupCacheKey(hash: string, env: EnvMap = process.env): string {
   return assertPrefixedRedisKey(`${FLIP_REDIS_PREFIX}lookup:${hash}`, env)
+}
+
+export function flipSearchCacheKey(hash: string, env: EnvMap = process.env): string {
+  return assertPrefixedRedisKey(`${FLIP_REDIS_PREFIX}search:${hash}`, env)
 }
 
 export function flipRequestsKey(env: EnvMap = process.env): string {
@@ -73,6 +79,41 @@ export async function writeFlipLookupCache(
     if (!store) return
     await store.set(flipLookupCacheKey(hash, env), JSON.stringify(value), {
       ex: FLIP_LOOKUP_CACHE_TTL_SECONDS,
+    })
+  } catch {
+    return
+  }
+}
+
+export async function readFlipSearchCache(
+  hash: string,
+  db?: FlipRedis | null,
+  env: EnvMap = process.env
+): Promise<FlipSearchResult | null> {
+  try {
+    const store = db === undefined ? redis(env) : db
+    if (!store) return null
+    const raw = await store.get(flipSearchCacheKey(hash, env))
+    if (raw == null) return null
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
+    if (!parsed || typeof parsed !== 'object') return null
+    return parsed as FlipSearchResult
+  } catch {
+    return null
+  }
+}
+
+export async function writeFlipSearchCache(
+  hash: string,
+  value: FlipSearchResult,
+  db?: FlipRedis | null,
+  env: EnvMap = process.env
+): Promise<void> {
+  try {
+    const store = db === undefined ? redis(env) : db
+    if (!store) return
+    await store.set(flipSearchCacheKey(hash, env), JSON.stringify(value), {
+      ex: FLIP_SEARCH_CACHE_TTL_SECONDS,
     })
   } catch {
     return

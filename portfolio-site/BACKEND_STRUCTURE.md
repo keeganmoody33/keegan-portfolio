@@ -345,11 +345,23 @@ Match statuses: `matched` / `ambiguous` / `unmatched` / `pending`. Weak matches 
 
 ---
 
+### GET /api/flip/search
+
+**Preview only. Do not merge.** Typeahead proxy. One everysong `GET /api/v2/spine/search`. Browser never sees `EVERYSONG_API_KEY`. Does not fetch sample history. Does not pick a hit.
+
+**Request:** `?q=` (max 200, min 2) and optional `?stub=results|empty|nomatch|down|success|suggest` (ignored on the prod Redis namespace). `suggest` returns Donny Hathaway hits including Voices Inside.
+
+**Response (200):** `{ "status": "ok | no_match | down", "fixture": boolean, "hits": [{ "rid", "title", "artist", "year", "isrc" }] }`
+
+Cache 6h on `lf:preview:flip:search:{hash}` (ok and no_match). Rate-limit 20/min/IP. Missing key → down.
+
+**PostHog events:** `api_flip_search` (`source`, `status`, `hits`; no query string, no PII).
+
 ### GET /api/flip/lookup
 
 **Preview only. Do not merge.** Server-side proxy to everysong.site. Browser never sees `EVERYSONG_API_KEY`.
 
-**Request:** `?q=` (max 200) and optional `?stub=results|empty|nomatch|down|success` (ignored on the prod Redis namespace).
+**Request:** `?title=` + `?artist=` (picked song, samples only) or `?q=` (unique hit only — two or more search hits are `no_match`, never the first result). Optional `?stub=results|empty|nomatch|down|success|suggest` (ignored on the prod Redis namespace).
 
 **Response (200):**
 ```json
@@ -363,7 +375,7 @@ Match statuses: `matched` / `ambiguous` / `unmatched` / `pending`. Weak matches 
 }
 ```
 
-Missing key, upstream failure, or 429 → `status: "down"` (never red on the page). Empty search → `no_match`. Combined lookup is cached 6h on `lf:preview:flip:lookup:{hash}` (ok and no_match only). Prod Redis namespace does not cache. Rate-limit 10/min/IP (`lib/rate-limit.ts`). Cover/remix edges are dropped; `family: sample` only.
+Missing key, upstream failure, or 429 → `status: "down"` (never red on the page). Empty or ambiguous `q` (0 or 2+ hits) → `no_match`. Cached 6h on `lf:preview:flip:lookup:{hash}` (ok and no_match only; song hash when title+artist). Prod Redis namespace does not cache. Rate-limit 10/min/IP (`lib/rate-limit.ts`). Cover/remix edges are dropped; `family: sample` only.
 
 **PostHog events:** `api_flip_lookup` (`source`, `status`; no query string, no PII).
 
@@ -583,7 +595,8 @@ All Next.js env vars above must also be set in Vercel for production deployment.
 | `/api/cron/crate-proof` | Bearer `CRON_SECRET`; missing secret 404s |
 | Chat / JD analyzer | Missing env vars return 500 before external calls |
 | Discogs routes | `DISCOGS_TOKEN` optional; missing token is not an error |
-| `/api/flip/lookup` | 10/min/IP; missing key is down, not 500 |
+| `/api/flip/search` | 20/min/IP; missing key is down, not 500; never auto-picks |
+| `/api/flip/lookup` | 10/min/IP; missing key is down, not 500; `title`+`artist` or a unique `q` |
 | `/api/flip/request` | 6/min/IP; email or phone; phone-only requires `smsOptIn`; never echo contact |
 
 ---
