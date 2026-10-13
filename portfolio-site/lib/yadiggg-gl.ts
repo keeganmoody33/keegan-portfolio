@@ -192,9 +192,19 @@ export function stubStudyRenderer(canvas?: EventTarget | null): StudyRendererLik
   }
 }
 
+export type StudyErrorTimerRef = {
+  current: ReturnType<typeof setTimeout> | null
+}
+
 /** Poster swap must wait a tick so R3F can finish onCreated bind before unmount. */
-export function queueStudyError(onError: () => void): void {
-  setTimeout(onError, 0)
+export function queueStudyError(
+  onError: () => void,
+  timerRef?: StudyErrorTimerRef
+): ReturnType<typeof setTimeout> {
+  if (timerRef?.current != null) clearTimeout(timerRef.current)
+  const id = setTimeout(onError, 0)
+  if (timerRef) timerRef.current = id
+  return id
 }
 
 /**
@@ -206,19 +216,20 @@ export function queueStudyError(onError: () => void): void {
 export function studyGlFromCreate(
   create: () => StudyRendererLike,
   onError: () => void,
-  canvas?: EventTarget | null
+  canvas?: EventTarget | null,
+  timerRef?: StudyErrorTimerRef
 ): StudyRendererLike {
   try {
     const renderer = create()
     const ctx = typeof renderer.getContext === 'function' ? renderer.getContext() : null
     if (!webglContextIsUsable(ctx) || webglContextIsLost(ctx)) {
       renderer.dispose?.()
-      queueStudyError(onError)
+      queueStudyError(onError, timerRef)
       return stubStudyRenderer(canvas ?? renderer.domElement ?? null)
     }
     return renderer
   } catch {
-    queueStudyError(onError)
+    queueStudyError(onError, timerRef)
     return stubStudyRenderer(canvas ?? null)
   }
 }

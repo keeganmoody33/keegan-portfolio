@@ -3,6 +3,7 @@ COMPLETED (2026-10-13 — UX/UI review pass: H1 liner, fallback CLS, wordmark pl
 - Thin liner header above the study: cat no · format · year + compact H1 `yadiggg` (one or two lines). Study stays essentially first. Notes + skinny wordmark follow. Heading order starts at H1.
 - `shouldReserveViewerChrome` keeps empty mode/preset rows on no-WebGL and lost-on-create (CLS under 0.01 at 375/1280). Blocked src still drops the reservation.
 - Wordmark plate `transparent` (no `#fdfaf5`). Alt `yadiggg wordmark`.
+- `queueStudyError` returns the timer id; canvas effect cleanup `clearTimeout`s it so unmount before the tick does not call `onError`.
 
 COMPLETED (2026-10-13 — study-first skinny wordmark, PR #75 preview only):
 - Same branch. Draft. Do not merge.

@@ -5,10 +5,14 @@
 
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   bindStudyContextLoss,
   handleStudyContextLost,
   handleStudyContextRestored,
+  queueStudyError,
   stubStudyRenderer,
   studyGlFromCreate,
 } from './yadiggg-gl.ts'
@@ -161,6 +165,52 @@ describe('lost-on-create', () => {
       setTimeout(resolve, 0)
     })
     assert.equal(errors, 1)
+  })
+})
+
+describe('queueStudyError timer', () => {
+  it('returns a timer id; clearTimeout prevents onError', async () => {
+    let errors = 0
+    const id = queueStudyError(() => {
+      errors += 1
+    })
+    clearTimeout(id)
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0)
+    })
+    assert.equal(errors, 0)
+  })
+
+  it('clearTimeout of a remembered factory timer prevents onError', async () => {
+    let errors = 0
+    const timerRef = { current: null as ReturnType<typeof setTimeout> | null }
+    studyGlFromCreate(
+      () => {
+        throw new Error('webgl unavailable')
+      },
+      () => {
+        errors += 1
+      },
+      null,
+      timerRef
+    )
+    assert.ok(timerRef.current != null)
+    clearTimeout(timerRef.current)
+    timerRef.current = null
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0)
+    })
+    assert.equal(errors, 0)
+  })
+
+  it('clears the queued timer in the canvas effect cleanup', () => {
+    const src = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '..', 'components/house/YadigggViewer.tsx'),
+      'utf8'
+    )
+    assert.match(src, /errorTimerRef/)
+    assert.match(src, /clearTimeout\(timerRef\.current\)/)
+    assert.match(src, /queueStudyError\(\(\) => onErrorRef\.current\(\), errorTimerRef\)/)
   })
 })
 

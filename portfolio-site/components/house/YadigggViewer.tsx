@@ -620,15 +620,27 @@ function YadigggCanvas({
   onError,
 }: YadigggViewerProps) {
   const onErrorRef = useRef(onError)
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
     onErrorRef.current = onError
   }, [onError])
+
+  useEffect(() => {
+    const timerRef = errorTimerRef
+    return () => {
+      if (timerRef.current != null) {
+        clearTimeout(timerRef.current)
+        timerRef.current = null
+      }
+    }
+  }, [])
 
   const glFactory = useCallback((props: THREE.WebGLRendererParameters) => {
     return studyGlFromCreate(
       () => createStudyRenderer(props) as unknown as StudyRendererLike,
       () => onErrorRef.current(),
-      props.canvas instanceof HTMLCanvasElement ? props.canvas : null
+      props.canvas instanceof HTMLCanvasElement ? props.canvas : null,
+      errorTimerRef
     ) as unknown as THREE.WebGLRenderer
   }, [])
 
@@ -640,16 +652,16 @@ function YadigggCanvas({
         try {
           const xr = state.gl.xr
           if (xr == null || typeof xr.addEventListener !== 'function') {
-            queueStudyError(() => onErrorRef.current())
+            queueStudyError(() => onErrorRef.current(), errorTimerRef)
             return
           }
           state.gl.setClearColor(0x000000, 0)
           const ctx = state.gl.getContext()
           if (!webglContextIsUsable(ctx) || webglContextIsLost(ctx)) {
-            queueStudyError(() => onErrorRef.current())
+            queueStudyError(() => onErrorRef.current(), errorTimerRef)
           }
         } catch {
-          queueStudyError(() => onErrorRef.current())
+          queueStudyError(() => onErrorRef.current(), errorTimerRef)
         }
       }}
       camera={{
