@@ -291,6 +291,16 @@ describe('privacy in the room and APIs', () => {
     assert.equal(route.includes('console.log'), false)
   })
 
+  it('everysong key stays on the server and is never logged', () => {
+    const room = readSite('../../components/house/FlipRoom.tsx')
+    const lookup = readSite('../../app/api/flip/lookup/route.ts')
+    const everysong = readSite('./everysong.ts')
+    assert.equal(room.includes('EVERYSONG_API_KEY'), false)
+    assert.equal(room.includes('everysongApiKey'), false)
+    assert.equal(lookup.includes('console.log'), false)
+    assert.equal(everysong.includes('console.log'), false)
+  })
+
   it('FlipRoom keeps the product mailto and privacy line', () => {
     const room = readSite('../../components/house/FlipRoom.tsx')
     assert.equal(room.includes('PRODUCT_MAILTO'), true)

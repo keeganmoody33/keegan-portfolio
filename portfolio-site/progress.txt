@@ -1,3 +1,11 @@
+COMPLETED (2026-10-13 — preview everysong key, live lookup verified, do not merge):
+- `EVERYSONG_API_KEY` is a sensitive Vercel Preview-only var scoped to `cursor/preview-flip-page-9720`. Not production. Empty commit `cc26618` retriggered deploy `dpl_DZCx4n1p948qK7B9wxVbty99gmSb` (READY).
+- Live `/api/flip/lookup` without `?stub=`: Hotline Bling / Drake / 2015, 1 sample + 48 sampled-in, `fixture: false`, source `everysong.site · checked 2026-10-13`. James Brown: `Funky Drummer` first-hit is 1986 Pt. 1 & 2 with empty history; `The Payback` / 1973 has 162 sampled-in. `James Brown Funky Drummer` as a query string is `no_match`.
+- Cache: Payback miss 17.2s then repeat 236ms. Hotline repeats ~340ms after the first miss.
+- Rate limit: local same-process next 10/min then 429 on 11–12. Preview 12-burst all 200 — in-memory Map is per isolate.
+- Key leak: not in lookup JSON, `/flip` HTML, or 9 client JS chunks (~906KB). Server `console.log` absent on the route. Runtime function logs empty for this deploy. Do not print the key.
+- everysong.site HTTP used this verify: **9** (Hotline 2, Funky Drummer 2, no_match search 1, Payback 2, Papa's 2). Cache hits and screenshot repeats added 0.
+
 COMPLETED (2026-10-13 — preview-only `/flip`, draft PR, do not merge):
 - Room at `FLIP_PATH` `/flip`: lookup any song via everysong.site (search + sample history), request a sample flip. No collaborators. Preview Redis `lf:preview:flip:` only. Prod namespace refuses cache and request writes. `EVERYSONG_API_KEY` is not added to Vercel production; missing key → `couldn't reach everysong.` Non-prod `?stub=` fixtures for screenshots, marked fixture.
 - Form: email or phone (both allowed). Phone non-empty shows unchecked `text me the beat`; phone-only requires it. Privacy under the button. Success `got it. if i make it, it comes to you.` Quiet product line under the form: `building something? 33@lecturesfrom.com` mailto in `.house-source`. No extra button, no GTM/Morph/sales copy.
