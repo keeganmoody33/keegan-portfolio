@@ -36,6 +36,13 @@ import {
   type FlipRedis,
 } from './store.ts'
 import { FLIP_REDIS_PREFIX, FLIP_REQUESTS_KEY } from './types.ts'
+import {
+  notifyEmailBody,
+  notifyEmailEnabled,
+  notifyEmailSubject,
+  notifyFlipRequest,
+  RESEND_EMAILS_URL,
+} from './notify.ts'
 import { hasSongIdentity, validateFlipRequest } from './validate.ts'
 
 function readSite(rel: string): string {
@@ -85,6 +92,7 @@ describe('copy', () => {
     assert.equal(FLIP_COPY.lookup, 'song')
     assert.equal(FLIP_COPY.lookupPlaceholder, 'title, artist, a line you remember')
     assert.equal(FLIP_COPY.success, 'got it. if i make it, it comes to you.')
+    assert.equal(FLIP_COPY.contactHint, 'email or phone. one is enough.')
     assert.equal(FLIP_COPY.privacy, 'used only to send you this beat. never shared or added to a list.')
     assert.equal(FLIP_COPY.down, "couldn't reach everysong.")
     assert.equal(FLIP_COPY.empty, 'nothing on file yet')
@@ -379,9 +387,13 @@ describe('preview Redis prefix', () => {
 describe('privacy in the room and APIs', () => {
   it('request handler never echoes contact fields', () => {
     const route = readSite('../../app/api/flip/request/route.ts')
+    const notify = readSite('./notify.ts')
     assert.equal(route.includes('{ ok: true }'), true)
     assert.equal(/NextResponse\.json\(\s*\{[^}]*email/.test(route), false)
     assert.equal(route.includes('console.log'), false)
+    assert.equal(notify.includes('console.log'), false)
+    assert.equal(/twilio/i.test(notify), false)
+    assert.equal(/twilio/i.test(route), false)
   })
 
   it('everysong key stays on the server and is never logged', () => {
@@ -406,6 +418,9 @@ describe('privacy in the room and APIs', () => {
     assert.equal(room.includes('FLIP_COPY.connect'), true)
     assert.equal(room.includes('role="combobox"'), true)
     assert.equal(room.includes('/api/flip/search'), true)
+    assert.equal(room.includes('FLIP_COPY.contactHint'), true)
+    assert.equal(room.includes('hasContact'), true)
+    assert.equal(room.includes('validateFlipRequest'), true)
     assert.equal(page.includes('doing'), true)
     assert.equal(page.includes('flip-h1'), true)
     assert.equal(css.includes('@keyframes flipLand'), true)
@@ -419,5 +434,80 @@ describe('privacy in the room and APIs', () => {
     assert.equal(footer.includes('FLIP_COPY.nav'), true)
     assert.equal(detail.includes('flipHrefForTrack'), true)
     assert.equal(detail.includes('FLIP_COPY.askFlip'), true)
+  })
+})
+
+describe('notifyFlipRequest', () => {
+  const payload = {
+    at: '2026-10-13T00:00:00.000Z',
+    rid: 1,
+    title: 'Hotline Bling',
+    artist: 'Drake',
+    year: '2015',
+    isrc: null,
+    email: 'visitor@example.com',
+    phone: '4045551212',
+    smsOptIn: true,
+  }
+
+  it('skips when the Resend key is unset', async () => {
+    let calls = 0
+    const result = await notifyFlipRequest(payload, async () => {
+      calls += 1
+      return { ok: true }
+    }, { VERCEL_ENV: 'preview' })
+    assert.deepEqual(result, { email: false })
+    assert.equal(calls, 0)
+    assert.equal(notifyEmailEnabled({ VERCEL_ENV: 'preview' }), false)
+  })
+
+  it('skips production even when a key is set', async () => {
+    let calls = 0
+    const result = await notifyFlipRequest(
+      payload,
+      async () => {
+        calls += 1
+        return { ok: true }
+      },
+      {
+        VERCEL_ENV: 'production',
+        VERCEL_GIT_COMMIT_REF: 'main',
+        RESEND_API_KEY: 're_test',
+      }
+    )
+    assert.deepEqual(result, { email: false })
+    assert.equal(calls, 0)
+  })
+
+  it('posts Resend with song and contact, and treats fetch failure as skip', async () => {
+    const calls: Array<{ url: string; body: string }> = []
+    const ok = await notifyFlipRequest(
+      payload,
+      async (url, init) => {
+        calls.push({ url, body: String(init?.body ?? '') })
+        assert.equal(url, RESEND_EMAILS_URL)
+        assert.equal(init?.method, 'POST')
+        return { ok: true }
+      },
+      { VERCEL_ENV: 'preview', RESEND_API_KEY: 're_test' }
+    )
+    assert.deepEqual(ok, { email: true })
+    assert.equal(calls.length, 1)
+    const sent = JSON.parse(calls[0]?.body ?? '{}') as Record<string, unknown>
+    assert.deepEqual(sent.to, ['33@lecturesfrom.com'])
+    assert.equal(sent.subject, notifyEmailSubject(payload))
+    assert.equal(sent.text, notifyEmailBody(payload))
+    assert.equal(String(sent.text).includes('visitor@example.com'), true)
+    assert.equal(String(sent.text).includes('4045551212'), true)
+    assert.equal(String(sent.from).includes('33@lecturesfrom.com'), true)
+
+    const fail = await notifyFlipRequest(
+      payload,
+      async () => {
+        throw new Error('down')
+      },
+      { VERCEL_ENV: 'preview', RESEND_API_KEY: 're_test' }
+    )
+    assert.deepEqual(fail, { email: false })
   })
 })

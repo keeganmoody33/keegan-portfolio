@@ -52,7 +52,7 @@
 | `/api/tally` | GET | `app/api/tally/route.ts` | Running totals for the house footer tally (Upstash Redis, `s-maxage=60`; 503s `s-maxage=10`). Hits are recorded in `proxy.ts` via one Redis pipeline in `waitUntil`. |
 | `/api/flip/search` | GET | `app/api/flip/search/route.ts` | **Preview only.** Typeahead proxy to everysong search only (1 GET). Cache `lf:preview:flip:search:*` 6h. Rate-limit 20/min/IP. Returns a list; never auto-picks the first hit. |
 | `/api/flip/lookup` | GET | `app/api/flip/lookup/route.ts` | **Preview only.** Samples for a picked song (`title` + `artist`) or a unique `q` (exactly one hit). Cache `lf:preview:flip:lookup:*` 6h. Rate-limit 10/min/IP. Missing `EVERYSONG_API_KEY` → down. `?stub=` fixtures on non-prod. |
-| `/api/flip/request` | POST | `app/api/flip/request/route.ts` | **Preview only.** Store a flip request on `lf:preview:flip:requests`. Rate-limit 6/min/IP. Never echoes contact fields. Prod namespace refuses writes. |
+| `/api/flip/request` | POST | `app/api/flip/request/route.ts` | **Preview only.** Store a flip request on `lf:preview:flip:requests`. Email and/or phone required. After store, best-effort Resend email (skip if key unset or prod). Rate-limit 6/min/IP. Never echoes contact fields. Prod namespace refuses writes. Fixture `?stub=` skips store and notify. |
 
 ---
 
@@ -454,14 +454,14 @@ All interactions ──→ PostHog (client + server events)
 1. h1 `doingflips` (Chakra Petch 600). The inner letters `flip` run a one-shot clockwise jump-flip-land (`flipLand`). Instant under `prefers-reduced-motion`. Lede: `find a song you want me to flip. pick it, leave a way to reach you, i'll send the beat.`
 2. Song field (label `.house-meta` `song`): full-width underline, placeholder `title, artist, a line you remember`, hint `songs only. if the name is fuzzy, pick from the list.` Debounced typeahead (`GET /api/flip/search`) opens a hairline listbox (title ink, `artist · year` dim). Never auto-picks the first hit. One hit + Look up loads samples; many hits stay on the list (`pick the song you mean.`).
 3. Picked song: title Chakra Petch 600, artist, year, ISRC as a plain mono row. Sample history: hairlines, no boxed cards. At 1280 (`xl:`) two columns SAMPLES | SAMPLED IN with dim counts. At 375 stacked, upstream first. Rows: title ink, `artist · year` dim. Cap 8 then `show all (N)`. Source `.house-source` `everysong.site · checked YYYY-MM-DD` (fixtures: `everysong.site · fixture`).
-4. Sample-flip arm: EMAIL / PHONE (at least one). Phone field non-empty shows unchecked `text me the beat`. Phone-only requires that checkbox. Button `request a sample flip`. Privacy under the button, dim: `used only to send you this beat. never shared or added to a list.`
+4. Sample-flip arm: hint `email or phone. one is enough.` EMAIL / PHONE (at least one required). Submit stays disabled until one field has text. Phone field non-empty shows unchecked `text me the beat`. Phone-only requires that checkbox. Button `request a sample flip`. Privacy under the button, dim: `used only to send you this beat. never shared or added to a list.` A stored request emails Keegan (Resend, preview-only) and fires PostHog `api_flip_request` (`stored`, `notified_email` — no addresses or numbers).
 5. Connect arm (always, hairline above): `.house-meta` `connect`, lede `jump on a call, or inquire about services.`, mailto `33@lecturesfrom.com` in `.house-source`. No extra button, no calendar, no sales copy, no GTM/Morph wording. Sample flip is one ask; this is the other.
 
 **Success state:** `got it. if i make it, it comes to you.` Connect arm stays.
 
 **Error / empty:** Dim mono, never red. `no match for that one.` / `nothing on file yet` / `couldn't reach everysong.` + `retry`.
 
-**PostHog events:** `flip_search`, `flip_lookup`, `flip_request`, `api_flip_search`, `api_flip_lookup`, `api_flip_request` (no email/phone, no query string in properties).
+**PostHog events:** `flip_search`, `flip_lookup`, `flip_request`, `api_flip_search`, `api_flip_lookup`, `api_flip_request` (`stored`, `fixture`, `has_email`, `has_phone`, `sms_opt_in`, `notified_email` — no email/phone values, no query string). Insight alert on `api_flip_request` where `stored=true` (hourly ping; email is the per-request notify).
 
 ---
 

@@ -381,7 +381,7 @@ Missing key, upstream failure, or 429 → `status: "down"` (never red on the pag
 
 ### POST /api/flip/request
 
-**Preview only.** Email or phone required (both allowed). Phone-only requires `smsOptIn: true`.
+**Preview only.** Email and/or phone required (both allowed). Phone-only requires `smsOptIn: true`. After a successful store, best-effort Resend email to `FLIP_NOTIFY_TO` (default `33@lecturesfrom.com`). Skip notify when `RESEND_API_KEY` is unset, on the production Redis namespace, or when a non-prod `stub` fixture accepts without storing. Notify failure still returns `{ ok: true }`. Never `console.log` contact.
 
 **Request:**
 ```json
@@ -400,7 +400,7 @@ Missing key, upstream failure, or 429 → `status: "down"` (never red on the pag
 
 **Response (200):** `{ "ok": true }` — never echoes email/phone. **Errors:** 400 validation copy, 429/503 `couldn't store that.` Rate-limit 6/min/IP. Stored only on `lf:preview:flip:requests` (RPUSH JSON). Prod namespace refuses. Never `console.log` the body.
 
-**PostHog events:** `api_flip_request` (`stored`, `has_email`, `has_phone`, `sms_opt_in` — no addresses or numbers).
+**PostHog events:** `api_flip_request` (`stored`, `fixture`, `has_email`, `has_phone`, `sms_opt_in`, `notified_email` — no addresses or numbers).
 
 ---
 
@@ -568,6 +568,9 @@ Both deployed via `supabase functions deploy <name>`. Source in `supabase/functi
 | `CRATE_RESEARCH_REFRESH` | Server-only | No | Set `1` to opt into the optional MusicBrainz research refresh window (default six months via `CRATE_RESEARCH_REFRESH_MS`). Unset = reuse successful research indefinitely. |
 | `BLOB_READ_WRITE_TOKEN` | Server-only | No | Vercel Blob for CAA covers. Unset = `putCoverBlob` returns null; renderer falls back to Discogs hotlink. Never commit the token. |
 | `EVERYSONG_API_KEY` | Server-only | No | Preview `/flip` lookup. Unset → down copy. **Do not add to Vercel production.** |
+| `RESEND_API_KEY` | Server-only | No | Preview `/flip` operator email after a stored request. Unset → skip notify. **Do not add to Vercel production.** |
+| `FLIP_NOTIFY_FROM` | Server-only | No | Resend from-address. Default `doingflips <33@lecturesfrom.com>`. Must be a verified Resend domain. Preview-only. |
+| `FLIP_NOTIFY_TO` | Server-only | No | Operator inbox. Default `33@lecturesfrom.com`. Preview-only. |
 
 ### Supabase Secrets (set via `supabase secrets set`)
 
@@ -597,7 +600,7 @@ All Next.js env vars above must also be set in Vercel for production deployment.
 | Discogs routes | `DISCOGS_TOKEN` optional; missing token is not an error |
 | `/api/flip/search` | 20/min/IP; missing key is down, not 500; never auto-picks |
 | `/api/flip/lookup` | 10/min/IP; missing key is down, not 500; `title`+`artist` or a unique `q` |
-| `/api/flip/request` | 6/min/IP; email or phone; phone-only requires `smsOptIn`; never echo contact |
+| `/api/flip/request` | 6/min/IP; email and/or phone required; phone-only requires `smsOptIn`; never echo contact; notify is best-effort |
 
 ---
 

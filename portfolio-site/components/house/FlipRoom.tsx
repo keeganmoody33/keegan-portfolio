@@ -18,6 +18,7 @@ import {
   sourceLine,
 } from '@/lib/flip/copy.ts'
 import { parseFlipStub } from '@/lib/flip/fixtures.ts'
+import { validateFlipRequest } from '@/lib/flip/validate.ts'
 import { artistYearLine, parseLookupResult, parseSearchResult } from '@/lib/flip/result.ts'
 import {
   FLIP_SEARCH_MIN_CHARS,
@@ -140,6 +141,7 @@ export default function FlipRoom({
   const privacyId = useId()
   const errorId = useId()
   const hintId = useId()
+  const contactHintId = useId()
 
   async function runLookupForSong(song: FlipSong) {
     skipSearchRef.current = true
@@ -352,6 +354,20 @@ export default function FlipRoom({
   async function onRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!lookup?.song) return
+    const contact = validateFlipRequest({
+      rid: lookup.song.rid,
+      title: lookup.song.title,
+      artist: lookup.song.artist,
+      year: lookup.song.year,
+      isrc: lookup.song.isrc,
+      email,
+      phone,
+      smsOptIn,
+    })
+    if (!contact.ok) {
+      setFormError(contact.error)
+      return
+    }
     setSending(true)
     setFormError(null)
     try {
@@ -395,6 +411,7 @@ export default function FlipRoom({
 
   const song = lookup?.song ?? null
   const showForm = lookup?.status === 'ok' && song !== null && !submitted
+  const hasContact = email.trim().length > 0 || phone.trim().length > 0
   const phoneVisible = phone.trim().length > 0
   const activeHit = hits[activeIndex]
   const busy = looking || searching
@@ -545,6 +562,9 @@ export default function FlipRoom({
 
       {showForm ? (
         <form onSubmit={onRequest} className="mt-12 max-w-xl">
+          <p id={contactHintId} className="mb-6 font-mono text-[11px] leading-relaxed text-[var(--house-dim)]">
+            {FLIP_COPY.contactHint}
+          </p>
           <div>
             <label className="house-meta" htmlFor="flip-email">
               {FLIP_COPY.email}
@@ -556,6 +576,7 @@ export default function FlipRoom({
               autoComplete="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
+              aria-describedby={contactHintId}
               className={`mt-2 ${fieldClass}`}
             />
           </div>
@@ -570,6 +591,7 @@ export default function FlipRoom({
               autoComplete="tel"
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
+              aria-describedby={contactHintId}
               className={`mt-2 ${fieldClass}`}
             />
           </div>
@@ -591,8 +613,8 @@ export default function FlipRoom({
           ) : null}
           <button
             type="submit"
-            className={`house-text-button mt-8 ${sending ? 'opacity-60' : ''}`}
-            disabled={sending}
+            className={`house-text-button mt-8 ${sending || !hasContact ? 'opacity-60' : ''}`}
+            disabled={sending || !hasContact}
             aria-describedby={privacyId}
             aria-busy={sending}
           >

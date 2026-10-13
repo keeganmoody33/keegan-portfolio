@@ -16,6 +16,7 @@ export const FLIP_COPY = {
   retry: 'retry',
   email: 'email',
   phone: 'phone',
+  contactHint: 'email or phone. one is enough.',
   smsOptIn: 'text me the beat',
   submit: 'request a sample flip',
   privacy: 'used only to send you this beat. never shared or added to a list.',

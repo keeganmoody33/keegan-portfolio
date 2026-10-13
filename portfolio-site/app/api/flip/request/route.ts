@@ -3,6 +3,7 @@ import { getPostHogClient } from '@/lib/posthog-server'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { FLIP_COPY } from '@/lib/flip/copy.ts'
 import { hasSongIdentity, validateFlipRequest } from '@/lib/flip/validate.ts'
+import { notifyFlipRequest } from '@/lib/flip/notify.ts'
 import { flipRequestsEnabled, storeFlipRequest } from '@/lib/flip/store.ts'
 import { parseFlipStub } from '@/lib/flip/fixtures.ts'
 import { FLIP_RATE_WINDOW_MS, FLIP_REQUEST_RATE_LIMIT } from '@/lib/flip/types.ts'
@@ -73,19 +74,18 @@ export async function POST(request: NextRequest) {
 
   const stub = parseFlipStub(asString(rec.stub) || null)
   const fixtureAccept = Boolean(stub) && !isProductionRedisNamespace()
-  const stored = fixtureAccept
-    ? true
-    : await storeFlipRequest({
-        at: new Date().toISOString(),
-        rid: asRid(rec.rid),
-        title,
-        artist,
-        year: asString(rec.year) || null,
-        isrc: asString(rec.isrc) || null,
-        email: validated.email,
-        phone: validated.phone,
-        smsOptIn: validated.smsOptIn,
-      })
+  const payload = {
+    at: new Date().toISOString(),
+    rid: asRid(rec.rid),
+    title,
+    artist,
+    year: asString(rec.year) || null,
+    isrc: asString(rec.isrc) || null,
+    email: validated.email,
+    phone: validated.phone,
+    smsOptIn: validated.smsOptIn,
+  }
+  const stored = fixtureAccept ? true : await storeFlipRequest(payload)
 
   if (!stored && !flipRequestsEnabled()) {
     posthog.capture({
@@ -100,6 +100,8 @@ export async function POST(request: NextRequest) {
     return jsonError(FLIP_COPY.storeDown, 503)
   }
 
+  const notified = fixtureAccept ? { email: false } : await notifyFlipRequest(payload)
+
   posthog.capture({
     distinctId,
     event: 'api_flip_request',
@@ -109,6 +111,7 @@ export async function POST(request: NextRequest) {
       has_email: Boolean(validated.email),
       has_phone: Boolean(validated.phone),
       sms_opt_in: validated.smsOptIn,
+      notified_email: notified.email,
     },
   })
 

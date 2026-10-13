@@ -1,3 +1,10 @@
+COMPLETED (2026-10-13 — flip notify PostHog + email, contact required, do not merge):
+- Requesting a sample flip requires email and/or phone. Form hint `email or phone. one is enough.` Submit disabled until one field has text. Client `validateFlipRequest` before POST; API still rejects empty contact.
+- After a stored request: PostHog `api_flip_request` (`stored`, `notified_email`, no PII) plus best-effort Resend email to `FLIP_NOTIFY_TO` (default `33@lecturesfrom.com`). Skip notify when the key is unset, on prod Redis namespace, or on fixture stub. Visitor still gets success if Resend fails.
+- No Twilio. No new npm packages. Do not add `RESEND_API_KEY` to Vercel production. Do not merge.
+- PostHog insight `doingflips stored requests` (`6njBw9q8`) + hourly alert when count > 0 (user `33@lecturesfrom.com`). Alert is a ping; Resend email is who/song. Email skips until Preview-only `RESEND_API_KEY` is set.
+- Local verify: empty POST 400 `leave an email or a phone.`; email-only + phone+sms stub 200 `{ok:true}`; phone-only without sms 400. UI: submit disabled until a field has text; email-only succeeds; phone-only needs `text me the beat` then succeeds. `lib/flip/flip.test.ts` 24/0. tsc + eslint of notify/copy/validate/request/FlipRoom pass.
+
 COMPLETED (2026-10-13 — doingflips UX, song typeahead, connect arm, do not merge):
 - h1 is `doingflips`; the inner `flip` runs `flipLand` (clockwise jump-flip-land, CSS, reduced-motion none). Lede: find a song, pick it, leave contact, he'll send the beat. CTA `request a sample flip` (form + record detail). Footer/rail `doingflips`.
 - Song field is a visible search: label `song`, placeholder, hint, full-width bar, Look up under it. Debounced `GET /api/flip/search` listbox. Never auto-picks the first everysong hit (Funky Drummer lesson). Lookup is `title`+`artist` after a pick, or unique `q` only. `?stub=suggest` = Donny Hathaway / Voices Inside.
