@@ -192,9 +192,16 @@ export function stubStudyRenderer(canvas?: EventTarget | null): StudyRendererLik
   }
 }
 
+/** Poster swap must wait a tick so R3F can finish onCreated bind before unmount. */
+export function queueStudyError(onError: () => void): void {
+  setTimeout(onError, 0)
+}
+
 /**
  * gl factory contract: never throw. A throw, or a non-renderer return, makes
- * R3F construct `WebGLRenderer` uncaught. Route failures to `onError` (poster).
+ * R3F construct `WebGLRenderer` uncaught. Route failures to `onError` (poster)
+ * on the next tick so the Canvas container is still mounted for R3F onCreated
+ * (`events.connect` → `target.addEventListener`).
  */
 export function studyGlFromCreate(
   create: () => StudyRendererLike,
@@ -206,12 +213,12 @@ export function studyGlFromCreate(
     const ctx = typeof renderer.getContext === 'function' ? renderer.getContext() : null
     if (!webglContextIsUsable(ctx) || webglContextIsLost(ctx)) {
       renderer.dispose?.()
-      onError()
+      queueStudyError(onError)
       return stubStudyRenderer(canvas ?? renderer.domElement ?? null)
     }
     return renderer
   } catch {
-    onError()
+    queueStudyError(onError)
     return stubStudyRenderer(canvas ?? null)
   }
 }

@@ -14,7 +14,7 @@ import {
 } from './yadiggg-gl.ts'
 
 describe('lost-on-create', () => {
-  it('does not throw when create fails; routes to onError and returns a renderer-like stub', () => {
+  it('does not throw when create fails; routes to onError and returns a renderer-like stub', async () => {
     let errors = 0
     const gl = studyGlFromCreate(
       () => {
@@ -26,12 +26,15 @@ describe('lost-on-create', () => {
     )
     assert.equal(typeof gl.render, 'function')
     assert.doesNotThrow(() => gl.render())
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0)
+    })
     assert.equal(errors, 1)
     const ctx = gl.getContext?.()
     assert.equal((ctx as { isContextLost: () => boolean }).isContextLost(), true)
   })
 
-  it('does not throw when the created context is already lost', () => {
+  it('does not throw when the created context is already lost', async () => {
     let errors = 0
     const gl = studyGlFromCreate(
       () => ({
@@ -53,6 +56,9 @@ describe('lost-on-create', () => {
       }
     )
     assert.equal(typeof gl.render, 'function')
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0)
+    })
     assert.equal(errors, 1)
   })
 
@@ -78,7 +84,7 @@ describe('lost-on-create', () => {
     assert.equal(errors, 0)
   })
 
-  it('live-only lost-on-create does not pageerror when R3F binds xr', () => {
+  it('live-only lost-on-create does not pageerror when R3F binds xr', async () => {
     const probe = {
       getExtension() {
         return null
@@ -91,6 +97,12 @@ describe('lost-on-create', () => {
 
     const pageerrors: unknown[] = []
     let errors = 0
+    // R3F onCreated does `events.connect(divRef.current)` → target.addEventListener.
+    // A sync poster swap unmounts that container in the same tick.
+    let container: { addEventListener: (type: string, listener: () => void) => void } | null = {
+      addEventListener() {},
+    }
+
     const gl = studyGlFromCreate(
       () => ({
         render() {},
@@ -108,12 +120,18 @@ describe('lost-on-create', () => {
       }),
       () => {
         errors += 1
+        container = null
       }
     )
-    assert.equal(errors, 1)
+
     try {
+      const target = container
+      if (target == null) {
+        throw new TypeError("Cannot read properties of null (reading 'addEventListener')")
+      }
+      target.addEventListener('pointerdown', () => {})
       const xr = gl.xr
-      if (xr == null) throw new TypeError("Cannot read properties of undefined (reading 'addEventListener')")
+      if (xr == null) throw new TypeError("Cannot read properties of null (reading 'addEventListener')")
       xr.addEventListener('sessionstart', () => {})
       xr.addEventListener('sessionend', () => {})
       xr.enabled = xr.isPresenting
@@ -139,6 +157,10 @@ describe('lost-on-create', () => {
       pageerrors.push(error)
     }
     assert.equal(pageerrors.length, 0)
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0)
+    })
+    assert.equal(errors, 1)
   })
 })
 

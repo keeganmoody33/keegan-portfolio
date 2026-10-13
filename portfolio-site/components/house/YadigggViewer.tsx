@@ -8,7 +8,12 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { partByName } from '@/lib/yadiggg-parts'
 import { webglContextIsLost, webglContextIsUsable } from '@/lib/webgl'
-import { bindStudyContextLoss, studyGlFromCreate, type StudyRendererLike } from '@/lib/yadiggg-gl'
+import {
+  bindStudyContextLoss,
+  queueStudyError,
+  studyGlFromCreate,
+  type StudyRendererLike,
+} from '@/lib/yadiggg-gl'
 import {
   CAMERA_PRESETS,
   YADIGGG_STAGE_INK,
@@ -633,11 +638,18 @@ function YadigggCanvas({
       gl={glFactory}
       onCreated={(state) => {
         try {
+          const xr = state.gl.xr
+          if (xr == null || typeof xr.addEventListener !== 'function') {
+            queueStudyError(() => onErrorRef.current())
+            return
+          }
           state.gl.setClearColor(0x000000, 0)
           const ctx = state.gl.getContext()
-          if (!webglContextIsUsable(ctx) || webglContextIsLost(ctx)) onErrorRef.current()
+          if (!webglContextIsUsable(ctx) || webglContextIsLost(ctx)) {
+            queueStudyError(() => onErrorRef.current())
+          }
         } catch {
-          onErrorRef.current()
+          queueStudyError(() => onErrorRef.current())
         }
       }}
       camera={{

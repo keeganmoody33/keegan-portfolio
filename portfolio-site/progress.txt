@@ -1,3 +1,7 @@
+COMPLETED (2026-10-13 — defer lost-on-create poster handoff, PR #75 preview only):
+- Same branch. Draft. Do not merge.
+- Sync `onError` unmounted the Canvas container before R3F onCreated `events.connect` → `addEventListener` of null. Factory now `setTimeout(onError, 0)`. onCreated guarded if `gl.xr` is missing. No-pageerror test fails when handoff is sync (container nulled) and passes when deferred.
+
 COMPLETED (2026-10-13 — live-only lost-on-create xr stub, PR #75 preview only):
 - Same branch. Draft. Do not merge.
 - Probe can succeed while the live canvas context is lost. Factory still cannot throw (R3F would construct WebGLRenderer). Cannot skip `<Canvas>` on that tick; `onError` posters. Stub now no-ops `xr.addEventListener` and the other R3F / ContactShadows surfaces so there is no pageerror. Test: live-only lost-on-create, pageerrors [].
