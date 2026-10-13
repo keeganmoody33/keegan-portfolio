@@ -17,6 +17,7 @@ import {
   YADIGGG_GESTURE_HINT_TOUCH,
   YADIGGG_LOCKED_FACTS,
   YADIGGG_MODEL_ENVELOPE,
+  YADIGGG_POSTER_PORTRAIT_SRC,
   YADIGGG_POSTER_SRC,
   YADIGGG_RAIL_FALLBACK,
   YADIGGG_RAIL_LIVE,
@@ -56,11 +57,24 @@ function fallbackCaption(reason: ViewerFallbackReason): string {
   }
 }
 
-function Poster({ src, title, hidden }: { src: string; title: string; hidden: boolean }) {
+function Poster({
+  src,
+  portraitSrc,
+  title,
+  hidden,
+}: {
+  src: string
+  portraitSrc: string
+  title: string
+  hidden: boolean
+}) {
   return (
     <figure className={`absolute inset-0 z-0 m-0 ${hidden ? 'opacity-0' : 'opacity-100'}`}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="" className="h-full w-full object-contain object-center" />
+      <picture>
+        <source media="(max-width: 639px)" srcSet={portraitSrc} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt="" className="h-full w-full object-cover object-center sm:object-contain" />
+      </picture>
       <figcaption className="sr-only">{title} study poster</figcaption>
     </figure>
   )
@@ -230,6 +244,7 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
           >
             <Poster
               src={poster}
+              portraitSrc={YADIGGG_POSTER_PORTRAIT_SRC}
               title={viewer.title}
               hidden={Boolean(showStudy && canvasReady && view !== 'compare')}
             />

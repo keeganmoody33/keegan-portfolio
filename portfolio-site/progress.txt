@@ -1,8 +1,9 @@
 COMPLETED (2026-10-13 — Keegan: study first, then H1, then his wordmark, PR #75 preview only):
 - Same branch. Draft. Do not merge.
-- Reverted the thin H1 liner above the study. Order: 3D study → H1 `yadiggg` → Keegan wordmark → notes. Study chrome is not headings so the outline starts at H1. Recorded in APP_FLOW / FRONTEND_GUIDELINES / lessons.
+- Reverted the thin H1 liner above the study. Order: 3D study → H1 `yadiggg` → Keegan wordmark → notes. Study chrome is not headings so the outline starts at H1. Docs: **Keegan: study first, title below** (removed the liner’s “Do not park the H1 under the workbench” / matching APP_FLOW/FG liner-above lines).
 - Wordmark is `/catalog/yadiggg/wordmark.png` (360×112 shovel/signal + yadiggg, cream knocked out). Plate `--house-stage-paper`. Alt exactly `yadiggg`.
-- Kept empty reserved fallback rows and `queueStudyError` timer clear.
+- Reserve mode/preset rows only while the WebGL check is pending, then collapse (no empty ~92px band at 375). `queueStudyError` timer clear unchanged.
+- Below 640px: `poster-portrait.jpg` (580×840) so the 860×420 landscape poster is not squeezed into a ~290×420 stage.
 
 COMPLETED (2026-10-13 — UX/UI review pass: H1 liner, fallback CLS, wordmark plate, PR #75 preview only):
 - Same branch. Draft. Do not merge. Rebased onto main `3b46efa` (#76, Next 16.4.0).

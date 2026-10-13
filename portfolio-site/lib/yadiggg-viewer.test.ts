@@ -18,6 +18,7 @@ import {
   YADIGGG_GESTURE_HINT_TOUCH,
   YADIGGG_LOCKED_FACTS,
   YADIGGG_MODEL_ENVELOPE,
+  YADIGGG_POSTER_PORTRAIT_SRC,
   YADIGGG_POSTER_SRC,
   YADIGGG_RAIL_FALLBACK,
   YADIGGG_STAGE_INK,
@@ -28,6 +29,21 @@ import {
   shouldReserveViewerChrome,
   shouldShowViewerChrome,
 } from './yadiggg-viewer.ts'
+
+function jpegSize(buf: Buffer): { width: number; height: number } {
+  let i = 2
+  while (i + 8 < buf.length) {
+    if (buf[i] !== 0xff) break
+    const marker = buf[i + 1]
+    if (marker === undefined) break
+    const length = buf.readUInt16BE(i + 2)
+    if (marker === 0xc0 || marker === 0xc1 || marker === 0xc2) {
+      return { height: buf.readUInt16BE(i + 5), width: buf.readUInt16BE(i + 7) }
+    }
+    i += 2 + length
+  }
+  throw new Error('no JPEG SOF')
+}
 
 describe('sleeve view modes', () => {
   it('includes every workbench view including reference', () => {
@@ -84,6 +100,7 @@ describe('locked facts vs model envelope', () => {
     assert.match(YADIGGG_MODEL_ENVELOPE.value, /70/)
     assert.match(YADIGGG_MODEL_ENVELOPE.label, /envelope/)
     assert.equal(YADIGGG_POSTER_SRC, '/catalog/yadiggg/poster.jpg')
+    assert.equal(YADIGGG_POSTER_PORTRAIT_SRC, '/catalog/yadiggg/poster-portrait.jpg')
   })
 })
 
@@ -126,13 +143,22 @@ describe('shouldReserveViewerChrome', () => {
     assert.equal(shouldReserveViewerChrome(null, true, 'port'), true)
   })
 
-  it('keeps the reserved rows empty in no-WebGL and lost-on-create fallbacks', () => {
-    assert.equal(shouldReserveViewerChrome('no-webgl', false, 'port'), true)
-    assert.equal(shouldReserveViewerChrome('error', true, 'port'), true)
-  })
-
-  it('drops the reserved rows when the src is blocked', () => {
+  it('collapses the reserved rows in every fallback', () => {
+    assert.equal(shouldReserveViewerChrome('no-webgl', false, 'port'), false)
+    assert.equal(shouldReserveViewerChrome('error', true, 'port'), false)
     assert.equal(shouldReserveViewerChrome('blocked', null, 'iframe'), false)
+  })
+})
+
+describe('portrait poster', () => {
+  it('is a 580×840 crop and is selected below 640px', () => {
+    const root = join(dirname(fileURLToPath(import.meta.url)), '..')
+    const portrait = readFileSync(join(root, 'public/catalog/yadiggg/poster-portrait.jpg'))
+    assert.deepEqual(jpegSize(portrait), { width: 580, height: 840 })
+    const viewer = readFileSync(join(root, 'components/house/SleeveViewer.tsx'), 'utf8')
+    assert.match(viewer, /media="\(max-width: 639px\)"/)
+    assert.match(viewer, /YADIGGG_POSTER_PORTRAIT_SRC/)
+    assert.match(viewer, /sm:object-contain/)
   })
 })
 

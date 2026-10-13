@@ -50,6 +50,8 @@ export const YADIGGG_CAD_ENVELOPE = '70 × 110 × 18 mm'
 
 export const YADIGGG_REFERENCE_SRC = '/catalog/yadiggg/reference.jpg'
 export const YADIGGG_POSTER_SRC = '/catalog/yadiggg/poster.jpg'
+/** 2× of the ~290×420 stage below 640px. Do not squeeze the 860×420 landscape poster there. */
+export const YADIGGG_POSTER_PORTRAIT_SRC = '/catalog/yadiggg/poster-portrait.jpg'
 
 /**
  * Drafting-table paper. Matches CSS `--house-stage-paper` (person-light
@@ -90,15 +92,15 @@ export function shouldShowViewerChrome(
   return webgl === true
 }
 
-/** Keep mode/preset row height while the WebGL probe is in flight and in no-WebGL / lost-on-create fallbacks (no CLS). Drop only when the src is blocked. */
+/** Reserve mode/preset row height only while the WebGL probe is in flight (or the study is live). Collapse on fallback so empty ~92px bands do not sit at 375. */
 export function shouldReserveViewerChrome(
   fallback: ViewerFallbackReason | null,
   webgl: boolean | null,
   mode: 'port' | 'iframe'
 ): boolean {
-  if (fallback === 'blocked') return false
+  if (fallback !== null) return false
   if (mode === 'iframe') return true
-  return webgl === null || webgl === true || fallback === 'no-webgl' || fallback === 'error'
+  return webgl === null || webgl === true
 }
 
 export const PART_READOUT_DEFAULT =
