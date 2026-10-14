@@ -1,5 +1,5 @@
 import { FLIP_COPY } from './copy.ts'
-import { isProductionRedisNamespace } from '../redis-env.ts'
+import { flipProductionLocked } from './store.ts'
 import type { FlipStoredRequest } from './types.ts'
 
 type EnvMap = Record<string, string | undefined>
@@ -34,12 +34,13 @@ export function flipNotifyFrom(env: EnvMap = process.env): string {
 }
 
 export function notifyEmailEnabled(env: EnvMap = process.env): boolean {
-  if (isProductionRedisNamespace(env)) return false
+  if (flipProductionLocked(env)) return false
   return Boolean(env.RESEND_API_KEY?.trim())
 }
 
 export function notifyEmailSubject(request: FlipStoredRequest): string {
-  return `flip request: ${request.title}`
+  const title = request.title.replace(/[\r\n\t]+/g, ' ').trim().slice(0, 120)
+  return `flip request: ${title}`
 }
 
 export function notifyEmailBody(request: FlipStoredRequest): string {

@@ -4,10 +4,9 @@ import { checkRateLimit } from '@/lib/rate-limit'
 import { FLIP_COPY } from '@/lib/flip/copy.ts'
 import { hasSongIdentity, validateFlipRequest } from '@/lib/flip/validate.ts'
 import { notifyFlipRequest } from '@/lib/flip/notify.ts'
-import { flipRequestsEnabled, storeFlipRequest } from '@/lib/flip/store.ts'
+import { flipProductionLocked, flipRequestsEnabled, storeFlipRequest } from '@/lib/flip/store.ts'
 import { parseFlipStub } from '@/lib/flip/fixtures.ts'
-import { FLIP_RATE_WINDOW_MS, FLIP_REQUEST_RATE_LIMIT } from '@/lib/flip/types.ts'
-import { isProductionRedisNamespace } from '@/lib/redis-env.ts'
+import { FLIP_QUERY_MAX, FLIP_RATE_WINDOW_MS, FLIP_REQUEST_RATE_LIMIT } from '@/lib/flip/types.ts'
 
 export const runtime = 'nodejs'
 
@@ -52,8 +51,8 @@ export async function POST(request: NextRequest) {
   }
 
   const rec = body && typeof body === 'object' ? (body as Record<string, unknown>) : {}
-  const title = asString(rec.title)
-  const artist = asString(rec.artist)
+  const title = asString(rec.title).trim().slice(0, FLIP_QUERY_MAX)
+  const artist = asString(rec.artist).trim().slice(0, FLIP_QUERY_MAX)
   if (!hasSongIdentity(title, artist)) {
     return jsonError(FLIP_COPY.songRequired, 400)
   }
@@ -73,7 +72,7 @@ export async function POST(request: NextRequest) {
   }
 
   const stub = parseFlipStub(asString(rec.stub) || null)
-  const fixtureAccept = Boolean(stub) && !isProductionRedisNamespace()
+  const fixtureAccept = Boolean(stub) && !flipProductionLocked()
   const payload = {
     at: new Date().toISOString(),
     rid: asRid(rec.rid),

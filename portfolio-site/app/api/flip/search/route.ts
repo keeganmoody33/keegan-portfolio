@@ -3,14 +3,13 @@ import { getPostHogClient } from '@/lib/posthog-server'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { emptySearch, everysongApiKey, searchCacheKey, searchEverysong } from '@/lib/flip/everysong.ts'
 import { fixtureSearch, parseFlipStub } from '@/lib/flip/fixtures.ts'
-import { readFlipSearchCache, writeFlipSearchCache } from '@/lib/flip/store.ts'
+import { flipProductionLocked, readFlipSearchCache, writeFlipSearchCache } from '@/lib/flip/store.ts'
 import {
   FLIP_QUERY_MAX,
   FLIP_RATE_WINDOW_MS,
   FLIP_SEARCH_MIN_CHARS,
   FLIP_SEARCH_RATE_LIMIT,
 } from '@/lib/flip/types.ts'
-import { isProductionRedisNamespace } from '@/lib/redis-env.ts'
 
 export const runtime = 'nodejs'
 
@@ -43,7 +42,7 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url)
   const query = (url.searchParams.get('q') ?? '').trim().slice(0, FLIP_QUERY_MAX)
   const stub = parseFlipStub(url.searchParams.get('stub'))
-  const production = isProductionRedisNamespace()
+  const production = flipProductionLocked()
 
   if (stub && !production) {
     posthog.capture({

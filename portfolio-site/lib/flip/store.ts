@@ -1,9 +1,5 @@
 import { Redis } from '@upstash/redis'
-import {
-  assertPrefixedRedisKey,
-  isProductionRedisNamespace,
-  resolveRedisRestConfig,
-} from '../redis-env.ts'
+import { assertPrefixedRedisKey, resolveRedisRestConfig } from '../redis-env.ts'
 import {
   FLIP_LOOKUP_CACHE_TTL_SECONDS,
   FLIP_REDIS_PREFIX,
@@ -24,8 +20,13 @@ export type FlipRedis = {
 
 let client: Redis | null | undefined
 
+/** Any production deploy, including a non-main ref. Those still hold production Redis credentials. */
+export function flipProductionLocked(env: EnvMap = process.env): boolean {
+  return env.VERCEL_ENV === 'production'
+}
+
 function redis(env: EnvMap = process.env): FlipRedis | null {
-  if (isProductionRedisNamespace(env)) return null
+  if (flipProductionLocked(env)) return null
   const config = resolveRedisRestConfig(env)
   if (!config) return null
   if (client === undefined) {
@@ -35,7 +36,7 @@ function redis(env: EnvMap = process.env): FlipRedis | null {
 }
 
 export function flipRequestsEnabled(env: EnvMap = process.env): boolean {
-  return !isProductionRedisNamespace(env) && resolveRedisRestConfig(env) != null
+  return !flipProductionLocked(env) && resolveRedisRestConfig(env) != null
 }
 
 export function flipLookupCacheKey(hash: string, env: EnvMap = process.env): string {
@@ -75,6 +76,7 @@ export async function writeFlipLookupCache(
   env: EnvMap = process.env
 ): Promise<void> {
   try {
+    if (flipProductionLocked(env)) return
     const store = db === undefined ? redis(env) : db
     if (!store) return
     await store.set(flipLookupCacheKey(hash, env), JSON.stringify(value), {
@@ -110,6 +112,7 @@ export async function writeFlipSearchCache(
   env: EnvMap = process.env
 ): Promise<void> {
   try {
+    if (flipProductionLocked(env)) return
     const store = db === undefined ? redis(env) : db
     if (!store) return
     await store.set(flipSearchCacheKey(hash, env), JSON.stringify(value), {
@@ -126,7 +129,7 @@ export async function storeFlipRequest(
   env: EnvMap = process.env
 ): Promise<boolean> {
   try {
-    if (isProductionRedisNamespace(env)) return false
+    if (flipProductionLocked(env)) return false
     const store = db === undefined ? redis(env) : db
     if (!store) return false
     await store.rpush(flipRequestsKey(env), JSON.stringify(request))

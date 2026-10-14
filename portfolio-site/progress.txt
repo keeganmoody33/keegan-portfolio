@@ -1,3 +1,7 @@
+COMPLETED (2026-10-14 — flip refuses every production env):
+- `flipProductionLocked` is `VERCEL_ENV === 'production'` with no git-ref exception. A non-main production deploy no longer RPUSHes contact or sends Resend. Subject strips CR/LF. `lib/flip/flip.test.ts` 26/0.
+- Per-isolate rate limit stays (same as the other API routes). Not a shared everysong quota.
+
 COMPLETED (2026-10-13 — Resend preview notify live, do not merge):
 - Cloudflare zone `lecturesfrom.com` has Resend DKIM TXT (`resend._domainkey`), SPF MX+TXT (`send`), and CNAME (`rsend`). DNS-only (not proxied). Domain `bfafbedd-1727-4494-8f5e-4ef0d86584a2` status **verified**. Sending enabled, receiving off.
 - Sending-access key `doingflips preview notify` stored as Vercel Preview-only sensitive `RESEND_API_KEY` on `cursor/preview-flip-page-9720` (env id `hpHczlJowU9aqJ3s`). Not production. Do not print the token.

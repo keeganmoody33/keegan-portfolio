@@ -10,13 +10,12 @@ import {
   songLookupCacheKey,
 } from '@/lib/flip/everysong.ts'
 import { fixtureLookup, parseFlipStub } from '@/lib/flip/fixtures.ts'
-import { readFlipLookupCache, writeFlipLookupCache } from '@/lib/flip/store.ts'
+import { flipProductionLocked, readFlipLookupCache, writeFlipLookupCache } from '@/lib/flip/store.ts'
 import {
   FLIP_LOOKUP_RATE_LIMIT,
   FLIP_QUERY_MAX,
   FLIP_RATE_WINDOW_MS,
 } from '@/lib/flip/types.ts'
-import { isProductionRedisNamespace } from '@/lib/redis-env.ts'
 
 export const runtime = 'nodejs'
 
@@ -55,7 +54,7 @@ export async function GET(request: NextRequest) {
   const title = clip(url.searchParams.get('title'))
   const artist = clip(url.searchParams.get('artist'))
   const stub = parseFlipStub(url.searchParams.get('stub'))
-  const production = isProductionRedisNamespace()
+  const production = flipProductionLocked()
 
   if (stub && !production) {
     posthog.capture({

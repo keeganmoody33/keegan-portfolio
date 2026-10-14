@@ -25,6 +25,7 @@ import { artistYearLine, parseLookupResult, parseSearchResult } from './result.t
 import { FLIP_PATH, flipHrefForTrack } from './route.ts'
 import {
   flipLookupCacheKey,
+  flipProductionLocked,
   flipRequestsEnabled,
   flipRequestsKey,
   flipSearchCacheKey,
@@ -355,6 +356,30 @@ describe('preview Redis prefix', () => {
     assert.equal(stored, false)
     assert.equal(lists.size, 0)
 
+    const prodBranch = { VERCEL_ENV: 'production', VERCEL_GIT_COMMIT_REF: 'feat/not-main' }
+    assert.equal(flipProductionLocked(prodBranch), true)
+    assert.equal(flipRequestsEnabled(prodBranch), false)
+    const branchDb = fakeRedis()
+    const branchStored = await storeFlipRequest(
+      {
+        at: '2026-10-13T00:00:00.000Z',
+        rid: 1,
+        title: 'Hotline Bling',
+        artist: 'Drake',
+        year: '2015',
+        isrc: null,
+        email: 'secret@example.com',
+        phone: '4045551212',
+        smsOptIn: true,
+      },
+      branchDb.db,
+      prodBranch
+    )
+    assert.equal(branchStored, false)
+    assert.equal(branchDb.lists.size, 0)
+    await writeFlipLookupCache('abc', fixtureLookup('results'), branchDb.db, prodBranch)
+    assert.equal(await readFlipLookupCache('abc', branchDb.db, prodBranch), null)
+
     const previewStore = fakeRedis()
     const ok = await storeFlipRequest(
       {
@@ -478,6 +503,28 @@ describe('notifyFlipRequest', () => {
     )
     assert.deepEqual(result, { email: false })
     assert.equal(calls, 0)
+
+    const branch = await notifyFlipRequest(
+      payload,
+      async () => {
+        calls += 1
+        return { ok: true }
+      },
+      {
+        VERCEL_ENV: 'production',
+        VERCEL_GIT_COMMIT_REF: 'feat/not-main',
+        RESEND_API_KEY: 're_test',
+      }
+    )
+    assert.deepEqual(branch, { email: false })
+    assert.equal(calls, 0)
+  })
+
+  it('strips line breaks from the subject', () => {
+    const subject = notifyEmailSubject({ ...payload, title: 'Hotline\r\nBcc: x' })
+    assert.equal(subject.includes('\n'), false)
+    assert.equal(subject.includes('\r'), false)
+    assert.equal(subject.startsWith('flip request: '), true)
   })
 
   it('keys retries from stored at, not contact', () => {
