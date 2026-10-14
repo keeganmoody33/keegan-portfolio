@@ -1,10 +1,11 @@
 # Lessons Learned
 
-Updated: 2026-10-13
+Updated: 2026-10-14
 
 ## Preview `/flip` (2026-10-13)
 
 - **A query edit drops the selected song.** The request form belongs to the lookup, not the text in the field. `onQueryChange` calls `clearSelection()`. Search hits stay tagged with `hitsQuery` and only render when that equals the trimmed field. In-flight search, lookup, boot, and request responses check `searchGen` / `lookupGen` / `requestGen` and do not apply once the visitor has moved on.
+- **A picked song keeps its rid, year, and ISRC.** everysong's sample call only echoes the song you pass. Lookup used to pass nulls, so the detail row hid the year and ISRC the list had just shown, and the request stored those nulls. Send `rid`, `year`, and `isrc` with `title` and `artist`. Cache stays keyed by title and artist; fill empty cached fields from this request. The room does the same fill so a stale cache cannot blank the row.
 - **Production search needs `EVERYSONG_API_KEY`.** Without it, `/api/flip/search` returns `status: down` and the room finds nothing. The key is a sensitive Vercel env on production and preview (env id `m8a7H2uS0AMHo9fy`, branch scope cleared 2026-10-14). A new production deploy is required after the target change. Do not print the token.
 - **Production `/flip` was fail-closed, and that broke the page (2026-10-14).** Search worked on production (the everysong key reached prod) but every request 503'd with `couldn't store that.` A visitor could do every step and fail on the last one. Now: production on `main` writes `lf:flip:` (`flipRedisPrefix`), notify runs when `RESEND_API_KEY` is set; `flipWriteLocked` still stops a non-main production ref. Fixtures stay off all production (`flipProductionLocked`). Never ship a form whose submit cannot succeed in that environment.
 - **One route constant.** `FLIP_PATH` in `lib/flip/route.ts` is the only path. Footer, record-detail `request a sample flip`, and the page all import it so the room is easy to move.

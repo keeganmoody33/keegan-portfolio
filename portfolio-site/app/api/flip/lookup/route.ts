@@ -6,9 +6,11 @@ import {
   everysongApiKey,
   lookupCacheKey,
   lookupEverysong,
+  pickedSong,
   samplesForSong,
   songLookupCacheKey,
 } from '@/lib/flip/everysong.ts'
+import { fillSongIdentity } from '@/lib/flip/result.ts'
 import { fixtureLookup, parseFlipStub } from '@/lib/flip/fixtures.ts'
 import { flipProductionLocked, readFlipLookupCache, writeFlipLookupCache } from '@/lib/flip/store.ts'
 import {
@@ -86,6 +88,13 @@ export async function GET(request: NextRequest) {
     })
   }
 
+  const identity = pickedSong({
+    title,
+    artist,
+    rid: url.searchParams.get('rid'),
+    year: url.searchParams.get('year'),
+    isrc: url.searchParams.get('isrc'),
+  })
   const hash = picked ? songLookupCacheKey(title, artist) : lookupCacheKey(query)
   const cached = await readFlipLookupCache(hash)
   if (cached) {
@@ -94,11 +103,13 @@ export async function GET(request: NextRequest) {
       event: 'api_flip_lookup',
       properties: { source: 'cache', status: cached.status },
     })
-    return NextResponse.json(cached, { headers: { 'Cache-Control': 'no-store' } })
+    const body =
+      cached.song && picked ? { ...cached, song: fillSongIdentity(cached.song, identity) } : cached
+    return NextResponse.json(body, { headers: { 'Cache-Control': 'no-store' } })
   }
 
   const result = picked
-    ? await samplesForSong({ rid: null, title, artist, year: null, isrc: null }, { key })
+    ? await samplesForSong(identity, { key })
     : await lookupEverysong(query, { key })
   if (result.status === 'ok' || result.status === 'no_match') {
     await writeFlipLookupCache(hash, result)

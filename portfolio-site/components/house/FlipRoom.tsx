@@ -19,7 +19,12 @@ import {
 } from '@/lib/flip/copy.ts'
 import { parseFlipStub } from '@/lib/flip/fixtures.ts'
 import { validateFlipRequest } from '@/lib/flip/validate.ts'
-import { artistYearLine, parseLookupResult, parseSearchResult } from '@/lib/flip/result.ts'
+import {
+  artistYearLine,
+  fillSongIdentity,
+  parseLookupResult,
+  parseSearchResult,
+} from '@/lib/flip/result.ts'
 import {
   FLIP_SEARCH_MIN_CHARS,
   type FlipLookupResult,
@@ -63,13 +68,23 @@ async function fetchSearch(q: string, nextStub: FlipStub | null): Promise<FlipSe
 }
 
 async function fetchLookup(
-  song: { title?: string; artist?: string; q?: string },
+  song: {
+    title?: string
+    artist?: string
+    q?: string
+    rid?: number | null
+    year?: string | null
+    isrc?: string | null
+  },
   nextStub: FlipStub | null
 ): Promise<FlipLookupResult> {
   const url = new URL('/api/flip/lookup', window.location.origin)
   if (song.title) url.searchParams.set('title', song.title)
   if (song.artist) url.searchParams.set('artist', song.artist)
   if (song.q) url.searchParams.set('q', song.q)
+  if (song.rid != null) url.searchParams.set('rid', String(song.rid))
+  if (song.year) url.searchParams.set('year', song.year)
+  if (song.isrc) url.searchParams.set('isrc', song.isrc)
   if (nextStub) url.searchParams.set('stub', nextStub)
   const response = await fetch(url, {
     headers: { ...getPostHogDistinctIdHeader() },
@@ -175,9 +190,11 @@ export default function FlipRoom({
     setHitsQuery('')
     setQuery(song.title)
     try {
-      const result = await fetchLookup({ title: song.title, artist: song.artist }, stub)
+      const result = await fetchLookup(song, stub)
       if (lookupGen.current !== gen) return
-      setLookup(result)
+      setLookup(
+        result.song ? { ...result, song: fillSongIdentity(result.song, song) } : result
+      )
       posthog.capture('flip_lookup', {
         status: result.status,
         fixture: result.fixture,
@@ -284,12 +301,10 @@ export default function FlipRoom({
         return
       }
       if (search.hits.length === 1) {
-        const result = await fetchLookup(
-          { title: search.hits[0]!.title, artist: search.hits[0]!.artist },
-          stub
-        )
+        const hit = search.hits[0]!
+        const result = await fetchLookup(hit, stub)
         if (!stillLookup()) return
-        setLookup(result)
+        setLookup(result.song ? { ...result, song: fillSongIdentity(result.song, hit) } : result)
         setQuery(search.hits[0]!.title)
         posthog.capture('flip_lookup', {
           status: result.status,

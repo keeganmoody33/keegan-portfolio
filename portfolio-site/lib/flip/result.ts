@@ -99,3 +99,16 @@ export function parseSearchResult(value: unknown): FlipSearchResult | null {
 export function artistYearLine(row: FlipSampleRow | FlipSong): string {
   return [row.artist, row.year].filter((part) => part && part.length > 0).join(' · ')
 }
+
+/** The pick wins when it has a value. A cached song fills whatever the pick left empty. */
+export function fillSongIdentity(
+  song: FlipSong,
+  picked: Pick<FlipSong, 'rid' | 'year' | 'isrc'>
+): FlipSong {
+  return {
+    ...song,
+    rid: picked.rid ?? song.rid,
+    year: picked.year ?? song.year,
+    isrc: picked.isrc ?? song.isrc,
+  }
+}

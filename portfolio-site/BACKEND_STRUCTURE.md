@@ -361,7 +361,7 @@ Cache 6h on `lf:flip:search:{hash}` (production main) or `lf:preview:flip:search
 
 Server-side proxy to everysong.site. Browser never sees `EVERYSONG_API_KEY`. The key is set on production. Missing key → down copy, not a 500. Production main caches. A non-main production ref skips cache writes.
 
-**Request:** `?title=` + `?artist=` (picked song, samples only) or `?q=` (unique hit only — two or more search hits are `no_match`, never the first result). Optional `?stub=results|empty|nomatch|down|success|suggest` (ignored when `VERCEL_ENV` is `production`).
+**Request:** `?title=` + `?artist=` (picked song, samples only) plus optional `?rid=`, `?year=`, and `?isrc=` from that search hit, or `?q=` (unique hit only — two or more search hits are `no_match`, never the first result). Sample cache stays keyed by title and artist. The response song prefers rid, year, and isrc from this request, including when the cached song left them empty. Optional `?stub=results|empty|nomatch|down|success|suggest` (ignored when `VERCEL_ENV` is `production`).
 
 **Response (200):**
 ```json
