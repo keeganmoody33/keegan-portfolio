@@ -60,8 +60,12 @@ export type FlipStoredRequest = {
   smsOptIn: boolean
 }
 
+/** Preview and local. */
 export const FLIP_REDIS_PREFIX = 'lf:preview:flip:'
 export const FLIP_REQUESTS_KEY = `${FLIP_REDIS_PREFIX}requests`
+/** Production on main only. */
+export const FLIP_PROD_REDIS_PREFIX = 'lf:flip:'
+export const FLIP_PROD_REQUESTS_KEY = `${FLIP_PROD_REDIS_PREFIX}requests`
 export const EVERYSONG_ORIGIN = 'https://everysong.site'
 export const EVERYSONG_SEARCH_PATH = '/api/v2/spine/search'
 export const EVERYSONG_SAMPLES_PATH = '/api/v2/samples/song'

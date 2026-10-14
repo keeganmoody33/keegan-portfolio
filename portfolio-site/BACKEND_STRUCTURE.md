@@ -347,19 +347,19 @@ Match statuses: `matched` / `ambiguous` / `unmatched` / `pending`. Weak matches 
 
 ### GET /api/flip/search
 
-Typeahead proxy. One everysong `GET /api/v2/spine/search`. Browser never sees `EVERYSONG_API_KEY`. Does not fetch sample history. Does not pick a hit. `VERCEL_ENV=production` skips cache writes and fixtures. The key is set on production.
+Typeahead proxy. One everysong `GET /api/v2/spine/search`. Browser never sees `EVERYSONG_API_KEY`. Does not fetch sample history. Does not pick a hit. Production main caches on `lf:flip:search:`. A non-main production ref skips cache writes. Fixtures stay off every production env. The key is set on production.
 
 **Request:** `?q=` (max 200, min 2) and optional `?stub=results|empty|nomatch|down|success|suggest` (ignored when `VERCEL_ENV` is `production`). `suggest` returns Donny Hathaway hits including Voices Inside.
 
 **Response (200):** `{ "status": "ok | no_match | down", "fixture": boolean, "hits": [{ "rid", "title", "artist", "year", "isrc" }] }`
 
-Cache 6h on `lf:preview:flip:search:{hash}` (ok and no_match). Rate-limit 20/min/IP. Missing key → down.
+Cache 6h on `lf:flip:search:{hash}` (production main) or `lf:preview:flip:search:{hash}` (ok and no_match). Rate-limit 20/min/IP. Missing key → down.
 
 **PostHog events:** `api_flip_search` (`source`, `status`, `hits`; no query string, no PII).
 
 ### GET /api/flip/lookup
 
-Server-side proxy to everysong.site. Browser never sees `EVERYSONG_API_KEY`. The key is set on production. Missing key → down copy, not a 500. Production skips cache writes.
+Server-side proxy to everysong.site. Browser never sees `EVERYSONG_API_KEY`. The key is set on production. Missing key → down copy, not a 500. Production main caches. A non-main production ref skips cache writes.
 
 **Request:** `?title=` + `?artist=` (picked song, samples only) or `?q=` (unique hit only — two or more search hits are `no_match`, never the first result). Optional `?stub=results|empty|nomatch|down|success|suggest` (ignored when `VERCEL_ENV` is `production`).
 
@@ -375,13 +375,13 @@ Server-side proxy to everysong.site. Browser never sees `EVERYSONG_API_KEY`. The
 }
 ```
 
-Missing key, upstream failure, or 429 → `status: "down"` (never red on the page). Empty or ambiguous `q` (0 or 2+ hits) → `no_match`. Cached 6h on `lf:preview:flip:lookup:{hash}` (ok and no_match only; song hash when title+artist). Prod Redis namespace does not cache. Rate-limit 10/min/IP (`lib/rate-limit.ts`). Cover/remix edges are dropped; `family: sample` only.
+Missing key, upstream failure, or 429 → `status: "down"` (never red on the page). Empty or ambiguous `q` (0 or 2+ hits) → `no_match`. Cached 6h on `lf:flip:lookup:{hash}` (production main) or `lf:preview:flip:lookup:{hash}` (ok and no_match only; song hash when title+artist). A non-main production ref does not cache. Rate-limit 10/min/IP (`lib/rate-limit.ts`). Cover/remix edges are dropped; `family: sample` only.
 
 **PostHog events:** `api_flip_lookup` (`source`, `status`; no query string, no PII).
 
 ### POST /api/flip/request
 
-**Production fail-closed.** Email and/or phone required (both allowed). Phone-only requires `smsOptIn: true`. After a successful store, best-effort Resend email to `FLIP_NOTIFY_TO` (default `33@lecturesfrom.com`). `Idempotency-Key` is `flip-request/${at}` (stored ISO, not contact). Skip notify when `RESEND_API_KEY` is unset, when `VERCEL_ENV` is `production` (any git ref), or when a non-prod `stub` fixture accepts without storing. Notify failure still returns `{ ok: true }`. Never `console.log` contact.
+**Production main stores and emails.** Email and/or phone required (both allowed). Phone-only requires `smsOptIn: true`. After a successful store, best-effort Resend email to `FLIP_NOTIFY_TO` (default `33@lecturesfrom.com`). `Idempotency-Key` is `flip-request/${at}` (stored ISO, not contact). Skip notify when `RESEND_API_KEY` is unset, when the deploy is a non-main production ref (`flipWriteLocked`), or when a non-prod `stub` fixture accepts without storing. Notify failure still returns `{ ok: true }`. Never `console.log` contact.
 
 **Request:**
 ```json
@@ -398,7 +398,7 @@ Missing key, upstream failure, or 429 → `status: "down"` (never red on the pag
 }
 ```
 
-**Response (200):** `{ "ok": true }` — never echoes email/phone. **Errors:** 400 validation copy, 429/503 `couldn't store that.` Rate-limit 6/min/IP. Stored only on `lf:preview:flip:requests` (RPUSH JSON). Prod namespace refuses. Never `console.log` the body.
+**Response (200):** `{ "ok": true }` — never echoes email/phone. **Errors:** 400 validation copy. 429 is `FLIP_COPY.rateLimited`. 503 is the save-failure copy (song and contact are still on the form; retry or email `33@lecturesfrom.com`). Rate-limit 6/min/IP. Stored on `lf:flip:requests` (production main) or `lf:preview:flip:requests` (RPUSH JSON). A non-main production ref refuses the write. Never `console.log` the body.
 
 **PostHog events:** `api_flip_request` (`stored`, `fixture`, `has_email`, `has_phone`, `sms_opt_in`, `notified_email` — no addresses or numbers).
 
@@ -568,9 +568,9 @@ Both deployed via `supabase functions deploy <name>`. Source in `supabase/functi
 | `CRATE_RESEARCH_REFRESH` | Server-only | No | Set `1` to opt into the optional MusicBrainz research refresh window (default six months via `CRATE_RESEARCH_REFRESH_MS`). Unset = reuse successful research indefinitely. |
 | `BLOB_READ_WRITE_TOKEN` | Server-only | No | Vercel Blob for CAA covers. Unset = `putCoverBlob` returns null; renderer falls back to Discogs hotlink. Never commit the token. |
 | `EVERYSONG_API_KEY` | Server-only | No | `/flip` search and lookup. Set on Vercel production and preview. Unset → down copy. |
-| `RESEND_API_KEY` | Server-only | No | Preview `/flip` operator email after a stored request. Unset → skip notify. **Do not add to Vercel production.** |
-| `FLIP_NOTIFY_FROM` | Server-only | No | Resend from-address. Default `doingflips <33@lecturesfrom.com>`. Must be a verified Resend domain. Preview-only. |
-| `FLIP_NOTIFY_TO` | Server-only | No | Operator inbox. Default `33@lecturesfrom.com`. Preview-only. |
+| `RESEND_API_KEY` | Server-only | No | `/flip` operator email after a stored request. Set on Vercel production and preview. Unset → skip notify. A non-main production ref skips even when the key is set. |
+| `FLIP_NOTIFY_FROM` | Server-only | No | Resend from-address. Default `doingflips <33@lecturesfrom.com>`. Must be a verified Resend domain. |
+| `FLIP_NOTIFY_TO` | Server-only | No | Operator inbox. Default `33@lecturesfrom.com`. |
 
 ### Supabase Secrets (set via `supabase secrets set`)
 

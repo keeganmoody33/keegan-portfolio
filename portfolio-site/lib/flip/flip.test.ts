@@ -29,6 +29,7 @@ import {
   flipRequestsEnabled,
   flipRequestsKey,
   flipSearchCacheKey,
+  flipWriteLocked,
   readFlipLookupCache,
   readFlipSearchCache,
   storeFlipRequest,
@@ -36,7 +37,7 @@ import {
   writeFlipSearchCache,
   type FlipRedis,
 } from './store.ts'
-import { FLIP_REDIS_PREFIX, FLIP_REQUESTS_KEY } from './types.ts'
+import { FLIP_PROD_REDIS_PREFIX, FLIP_PROD_REQUESTS_KEY, FLIP_REDIS_PREFIX, FLIP_REQUESTS_KEY } from './types.ts'
 import {
   flipNotifyIdempotencyKey,
   notifyEmailBody,
@@ -328,15 +329,23 @@ describe('parseLookupResult / artistYearLine', () => {
   })
 })
 
-describe('preview Redis prefix', () => {
-  it('always uses lf:preview:flip: and refuses prod writes', async () => {
+describe('flip Redis prefix', () => {
+  it('uses lf:preview:flip: off main, lf:flip: on production main, and refuses non-main prod writes', async () => {
     assert.equal(FLIP_REQUESTS_KEY.startsWith('lf:preview:flip:'), true)
     const preview = { VERCEL_ENV: 'preview' }
     assert.equal(flipLookupCacheKey('abc', preview).startsWith(FLIP_REDIS_PREFIX), true)
     assert.equal(flipSearchCacheKey('abc', preview).startsWith(`${FLIP_REDIS_PREFIX}search:`), true)
     assert.equal(flipRequestsKey(preview), FLIP_REQUESTS_KEY)
     const prod = { VERCEL_ENV: 'production', VERCEL_GIT_COMMIT_REF: 'main' }
+    assert.equal(flipProductionLocked(prod), true)
+    assert.equal(flipWriteLocked(prod), false)
+    assert.equal(flipRequestsKey(prod), FLIP_PROD_REQUESTS_KEY)
+    assert.equal(flipLookupCacheKey('abc', prod).startsWith(FLIP_PROD_REDIS_PREFIX), true)
     assert.equal(flipRequestsEnabled(prod), false)
+    assert.equal(
+      flipRequestsEnabled({ ...prod, KV_REST_API_URL: 'https://kv.example', KV_REST_API_TOKEN: 't' }),
+      true
+    )
     const { db, lists } = fakeRedis()
     const stored = await storeFlipRequest(
       {
@@ -353,11 +362,13 @@ describe('preview Redis prefix', () => {
       db,
       prod
     )
-    assert.equal(stored, false)
-    assert.equal(lists.size, 0)
+    assert.equal(stored, true)
+    assert.equal(lists.get(FLIP_PROD_REQUESTS_KEY)?.length, 1)
+    assert.equal([...lists.keys()].some((key) => key.startsWith('lf:preview:')), false)
 
     const prodBranch = { VERCEL_ENV: 'production', VERCEL_GIT_COMMIT_REF: 'feat/not-main' }
     assert.equal(flipProductionLocked(prodBranch), true)
+    assert.equal(flipWriteLocked(prodBranch), true)
     assert.equal(flipRequestsEnabled(prodBranch), false)
     const branchDb = fakeRedis()
     const branchStored = await storeFlipRequest(
@@ -493,7 +504,7 @@ describe('notifyFlipRequest', () => {
     assert.equal(notifyEmailEnabled({ VERCEL_ENV: 'preview' }), false)
   })
 
-  it('skips production even when a key is set', async () => {
+  it('sends on production main and skips a non-main production ref', async () => {
     let calls = 0
     const result = await notifyFlipRequest(
       payload,
@@ -507,8 +518,8 @@ describe('notifyFlipRequest', () => {
         RESEND_API_KEY: 're_test',
       }
     )
-    assert.deepEqual(result, { email: false })
-    assert.equal(calls, 0)
+    assert.deepEqual(result, { email: true })
+    assert.equal(calls, 1)
 
     const branch = await notifyFlipRequest(
       payload,
@@ -523,7 +534,7 @@ describe('notifyFlipRequest', () => {
       }
     )
     assert.deepEqual(branch, { email: false })
-    assert.equal(calls, 0)
+    assert.equal(calls, 1)
   })
 
   it('strips line breaks from the subject', () => {

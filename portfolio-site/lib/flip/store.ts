@@ -1,9 +1,9 @@
 import { Redis } from '@upstash/redis'
-import { assertPrefixedRedisKey, resolveRedisRestConfig } from '../redis-env.ts'
+import { assertPrefixedRedisKey, isProductionRedisNamespace, resolveRedisRestConfig } from '../redis-env.ts'
 import {
   FLIP_LOOKUP_CACHE_TTL_SECONDS,
+  FLIP_PROD_REDIS_PREFIX,
   FLIP_REDIS_PREFIX,
-  FLIP_REQUESTS_KEY,
   FLIP_SEARCH_CACHE_TTL_SECONDS,
   type FlipLookupResult,
   type FlipSearchResult,
@@ -20,13 +20,26 @@ export type FlipRedis = {
 
 let client: Redis | null | undefined
 
-/** Any production deploy, including a non-main ref. Those still hold production Redis credentials. */
+/** Any production deploy, including a non-main ref. Gates fixtures (`?stub=`) only. */
 export function flipProductionLocked(env: EnvMap = process.env): boolean {
   return env.VERCEL_ENV === 'production'
 }
 
+/**
+ * Writes stop on a production deploy from a non-main ref. Those hold production Redis
+ * credentials but are not the production namespace. Production on main writes to `lf:flip:`.
+ */
+export function flipWriteLocked(env: EnvMap = process.env): boolean {
+  return env.VERCEL_ENV === 'production' && !isProductionRedisNamespace(env)
+}
+
+/** `lf:flip:` on production main, `lf:preview:flip:` everywhere else. */
+export function flipRedisPrefix(env: EnvMap = process.env): string {
+  return isProductionRedisNamespace(env) ? FLIP_PROD_REDIS_PREFIX : FLIP_REDIS_PREFIX
+}
+
 function redis(env: EnvMap = process.env): FlipRedis | null {
-  if (flipProductionLocked(env)) return null
+  if (flipWriteLocked(env)) return null
   const config = resolveRedisRestConfig(env)
   if (!config) return null
   if (client === undefined) {
@@ -36,19 +49,19 @@ function redis(env: EnvMap = process.env): FlipRedis | null {
 }
 
 export function flipRequestsEnabled(env: EnvMap = process.env): boolean {
-  return !flipProductionLocked(env) && resolveRedisRestConfig(env) != null
+  return !flipWriteLocked(env) && resolveRedisRestConfig(env) != null
 }
 
 export function flipLookupCacheKey(hash: string, env: EnvMap = process.env): string {
-  return assertPrefixedRedisKey(`${FLIP_REDIS_PREFIX}lookup:${hash}`, env)
+  return assertPrefixedRedisKey(`${flipRedisPrefix(env)}lookup:${hash}`, env)
 }
 
 export function flipSearchCacheKey(hash: string, env: EnvMap = process.env): string {
-  return assertPrefixedRedisKey(`${FLIP_REDIS_PREFIX}search:${hash}`, env)
+  return assertPrefixedRedisKey(`${flipRedisPrefix(env)}search:${hash}`, env)
 }
 
 export function flipRequestsKey(env: EnvMap = process.env): string {
-  return assertPrefixedRedisKey(FLIP_REQUESTS_KEY, env)
+  return assertPrefixedRedisKey(`${flipRedisPrefix(env)}requests`, env)
 }
 
 export async function readFlipLookupCache(
@@ -76,7 +89,7 @@ export async function writeFlipLookupCache(
   env: EnvMap = process.env
 ): Promise<void> {
   try {
-    if (flipProductionLocked(env)) return
+    if (flipWriteLocked(env)) return
     const store = db === undefined ? redis(env) : db
     if (!store) return
     await store.set(flipLookupCacheKey(hash, env), JSON.stringify(value), {
@@ -112,7 +125,7 @@ export async function writeFlipSearchCache(
   env: EnvMap = process.env
 ): Promise<void> {
   try {
-    if (flipProductionLocked(env)) return
+    if (flipWriteLocked(env)) return
     const store = db === undefined ? redis(env) : db
     if (!store) return
     await store.set(flipSearchCacheKey(hash, env), JSON.stringify(value), {
@@ -129,7 +142,7 @@ export async function storeFlipRequest(
   env: EnvMap = process.env
 ): Promise<boolean> {
   try {
-    if (flipProductionLocked(env)) return false
+    if (flipWriteLocked(env)) return false
     const store = db === undefined ? redis(env) : db
     if (!store) return false
     await store.rpush(flipRequestsKey(env), JSON.stringify(request))

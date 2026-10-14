@@ -234,9 +234,9 @@
 
 ---
 
-## `/flip` (shipped, fail-closed on production)
+## `/flip` (shipped)
 
-**Goal:** One moveable room (`FLIP_PATH`) branded `doingflips`: look up a song on everysong.site (typeahead, pick, never first-hit), request a sample flip (email and/or phone required), and offer a connect arm (call / services mailto). After store: PostHog event + best-effort Resend email. Preview Redis only (`lf:preview:flip:`). No production env. No collaborators. No Twilio.
+**Goal:** One moveable room (`FLIP_PATH`) branded `doingflips`: look up a song on everysong.site (typeahead, pick, never first-hit), request a sample flip (email and/or phone required), and offer a connect arm (call / services mailto). After store: PostHog event + best-effort Resend email. Production main writes `lf:flip:`. A non-main production ref stays write-locked. Fixtures stay off every production env. No collaborators. No Twilio.
 
 **Inputs:** PRD / APP_FLOW / FRONTEND_GUIDELINES / BACKEND_STRUCTURE flip sections. LF Direction copy.
 
