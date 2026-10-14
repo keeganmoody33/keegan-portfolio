@@ -1,3 +1,7 @@
+COMPLETED (2026-10-14 — flip selection races, then merge):
+- Editing the song field clears the selected lookup and its request form. Hits render only for the query that fetched them. Stale search, lookup, and request responses are dropped (`searchGen` / `lookupGen` / `requestGen`).
+- Production stays fail-closed: no `EVERYSONG_API_KEY`, no `RESEND_API_KEY`, no Redis writes. The room and footer link still ship.
+
 COMPLETED (2026-10-14 — flip refuses every production env):
 - `flipProductionLocked` is `VERCEL_ENV === 'production'` with no git-ref exception. A non-main production deploy no longer RPUSHes contact or sends Resend. Subject strips CR/LF. `lib/flip/flip.test.ts` 26/0.
 - Per-isolate rate limit stays (same as the other API routes). Not a shared everysong quota.

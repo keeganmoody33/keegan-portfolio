@@ -4,6 +4,8 @@ Updated: 2026-10-13
 
 ## Preview `/flip` (2026-10-13)
 
+- **A query edit drops the selected song.** The request form belongs to the lookup, not the text in the field. `onQueryChange` calls `clearSelection()`. Search hits stay tagged with `hitsQuery` and only render when that equals the trimmed field. In-flight search, lookup, boot, and request responses check `searchGen` / `lookupGen` / `requestGen` and do not apply once the visitor has moved on.
+- **Production `/flip` is fail-closed.** The page and `doingflips` footer link ship. `EVERYSONG_API_KEY` and `RESEND_API_KEY` stay off Vercel production, so lookups return `couldn't reach everysong.` and requests are not stored or emailed.
 - **One route constant.** `FLIP_PATH` in `lib/flip/route.ts` is the only path. Footer, record-detail `request a sample flip`, and the page all import it so the room is easy to move.
 - **Always `lf:preview:flip:`.** `flipProductionLocked` is `VERCEL_ENV === 'production'` with no git-ref exception. A non-main production deploy still has production Redis credentials; `isProductionRedisNamespace` would treat that ref as preview and RPUSH contact. Flip cache, request store, fixtures, and Resend all stop on any production env. `assertPrefixedRedisKey` still refuses `lf:preview:` on the prod prefix.
 - **Missing `EVERYSONG_API_KEY` is down copy, not a 500.** Do not add the key to Vercel production. Preview-only + this branch is the allowed scope. Non-prod `?stub=` fixtures are marked `everysong.site · fixture`. Live source line is `everysong.site · checked YYYY-MM-DD`.

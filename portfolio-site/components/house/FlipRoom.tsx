@@ -135,6 +135,10 @@ export default function FlipRoom({
 
   const skipSearchRef = useRef(hasPickedDeepLink || autoStub)
   const blurTimer = useRef<number | null>(null)
+  const searchGen = useRef(0)
+  const lookupGen = useRef(0)
+  const requestGen = useRef(0)
+  const [hitsQuery, setHitsQuery] = useState('')
 
   const resultsId = useId()
   const listId = useId()
@@ -143,8 +147,24 @@ export default function FlipRoom({
   const hintId = useId()
   const contactHintId = useId()
 
+  function clearSelection() {
+    lookupGen.current += 1
+    requestGen.current += 1
+    setLooking(false)
+    setLookup(null)
+    setSubmitted(false)
+    setFormError(null)
+    setSending(false)
+    setShowAllSamples(false)
+    setShowAllSampled(false)
+  }
+
   async function runLookupForSong(song: FlipSong) {
+    const gen = ++lookupGen.current
+    searchGen.current += 1
+    requestGen.current += 1
     skipSearchRef.current = true
+    setSearching(false)
     setLooking(true)
     setFormError(null)
     setSubmitted(stub === 'success')
@@ -152,32 +172,39 @@ export default function FlipRoom({
     setShowAllSampled(false)
     setOpen(false)
     setHits([])
+    setHitsQuery('')
     setQuery(song.title)
     try {
       const result = await fetchLookup({ title: song.title, artist: song.artist }, stub)
+      if (lookupGen.current !== gen) return
       setLookup(result)
       posthog.capture('flip_lookup', {
         status: result.status,
         fixture: result.fixture,
       })
     } catch {
+      if (lookupGen.current !== gen) return
       setLookup(DOWN_RESULT)
     } finally {
-      setLooking(false)
+      if (lookupGen.current === gen) setLooking(false)
     }
   }
 
-  async function runSearch(q: string): Promise<FlipSearchResult> {
+  async function runSearch(q: string): Promise<FlipSearchResult | null> {
+    const gen = ++searchGen.current
     setSearching(true)
     try {
       const result = await fetchSearch(q, stub)
+      if (searchGen.current !== gen) return null
       if (result.status === 'down') {
         setHits([])
+        setHitsQuery(q)
         setOpen(false)
         setLookup(DOWN_RESULT)
         return result
       }
       setHits(result.hits)
+      setHitsQuery(q)
       setActiveIndex(0)
       setOpen(result.hits.length > 0)
       if (result.status === 'no_match') {
@@ -199,24 +226,30 @@ export default function FlipRoom({
       })
       return result
     } catch {
+      if (searchGen.current !== gen) return null
       setHits([])
+      setHitsQuery(q)
       setOpen(false)
       setLookup(DOWN_RESULT)
       return DOWN_SEARCH
     } finally {
-      setSearching(false)
+      if (searchGen.current === gen) setSearching(false)
     }
   }
 
   useEffect(() => {
     if (!autoStub && !hasPickedDeepLink && !initialTrack) return undefined
     let cancelled = false
+    const lookupToken = ++lookupGen.current
+    const searchToken = ++searchGen.current
     skipSearchRef.current = true
+    const stillLookup = () => !cancelled && lookupGen.current === lookupToken
+    const stillSearch = () => !cancelled && searchGen.current === searchToken
 
     const boot = async () => {
       if (hasPickedDeepLink) {
         const result = await fetchLookup({ title: initialTitle, artist: initialArtist }, stub)
-        if (cancelled) return
+        if (!stillLookup()) return
         setLookup(result)
         setSubmitted(stub === 'success')
         setLooking(false)
@@ -233,7 +266,7 @@ export default function FlipRoom({
             : { q: initialTrack },
           stub
         )
-        if (cancelled) return
+        if (!stillLookup()) return
         setLookup(result)
         setSubmitted(stub === 'success')
         setLooking(false)
@@ -244,7 +277,7 @@ export default function FlipRoom({
         return
       }
       const search = await fetchSearch(initialTrack, stub)
-      if (cancelled) return
+      if (!stillSearch()) return
       if (search.status === 'down') {
         setLookup(DOWN_RESULT)
         setLooking(false)
@@ -255,7 +288,7 @@ export default function FlipRoom({
           { title: search.hits[0]!.title, artist: search.hits[0]!.artist },
           stub
         )
-        if (cancelled) return
+        if (!stillLookup()) return
         setLookup(result)
         setQuery(search.hits[0]!.title)
         posthog.capture('flip_lookup', {
@@ -264,6 +297,7 @@ export default function FlipRoom({
         })
       } else {
         setHits(search.hits)
+        setHitsQuery(initialTrack)
         setOpen(search.hits.length > 0)
         setActiveIndex(0)
         if (search.hits.length === 0) {
@@ -281,7 +315,7 @@ export default function FlipRoom({
     }
 
     void boot().catch(() => {
-      if (cancelled) return
+      if (!stillLookup()) return
       setLookup(DOWN_RESULT)
       setLooking(false)
     })
@@ -311,7 +345,12 @@ export default function FlipRoom({
     const q = query.trim()
     if (!q) return
     skipSearchRef.current = true
-    const result = hits.length > 0 ? { status: 'ok' as const, fixture: false, hits } : await runSearch(q)
+    const freshHits = hitsQuery === q ? hits : []
+    const result =
+      freshHits.length > 0
+        ? { status: 'ok' as const, fixture: false, hits: freshHits }
+        : await runSearch(q)
+    if (!result) return
     if (result.hits.length === 1) {
       void runLookupForSong(result.hits[0]!)
       return
@@ -324,12 +363,15 @@ export default function FlipRoom({
 
   function onQueryChange(value: string) {
     skipSearchRef.current = false
+    searchGen.current += 1
+    setSearching(false)
     setQuery(value)
+    clearSelection()
     if (value.trim().length < FLIP_SEARCH_MIN_CHARS) {
       setHits([])
+      setHitsQuery('')
       setOpen(false)
     }
-    if (lookup && lookup.status !== 'ok') setLookup(null)
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -337,29 +379,30 @@ export default function FlipRoom({
       setOpen(false)
       return
     }
-    if (!open || hits.length === 0) return
+    if (!listOpen || visibleHits.length === 0) return
     if (event.key === 'ArrowDown') {
       event.preventDefault()
-      setActiveIndex((index) => (index + 1) % hits.length)
+      setActiveIndex((index) => (index + 1) % visibleHits.length)
     } else if (event.key === 'ArrowUp') {
       event.preventDefault()
-      setActiveIndex((index) => (index - 1 + hits.length) % hits.length)
-    } else if (event.key === 'Enter' && hits.length > 1) {
+      setActiveIndex((index) => (index - 1 + visibleHits.length) % visibleHits.length)
+    } else if (event.key === 'Enter' && visibleHits.length > 1) {
       event.preventDefault()
-      const song = hits[activeIndex]
+      const song = visibleHits[activeIndex]
       if (song) pickHit(song)
     }
   }
 
   async function onRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!lookup?.song) return
+    const songNow = lookup?.song
+    if (!songNow) return
     const contact = validateFlipRequest({
-      rid: lookup.song.rid,
-      title: lookup.song.title,
-      artist: lookup.song.artist,
-      year: lookup.song.year,
-      isrc: lookup.song.isrc,
+      rid: songNow.rid,
+      title: songNow.title,
+      artist: songNow.artist,
+      year: songNow.year,
+      isrc: songNow.isrc,
       email,
       phone,
       smsOptIn,
@@ -368,6 +411,7 @@ export default function FlipRoom({
       setFormError(contact.error)
       return
     }
+    const gen = ++requestGen.current
     setSending(true)
     setFormError(null)
     try {
@@ -378,11 +422,11 @@ export default function FlipRoom({
           ...getPostHogDistinctIdHeader(),
         },
         body: JSON.stringify({
-          rid: lookup.song.rid,
-          title: lookup.song.title,
-          artist: lookup.song.artist,
-          year: lookup.song.year,
-          isrc: lookup.song.isrc,
+          rid: songNow.rid,
+          title: songNow.title,
+          artist: songNow.artist,
+          year: songNow.year,
+          isrc: songNow.isrc,
           email,
           phone,
           smsOptIn,
@@ -390,6 +434,7 @@ export default function FlipRoom({
         }),
       })
       const json: unknown = await response.json()
+      if (requestGen.current !== gen) return
       const rec = json && typeof json === 'object' ? (json as Record<string, unknown>) : {}
       if (!response.ok || rec.ok !== true) {
         const error = typeof rec.error === 'string' ? rec.error : FLIP_COPY.storeDown
@@ -403,9 +448,10 @@ export default function FlipRoom({
         sms_opt_in: smsOptIn,
       })
     } catch {
+      if (requestGen.current !== gen) return
       setFormError(FLIP_COPY.storeDown)
     } finally {
-      setSending(false)
+      if (requestGen.current === gen) setSending(false)
     }
   }
 
@@ -413,7 +459,9 @@ export default function FlipRoom({
   const showForm = lookup?.status === 'ok' && song !== null && !submitted
   const hasContact = email.trim().length > 0 || phone.trim().length > 0
   const phoneVisible = phone.trim().length > 0
-  const activeHit = hits[activeIndex]
+  const visibleHits = hitsQuery === query.trim() ? hits : []
+  const listOpen = open && visibleHits.length > 0
+  const activeHit = visibleHits[activeIndex]
   const busy = looking || searching
 
   return (
@@ -432,7 +480,7 @@ export default function FlipRoom({
             onChange={(event) => onQueryChange(event.target.value)}
             onKeyDown={onKeyDown}
             onFocus={() => {
-              if (hits.length > 0) setOpen(true)
+              if (visibleHits.length > 0) setOpen(true)
             }}
             onBlur={() => {
               if (blurTimer.current) window.clearTimeout(blurTimer.current)
@@ -443,20 +491,20 @@ export default function FlipRoom({
             spellCheck={false}
             placeholder={FLIP_COPY.lookupPlaceholder}
             aria-label={FLIP_COPY.lookupAria}
-            aria-expanded={open}
+            aria-expanded={listOpen}
             aria-controls={listId}
             aria-autocomplete="list"
-            aria-activedescendant={open && activeHit ? `${listId}-${activeIndex}` : undefined}
+            aria-activedescendant={listOpen && activeHit ? `${listId}-${activeIndex}` : undefined}
             aria-describedby={hintId}
             className={fieldClass}
           />
-          {open && hits.length > 0 ? (
+          {listOpen ? (
             <ul
               id={listId}
               role="listbox"
               className="absolute z-20 mt-0 w-full list-none bg-[var(--house-bg)] p-0"
             >
-              {hits.map((hit, index) => {
+              {visibleHits.map((hit, index) => {
                 const meta = artistYearLine(hit)
                 const selected = index === activeIndex
                 return (
@@ -489,7 +537,7 @@ export default function FlipRoom({
         <p id={hintId} className="mt-2 font-mono text-[11px] leading-relaxed text-[var(--house-dim)]">
           {FLIP_COPY.lookupHint}
         </p>
-        {open && hits.length > 1 ? (
+        {listOpen && visibleHits.length > 1 ? (
           <p className="mt-2 font-mono text-sm text-[var(--house-dim)]">{FLIP_COPY.pick}</p>
         ) : null}
         <button
@@ -523,7 +571,7 @@ export default function FlipRoom({
           </div>
         ) : null}
 
-        {lookup?.status === 'no_match' && !open ? (
+        {lookup?.status === 'no_match' && !listOpen ? (
           <p className="font-mono text-sm text-[var(--house-dim)]">{FLIP_COPY.noMatch}</p>
         ) : null}
 

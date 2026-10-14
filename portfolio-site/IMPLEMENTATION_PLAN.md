@@ -234,7 +234,7 @@
 
 ---
 
-## Preview-only `/flip` (this PR — do not merge)
+## `/flip` (shipped, fail-closed on production)
 
 **Goal:** One moveable room (`FLIP_PATH`) branded `doingflips`: look up a song on everysong.site (typeahead, pick, never first-hit), request a sample flip (email and/or phone required), and offer a connect arm (call / services mailto). After store: PostHog event + best-effort Resend email. Preview Redis only (`lf:preview:flip:`). No production env. No collaborators. No Twilio.
 

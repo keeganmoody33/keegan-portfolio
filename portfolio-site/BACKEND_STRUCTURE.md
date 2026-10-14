@@ -347,9 +347,9 @@ Match statuses: `matched` / `ambiguous` / `unmatched` / `pending`. Weak matches 
 
 ### GET /api/flip/search
 
-**Preview only. Do not merge.** Typeahead proxy. One everysong `GET /api/v2/spine/search`. Browser never sees `EVERYSONG_API_KEY`. Does not fetch sample history. Does not pick a hit.
+**Production fail-closed.** Typeahead proxy. One everysong `GET /api/v2/spine/search`. Browser never sees `EVERYSONG_API_KEY`. Does not fetch sample history. Does not pick a hit. `VERCEL_ENV=production` skips cache writes and fixtures.
 
-**Request:** `?q=` (max 200, min 2) and optional `?stub=results|empty|nomatch|down|success|suggest` (ignored on the prod Redis namespace). `suggest` returns Donny Hathaway hits including Voices Inside.
+**Request:** `?q=` (max 200, min 2) and optional `?stub=results|empty|nomatch|down|success|suggest` (ignored when `VERCEL_ENV` is `production`). `suggest` returns Donny Hathaway hits including Voices Inside.
 
 **Response (200):** `{ "status": "ok | no_match | down", "fixture": boolean, "hits": [{ "rid", "title", "artist", "year", "isrc" }] }`
 
@@ -359,9 +359,9 @@ Cache 6h on `lf:preview:flip:search:{hash}` (ok and no_match). Rate-limit 20/min
 
 ### GET /api/flip/lookup
 
-**Preview only. Do not merge.** Server-side proxy to everysong.site. Browser never sees `EVERYSONG_API_KEY`.
+**Production fail-closed.** Server-side proxy to everysong.site. Browser never sees `EVERYSONG_API_KEY`. Missing key → down copy, not a 500.
 
-**Request:** `?title=` + `?artist=` (picked song, samples only) or `?q=` (unique hit only — two or more search hits are `no_match`, never the first result). Optional `?stub=results|empty|nomatch|down|success|suggest` (ignored on the prod Redis namespace).
+**Request:** `?title=` + `?artist=` (picked song, samples only) or `?q=` (unique hit only — two or more search hits are `no_match`, never the first result). Optional `?stub=results|empty|nomatch|down|success|suggest` (ignored when `VERCEL_ENV` is `production`).
 
 **Response (200):**
 ```json
@@ -381,7 +381,7 @@ Missing key, upstream failure, or 429 → `status: "down"` (never red on the pag
 
 ### POST /api/flip/request
 
-**Preview only.** Email and/or phone required (both allowed). Phone-only requires `smsOptIn: true`. After a successful store, best-effort Resend email to `FLIP_NOTIFY_TO` (default `33@lecturesfrom.com`). `Idempotency-Key` is `flip-request/${at}` (stored ISO, not contact). Skip notify when `RESEND_API_KEY` is unset, when `VERCEL_ENV` is `production` (any git ref), or when a non-prod `stub` fixture accepts without storing. Notify failure still returns `{ ok: true }`. Never `console.log` contact.
+**Production fail-closed.** Email and/or phone required (both allowed). Phone-only requires `smsOptIn: true`. After a successful store, best-effort Resend email to `FLIP_NOTIFY_TO` (default `33@lecturesfrom.com`). `Idempotency-Key` is `flip-request/${at}` (stored ISO, not contact). Skip notify when `RESEND_API_KEY` is unset, when `VERCEL_ENV` is `production` (any git ref), or when a non-prod `stub` fixture accepts without storing. Notify failure still returns `{ ok: true }`. Never `console.log` contact.
 
 **Request:**
 ```json
