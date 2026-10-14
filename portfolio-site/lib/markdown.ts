@@ -123,6 +123,7 @@ why: ${sleeve.why}
 not this: ${sleeve.notThis}
 
 ${sleeve.credits.length ? `credits: ${sleeve.credits.join(', ')}` : ''}
+${sleeve.viewer ? `\nviewer: ${sleeve.viewer.title} (${sleeve.viewer.mode}) — inline on the sleeve, not the crate click.\n` : ''}
 
 ## tracks
 

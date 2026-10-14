@@ -31,6 +31,82 @@ COMPLETED (2026-10-13 — preview-only `/flip`, draft PR, do not merge):
 - Footer `flip`. Record detail per-track `ask for a flip` → `/flip?track=`. Rate-limit lookup 10/min, request 6/min. Cache 6h. Cover/remix edges dropped. `robots` noindex. Not in the sitemap.
 - Tests: `lib/flip/flip.test.ts`. Canonical docs + lessons + `.env.local.example` updated. Do not merge. No prod Redis / crons / visitor research.
 
+COMPLETED (2026-10-13 — 1280 poster surface + focus order, PR #75 preview only):
+- Same branch. Draft. Do not merge.
+- Cover-crop `poster.jpg` (`object-cover`, drop `sm:object-contain`) and hide fallback CSS `::before`/`::after` so the 1720×840 asset fills the ~1.48:1 stack as one surface (no letterbox seams, no doubled ruler).
+- Mode row first in the DOM so Tab matches visual order (WCAG 2.4.3).
+- `.house-sleeve-focus-ring` inset to the live canvas tracks so mode/camera rows do not cover it (WCAG 2.4.7). Drop unused eslint-disable on the picture img. Target CLS < 0.01.
+
+COMPLETED (2026-10-13 — UX P2 last pass, PR #75 preview only):
+- Same branch. Draft. Do not merge.
+- Fallback folds reserved chrome into `.house-sleeve-stage-stack` (stage spans the stack from first paint; live chips overlay; fallback drops overlays). Poster is one surface — no paper tiles / floating strip. Target CLS < 0.01.
+- Wordmark CSS height `40px` (native 323×80 / 2). Original inbox PNG is 360×112 cream field, not 2x mark pixels — no srcset.
+- Study column and rail are `<section aria-labelledby>` the `made for the dig.` / `locked product.` `<p>` ids.
+
+COMPLETED (2026-10-13 — tighten wordmark plate, PR #75 preview only):
+- Same branch. Draft. Do not merge. Same HEAD family as the CLS pads + heading restore.
+- Keegan: tighten up. Cut-out `wordmark.png` (323×80, cream unblended) on `--house-stage-paper` with even `5px` padding. No light fringe.
+
+COMPLETED (2026-10-13 — fallback CLS height transfer, PR #75 preview only):
+- Same branch. Draft. Do not merge.
+- When reserved mode/preset chips collapse into fallback, `.house-sleeve-modes-pad` / `.house-sleeve-presets-pad` keep the `5.75rem` (below 951px) / `2.5rem` (above) tracks plus `1.5rem` / `0.75rem` gaps and paint them as `--house-stage-paper`. Height goes to the stage; the well top does not move (avoids `::after` CLS). Target CLS < 0.01 at 375 and 1280 for no-WebGL and lost-on-create.
+- Study chrome stays `<p>` (`made for the dig.`, `locked product.`, LCD title). Demotion is required: Keegan’s study-first DOM puts that copy before H1 `yadiggg`; h2/h3/h4 would precede the title. Outline: H1 → contents H2.
+- Wordmark is Keegan’s shovel/signal PNG, cream knocked out and trimmed to 323×80 (fringe unblended). Plate is `--house-stage-paper` with even `5px` padding so it hugs the mark. Alt `yadiggg`.
+
+COMPLETED (2026-10-13 — Keegan: study first, then H1, then his wordmark, PR #75 preview only):
+- Same branch. Draft. Do not merge.
+- Reverted the thin H1 liner above the study. Order: 3D study → H1 `yadiggg` → Keegan wordmark → notes. Study chrome is not headings so the outline starts at H1. Docs: **Keegan: study first, title below** (removed the liner’s “Do not park the H1 under the workbench” / matching APP_FLOW/FG liner-above lines).
+- Wordmark is `/catalog/yadiggg/wordmark.png` (360×112 shovel/signal + yadiggg, cream knocked out). Plate `--house-stage-paper`. Alt exactly `yadiggg`.
+- Reserve mode/preset rows only while the WebGL check is pending, then collapse (no empty ~92px band at 375). `queueStudyError` timer clear unchanged.
+- Below 640px: `poster-portrait.jpg` (580×840) so the 860×420 landscape poster is not squeezed into a ~290×420 stage.
+
+COMPLETED (2026-10-13 — UX/UI review pass: H1 liner, fallback CLS, wordmark plate, PR #75 preview only):
+- Same branch. Draft. Do not merge. Rebased onto main `3b46efa` (#76, Next 16.4.0).
+- Thin liner header above the study: cat no · format · year + compact H1 `yadiggg` (one or two lines). Study stays essentially first. Notes + skinny wordmark follow. Heading order starts at H1.
+- `shouldReserveViewerChrome` keeps empty mode/preset rows on no-WebGL and lost-on-create (CLS under 0.01 at 375/1280). Blocked src still drops the reservation.
+- Wordmark plate `transparent` (no `#fdfaf5`). Alt `yadiggg wordmark`.
+- `queueStudyError` returns the timer id; canvas effect cleanup `clearTimeout`s it so unmount before the tick does not call `onError`.
+
+COMPLETED (2026-10-13 — study-first skinny wordmark, PR #75 preview only):
+- Same branch. Draft. Do not merge.
+- `/catalog/yadiggg` lands on the 3D study. Cream cover is `.house-sleeve-wordmark` under the workbench (`max-content` plate, 3.25–3.5rem, lockup 2.25–2.5rem). Liner + contents follow. Other sleeves still square cover | liner.
+
+COMPLETED (2026-10-13 — defer lost-on-create poster handoff, PR #75 preview only):
+- Same branch. Draft. Do not merge.
+- Sync `onError` unmounted the Canvas container before R3F onCreated `events.connect` → `addEventListener` of null. Factory now `setTimeout(onError, 0)`. onCreated guarded if `gl.xr` is missing. No-pageerror test fails when handoff is sync (container nulled) and passes when deferred.
+
+COMPLETED (2026-10-13 — live-only lost-on-create xr stub, PR #75 preview only):
+- Same branch. Draft. Do not merge.
+- Probe can succeed while the live canvas context is lost. Factory still cannot throw (R3F would construct WebGLRenderer). Cannot skip `<Canvas>` on that tick; `onError` posters. Stub now no-ops `xr.addEventListener` and the other R3F / ContactShadows surfaces so there is no pageerror. Test: live-only lost-on-create, pageerrors [].
+
+COMPLETED (2026-10-13 — context-loss + stage tokens batch, PR #75 preview only):
+- Same branch. Draft. Do not merge.
+- QA: `gl` factory never rethrows (stub with `.render` → poster). `webglcontextlost` preventDefault + poster/error/hide chrome; restore stays on poster. Dummy probe calls `WEBGL_lose_context.loseContext()` and checks `isContextLost`. Tests: lost-on-create, lost-after-mount, probe release.
+- P1: stage focus `outline-offset: -4px` on `--house-stage-ink` (11.8:1 on paper).
+- P2: `--house-stage-paper` / `--house-stage-ink` defined once; crate `prefetch={false}` for `/catalog/yadiggg`; mode-row `5.75rem` through 950px; 2× live-canvas poster; grid 10%/28% + fade behind device; stronger hover/select (emissive + ink edge); below-sm hint `two-finger orbit · pinch to zoom`.
+
+COMPLETED (2026-10-13 — drafting-table stage + WebGL probe, PR #75 preview only):
+- Same branch. No named Electroscrum token set; stage uses person-light `--bg-body` `#E8E2D2` (warm paper) + `--text-bright` `#2B241D` ink. Fine minor + heavier major grid, mm ticks, corner crop marks. Transparent canvas; lighting and `#000` `frames={1}` contact shadow tuned for the light ground. `poster.jpg` re-rendered on that ground. Overlay copy AA on paper.
+- QA: probe `getExtension` before Canvas + guarded `gl` factory. Dedicated `/catalog/yadiggg` page so `[slug]` / `Sleeve.tsx` never import `SleeveViewer`. Reserve mode/preset row height until WebGL confirms; drop chrome in fallback. Static fallback readout (no "hover or click"). Pinch dolly + gesture hint. `what is modeled?` summary `min-h-11`. Lowercase copy; LCD 1px border.
+- Do not merge until preview QA.
+
+COMPLETED (2026-10-13 — QA Gate + UX/UI review on PR #75, preview only):
+- Same branch. Dropped Candidate B (`B · capture + nav`, `control_capture`, `controls_candidate_b.glb`) — locked product is one orange side button, no recorder UI. `partByName(name)` only. No `sleeve_viewer_candidate`.
+- Class error boundary around the Canvas: WebGL / `getExtension` / GLB throws call `onError` → poster + one error caption. Fallback (no WebGL / GLB 404 / blocked) hides mode/preset/hint and drops stage `tabIndex`.
+- `!touch-pan-y`, two-finger orbit, wheel zoom only when focused or ctrl/cmd. Reduced motion keeps the canvas with damping off.
+- Dark device `poster.jpg` (not cream cover), `loading the model…`, 150ms fade. Stage `min(420px, 55vh)` capped 860px + `Bounds fit`. RoomEnvironment + ink ContactShadows; smoke-clear shells; pad-tint `display_module` only. USB-C · 3.5 mm labeled as ports, not the orange button. Locked 105×60×15 vs R1 envelope 70×110×18. `Sleeve` `dynamic()`-loads `SleeveViewer` only when `viewer` is set.
+- Do not merge until preview QA.
+
+COMPLETED (2026-10-13 — yadiggg sleeve workbench parity, preview only):
+- Same PR #75 branch. Keegan: study was too stripped; match R1 workbench density in house tokens. Two-column stage + LCD rail. Modes assembled / x-ray / exploded / open front / **reference**. Presets front / rear / side / ports / **reset view**. Hover + click part readout. Geometry mm callouts (21 / 1.5 mm / 70.8 mm) labeled as CAD study. Locked facts stay 105 × 60 × 15 mm / 2.7" / one orange side button / USB-C / 3.5 mm on the measure chip and Doto LCD — not Identify/Read/Save, not capture demo.
+- Candidate B ported (`controls_candidate_b.glb`) as CAD control-layout on the same reserved opening. Reference concept image (`reference.jpg`). Cloned R1 GLB smoke-clear shell (not pad-gray), house-orange side control, local RoomEnvironment PMREM + ACES, damped orbit, lerped presets. Device LCD plane is locked facts in Doto.
+- Still lazy (`next/dynamic` `ssr: false`), IntersectionObserver, reduced-motion / no-WebGL poster, `crateHref` on-site, GitHub track 01 unchanged. Do not merge until preview QA.
+
+COMPLETED (2026-10-13 — yadiggg sleeve 3D study, preview only):
+- Optional `Sleeve.viewer` in `lib/catalog.ts`, set only for yadiggg (`mode: 'port'`, src `/catalog/yadiggg/yadiggg_r1.glb`). `crateHref` still `/catalog/yadiggg`. GitHub track 01 unchanged.
+- No `yadiggg-viewer` GitHub repo. Prod workbench is one 3.5 MB HTML with inlined GLBs (no standalone asset URLs). Ported R1 `yadiggg_r1.glb` (~157 KB) into `public/catalog/yadiggg/` and a house-styled `YadigggViewer` (R3F, `next/dynamic` `ssr: false`). Did **not** iframe `yadiggg-viewer.vercel.app` (Arial/paper/amber + recorder-screen UI). Never use share-token preview URLs.
+- `SleeveViewer`: IntersectionObserver + reduced-motion / no-WebGL poster (`cover.jpg`), reserved `min(540px, 70vh)`, keyboard orbit, locked facts 105 × 60 × 15 mm / 2.7" LCD / one orange side button / USB-C / 3.5 mm. No capture/LCD demo chrome.
+- Do not merge until preview QA.
 COMPLETED (2026-10-12 — merge #67 + #68 to go live):
 - Combined PR #67 (prod promote already applied: live **323 / 73 / 98 / 225**) and PR #68 (search extras). `destinationIsLive` is the KISS Alive! / Alive II list (Stayin' Alive / Alive 2007 stay studio). Promote dest-live uses that list, not `/\\balive\\b/`. `musicbrainz.ts` keeps extras search/browse **and** `getRecordingSampleRels`. `package.json` keeps `crate:promote-preview`, `crate:search-extras-measure`, `crate:search-extras-find`; `npm test` includes `promote-preview.test.ts`.
 - Combined tree: `unset VERCEL_ENV` + KV unset, `npm test` **524 / 0**, `npx tsc --noEmit` pass, `npm run lint` pass.

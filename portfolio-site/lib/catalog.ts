@@ -12,6 +12,16 @@ export type SleeveFormat = 'software' | 'system' | 'publication' | 'physical' | 
 
 export type SleeveStatus = 'in build' | 'issued' | 'parked'
 
+/** Optional inline 3D / CAD study, rendered inside Sleeve (not the crate click target). */
+export type SleeveViewerConfig = {
+  /** Public origin or hosted asset. Never a share-token preview URL. */
+  src: string
+  title: string
+  /** `iframe` until the three.js study is ported; `port` loads a house-styled client chunk. */
+  mode: 'iframe' | 'port'
+  poster?: string
+}
+
 export type Sleeve = {
   slug: string
   catno: string
@@ -25,6 +35,7 @@ export type Sleeve = {
   notThis: string
   credits: string[]
   cover?: string
+  viewer?: SleeveViewerConfig
   tracks: Track[]
 }
 
@@ -118,6 +129,12 @@ export const sleeves: Sleeve[] = [
     notThis: 'a phone app',
     credits: ['hardware'],
     cover: '/catalog/yadiggg/cover.jpg',
+    viewer: {
+      src: '/catalog/yadiggg/yadiggg_r1.glb',
+      title: 'r1 design study',
+      mode: 'port',
+      poster: '/catalog/yadiggg/poster.jpg',
+    },
     tracks: [
       {
         no: '01',
@@ -169,6 +186,12 @@ function crateHref(sleeve: Sleeve): string {
   return `/catalog/${sleeve.slug}`
 }
 
+/** Collection and the yadiggg study are heavy; `/` and `/catalog` must not prefetch them. */
+export function crateLinkPrefetch(href: string): false | undefined {
+  if (href === '/collection' || href === '/catalog/yadiggg') return false
+  return undefined
+}
+
 function crateLabel(sleeve: Sleeve): string {
   if (sleeve.format === 'crate') return 'live'
   return sleeve.status
@@ -188,6 +211,16 @@ export function getSleeveBySlug(slug: string): Sleeve | undefined {
 /** Sleeve pages live at /catalog/[slug]. Collection is /collection, not a sleeve page. */
 export function getCatalogPageSleeves(): Sleeve[] {
   return [...sleeves, ...parkedSleeves].filter((sleeve) => sleeve.slug !== 'collection')
+}
+
+/**
+ * Shared `/catalog/[slug]` params. yadiggg has a dedicated page so SleeveViewer
+ * is never imported from the slug route (or from Sleeve).
+ */
+export function getSharedCatalogSlugParams(): { slug: string }[] {
+  return getCatalogPageSleeves()
+    .filter((sleeve) => sleeve.slug !== 'yadiggg')
+    .map((sleeve) => ({ slug: sleeve.slug }))
 }
 
 export function getCrateRows(): CrateRow[] {
