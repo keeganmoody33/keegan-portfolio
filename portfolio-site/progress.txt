@@ -1,3 +1,8 @@
+COMPLETED (2026-10-14 — picked song keeps year and ISRC):
+- Search for Hotline Bling returns Drake, rid 3602, year 2015, ISRC USCM51500238. Lookup then rebuilt the song as title+artist only, so the detail row hid the year and ISRC and a request stored nulls. Lookup now takes `rid`, `year`, and `isrc` from the hit. A title+artist cache hit fills those fields from the request instead of keeping the empty cached song. The room fills the same way.
+- Search, samples, and request email on lecturesfrom.com were already live before this (deploy of `3286b15`). The older note that the live site still 503s is stale.
+- `lib/flip/flip.test.ts` 27/0. `tsc --noEmit` clean.
+
 COMPLETED (2026-10-14 — production main stores and emails flip requests):
 - Production search was live, but every request 503'd with `couldn't store that.` Production on `main` now RPUSHes `lf:flip:requests` and sends Resend when `RESEND_API_KEY` is set. `flipWriteLocked` still stops a non-main production ref (those hold production Redis credentials). `flipProductionLocked` gates fixtures only.
 - Save-failure copy tells the visitor the song and contact are still on the form, and to retry or email `33@lecturesfrom.com`. Rate limit has its own copy.

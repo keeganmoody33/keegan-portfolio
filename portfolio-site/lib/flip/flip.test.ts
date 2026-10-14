@@ -17,11 +17,12 @@ import {
   lookupEverysong,
   mapSampleHistory,
   mapSearchResults,
+  pickedSong,
   samplesForSong,
   searchEverysong,
   songFromSearchHit,
 } from './everysong.ts'
-import { artistYearLine, parseLookupResult, parseSearchResult } from './result.ts'
+import { artistYearLine, fillSongIdentity, parseLookupResult, parseSearchResult } from './result.ts'
 import { FLIP_PATH, flipHrefForTrack } from './route.ts'
 import {
   flipLookupCacheKey,
@@ -282,6 +283,36 @@ describe('everysong mapping', () => {
     })
     assert.equal(history.status, 'ok')
     assert.equal(history.song?.artist, 'Donny Hathaway')
+    assert.equal(history.song?.rid, search.hits[0]?.rid)
+    assert.equal(history.song?.year, search.hits[0]?.year)
+  })
+
+  it('keeps rid, year, and isrc from the picked search hit', () => {
+    const song = pickedSong({
+      title: 'Hotline Bling',
+      artist: 'Drake',
+      rid: '3602',
+      year: '2015',
+      isrc: 'USCM51500238',
+    })
+    assert.deepEqual(song, {
+      rid: 3602,
+      title: 'Hotline Bling',
+      artist: 'Drake',
+      year: '2015',
+      isrc: 'USCM51500238',
+    })
+    assert.equal(pickedSong({ title: 'A', artist: 'B', year: 'nope', rid: 'x' }).year, null)
+    assert.equal(pickedSong({ title: 'A', artist: 'B', rid: 'x' }).rid, null)
+    const cached = {
+      rid: null,
+      title: 'Hotline Bling',
+      artist: 'Drake',
+      year: null,
+      isrc: null,
+    }
+    assert.deepEqual(fillSongIdentity(cached, song), { ...cached, rid: 3602, year: '2015', isrc: 'USCM51500238' })
+    assert.equal(fillSongIdentity(song, { rid: null, year: null, isrc: null }).year, '2015')
   })
 
   it('hashes lookup queries without storing the raw string in the key', () => {

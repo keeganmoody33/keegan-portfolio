@@ -58,7 +58,8 @@ function asYear(value: unknown): string | null {
 function asRid(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value
   if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
-    return Number.parseInt(value.trim(), 10)
+    const parsed = Number.parseInt(value.trim(), 10)
+    return Number.isFinite(parsed) ? parsed : null
   }
   return null
 }
@@ -82,6 +83,22 @@ function sampleRowFromEdge(edge: unknown): FlipSampleRow | null {
     title,
     artist: asString(node.artist) ?? '',
     year: asYear(node.year) ?? asYear(node.released),
+  }
+}
+
+export function pickedSong(input: {
+  title: string
+  artist: string
+  rid?: unknown
+  year?: unknown
+  isrc?: unknown
+}): FlipSong {
+  return {
+    rid: asRid(input.rid),
+    title: input.title,
+    artist: input.artist,
+    year: asYear(input.year),
+    isrc: asString(input.isrc)?.slice(0, 32) ?? null,
   }
 }
 
