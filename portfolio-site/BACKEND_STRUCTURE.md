@@ -1,6 +1,6 @@
 # Backend Structure — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-10-08
+**Last Updated:** 2026-10-13
 **Database:** Supabase (PostgreSQL)
 **Edge Functions Runtime:** Deno
 **API Layer:** Next.js Route Handlers (proxy pattern)
@@ -345,6 +345,65 @@ Match statuses: `matched` / `ambiguous` / `unmatched` / `pending`. Weak matches 
 
 ---
 
+### GET /api/flip/search
+
+**Production fail-closed.** Typeahead proxy. One everysong `GET /api/v2/spine/search`. Browser never sees `EVERYSONG_API_KEY`. Does not fetch sample history. Does not pick a hit. `VERCEL_ENV=production` skips cache writes and fixtures.
+
+**Request:** `?q=` (max 200, min 2) and optional `?stub=results|empty|nomatch|down|success|suggest` (ignored when `VERCEL_ENV` is `production`). `suggest` returns Donny Hathaway hits including Voices Inside.
+
+**Response (200):** `{ "status": "ok | no_match | down", "fixture": boolean, "hits": [{ "rid", "title", "artist", "year", "isrc" }] }`
+
+Cache 6h on `lf:preview:flip:search:{hash}` (ok and no_match). Rate-limit 20/min/IP. Missing key → down.
+
+**PostHog events:** `api_flip_search` (`source`, `status`, `hits`; no query string, no PII).
+
+### GET /api/flip/lookup
+
+**Production fail-closed.** Server-side proxy to everysong.site. Browser never sees `EVERYSONG_API_KEY`. Missing key → down copy, not a 500.
+
+**Request:** `?title=` + `?artist=` (picked song, samples only) or `?q=` (unique hit only — two or more search hits are `no_match`, never the first result). Optional `?stub=results|empty|nomatch|down|success|suggest` (ignored when `VERCEL_ENV` is `production`).
+
+**Response (200):**
+```json
+{
+  "status": "ok | empty | no_match | down",
+  "fixture": "boolean",
+  "checked": "YYYY-MM-DD | null",
+  "song": { "rid": "number | null", "title": "string", "artist": "string", "year": "string | null", "isrc": "string | null" },
+  "samples": [{ "title": "string", "artist": "string", "year": "string | null" }],
+  "sampledIn": [{ "title": "string", "artist": "string", "year": "string | null" }]
+}
+```
+
+Missing key, upstream failure, or 429 → `status: "down"` (never red on the page). Empty or ambiguous `q` (0 or 2+ hits) → `no_match`. Cached 6h on `lf:preview:flip:lookup:{hash}` (ok and no_match only; song hash when title+artist). Prod Redis namespace does not cache. Rate-limit 10/min/IP (`lib/rate-limit.ts`). Cover/remix edges are dropped; `family: sample` only.
+
+**PostHog events:** `api_flip_lookup` (`source`, `status`; no query string, no PII).
+
+### POST /api/flip/request
+
+**Production fail-closed.** Email and/or phone required (both allowed). Phone-only requires `smsOptIn: true`. After a successful store, best-effort Resend email to `FLIP_NOTIFY_TO` (default `33@lecturesfrom.com`). `Idempotency-Key` is `flip-request/${at}` (stored ISO, not contact). Skip notify when `RESEND_API_KEY` is unset, when `VERCEL_ENV` is `production` (any git ref), or when a non-prod `stub` fixture accepts without storing. Notify failure still returns `{ ok: true }`. Never `console.log` contact.
+
+**Request:**
+```json
+{
+  "rid": "number | null",
+  "title": "string",
+  "artist": "string",
+  "year": "string | null",
+  "isrc": "string | null",
+  "email": "string",
+  "phone": "string",
+  "smsOptIn": "boolean",
+  "stub": "string (optional, non-prod fixture accept)"
+}
+```
+
+**Response (200):** `{ "ok": true }` — never echoes email/phone. **Errors:** 400 validation copy, 429/503 `couldn't store that.` Rate-limit 6/min/IP. Stored only on `lf:preview:flip:requests` (RPUSH JSON). Prod namespace refuses. Never `console.log` the body.
+
+**PostHog events:** `api_flip_request` (`stored`, `fixture`, `has_email`, `has_phone`, `sms_opt_in`, `notified_email` — no addresses or numbers).
+
+---
+
 ### GET /api/github
 
 Proxies to GitHub public events API. Returns aggregated activity stats for keeganmoody33.
@@ -508,6 +567,10 @@ Both deployed via `supabase functions deploy <name>`. Source in `supabase/functi
 | `CRATE_ENRICH_FAIL_IDS` | Server-only | No | Preview-only test hook. Comma-separated Discogs ids (no `*`). Ignored when `VERCEL_ENV=production` or in tests. |
 | `CRATE_RESEARCH_REFRESH` | Server-only | No | Set `1` to opt into the optional MusicBrainz research refresh window (default six months via `CRATE_RESEARCH_REFRESH_MS`). Unset = reuse successful research indefinitely. |
 | `BLOB_READ_WRITE_TOKEN` | Server-only | No | Vercel Blob for CAA covers. Unset = `putCoverBlob` returns null; renderer falls back to Discogs hotlink. Never commit the token. |
+| `EVERYSONG_API_KEY` | Server-only | No | Preview `/flip` lookup. Unset → down copy. **Do not add to Vercel production.** |
+| `RESEND_API_KEY` | Server-only | No | Preview `/flip` operator email after a stored request. Unset → skip notify. **Do not add to Vercel production.** |
+| `FLIP_NOTIFY_FROM` | Server-only | No | Resend from-address. Default `doingflips <33@lecturesfrom.com>`. Must be a verified Resend domain. Preview-only. |
+| `FLIP_NOTIFY_TO` | Server-only | No | Operator inbox. Default `33@lecturesfrom.com`. Preview-only. |
 
 ### Supabase Secrets (set via `supabase secrets set`)
 
@@ -535,6 +598,9 @@ All Next.js env vars above must also be set in Vercel for production deployment.
 | `/api/cron/crate-proof` | Bearer `CRON_SECRET`; missing secret 404s |
 | Chat / JD analyzer | Missing env vars return 500 before external calls |
 | Discogs routes | `DISCOGS_TOKEN` optional; missing token is not an error |
+| `/api/flip/search` | 20/min/IP; missing key is down, not 500; never auto-picks |
+| `/api/flip/lookup` | 10/min/IP; missing key is down, not 500; `title`+`artist` or a unique `q` |
+| `/api/flip/request` | 6/min/IP; email and/or phone required; phone-only requires `smsOptIn`; never echo contact; notify is best-effort |
 
 ---
 

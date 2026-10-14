@@ -936,6 +936,44 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   .house-fade { animation: none; }
 }
 
+/*
+ * /flip h1: one-shot arrival. Clockwise rotate, jump up, flip, land.
+ * Instant under prefers-reduced-motion. CSS only — not framer-motion.
+ */
+.flip-h1 {
+  display: inline-block;
+  transform-origin: 50% 70%;
+  animation: flipLand 1.05s cubic-bezier(0.22, 0.82, 0.28, 1) both;
+}
+
+@keyframes flipLand {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+    opacity: 0.35;
+  }
+  24% {
+    transform: translate3d(0, -0.72em, 0) rotate(140deg);
+    opacity: 1;
+  }
+  52% {
+    transform: translate3d(0, -0.9em, 0) rotate(250deg);
+  }
+  78% {
+    transform: translate3d(0, -0.12em, 0) rotate(348deg);
+  }
+  90% {
+    transform: translate3d(0, 0.05em, 0) rotate(366deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(360deg);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-h1 { animation: none; }
+}
+
 .house-hairline {
   border-color: var(--house-line);
 }

@@ -1,3 +1,44 @@
+COMPLETED (2026-10-14 — flip selection races, then merge):
+- Editing the song field clears the selected lookup and its request form. Hits render only for the query that fetched them. Stale search, lookup, and request responses are dropped (`searchGen` / `lookupGen` / `requestGen`).
+- Production stays fail-closed: no `EVERYSONG_API_KEY`, no `RESEND_API_KEY`, no Redis writes. The room and footer link still ship.
+
+COMPLETED (2026-10-14 — flip refuses every production env):
+- `flipProductionLocked` is `VERCEL_ENV === 'production'` with no git-ref exception. A non-main production deploy no longer RPUSHes contact or sends Resend. Subject strips CR/LF. `lib/flip/flip.test.ts` 26/0.
+- Per-isolate rate limit stays (same as the other API routes). Not a shared everysong quota.
+
+COMPLETED (2026-10-13 — Resend preview notify live, do not merge):
+- Cloudflare zone `lecturesfrom.com` has Resend DKIM TXT (`resend._domainkey`), SPF MX+TXT (`send`), and CNAME (`rsend`). DNS-only (not proxied). Domain `bfafbedd-1727-4494-8f5e-4ef0d86584a2` status **verified**. Sending enabled, receiving off.
+- Sending-access key `doingflips preview notify` stored as Vercel Preview-only sensitive `RESEND_API_KEY` on `cursor/preview-flip-page-9720` (env id `hpHczlJowU9aqJ3s`). Not production. Do not print the token.
+- Notify fetch now sends `Idempotency-Key: flip-request/${at}` (stored ISO, not contact). Same key + same payload does not double-send.
+- Test mail `01a13762-0e0b-7ea7-b7ca-c083e2ae1096` from `doingflips <33@lecturesfrom.com>` to `33@lecturesfrom.com`, subject `flip request: test (preview notify)`, last event **delivered**. First send 403 while domain was still pending; new key after that. Do not merge.
+
+COMPLETED (2026-10-13 — flip notify PostHog + email, contact required, do not merge):
+- Requesting a sample flip requires email and/or phone. Form hint `email or phone. one is enough.` Submit disabled until one field has text. Client `validateFlipRequest` before POST; API still rejects empty contact.
+- After a stored request: PostHog `api_flip_request` (`stored`, `notified_email`, no PII) plus best-effort Resend email to `FLIP_NOTIFY_TO` (default `33@lecturesfrom.com`). Skip notify when the key is unset, on prod Redis namespace, or on fixture stub. Visitor still gets success if Resend fails.
+- No Twilio. No new npm packages. Do not add `RESEND_API_KEY` to Vercel production. Do not merge.
+- PostHog insight `doingflips stored requests` (`6njBw9q8`) + hourly alert when count > 0 (user `33@lecturesfrom.com`). Alert is a ping; Resend email is who/song. Email skips until Preview-only `RESEND_API_KEY` is set.
+- Local verify: empty POST 400 `leave an email or a phone.`; email-only + phone+sms stub 200 `{ok:true}`; phone-only without sms 400. UI: submit disabled until a field has text; email-only succeeds; phone-only needs `text me the beat` then succeeds. `lib/flip/flip.test.ts` 25/0. tsc + eslint of notify/copy/validate/request/FlipRoom pass.
+
+COMPLETED (2026-10-13 — doingflips UX, song typeahead, connect arm, do not merge):
+- h1 is `doingflips`; the inner `flip` runs `flipLand` (clockwise jump-flip-land, CSS, reduced-motion none). Lede: find a song, pick it, leave contact, he'll send the beat. CTA `request a sample flip` (form + record detail). Footer/rail `doingflips`.
+- Song field is a visible search: label `song`, placeholder, hint, full-width bar, Look up under it. Debounced `GET /api/flip/search` listbox. Never auto-picks the first everysong hit (Funky Drummer lesson). Lookup is `title`+`artist` after a pick, or unique `q` only. `?stub=suggest` = Donny Hathaway / Voices Inside.
+- Sample flip is one arm. Connect arm under a hairline: `connect` / `jump on a call, or inquire about services.` / mailto `33@lecturesfrom.com`. Replaces `building something?`. No calendar, no GTM/Morph/sales.
+- Search cache `lf:preview:flip:search:` 20/min. Lookup 10/min. Do not merge. Do not add the key to production.
+
+COMPLETED (2026-10-13 — preview everysong key, live lookup verified, do not merge):
+- `EVERYSONG_API_KEY` is a sensitive Vercel Preview-only var scoped to `cursor/preview-flip-page-9720`. Not production. Empty commit `cc26618` retriggered deploy `dpl_DZCx4n1p948qK7B9wxVbty99gmSb` (READY).
+- Live `/api/flip/lookup` without `?stub=`: Hotline Bling / Drake / 2015, 1 sample + 48 sampled-in, `fixture: false`, source `everysong.site · checked 2026-10-13`. James Brown: `Funky Drummer` first-hit is 1986 Pt. 1 & 2 with empty history; `The Payback` / 1973 has 162 sampled-in. `James Brown Funky Drummer` as a query string is `no_match`.
+- Cache: Payback miss 17.2s then repeat 236ms. Hotline repeats ~340ms after the first miss.
+- Rate limit: local same-process next 10/min then 429 on 11–12. Preview 12-burst all 200 — in-memory Map is per isolate.
+- Key leak: not in lookup JSON, `/flip` HTML, or 9 client JS chunks (~906KB). Server `console.log` absent on the route. Runtime function logs empty for this deploy. Do not print the key.
+- everysong.site HTTP used this verify: **9** (Hotline 2, Funky Drummer 2, no_match search 1, Payback 2, Papa's 2). Cache hits and screenshot repeats added 0.
+
+COMPLETED (2026-10-13 — preview-only `/flip`, draft PR, do not merge):
+- Room at `FLIP_PATH` `/flip`: lookup any song via everysong.site (search + sample history), request a sample flip. No collaborators. Preview Redis `lf:preview:flip:` only. Prod namespace refuses cache and request writes. `EVERYSONG_API_KEY` is not added to Vercel production; missing key → `couldn't reach everysong.` Non-prod `?stub=` fixtures for screenshots, marked fixture.
+- Form: email or phone (both allowed). Phone non-empty shows unchecked `text me the beat`; phone-only requires it. Privacy under the button. Success `got it. if i make it, it comes to you.` Quiet product line under the form: `building something? 33@lecturesfrom.com` mailto in `.house-source`. No extra button, no GTM/Morph/sales copy.
+- Footer `flip`. Record detail per-track `ask for a flip` → `/flip?track=`. Rate-limit lookup 10/min, request 6/min. Cache 6h. Cover/remix edges dropped. `robots` noindex. Not in the sitemap.
+- Tests: `lib/flip/flip.test.ts`. Canonical docs + lessons + `.env.local.example` updated. Do not merge. No prod Redis / crons / visitor research.
+
 COMPLETED (2026-10-13 — 1280 poster surface + focus order, PR #75 preview only):
 - Same branch. Draft. Do not merge.
 - Cover-crop `poster.jpg` (`object-cover`, drop `sm:object-contain`) and hide fallback CSS `::before`/`::after` so the 1720×840 asset fills the ~1.48:1 stack as one surface (no letterbox seams, no doubled ruler).
@@ -74,7 +115,6 @@ COMPLETED (2026-10-13 — yadiggg sleeve 3D study, preview only):
 - No `yadiggg-viewer` GitHub repo. Prod workbench is one 3.5 MB HTML with inlined GLBs (no standalone asset URLs). Ported R1 `yadiggg_r1.glb` (~157 KB) into `public/catalog/yadiggg/` and a house-styled `YadigggViewer` (R3F, `next/dynamic` `ssr: false`). Did **not** iframe `yadiggg-viewer.vercel.app` (Arial/paper/amber + recorder-screen UI). Never use share-token preview URLs.
 - `SleeveViewer`: IntersectionObserver + reduced-motion / no-WebGL poster (`cover.jpg`), reserved `min(540px, 70vh)`, keyboard orbit, locked facts 105 × 60 × 15 mm / 2.7" LCD / one orange side button / USB-C / 3.5 mm. No capture/LCD demo chrome.
 - Do not merge until preview QA.
-
 COMPLETED (2026-10-12 — merge #67 + #68 to go live):
 - Combined PR #67 (prod promote already applied: live **323 / 73 / 98 / 225**) and PR #68 (search extras). `destinationIsLive` is the KISS Alive! / Alive II list (Stayin' Alive / Alive 2007 stay studio). Promote dest-live uses that list, not `/\\balive\\b/`. `musicbrainz.ts` keeps extras search/browse **and** `getRecordingSampleRels`. `package.json` keeps `crate:promote-preview`, `crate:search-extras-measure`, `crate:search-extras-find`; `npm test` includes `promote-preview.test.ts`.
 - Combined tree: `unset VERCEL_ENV` + KV unset, `npm test` **524 / 0**, `npx tsc --noEmit` pass, `npm run lint` pass.

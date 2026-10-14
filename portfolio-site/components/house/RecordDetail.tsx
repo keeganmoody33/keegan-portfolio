@@ -19,6 +19,8 @@ import {
 import DiscogsCredit from '@/components/house/DiscogsCredit'
 import CrateCover from '@/components/house/CrateCover'
 import { coverageLine, isPlayableOccurrence } from '@/lib/crate/lifecycle.ts'
+import { FLIP_COPY } from '@/lib/flip/copy.ts'
+import { flipHrefForTrack } from '@/lib/flip/route.ts'
 import {
   displayCoverUrl,
   parseDiscogsImageDimensions,
@@ -459,6 +461,15 @@ export default function RecordDetail({
                     >
                       {selectedTrack.title}
                     </h2>
+                    <Link
+                      href={flipHrefForTrack(
+                        selectedTrack.title,
+                        selectedTrack.artist || pressing.facts.artist
+                      )}
+                      className="house-text-button mb-6"
+                    >
+                      {FLIP_COPY.askFlip}
+                    </Link>
                     <TrackExtras
                       checked={checkedDate(
                         selectedRecording?.provenance.verifiedAt ??

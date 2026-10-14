@@ -1,6 +1,6 @@
 # App Flow — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-10-07
+**Last Updated:** 2026-10-13
 **Framework:** Next.js (App Router)
 **Deployment:** Vercel (auto-deploy on push to main)
 
@@ -17,6 +17,7 @@
 | `/catalog/[slug]`| `app/(house)/catalog/[slug]/page.tsx`| Sleeve (cover, liner, optional viewer, tracks). Unknown slugs 404. yadiggg mounts a lazy house-styled R1 3D study first (`Sleeve.viewer`), then a skinny horizontal cover wordmark; crate click stays `/catalog/yadiggg`. |
 | `/collection`    | `app/(house)/collection/page.tsx`    | Full live Discogs crate (ISR 300s; durable last-good in Redis when configured). Cover click opens `/collection/[releaseId]`. Under the `{n} releases` line: **shuffle** (client Fisher-Yates of the whole grid; reload restores ISR order; no server cost) and **pull one** (random listed id → existing overlay/route). Grid `next/image` uses a stored CAA Blob URL when the cover manifest has one; otherwise the current Discogs hotlink. |
 | `/collection/[releaseId]` | `app/(house)/collection/[releaseId]/page.tsx` | Record detail (overview / tracks). Intercepting overlay at `@detail/(.)[releaseId]` when opened from the grid; full page on direct visit / refresh. |
+| `/flip`          | `app/(house)/flip/page.tsx`          | **Shipped, fail-closed on production.** `doingflips`: look up a song, pick from suggestions, request a sample flip. Editing the field clears the selected song. Connect arm (call / services) is mailto only. Route constant `FLIP_PATH`. `robots` noindex. Not in the sitemap. Production has no everysong or Resend key. |
 | `/legal`         | `app/(house)/legal/page.tsx`         | Entity + long about + Data sources (Discogs API non-affiliation). Markdown twin `/legal.md`. Organization JSON-LD is not a /legal twin. |
 | `/brand`        | `app/(house)/brand/page.tsx`         | Official mark: light/dark preview, downloads, stable URLs, usage rules. Files live in `public/brand/` (`logo.svg` is canonical; hashed immutable copies in `public/brand/v/`; `manifest.json`). |
 | `/icon.svg`      | `app/icon.svg`                       | Site icon. Simplified official mark (2026-09-26 master minus flag, stroke 0.095); `prefers-color-scheme` stroke `#20262b` / `#ffffff`. Copy of `public/brand/favicon.svg`. Applies to house and person. |
@@ -34,7 +35,7 @@
 | Redirect (301) | `/keeganMoody33` | `/keeganmoody33` | Case normalization  |
 | Redirect (301) | `/keegan`        | `/keeganmoody33` | Short alias         |
 
-**Result:** Visitors land on `lecturesfrom.com` and see the house title card + crate. `/` never redirects to the person page. The person page is at `/keeganmoody33`. House ↔ person crossings use `SignalCut` (not a global layout animation). Ask AI and JD Fit Analyzer stay on the person page only. The hero wordmark's last `o` is the static `LogoMark` (owner line-only PNG geometry; `variant="line"`; no spin). Favicon and app icons use the official 2026-09-26 master (see `/brand`); og stays the older line-mark (follow-up). `LogoGlobe` is kept on disk and is not mounted. `HouseFooter` is shared on `/`, `/catalog`, `/collection`, `/legal`, `/brand` (Motion switch not rendered). `/keeganmoody33` has its own footer.
+**Result:** Visitors land on `lecturesfrom.com` and see the house title card + crate. `/` never redirects to the person page. The person page is at `/keeganmoody33`. House ↔ person crossings use `SignalCut` (not a global layout animation). Ask AI and JD Fit Analyzer stay on the person page only. The hero wordmark's last `o` is the static `LogoMark` (owner line-only PNG geometry; `variant="line"`; no spin). Favicon and app icons use the official 2026-09-26 master (see `/brand`); og stays the older line-mark (follow-up). `LogoGlobe` is kept on disk and is not mounted. `HouseFooter` is shared on `/`, `/catalog`, `/collection`, `/flip` (preview), `/legal`, `/brand` (Motion switch not rendered). `/keeganmoody33` has its own footer.
 
 ### API Routes
 
@@ -49,6 +50,9 @@
 | `/api/github` | GET | `app/api/github/route.ts` | Proxy to GitHub public events API |
 | `/api/jd-analyzer` | POST | `app/api/jd-analyzer/route.ts` | Proxy to Supabase `jd-analyzer` Edge Function |
 | `/api/tally` | GET | `app/api/tally/route.ts` | Running totals for the house footer tally (Upstash Redis, `s-maxage=60`; 503s `s-maxage=10`). Hits are recorded in `proxy.ts` via one Redis pipeline in `waitUntil`. |
+| `/api/flip/search` | GET | `app/api/flip/search/route.ts` | Typeahead proxy to everysong search only (1 GET). Cache `lf:preview:flip:search:*` 6h. Rate-limit 20/min/IP. Returns a list; never auto-picks the first hit. Production (`VERCEL_ENV=production`) does not cache or serve fixtures. |
+| `/api/flip/lookup` | GET | `app/api/flip/lookup/route.ts` | Samples for a picked song (`title` + `artist`) or a unique `q` (exactly one hit). Cache `lf:preview:flip:lookup:*` 6h. Rate-limit 10/min/IP. Missing `EVERYSONG_API_KEY` → down. `?stub=` fixtures only when not production. |
+| `/api/flip/request` | POST | `app/api/flip/request/route.ts` | Store a flip request on `lf:preview:flip:requests`. Email and/or phone required. After store, best-effort Resend email with `Idempotency-Key: flip-request/${at}` (skip if key unset or `VERCEL_ENV=production`). Rate-limit 6/min/IP. Never echoes contact fields. Production refuses writes. Fixture `?stub=` skips store and notify. |
 
 ---
 
@@ -307,7 +311,7 @@ Land on /keeganmoody33
 1. Grid link saves scroll/focus in sessionStorage (`lf:collection:scroll`, `lf:collection:focus` as a DOM id — `#crate-cover-{id}` or `#crate-pull-one`) and routes to `/collection/{releaseId}` with `scroll={false}`.
 2. From the grid, the intercepting overlay (`@detail/(.)[releaseId]`) covers the crate. Direct visit or refresh renders the full page.
 3. Overview is the default tab: sourced description (omit if none), fact rows (label, catno, format, country, released — drop a missing field), a few stored sample/credit connections. Connection title links are `mt-1 inline-flex min-h-6 items-center [overflow-wrap:anywhere] min-w-0 max-w-full` (24px, WCAG 2.5.8; wrap at 320, WCAG 1.4.10), matching FactSampleList.
-4. Tracks tab lists the owned pressing in Discogs order (headings are labels, not buttons; mix titles stay distinct). Both tab panels stay mounted; the inactive one is `hidden` with `tabIndex={0}` on each panel and the house 2px ink focus outline (not Chrome’s default rounded ring). A house-meta coverage line reports matched-track / credit / sample-relationship counts separately. Selecting a playable track paints that title ink (others muted) and expands stored credits, samples from, and sampled in (`aria-expanded` / `aria-controls` on the row). The extras block is headed by the track title as an `h2`, then `h3` section labels.
+4. Tracks tab lists the owned pressing in Discogs order (headings are labels, not buttons; mix titles stay distinct). Both tab panels stay mounted; the inactive one is `hidden` with `tabIndex={0}` on each panel and the house 2px ink focus outline (not Chrome’s default rounded ring). A house-meta coverage line reports matched-track / credit / sample-relationship counts separately. Selecting a playable track paints that title ink (others muted) and expands stored credits, samples from, and sampled in (`aria-expanded` / `aria-controls` on the row). The extras block is headed by the track title as an `h2`, then a quiet `request a sample flip` text link (`FLIP_PATH?title=&artist=`), then `h3` section labels.
 5. Overlay keyboard: first Escape clears a selected track; the second Escape (or close / collection) calls `router.back()`. Overlay unmount restores focus to the saved element (`#crate-cover-{id}` from a cover, `#crate-pull-one` from pull one) after dropping `inert` on the grid. While the overlay is open, the skip link, header, footer, and `[data-collection-root]` are `inert` so Tab cannot leave the dialog through `.house-skip`. Overlay autofocuses `collection`. Page mode (direct visit / refresh): do not autofocus `collection`; Escape (after clearing a selected track) and close always `router.push('/collection')` — never `history.back()` — then focus `main#house-content` (`tabIndex={-1}`; `#house-content:focus-visible { outline: none }`). Grid covers use `alt=""`; the detail cover keeps the meaningful alt. HouseShell has a visually hidden skip-to-content link (`#house-content`). Track rows use `aria-expanded` / `aria-controls` only (no `aria-pressed`).
 
 **Success state:** Stored pressing facts, tracklist, and MusicBrainz credits/samples. Cover is `CrateCover` (`next/image`) with stored width/height when a cover manifest exists. Detail uses the listing thumb as a blurred placeholder, then the full-res source; `sizes` keeps phones off a 2000px file. Missing stored cover falls back to the current Discogs URL. Alt text unchanged (`""` on the grid; `${artist} — ${title}` on detail).
@@ -459,6 +463,26 @@ All interactions ──→ PostHog (client + server events)
 **Empty state:** Redis zeros. Row still renders the count `0`.
 
 **PostHog events:** `tally_mode_changed`, `tally_breakdown_toggled`, `tally_category_selected`
+
+---
+
+### 9. Flip room (preview only)
+
+**Trigger:** Footer `doingflips`, or per-track `request a sample flip` on record detail (`/flip?title=&artist=`). Route is `FLIP_PATH` (`/flip`) so it is easy to move.
+
+**Steps:**
+
+1. h1 `doingflips` (Chakra Petch 600). The inner letters `flip` run a one-shot clockwise jump-flip-land (`flipLand`). Instant under `prefers-reduced-motion`. Lede: `find a song you want me to flip. pick it, leave a way to reach you, i'll send the beat.`
+2. Song field (label `.house-meta` `song`): full-width underline, placeholder `title, artist, a line you remember`, hint `songs only. if the name is fuzzy, pick from the list.` Debounced typeahead (`GET /api/flip/search`) opens a hairline listbox (title ink, `artist · year` dim). Never auto-picks the first hit. One hit + Look up loads samples; many hits stay on the list (`pick the song you mean.`).
+3. Picked song: title Chakra Petch 600, artist, year, ISRC as a plain mono row. Sample history: hairlines, no boxed cards. At 1280 (`xl:`) two columns SAMPLES | SAMPLED IN with dim counts. At 375 stacked, upstream first. Rows: title ink, `artist · year` dim. Cap 8 then `show all (N)`. Source `.house-source` `everysong.site · checked YYYY-MM-DD` (fixtures: `everysong.site · fixture`).
+4. Sample-flip arm: hint `email or phone. one is enough.` EMAIL / PHONE (at least one required). Submit stays disabled until one field has text. Phone field non-empty shows unchecked `text me the beat`. Phone-only requires that checkbox. Button `request a sample flip`. Privacy under the button, dim: `used only to send you this beat. never shared or added to a list.` A stored request emails Keegan (Resend, preview-only) and fires PostHog `api_flip_request` (`stored`, `notified_email` — no addresses or numbers).
+5. Connect arm (always, hairline above): `.house-meta` `connect`, lede `jump on a call, or inquire about services.`, mailto `33@lecturesfrom.com` in `.house-source`. No extra button, no calendar, no sales copy, no GTM/Morph wording. Sample flip is one ask; this is the other.
+
+**Success state:** `got it. if i make it, it comes to you.` Connect arm stays.
+
+**Error / empty:** Dim mono, never red. `no match for that one.` / `nothing on file yet` / `couldn't reach everysong.` + `retry`.
+
+**PostHog events:** `flip_search`, `flip_lookup`, `flip_request`, `api_flip_search`, `api_flip_lookup`, `api_flip_request` (`stored`, `fixture`, `has_email`, `has_phone`, `sms_opt_in`, `notified_email` — no email/phone values, no query string). Insight alert on `api_flip_request` where `stored=true` (hourly ping; email is the per-request notify).
 
 ---
 
