@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       event: 'api_rate_limited',
       properties: { route: 'api/flip/request' },
     })
-    return jsonError(FLIP_COPY.storeDown, 429)
+    return jsonError(FLIP_COPY.rateLimited, 429)
   }
 
   let body: unknown

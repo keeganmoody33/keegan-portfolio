@@ -1,3 +1,12 @@
+COMPLETED (2026-10-14 — production main stores and emails flip requests):
+- Production search was live, but every request 503'd with `couldn't store that.` Production on `main` now RPUSHes `lf:flip:requests` and sends Resend when `RESEND_API_KEY` is set. `flipWriteLocked` still stops a non-main production ref (those hold production Redis credentials). `flipProductionLocked` gates fixtures only.
+- Save-failure copy tells the visitor the song and contact are still on the form, and to retry or email `33@lecturesfrom.com`. Rate limit has its own copy.
+- `RESEND_API_KEY` env id `hpHczlJowU9aqJ3s` targets production and preview (branch scope cleared). Do not print the token. Production Redis (`KV_REST_API_URL` / `KV_REST_API_TOKEN`) is already on production. lecturesfrom.com still 503s until this commit is on `main` and redeployed.
+
+COMPLETED (2026-10-14 — production song search):
+- Live `/api/flip/search?q=hotline+bling` was `{"status":"down","hits":[]}` because `EVERYSONG_API_KEY` was Preview-only on `cursor/preview-flip-page-9720`. Sensitive vars cannot be read back, so the same env id `m8a7H2uS0AMHo9fy` now targets production and preview (branch scope cleared). Redeploy `dpl_5LQPvLr6ScCAQ3vZNETH4Cu1zUMa` is on lecturesfrom.com.
+- Verified: search `ok`, 8 hits, first `Hotline Bling / Drake`. Lookup `ok`, 1 sample, 48 sampled-in. Cache writes, request store, and Resend stay off production.
+
 COMPLETED (2026-10-14 — flip selection races, then merge):
 - Editing the song field clears the selected lookup and its request form. Hits render only for the query that fetched them. Stale search, lookup, and request responses are dropped (`searchGen` / `lookupGen` / `requestGen`).
 - Production stays fail-closed: no `EVERYSONG_API_KEY`, no `RESEND_API_KEY`, no Redis writes. The room and footer link still ship.
