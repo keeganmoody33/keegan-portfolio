@@ -395,10 +395,9 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
     bottom: var(--house-sleeve-presets-track);
   }
 
-  /* Keegan wordmark (shovel/signal + yadiggg) under the study, after H1.
-     Cut-out PNG on a --house-stage-paper plate. Even 5px padding hugs the mark.
-     Native lockup is 323×80 — cap CSS height at 40px so 2x screens never upscale.
-     Original inbox PNG is 360×112 cream field, not extra mark pixels; no 2x srcset. */
+  /* yadiggg lockup (speaker, shovel, signal + wordmark) under the study, after H1.
+     Vector SVG (2026-10-14, from Paper) on a --house-stage-paper plate. Even 5px padding hugs the mark.
+     Lockup is 1242×653 (about 1.9:1). Cream counters need the paper plate; never place it on #0a0a0a. */
   .house-sleeve-wordmark {
     display: flex;
     align-items: center;
@@ -411,11 +410,11 @@ html:has(.house)::-webkit-scrollbar-thumb:hover { background: var(--house-orange
   }
 
   .house-sleeve-wordmark img {
-    height: 40px;
+    height: 96px;
     width: auto;
-    max-height: 40px;
+    max-height: 96px;
     max-width: min(20rem, calc(100vw - 4.5rem));
-    aspect-ratio: 323 / 80;
+    aspect-ratio: 1242 / 653;
     object-fit: contain;
   }
 

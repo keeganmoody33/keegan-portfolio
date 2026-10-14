@@ -14,7 +14,7 @@ function WordmarkCover() {
   return (
     <figure className="house-sleeve-wordmark">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/catalog/yadiggg/wordmark.png" alt="yadiggg" />
+      <img src="/catalog/yadiggg/wordmark.svg" alt="yadiggg" />
     </figure>
   )
 }

@@ -189,18 +189,20 @@ describe('shouldReserveViewerChrome', () => {
   })
 })
 
-describe('keegan wordmark png', () => {
-  it('is a trimmed cut-out lockup on a hugging paper plate', () => {
-    const png = readFileSync(
-      join(dirname(fileURLToPath(import.meta.url)), '..', 'public/catalog/yadiggg/wordmark.png')
+describe('yadiggg wordmark svg', () => {
+  it('is a trimmed vector lockup on a hugging paper plate', () => {
+    const svg = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '..', 'public/catalog/yadiggg/wordmark.svg'),
+      'utf8'
     )
-    assert.equal(png.readUInt32BE(16), 323)
-    assert.equal(png.readUInt32BE(20), 80)
-    assert.equal(png[25], 6)
+    assert.match(svg, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)
+    assert.match(svg, /viewBox="[\d.]+ [\d.]+ 1241\.8 653\.3"/)
+    assert.doesNotMatch(svg, /display-p3/)
+    assert.doesNotMatch(svg, /<script|<foreignObject|<image/)
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'app/globals.css'), 'utf8')
     assert.match(css, /padding:\s*5px/)
-    assert.match(css, /aspect-ratio: 323 \/ 80/)
-    assert.match(css, /\.house-sleeve-wordmark img[\s\S]{0,200}height:\s*40px/)
+    assert.match(css, /aspect-ratio: 1242 \/ 653/)
+    assert.match(css, /\.house-sleeve-wordmark img[\s\S]{0,200}height:\s*96px/)
     assert.match(css, /\.house-sleeve-wordmark[\s\S]{0,400}background-color:\s*var\(--house-stage-paper\)/)
     assert.doesNotMatch(css, /\.house-sleeve-wordmark img[\s\S]{0,200}2\.75rem/)
     assert.doesNotMatch(css, /\.house-sleeve-wordmark img[\s\S]{0,200}3\.25rem/)
