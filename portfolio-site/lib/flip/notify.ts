@@ -1,5 +1,5 @@
 import { FLIP_COPY } from './copy.ts'
-import { flipProductionLocked } from './store.ts'
+import { flipWriteLocked } from './store.ts'
 import type { FlipStoredRequest } from './types.ts'
 
 type EnvMap = Record<string, string | undefined>
@@ -34,7 +34,7 @@ export function flipNotifyFrom(env: EnvMap = process.env): string {
 }
 
 export function notifyEmailEnabled(env: EnvMap = process.env): boolean {
-  if (flipProductionLocked(env)) return false
+  if (flipWriteLocked(env)) return false
   return Boolean(env.RESEND_API_KEY?.trim())
 }
 
