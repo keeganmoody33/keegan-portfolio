@@ -30,4 +30,15 @@ Branch: `codex/site-usability-20261015`, PR #83.
 
 ## Hosted verification
 
-Pending this commit's preview deployment. No production promotion or merge.
+Implementation commit: `4a02a31f8dbc934332e12852ca8bdfc0199867ca`.
+Vercel: https://vercel.com/groundskeep/keegan-portfolio-content/7NjKENvVmhRCP34wV7LteWK63Rba
+Preview: https://keegan-portfolio-content-git-codex-site-usab-daa7cc-groundskeep.vercel.app/brand/motion
+
+- Both Vercel checks passed for the implementation commit.
+- Clicked all six treatments on the hosted preview: one canvas, ready state, no browser console errors in the fresh test tab.
+- Hosted animation advanced from its 8000ms initial frame; ice reached 9886.25799998945ms before switching to the next treatment. Pause then held the chosen treatment.
+- Black/navy/white switches, mobile keyboard scale 90→85%, and speed 0.22→0.24 worked.
+- Hosted layouts at 320, 390, 768, 1440 CSS px: no horizontal overflow and ready canvas at every width. See `hosted-checks.json`.
+- Home heat/room switches worked; room had zero canvases. Home → playground → brand kit → playground links all opened the expected page.
+- `hosted-chrome-desktop.png`, `hosted-thermal-desktop.png`, and `hosted-ice-mobile.png` record the deployed result.
+- No production promotion or merge. This evidence commit changes only documentation and screenshots, not application code.

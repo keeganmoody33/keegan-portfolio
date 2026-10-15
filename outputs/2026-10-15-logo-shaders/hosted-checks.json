@@ -1,0 +1,55 @@
+{
+  "presets": [
+    {
+      "treatment": "molten",
+      "canvasCount": 1,
+      "ready": "true"
+    },
+    {
+      "treatment": "pearl",
+      "canvasCount": 1,
+      "ready": "true"
+    },
+    {
+      "treatment": "ember",
+      "canvasCount": 1,
+      "ready": "true"
+    },
+    {
+      "treatment": "thermal",
+      "canvasCount": 1,
+      "ready": "true"
+    },
+    {
+      "treatment": "ice",
+      "canvasCount": 1,
+      "ready": "true"
+    }
+  ],
+  "responsive": [
+    {
+      "overflow": false,
+      "ready": "true",
+      "scrollWidth": 312,
+      "width": 320
+    },
+    {
+      "overflow": false,
+      "ready": "true",
+      "scrollWidth": 382,
+      "width": 390
+    },
+    {
+      "overflow": false,
+      "ready": "true",
+      "scrollWidth": 760,
+      "width": 768
+    },
+    {
+      "overflow": false,
+      "ready": "true",
+      "scrollWidth": 1432,
+      "width": 1440
+    }
+  ]
+}
