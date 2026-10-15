@@ -72,7 +72,7 @@ export default function BrandPage() {
       <article className={styles.page} id="brand-top">
         <nav className={styles.topNav} aria-label="brand kit navigation">
           <Link href="/" className={styles.textLink}>back to lecturesfrom</Link>
-          <a href="mailto:33@lecturesfrom.com" className={styles.textLink}>ask about the kit</a>
+          <Link href="/brand/motion" className={styles.textLink}>logo playground ↗</Link>
         </nav>
 
         <header className={styles.hero}>

@@ -4,6 +4,10 @@
 **Framework:** Next.js (App Router)
 **Deployment:** Vercel (auto-deploy on push to main)
 
+## Logo playground · 2026-10-15
+
+`/brand/motion` is a preview experiment linked from the homepage and brand kit. Six treatments (chrome, molten, pearl, ember, thermal, ice) combine with black, navy, or white; scale and speed adjust the same live canvas. Pause holds its current frame. On phones the stage stays visible while controls scroll. The homepage offers silver, heat, and the existing room photograph. Reduced motion starts still; a graphics failure leaves the supplied SVG visible.
+
 ## Paper implementation · 2026-10-15
 
 Approved by Keegan: port the Paper website explorations into PR #83 and refresh the preview. Home uses the product-momentum introduction and workbench; company adds mission, working principles, and supplied credits. The personal page uses white, navy #12284A, surface #F4F7FB, line #DCE3EC, and link #215FC9 with Space Grotesk. House retains Chakra Petch, Roboto Mono, and the supplied marks. Paper supersedes the older lime/orange personal presentation below. Preserve career history, publications, AI, role comparison, music, GitHub, records, and 3D study behavior. Doingflips gains consented public-name storage and an empty finished-work section; no payment or TIDAL integration. No matched video IDs are supplied by song lookup, so listening uses an explicitly labeled YouTube search fallback. Preview only; Keegan merges.

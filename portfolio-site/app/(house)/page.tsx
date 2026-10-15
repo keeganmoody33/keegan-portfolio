@@ -1,5 +1,5 @@
-import Image from 'next/image'
 import Link from 'next/link'
+import LogoMotion from '@/components/house/LogoMotion'
 import HouseFooter from '@/components/house/HouseFooter'
 import HouseShell from '@/components/house/HouseShell'
 import { houseOrganizationJsonLd, JsonLd } from '@/lib/jsonld'
@@ -26,10 +26,7 @@ export default function HouseHome() {
               <a href="#workbench" className="house-button house-button-secondary">see what i’m building <span aria-hidden="true">↓</span></a>
             </div>
           </div>
-          <figure className={styles.room}>
-            <Image src="/brand/founder/room-mono.jpg" alt="Keegan’s workroom in Atlanta, with records and a music workstation." width={976} height={664} priority sizes="(max-width: 767px) calc(100vw - 48px), 40vw" />
-            <figcaption>the room. atlanta, ga.<br />records on the floor. work on the screen.</figcaption>
-          </figure>
+          <LogoMotion />
         </section>
         <section className={styles.split} aria-labelledby="product-business">
           <h2 id="product-business" className={styles.sectionTitle}>product decisions.<br />business problems.</h2>

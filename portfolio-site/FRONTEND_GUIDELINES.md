@@ -5,6 +5,10 @@
 **CSS Framework:** Tailwind CSS 3.4.19 + CSS Custom Properties
 **Fonts:** Google Fonts (Chakra Petch, Doto, Space Grotesk, Roboto Mono, Roboto Slab)
 
+## Logo motion experiments · 2026-10-15
+
+Keegan requested creative combinations with Paper Shaders, including silver/black/white and heat maps. This authorizes an experimental presentation layer for the supplied mark; canonical download bytes and geometry stay unchanged. `/brand/motion` combines three metal and three heat presets with three backgrounds. Existing type, navigation, copy, and product identities remain intact. Controls use visible selection, focus outlines, and at least 44px touch targets. One lazy canvas renders at a time, capped at 700,000 pixels, paused offscreen and in hidden tabs. Reduced motion starts still and visitors can pause or explicitly play.
+
 ## Paper implementation · 2026-10-15
 
 Approved by Keegan: port the Paper website explorations into PR #83 and refresh the preview. Home uses the product-momentum introduction and workbench; company adds mission, working principles, and supplied credits. The personal page uses white, navy #12284A, surface #F4F7FB, line #DCE3EC, and link #215FC9 with Space Grotesk. House retains Chakra Petch, Roboto Mono, and the supplied marks. Paper supersedes the older lime/orange personal presentation below. Preserve career history, publications, AI, role comparison, music, GitHub, records, and 3D study behavior. Doingflips gains consented public-name storage and an empty finished-work section; no payment or TIDAL integration. No matched video IDs are supplied by song lookup, so listening uses an explicitly labeled YouTube search fallback. Preview only; Keegan merges.

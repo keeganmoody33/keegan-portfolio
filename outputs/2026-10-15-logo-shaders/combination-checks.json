@@ -1,0 +1,128 @@
+[
+  {
+    "treatment": "chrome",
+    "background": "black",
+    "canvases": 1,
+    "overflow": false,
+    "ready": "true"
+  },
+  {
+    "treatment": "chrome",
+    "background": "navy",
+    "canvases": 1,
+    "overflow": false,
+    "ready": "true"
+  },
+  {
+    "treatment": "chrome",
+    "background": "white",
+    "canvases": 1,
+    "overflow": false,
+    "ready": "true"
+  },
+  {
+    "treatment": "molten",
+    "background": "black",
+    "canvases": 1,
+    "overflow": false,
+    "ready": "true"
+  },
+  {
+    "treatment": "molten",
+    "background": "navy",
+    "canvases": 1,
+    "overflow": false,
+    "ready": "true"
+  },
+  {
+    "treatment": "molten",
+    "background": "white",
+    "canvases": 1,
+    "overflow": false,
+    "ready": "true"
+  },
+  {
+    "treatment": "pearl",
+    "background": "black",
+    "canvases": 1,
+    "overflow": false,
+    "ready": "true"
+  },
+  {
+    "treatment": "pearl",
+    "background": "navy",
+    "canvases": 1,
+    "overflow": false,
+    "ready": "true"
+  },
+  {
+    "treatment": "pearl",
+    "background": "white",
+    "canvases": 1,
+    "overflow": false,
+    "ready": "true"
+  },
+  {
+    "treatment": "ember",
+    "background": "black",
+    "canvases": 1,
+    "overflow": false,
+    "ready": "true"
+  },
+  {
+    "treatment": "ember",
+    "background": "navy",
+    "canvases": 1,
+    "overflow": false,
+    "ready": "true"
+  },
+  {
+    "treatment": "ember",
+    "background": "white",
+    "canvases": 1,
+    "overflow": false,
+    "ready": "true"
+  },
+  {
+    "treatment": "thermal",
+    "background": "black",
+    "canvases": 1,
+    "overflow": false,
+    "ready": "true"
+  },
+  {
+    "treatment": "thermal",
+    "background": "navy",
+    "canvases": 1,
+    "overflow": false,
+    "ready": "true"
+  },
+  {
+    "treatment": "thermal",
+    "background": "white",
+    "canvases": 1,
+    "overflow": false,
+    "ready": "true"
+  },
+  {
+    "treatment": "ice",
+    "background": "black",
+    "canvases": 1,
+    "overflow": false,
+    "ready": "true"
+  },
+  {
+    "treatment": "ice",
+    "background": "navy",
+    "canvases": 1,
+    "overflow": false,
+    "ready": "true"
+  },
+  {
+    "treatment": "ice",
+    "background": "white",
+    "canvases": 1,
+    "overflow": false,
+    "ready": "true"
+  }
+]

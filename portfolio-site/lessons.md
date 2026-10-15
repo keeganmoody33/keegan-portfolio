@@ -317,3 +317,9 @@ Updated: 2026-10-14
 
 - Hosted AI can answer successfully using stale project context. Supply current public catalog facts from the website branch so preview copy and AI product descriptions stay aligned without changing a shared production database. Verify the answer as well as the HTTP success.
 - Restore a disabled chat input on the next animation frame after completion, and only while its component is visible and focus has not moved elsewhere.
+
+## 2026-10-15: Paper Shaders
+
+- Heatmap preprocessing composites the source on white and uses luminance; feed the supplied dark mark, not the white mark, or the result is empty. Liquid Metal uses the white mark alpha mask.
+- Next development blocks 127.0.0.1 resources unless that origin is allowed. Use localhost for development checks; a static render with inactive controls is not an interaction pass.
+- After shader hot replacement, reload before lifecycle checks. Inspect actual frame progression, pause, and the original SVG after context loss rather than counting a canvas as proof of rendering.
