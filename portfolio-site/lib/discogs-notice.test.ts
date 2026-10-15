@@ -30,7 +30,7 @@ describe('Discogs API non-affiliation notice', () => {
     const legalMd = readFromSite('./markdown.ts')
     const footer = readFromSite('../components/house/HouseFooter.tsx')
 
-    assert.match(legalPage, /Data sources/)
+    assert.match(legalPage, /data sources/i)
     assert.match(legalPage, /DISCOGS_API_NOTICE/)
     assert.match(legalPage, /text-\[var\(--house-muted\)\]/)
     assert.match(legalMd, /## Data sources/)

@@ -22,7 +22,7 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    messagesEndRef.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
   }
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export default function Chat() {
 
       const data = await response.json()
 
-      if (data.error) {
+      if (!response.ok || data.error || typeof data.answer !== 'string') {
         throw new Error(data.error)
       }
 
@@ -69,6 +69,7 @@ export default function Chat() {
       const assistantMessage: Message = { role: 'assistant', content: data.answer }
       setMessages(prev => [...prev, assistantMessage])
     } catch (error) {
+      setInput(question)
       console.error('Chat error:', error)
 
       // Track chat error
@@ -79,7 +80,7 @@ export default function Chat() {
 
       const errorMessage: Message = {
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: 'The AI could not answer right now. Your question is still here. Try again, or email me at 33@lecturesfrom.com.',
       }
       setMessages(prev => [...prev, errorMessage])
     } finally {
@@ -110,7 +111,7 @@ export default function Chat() {
                   sendMessage(q, true)
                 }}
                 aria-label={q}
-                className="px-3 py-1.5 text-sm bg-[var(--bg-body)] border border-[var(--border-dim)]
+                className="min-h-11 px-3 py-2 text-sm bg-[var(--bg-body)] border border-[var(--border-dim)]
                          text-[var(--text-muted)] rounded hover:border-[var(--accent-lime)]
                          hover:text-[var(--accent-lime)] transition-colors font-mono"
               >
@@ -123,7 +124,7 @@ export default function Chat() {
 
       {/* Messages */}
       {messages.length > 0 && (
-        <div className="experience-card rounded-lg mb-4 max-h-96 overflow-y-auto">
+        <div role="log" aria-label="Conversation" aria-live="polite" className="experience-card rounded-lg mb-4 max-h-96 overflow-y-auto">
           <div className="p-4 space-y-4">
             {messages.map((message, index) => (
               <div
@@ -143,10 +144,11 @@ export default function Chat() {
             {isLoading && (
               <div className="flex justify-start">
                 <div className="bg-[var(--bg-body)] border border-[var(--border-dim)] px-4 py-2 rounded-lg">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-[var(--accent-lime)] rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-[var(--accent-lime)] rounded-full animate-bounce" style={{ animationDelay: '100ms' }} />
-                    <div className="w-2 h-2 bg-[var(--accent-lime)] rounded-full animate-bounce" style={{ animationDelay: '200ms' }} />
+                  <div className="flex space-x-1" role="status">
+                    <span className="sr-only">Preparing an answer...</span>
+                    <div className="w-2 h-2 bg-[var(--accent-lime)] rounded-full animate-bounce motion-reduce:animate-none" />
+                    <div className="w-2 h-2 bg-[var(--accent-lime)] rounded-full animate-bounce motion-reduce:animate-none" style={{ animationDelay: '100ms' }} />
+                    <div className="w-2 h-2 bg-[var(--accent-lime)] rounded-full animate-bounce motion-reduce:animate-none" style={{ animationDelay: '200ms' }} />
                   </div>
                 </div>
               </div>
@@ -162,9 +164,9 @@ export default function Chat() {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about my experience, skills, or work history..."
+          placeholder="What would you like to know?"
           aria-label="Ask a question"
-          className="flex-1 px-4 py-3 border border-[var(--border-dim)] rounded-lg 
+          className="min-w-0 flex-1 px-4 py-3 border border-[var(--border-dim)] rounded-lg
                    bg-[var(--bg-body)] text-[var(--text-main)] font-mono text-sm
                    placeholder:text-[var(--text-muted)]
                    focus:outline-none focus:border-[var(--accent-lime)]"
@@ -175,10 +177,10 @@ export default function Chat() {
           disabled={isLoading || !input.trim()}
           aria-label="Send message"
           className="px-4 sm:px-6 py-3 bg-[var(--accent-lime)] text-[var(--bg-body)] font-mono text-sm
-                   rounded-lg hover:bg-[var(--accent-orange)] 
+                   rounded-lg hover:bg-[var(--accent-orange)]
                    disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          Send
+          {isLoading ? 'Waiting...' : 'Send'}
         </button>
       </form>
 
@@ -192,7 +194,8 @@ export default function Chat() {
             setMessages([])
           }}
           aria-label="Clear conversation"
-          className="mt-2 text-sm text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono"
+          disabled={isLoading}
+          className="mt-2 min-h-11 text-sm text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono"
         >
           Clear chat
         </button>

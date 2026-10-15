@@ -21,10 +21,10 @@ export default function Crate() {
   const rows = getCrateRows()
 
   return (
-    <section className="px-6 sm:px-10" aria-label="crate">
+    <section id="catalog" className="px-6 sm:px-10" aria-label="catalog">
       <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="house-meta">crate</h2>
-        <span className="house-meta">spines</span>
+        <h2 className="house-meta">inside the house</h2>
+        <span className="house-meta">open a sleeve</span>
       </div>
       <ol className="list-none p-0">
         {rows.map((row) => {
@@ -35,6 +35,9 @@ export default function Crate() {
               <span className="font-mono text-[11px] text-[var(--house-dim)]">{row.crateNo}</span>
               <span className="flex min-w-0 flex-col">
                 <span className="house-spine-title font-display text-base font-semibold tracking-[-0.01em] sm:text-lg">{title(row)}</span>
+                <span className="house-spine-description mt-2 font-mono text-[13px] leading-relaxed text-[var(--house-muted)]">
+                  {row.kind === 'principal' ? 'the person behind the work. experience, questions, and contact.' : row.sleeve.aside}
+                </span>
                 <span className="mt-0.5 whitespace-nowrap font-mono text-[11px] tracking-[0.16em] uppercase text-[var(--house-muted)] sm:hidden">
                   {formatTag(row)} / {catno(row)}
                 </span>
@@ -46,7 +49,7 @@ export default function Crate() {
                 {catno(row)}
               </span>
               <span className="house-spine-status justify-self-end font-mono text-[11px] tracking-[0.16em] uppercase text-[var(--house-muted)]">
-                {row.label}
+                {row.kind === 'principal' ? 'about + contact' : row.label}<span aria-hidden="true"> ↗</span>
               </span>
             </>
           )
@@ -58,7 +61,7 @@ export default function Crate() {
                   href={row.href}
                   direction="toPerson"
                   className={className}
-                  aria-label="keegan moody, principal channel"
+                  aria-label="keegan moody, experience and contact"
                 >
                   {inner}
                 </SignalCut>

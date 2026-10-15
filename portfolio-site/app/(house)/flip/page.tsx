@@ -8,7 +8,7 @@ import { FLIP_PATH } from '@/lib/flip/route.ts'
 import { houseMetadata } from '@/lib/metadata'
 
 export const metadata: Metadata = {
-  ...houseMetadata(FLIP_PATH, 'doingflips — lecturesfrom', FLIP_COPY.lede),
+  ...houseMetadata(FLIP_PATH, 'doingflips | lecturesfrom', FLIP_COPY.lede),
   robots: { index: false, follow: false },
 }
 

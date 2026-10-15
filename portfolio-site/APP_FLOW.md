@@ -1,10 +1,19 @@
 # App Flow — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-10-13
+**Last Updated:** 2026-10-15
 **Framework:** Next.js (App Router)
 **Deployment:** Vercel (auto-deploy on push to main)
 
 ---
+
+## Website usability pass (2026-10-15, local review)
+
+- Shared house navigation links to catalog, records, doingflips, brand kit, and Keegan, with the current section indicated. Home and project inquiry are explicit homepage actions. Footer includes a direct email link.
+- Catalog rows include a description before opening a project. Software project introductions precede cover art on phones; a project-links shortcut reaches external sites and source. The yadiggg study-first order stays intact.
+- Collection search matches artist, title, year, label, and catalog number locally. Counts, clear search, shuffle, and random record follow the filtered results. Closing an overlay preserves the search and restores the originating record's focus.
+- Doingflips uses find-song, select-recording, contact, and request states. Sample connections are optional disclosure content. Empty contact submission shows validation; phone consent remains required. Suggestions stay open when the search button is clicked. No production request was submitted in local verification.
+- Personal Projects goes to `/catalog`; Role fit goes to `#fit`. Career loading has retry and LinkedIn recovery on failure. Ask AI uses a native modal dialog, wraps keyboard focus, closes on Escape, and restores trigger focus. Contact includes email. Chat and role comparison retain inputs when a request fails.
+- Human copy is reflected in the corresponding Markdown pages. Existing public/private source content and backend request contracts are preserved.
 
 ## Route Inventory
 
@@ -137,6 +146,14 @@ Land on /keeganmoody33
 ---
 
 ## Interaction Flows
+
+### Brand kit navigation (2026-10-15, local review)
+
+`/brand` opens with a full-kit download and a link to individual assets. A section index links directly to logos, the mark with the name, profile and app icons, print files, and guidelines. The index stays beside the content on desktop and wraps above it on mobile. Each download uses a purpose-led label, shows its file format, and keeps the original filename in the downloaded file. SVG and PNG guidance sits beside the choices. Print files have their own section; stable URLs and the manifest remain available under guidelines. Existing assets and geometry are unchanged.
+
+The page links back to the house at the top. Shared house footer navigation includes `brand kit`, labels `/` as `home`, and uses visible focus styles and 44px minimum tap targets. Downloads and anchor navigation use native links and work without JavaScript.
+
+Verification: download every linked asset; use the section index and browser back; follow the footer to `/brand`; check keyboard focus, 320px/390px mobile and desktop layouts, and reduced motion. This entry describes the branch implementation, not a production release.
 
 ### 1. AI Chat
 

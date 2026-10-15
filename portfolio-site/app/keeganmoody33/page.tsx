@@ -1,6 +1,6 @@
 'use client'
 
-import { Component, useEffect, useState, type ReactNode } from 'react'
+import { Component, useEffect, useRef, useState, type ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
 import Chat from '@/components/Chat'
 import JDAnalyzer from '@/components/JDAnalyzer'
@@ -66,7 +66,9 @@ export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [experiences, setExperiences] = useState<Experience[]>([])
   const [showChat, setShowChat] = useState(false)
-  const [showJD, setShowJD] = useState(false)
+  const [experienceStatus, setExperienceStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [reload, setReload] = useState(0)
+  const chatDialog = useRef<HTMLDialogElement>(null)
 
   // Event handlers with PostHog tracking
   const handleOpenChat = () => {
@@ -89,31 +91,60 @@ export default function Home() {
   }
 
   useEffect(() => {
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), 15000)
+    let cancelled = false
     async function fetchData() {
-      // Fetch profile
-      const { data: profileData } = await supabase
-        .from('candidate_profile')
-        .select('*')
-        .eq('id', 'keegan-moody-001')
-        .single()
-
-      if (profileData) setProfile(profileData)
-
-      // Fetch experiences
-      const { data: expData } = await supabase
-        .from('experiences')
-        .select('*')
-        .eq('candidate_id', 'keegan-moody-001')
-        .order('display_order', { ascending: true })
-
-      if (expData) setExperiences(expData)
+      setExperienceStatus('loading')
+      try {
+        const [profileResult, experienceResult] = await Promise.all([
+          supabase.from('candidate_profile')
+            .select('id,first_name,last_name,headline,summary,linkedin_url,github_url')
+            .eq('id', 'keegan-moody-001').abortSignal(controller.signal).single(),
+          supabase.from('experiences')
+            .select('id,company_name,role_title,start_date,end_date,duration_months,public_bullets,display_order')
+            .eq('candidate_id', 'keegan-moody-001')
+            .order('display_order', { ascending: true }).abortSignal(controller.signal),
+        ])
+        if (cancelled) return
+        if (profileResult.data) setProfile(profileResult.data)
+        if (experienceResult.error) {
+          setExperienceStatus('error')
+        } else {
+          setExperiences(experienceResult.data ?? [])
+          setExperienceStatus('ready')
+        }
+      } catch {
+        if (!cancelled) setExperienceStatus('error')
+      } finally {
+        window.clearTimeout(timeout)
+      }
     }
+    void fetchData()
+    return () => {
+      cancelled = true
+      window.clearTimeout(timeout)
+      controller.abort()
+    }
+  }, [reload])
 
-    fetchData()
-  }, [])
+  useEffect(() => {
+    if (!showChat) return
+    const dialog = chatDialog.current
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const previousOverflow = document.body.style.overflow
+    dialog?.showModal()
+    document.body.style.overflow = 'hidden'
+    return () => {
+      dialog?.close()
+      document.body.style.overflow = previousOverflow
+      trigger?.focus({ preventScroll: true })
+    }
+  }, [showChat])
 
   return (
-    <div className="min-h-screen overflow-x-hidden">
+    <div className="person-page min-h-screen overflow-x-hidden">
+      <a href="#person-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-[var(--bg-body)] focus:p-4">Skip to content</a>
       <NowPlayingLiveRegion />
       <header>
         {/* Marquee Ticker */}
@@ -130,32 +161,33 @@ export default function Home() {
         </BannerRotator>
       </header>
 
-      <main className="min-w-0 px-4 sm:px-8 lg:px-16 py-8">
+      <main id="person-content" tabIndex={-1} className="min-w-0 px-4 sm:px-8 lg:px-16 py-8">
           {/* Navigation */}
-          <nav className="mb-12 flex flex-wrap items-center justify-between gap-3 sm:mb-16">
+          <nav aria-label="Personal page navigation" className="mb-12 flex flex-wrap items-center justify-between gap-3 sm:mb-16">
             <div className="flex items-center gap-2">
               <span className="text-[var(--text-muted)] font-mono text-sm">/</span>
               <SignalCut
                 href="/"
                 direction="toHouse"
-                className="text-[var(--text-bright)] font-space"
+                className="inline-flex min-h-11 items-center text-[var(--text-bright)] font-space"
               >
                 lecturesfrom
               </SignalCut>
             </div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-x-8">
-              <a href="#experience" className="whitespace-nowrap text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
-                XP
+              <a href="#experience" className="inline-flex min-h-11 items-center whitespace-nowrap text-[var(--text-main)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
+                Experience
               </a>
-              <a href="#projects" className="whitespace-nowrap text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
-                Projects <span className="text-[var(--text-muted)]">[P]</span>
+              <a href="/catalog" className="inline-flex min-h-11 items-center whitespace-nowrap text-[var(--text-main)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
+                Projects
               </a>
-              <a href="#contact" className="whitespace-nowrap text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
-                Contact <span className="text-[var(--text-muted)]">[C]</span>
+              <a href="#fit" className="inline-flex min-h-11 items-center whitespace-nowrap text-[var(--text-main)] hover:text-[var(--accent-lime)] font-mono text-sm">Role fit</a>
+              <a href="#contact" className="inline-flex min-h-11 items-center whitespace-nowrap text-[var(--text-main)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
+                Contact
               </a>
               <button
                 onClick={handleOpenChat}
-                aria-label="Ask AI"
+                aria-label="Ask AI about Keegan"
                 className="ask-ai-btn inline-flex min-h-11 items-center whitespace-nowrap px-3 py-2 sm:px-4 font-mono text-sm"
               >
                 Ask AI
@@ -200,47 +232,63 @@ export default function Home() {
               <div className="w-1 h-16 bg-[var(--accent-lime)]" />
               <div>
                 <p className="text-[var(--text-muted)] font-mono text-sm mb-4">
-                  Don't guess. Query the system directly.<br />
-                  The answer is in the data.
+                  I build the research, outreach, and automation behind sales execution.<br />
+                  Read my experience, explore the projects, or ask the AI about my work.
                 </p>
+                <div className="flex flex-wrap items-center gap-4">
+                <a href="#experience" className="ask-ai-btn inline-flex min-h-12 items-center px-6 py-3 font-mono">Read my experience</a>
                 <button
                   onClick={handleOpenChat}
-                  aria-label="Ask AI"
-                  className="ask-ai-btn px-6 py-3 font-mono"
+                  aria-label="Ask AI about Keegan"
+                  className="inline-flex min-h-12 items-center border border-[var(--text-muted)] px-6 py-3 font-mono text-[var(--text-bright)]"
                 >
-                  Ask AI
+                  Ask about my work
                 </button>
+                </div>
               </div>
             </div>
           </section>
 
-          {/* Career Timeline */}
+          {/* The work so far */}
           <section id="experience" className="mb-24">
             <h2 className="text-[var(--accent-orange)] font-mono text-sm mb-8">
-              // Chronological Execution Log
+              // Experience
             </h2>
             <h3 className="text-3xl font-bold text-[var(--text-bright)] mb-12">
-              Career Timeline
+              The work so far
             </h3>
-            <Timeline experiences={experiences} />
+            {experienceStatus === 'loading' ? (
+              <p role="status" className="font-mono text-sm text-[var(--text-muted)]">Loading career history...</p>
+            ) : experienceStatus === 'error' ? (
+              <div role="status" className="space-y-4 font-mono text-sm">
+                <p>Career history could not load. You can retry or read my experience on LinkedIn.</p>
+                <div className="flex flex-wrap gap-4">
+                  <button className="ask-ai-btn min-h-11 px-4 py-2" onClick={() => setReload((value) => value + 1)}>Retry career history</button>
+                  <a href="https://linkedin.com/in/keeganmoody33" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center underline underline-offset-4">View LinkedIn ↗</a>
+                </div>
+              </div>
+            ) : <Timeline experiences={experiences} />}
           </section>
 
           {/* JD Analyzer */}
-          <section id="projects" className="mb-24">
+          <section id="fit" className="mb-24">
             <h2 className="text-[var(--accent-orange)] font-mono text-sm mb-8">
-              // Fit Analysis Tool
+              // Considering a role?
             </h2>
             <h3 className="text-3xl font-bold text-[var(--text-bright)] mb-8">
-              JD Fit Analyzer
+              Compare a role with my experience
             </h3>
             <p className="text-[var(--text-muted)] mb-8 max-w-xl">
-              Paste a job description. I'll give you an honest assessment of fit—including where I fall short.
+              Paste a job description or its link. The AI compares it with my experience and identifies relevant strengths and open questions. Use it to start a conversation.
             </p>
             <JDAnalyzer />
           </section>
       </main>
 
       <footer id="contact" className="border-t border-[var(--border-dim)] px-4 pb-8 pt-8 sm:px-8 lg:px-16">
+        <h2 className="text-3xl font-bold text-[var(--text-bright)]">Have something in mind?</h2>
+        <p className="mt-4 max-w-xl text-[var(--text-main)]">A role, a project, or a good question. Send me a note with what you are working on.</p>
+        <a href="mailto:33@lecturesfrom.com" className="ask-ai-btn my-6 inline-flex min-h-12 items-center px-6 py-3 font-mono">Email Keegan ↗</a>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <span className="text-[var(--text-muted)] font-mono text-sm">
             © 2026 lecturesfrom
@@ -251,7 +299,7 @@ export default function Home() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => handleExternalLinkClick('linkedin', profile?.linkedin_url || 'https://linkedin.com/in/keeganmoody33')}
-              className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+              className="inline-flex min-h-11 items-center text-[var(--text-main)] underline underline-offset-4 hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
             >
               LINKEDIN
             </a>
@@ -260,7 +308,7 @@ export default function Home() {
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => handleExternalLinkClick('x', 'https://x.com/keeganmoody33')}
-            className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+            className="inline-flex min-h-11 items-center text-[var(--text-main)] underline underline-offset-4 hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
           >
             X
           </a>
@@ -269,7 +317,7 @@ export default function Home() {
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => handleExternalLinkClick('substack', 'https://substack.com/@keeganmoody33')}
-            className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+            className="inline-flex min-h-11 items-center text-[var(--text-main)] underline underline-offset-4 hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
           >
             SUBSTACK
           </a>
@@ -278,7 +326,7 @@ export default function Home() {
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => handleExternalLinkClick('github', profile?.github_url || 'https://github.com/keeganmoody33')}
-            className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+            className="inline-flex min-h-11 items-center text-[var(--text-main)] underline underline-offset-4 hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
           >
             GITHUB
           </a>
@@ -287,7 +335,7 @@ export default function Home() {
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => handleExternalLinkClick('discord', 'https://discord.com/users/lecturesfrom')}
-            className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+            className="inline-flex min-h-11 items-center text-[var(--text-main)] underline underline-offset-4 hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
           >
             DISCORD
           </a>
@@ -296,7 +344,7 @@ export default function Home() {
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => handleExternalLinkClick('bluesky', 'https://bsky.app/profile/lecturesfrom.bsky.social')}
-            className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+            className="inline-flex min-h-11 items-center text-[var(--text-main)] underline underline-offset-4 hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
           >
             BLUESKY
           </a>
@@ -306,23 +354,35 @@ export default function Home() {
 
       {/* Chat Modal */}
       {showChat && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-dim)] rounded-lg w-full max-w-2xl max-h-[80vh] overflow-hidden">
+        <dialog ref={chatDialog} aria-labelledby="chat-heading" aria-describedby="chat-description" onCancel={handleCloseChat}
+          onKeyDown={(event) => {
+            if (event.key !== 'Tab') return
+            const controls = event.currentTarget.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled])')
+            const first = controls[0]
+            const last = controls[controls.length - 1]
+            if (event.shiftKey && document.activeElement === first) {
+              event.preventDefault()
+              last?.focus()
+            } else if (!event.shiftKey && document.activeElement === last) {
+              event.preventDefault()
+              first?.focus()
+            }
+          }} className="person-dialog bg-[var(--bg-surface)] border border-[var(--border-dim)] rounded-lg max-w-2xl">
             <div className="flex items-center justify-between p-4 border-b border-[var(--border-dim)]">
-              <h3 className="text-[var(--text-bright)] font-mono">Ask AI</h3>
+              <h2 id="chat-heading" className="text-[var(--text-bright)] font-mono">Ask about Keegan</h2>
               <button
                 onClick={handleCloseChat}
                 aria-label="Close chat"
-                className="text-[var(--text-muted)] hover:text-[var(--text-bright)]"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center text-[var(--text-main)] hover:text-[var(--text-bright)]"
               >
-                ✕
+                Close
               </button>
             </div>
             <div className="p-4 overflow-y-auto max-h-[calc(80vh-60px)]">
+              <p id="chat-description" className="mb-5 text-sm text-[var(--text-muted)]">AI answers from my experience and project notes. For a direct answer, <a href="mailto:33@lecturesfrom.com" className="underline underline-offset-4">email me</a>.</p>
               <Chat />
             </div>
-          </div>
-        </div>
+        </dialog>
       )}
     </div>
   )

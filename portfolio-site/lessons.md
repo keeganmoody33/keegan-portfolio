@@ -289,3 +289,14 @@ Updated: 2026-10-14
 - **`request.ip` is not in the standard `NextRequest` type.** Next.js exposes it at runtime but TypeScript doesn't know about it. Use `(request as NextRequest & { ip?: string }).ip` to access it without TS errors. The rate-limit.ts helper handles this; API routes that reference `request.ip` directly in PostHog properties need the same cast.
 - **In-memory rate limiting is a stopgap for Vercel.** Each serverless instance has its own memory, so rate limits won't be accurate across multiple instances. Acceptable for a low-traffic portfolio site. For production-grade, use Upstash Redis or Vercel KV.
 - **Always grep all docs after cancelling a feature.** Cancelling Worthy Reads + Alan Iverson required edits across 10+ files (PRD, IMPLEMENTATION_PLAN, BANNER_WIDGETS_SPEC, AURA_PROMPTS, AURA_PROMPTS_V2, DESIGN_PLAYBOOK, TURNTABLE_LOADING_SPEC, NAVIGATION_PATHWAYS_SPEC, HUMAN_MACHINE_TOGGLE_SPEC, lessons.md, progress.txt). The first subagent pass missed references in spec docs that weren't in the original task list. A final grep caught them.
+
+
+## 2026-10-15: copy and navigation corrections
+
+- Labels must describe their destination: Projects routes to the catalog, while the role comparison has its own link and section.
+- A combobox blur timer can hide new results when a visitor clicks its submit button. Keep results open when focus moves within the search form, and test the actual button click as well as typing.
+- Native dialogs provide modal semantics, but explicitly check both Tab boundaries, Escape, and trigger focus restoration in the target browser.
+- Supabase's abort signal must be set before `.single()` in the installed client. Keep the career request bounded and present a useful failure state.
+- A failed tool run is not verification. The initial Documents checkout stalled on file hydration; the working copy was recovered to an isolated local checkout and tests were rerun there.
+
+- Keep hero names in server-rendered markup. CSS can preserve the entrance effect while reduced-motion users see the complete name immediately and screen readers receive whole words.

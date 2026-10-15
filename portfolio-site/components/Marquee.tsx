@@ -13,6 +13,7 @@ interface GitHubStats {
 
 export default function Marquee() {
   const [github, setGitHub] = useState<GitHubStats | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function fetchGitHub() {
@@ -25,24 +26,26 @@ export default function Marquee() {
           setGitHub(data)
         }
       } catch {
-        // Marquee degrades gracefully — static items still show
+        // Keep the location and work labels if activity is unavailable.
+      } finally {
+        setLoading(false)
       }
     }
     fetchGitHub()
   }, [])
 
   const gitText = github
-    ? `GIT_STATUS :: PUSHES_7D: ${github.pushes_7d} // PUSHES_24H: ${github.pushes_24h}`
-    : 'GIT_STATUS :: LOADING...'
+    ? `${github.pushes_7d} pushes this week · ${github.pushes_24h} in the past day`
+    : loading ? 'Loading GitHub activity...' : 'GitHub activity unavailable'
 
   const latestText = github?.latest_repo
     ? `LATEST: ${github.latest_action} on ${github.latest_repo}`
-    : 'LATEST: ...'
+    : 'Explore the projects in the catalog'
 
   const items = [
     { label: 'GIT', text: gitText },
-    { label: 'SYS', text: 'ANTHROPIC: CLAUDE OPUS ACTIVE' },
-    { label: 'NET', text: 'VERCEL: DEPLOYED' },
+    { label: 'WORK', text: 'Sales execution + revenue systems' },
+    { label: 'FROM', text: 'Atlanta, Georgia' },
     { label: 'LOG', text: latestText },
   ]
 
@@ -57,7 +60,7 @@ export default function Marquee() {
     >
       <div className="marquee-container py-2">
         {allItems.map((item, i) => (
-          <div key={i} className="flex items-center gap-2 px-8 whitespace-nowrap">
+          <div key={i} aria-hidden={i >= items.length || undefined} className="flex items-center gap-2 px-8 whitespace-nowrap">
             <span className="text-[var(--accent-lime)] font-mono text-xs font-bold">{item.label}</span>
             <span className="text-[var(--text-muted)] font-mono text-xs">
               {item.text}

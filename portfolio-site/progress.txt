@@ -1,3 +1,13 @@
+READY FOR REVIEW (2026-10-15, website copy and usability):
+- User scope: "The whole lecturesfrom website." Implemented in a separate checkout based on brand/v2-kit at 12c29e74d60ea2ea2adc808661540a295f65df56. Existing dirty Documents checkout was preserved.
+- Added visible house navigation, active-section indication, explicit homepage actions, descriptive catalog rows, project link shortcuts, mobile introductions before software cover art, and shared accessible action styles.
+- Rewrote house, catalog, product, brand, doingflips, company, personal, and recovery copy. Updated public Markdown twins. Brand assets and global body font remain unchanged.
+- Collection has local search by artist/title/year/label/catalog number, filtered counts, clear search, shuffle, and filtered random selection. Browser verified against 279 records; Bootsy filtering returned two, and returning from a record preserved search/focus.
+- Flip flow separates song choice from contact, collapses optional sample history, distinguishes busy/error/success states, and preserves existing phone consent and privacy. Fixed search-submit blur closing the choices.
+- Personal Projects now routes to catalog; Role fit has its own anchor. Added direct email contact and career retry/LinkedIn recovery. Chat dialog wraps keyboard focus, supports Escape, and restores trigger focus. AI and fit errors preserve entered text. Name animation is CSS-driven with an immediate reduced-motion rendering and no JavaScript visibility dependency.
+- All ten main routes fit at 320 CSS px. Additional desktop/390px, record overlays, brand light mode, reduced-motion, keyboard, download, and local fixture checks are recorded in outputs/2026-10-15-site-usability/verification.md.
+- No production merge, deployment, backend write, or real email/SMS request was performed. Local Supabase uses placeholders: error paths verified, successful production AI responses and career data not claimed.
+
 COMPLETED (2026-10-14 — picked song keeps year and ISRC):
 - Search for Hotline Bling returns Drake, rid 3602, year 2015, ISRC USCM51500238. Lookup then rebuilt the song as title+artist only, so the detail row hid the year and ISRC and a request stored nulls. Lookup now takes `rid`, `year`, and `isrc` from the hit. A title+artist cache hit fills those fields from the request instead of keeping the empty cached song. The room fills the same way.
 - Search, samples, and request email on lecturesfrom.com were already live before this (deploy of `3286b15`). The older note that the live site still 503s is stale.

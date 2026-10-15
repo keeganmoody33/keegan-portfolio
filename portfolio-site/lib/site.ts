@@ -1,7 +1,7 @@
 export const SITE_URL = 'https://www.lecturesfrom.com'
 
 export const HOUSE_TITLE = 'lecturesfrom'
-export const HOUSE_DESCRIPTION = 'not a studio. a garage.'
+export const HOUSE_DESCRIPTION = 'sales systems, software, records, and things you can hold. an independent house by keegan moody in atlanta.'
 /** Stable house share still. Nested house routes set this on openGraph so
  *  their own openGraph objects do not drop the file-convention image. */
 export const HOUSE_OG_IMAGE = {
@@ -12,11 +12,11 @@ export const HOUSE_OG_IMAGE = {
 } as const
 
 export const HOUSE_TAGLINE =
-  "Transforming your business's Achilles' heel into durable systems and crafted products that fuel growth and culture."
+  "sales systems, software, records, and things you can hold."
 
 export const PERSON_TITLE = 'Keegan Moody | lecturesfrom'
 export const PERSON_DESCRIPTION =
-  'GTM Engineer. I build go-to-market infrastructure from scratch. Query the system directly.'
+  'Keegan Moody builds revenue systems from scratch. Explore his experience, browse projects, compare a role, or get in touch.'
 
 /** GTM Engineering School certificate. Person segment only — never house routes. */
 export const OG_IMAGE_PATH = '/og.jpg'

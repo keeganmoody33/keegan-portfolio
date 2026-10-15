@@ -36,7 +36,7 @@ export default function Timeline({ experiences }: TimelineProps) {
   if (!experiences || experiences.length === 0) {
     return (
       <div className="text-[var(--text-muted)] font-mono text-sm">
-        Loading experiences...
+        No career entries are available here yet. You can find my experience on LinkedIn.
       </div>
     )
   }
@@ -53,7 +53,7 @@ export default function Timeline({ experiences }: TimelineProps) {
             {/* Date Column */}
             <div className="w-[70px] sm:w-[100px] flex-shrink-0 text-right">
               <div className="text-[var(--text-bright)] font-mono text-sm">
-                {formatDate(exp.start_date)} — {exp.end_date ? formatDate(exp.end_date) : 'Present'}
+                {formatDate(exp.start_date)} to {exp.end_date ? formatDate(exp.end_date) : 'Present'}
               </div>
               <div className="text-[var(--text-muted)] font-mono text-xs">
                 {formatDuration(exp.duration_months)}
@@ -67,7 +67,7 @@ export default function Timeline({ experiences }: TimelineProps) {
             </div>
 
             {/* Content Card */}
-            <div className="flex-1 experience-card p-4 sm:p-6 rounded-lg">
+            <div className="min-w-0 flex-1 experience-card p-4 sm:p-6 rounded-lg">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h4 className="text-xl font-bold text-[var(--text-bright)]">

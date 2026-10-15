@@ -7,8 +7,8 @@ import { houseMetadata } from '@/lib/metadata'
 
 export const metadata: Metadata = houseMetadata(
   '/catalog',
-  'catalog — lecturesfrom',
-  'crate permalink. sleeves issued by lecturesfrom.'
+  'catalog | lecturesfrom',
+  'software, hardware, and records from lecturesfrom. explore each project and the work behind it.'
 )
 
 export default function CatalogPage() {
@@ -18,8 +18,8 @@ export default function CatalogPage() {
       <div className="px-6 pb-4 pt-16 sm:px-10">
         <h1 className="font-display text-4xl font-semibold tracking-[-0.01em] sm:text-6xl">catalog</h1>
         <p className="mt-3 max-w-xl font-mono text-sm text-[var(--house-muted)]">
-          a catalog item is a record sleeve that holds artifacts. front = cover. back = liner notes.
-          contents = numbered tracks.
+          software for the booth. a place for the tools you stand behind. a device for the record bin.
+          open a sleeve to see what each project does, where it stands, and where to go next.
         </p>
       </div>
       <Crate />

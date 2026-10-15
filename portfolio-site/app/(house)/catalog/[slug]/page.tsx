@@ -23,9 +23,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params
   const sleeve = getSleeveBySlug(slug)
   if (!sleeve || sleeve.slug === 'collection') {
-    return { title: 'not found — lecturesfrom' }
+    return { title: 'not found | lecturesfrom' }
   }
-  return houseMetadata(`/catalog/${sleeve.slug}`, `${sleeve.title} — lecturesfrom`, sleeve.aside)
+  return houseMetadata(`/catalog/${sleeve.slug}`, `${sleeve.title} | lecturesfrom`, sleeve.aside)
 }
 
 export default async function SleevePage({ params }: PageProps) {
@@ -43,8 +43,8 @@ export default async function SleevePage({ params }: PageProps) {
       <HouseRail left="atl 33.70n" center={sleeve.catno} right={String(sleeve.year)} />
       <div className="px-6 py-12 sm:px-10">
         <p className="house-meta mb-8">
-          <Link href="/catalog" className="hover:text-[var(--house-orange)]">
-            catalog
+          <Link href="/catalog" className="house-text-button">
+            back to catalog
           </Link>
           <span className="mx-3">/</span>
           {sleeve.slug}

@@ -197,7 +197,7 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
                 made for the dig.
               </p>
               <p className="mt-2 max-w-md font-mono text-[12px] leading-relaxed text-[var(--house-muted)]">
-                a revised allocation. an interaction to try.
+                explore the hardware study. rotate it, open the shell, or compare the original concept.
               </p>
             </div>
             <span className="house-sleeve-measure">
@@ -312,7 +312,7 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
                           <button
                             key={button.id}
                             type="button"
-                            className={`house-meta min-h-11 px-2.5 py-1 sm:min-h-7 ${focusRing} ${
+                            className={`house-meta min-h-11 px-2.5 py-1 sm:min-h-11 ${focusRing} ${
                               preset === button.id
                                 ? 'bg-[var(--house-ink)] text-[var(--house-bg)]'
                                 : 'text-[var(--house-muted)] hover:text-[var(--house-orange)]'
@@ -352,7 +352,7 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
             <p>
               dimensioned study, not manufacturing cad. electronics are simplified volumes; hardware,
               tolerances and assembly remain unvalidated. locked product is 105 × 60 × 15 mm. the r1
-              model envelope is {YADIGGG_CAD_ENVELOPE} — allocation study, not the locked body.
+              model envelope is {YADIGGG_CAD_ENVELOPE}. it is an allocation study, not the locked body.
             </p>
           </div>
         </section>
@@ -364,7 +364,7 @@ export default function SleeveViewer({ viewer, posterSrc, sleeveTitle }: SleeveV
             id="yadiggg-rail-heading"
             className="mt-2 font-display text-[1.45rem] font-semibold leading-[1.15] tracking-[-0.01em]"
           >
-            locked product.
+            product specification.
           </p>
           <p className="mt-3 font-mono text-[12px] leading-relaxed text-[var(--house-muted)]">{railCopy}</p>
 

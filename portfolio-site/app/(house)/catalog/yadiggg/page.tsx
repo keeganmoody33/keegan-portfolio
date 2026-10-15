@@ -15,8 +15,8 @@ const SleeveViewer = dynamic(() => import('@/components/house/SleeveViewer'))
 const sleeve = getSleeveBySlug('yadiggg')
 
 export const metadata: Metadata = sleeve
-  ? houseMetadata(`/catalog/${sleeve.slug}`, `${sleeve.title} — lecturesfrom`, sleeve.aside)
-  : { title: 'not found — lecturesfrom' }
+  ? houseMetadata(`/catalog/${sleeve.slug}`, `${sleeve.title} | lecturesfrom`, sleeve.aside)
+  : { title: 'not found | lecturesfrom' }
 
 export default function YadigggSleevePage() {
   if (!sleeve) {
@@ -38,8 +38,8 @@ export default function YadigggSleevePage() {
       <HouseRail left="atl 33.70n" center={sleeve.catno} right={String(sleeve.year)} />
       <div className="px-6 py-12 sm:px-10">
         <p className="house-meta mb-8">
-          <Link href="/catalog" className="hover:text-[var(--house-orange)]">
-            catalog
+          <Link href="/catalog" className="house-text-button">
+            back to catalog
           </Link>
           <span className="mx-3">/</span>
           {sleeve.slug}

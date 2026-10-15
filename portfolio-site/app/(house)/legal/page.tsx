@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import HouseFooter from '@/components/house/HouseFooter'
 import HouseRail from '@/components/house/HouseRail'
 import HouseShell from '@/components/house/HouseShell'
@@ -7,70 +8,45 @@ import { houseMetadata } from '@/lib/metadata'
 
 export const metadata: Metadata = houseMetadata(
   '/legal',
-  'legal — lecturesfrom',
-  'lecturesfrom LLC. Atlanta, Georgia. a garage, not a studio.'
+  'company + credits | lecturesfrom',
+  'company information, contact, and data-source credits for lecturesfrom LLC.'
 )
 
 export default function LegalPage() {
   return (
     <HouseShell>
-      <HouseRail left="atl 33.70n" center="legal" right="llc" />
-      <article className="mx-auto max-w-2xl px-6 py-16 sm:px-10">
-        <p className="font-mono text-[11px] tracking-wide text-[var(--house-muted)]">
-          lecturesfrom LLC · Atlanta, Georgia 30316 · founded 2025 · self-owned
+      <HouseRail left="atl 33.70n" center="company + credits" right="llc" />
+      <article className="mx-auto max-w-3xl px-6 py-16 sm:px-10">
+        <p className="house-meta">lecturesfrom LLC · atlanta, georgia · founded 2025</p>
+        <h1 className="mt-4 font-display text-4xl font-semibold tracking-[-0.01em] sm:text-6xl">company + credits</h1>
+        <p className="mt-6 font-mono text-base leading-relaxed">
+          an independent house for revenue systems, creative tools, and physical products.
+          built and run by keegan moody in atlanta.
         </p>
-        <h1 className="mt-4 font-display text-4xl font-semibold tracking-[-0.01em] sm:text-6xl">lecturesfrom</h1>
-        <p className="mt-6 font-mono text-sm leading-relaxed text-[var(--house-orange)]">
-          Transforming your business&apos;s Achilles&apos; heel into durable systems and crafted products that
-          fuel growth and culture.
-        </p>
-
-        <div className="mt-10 space-y-6 font-mono text-sm leading-relaxed text-[var(--house-ink)]">
-          <p>
-            lecturesfrom is where technology helps creative expression see the light of day, and where the
-            systems powering modern businesses honor authenticity, originality, and the intangible edge
-            behind lasting success.
+        <div className="mt-10 space-y-6 font-mono text-sm leading-relaxed">
+          <h2 className="font-display text-2xl font-semibold">sales systems</h2>
+          <p className="text-[var(--house-muted)]">
+            research, outbound operations, integrations, and workflow automation.
+            the work starts with how a team sells and what is getting in its way.
           </p>
-          <p>Not a studio. More like a garage or workshop.</p>
-          <p>
-            Our advantage is embedding ourselves in your business from the ground up to understand the
-            motions you are trying to carry out, the constraints holding them back, and the opportunity
-            inside them.
+          <h2 className="pt-4 font-display text-2xl font-semibold">publishing + products</h2>
+          <p className="text-[var(--house-muted)]">
+            software, records, printed work, and physical objects. the catalog holds the projects
+            and their current state, with links to the work behind them.
           </p>
-          <p>
-            We hold a high standard for authenticity. If that is not important to you, we may not be
-            aligned.
-          </p>
-
-          <h2 className="pt-4 font-display text-2xl font-semibold tracking-[-0.01em]">GTME &amp; Revenue Architecture</h2>
-          <p>
-            From customer journeys and revenue architecture to integrations, outbound operations, and
-            workflow automation, every motion is engineered with intention. We partner with businesses
-            ready to turn originality and authenticity into durable growth.
-          </p>
-
-          <h2 className="pt-4 font-display text-2xl font-semibold tracking-[-0.01em]">Publishing House &amp; Physical Products</h2>
-          <p>
-            lecturesfrom designs physical products that cultivate authenticity alongside digital
-            experiences. Pressed records, printed books, art editions, objects, and original designs give
-            ideas, brands, and creative work a permanent form in the physical world.
-          </p>
-          <p>
-            We collaborate with businesses and artists committed to craft, vision, and principle. What
-            others may view as sprawl, we see as an opportunity: even a cloud-native company can
-            crystallize its identity into tangible objects for its team, customers, and community.
-          </p>
-          <p>
-            Done with purpose, physical products become more than merchandise. They create artifacts
-            people keep, signals people share, and touchpoints that reinforce adoption, employee
-            retention, and brand belief.
-          </p>
-
-          <p>It is always deeper than it looks. We think through every thing we ship.</p>
-          <p>Our HQ is a basement. The scope is an ACOG.</p>
-
-          <h2 className="pt-4 font-display text-2xl font-semibold tracking-[-0.01em]">Data sources</h2>
+          <Link href="/catalog" className="house-text-button">explore the catalog</Link>
+          <h2 className="pt-4 font-display text-2xl font-semibold">contact</h2>
+          <p>for project inquiries, site questions, or a correction:</p>
+          <a href="mailto:33@lecturesfrom.com" className="house-button house-button-secondary">email 33@lecturesfrom.com</a>
+          <h2 className="pt-4 font-display text-2xl font-semibold">data sources</h2>
           <p className="text-[var(--house-muted)]">{DISCOGS_API_NOTICE}</p>
+          <p className="text-[var(--house-muted)]">
+            record pages identify the sources behind available credits and sample connections.
+            missing information means it is not on file here.
+          </p>
+          <h2 className="pt-4 font-display text-2xl font-semibold">brand files</h2>
+          <p className="text-[var(--house-muted)]">the brand kit includes the official mark, lockups, icons, and usage guidance.</p>
+          <Link href="/brand" className="house-text-button">open the brand kit</Link>
         </div>
       </article>
       <HouseFooter />

@@ -1,11 +1,15 @@
 # Frontend Guidelines — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-10-13
+**Last Updated:** 2026-10-15
 **Supersedes:** `docs/DESIGN_PLAYBOOK.md` (archived -- all content folded into this doc)
 **CSS Framework:** Tailwind CSS 3.4.19 + CSS Custom Properties
 **Fonts:** Google Fonts (Chakra Petch, Doto, Space Grotesk, Roboto Mono, Roboto Slab)
 
 ---
+
+## Shared navigation and actions (2026-10-15)
+
+House navigation uses visible wrapping links at every width and `aria-current` for the active section. Main actions use 48px ink-filled buttons; secondary actions use an outlined variant. Text actions are underlined and at least 44px tall. Shared keyboard focus is a 2px ink outline. Catalog descriptions and record captions are readable body copy, with IDs and status retained as secondary information. House tokens and the personal page's lime/orange design stay separate. The global body font is unchanged.
 
 ## Visual Direction
 
@@ -483,6 +487,10 @@ Person-page components render the same layout across breakpoints.
 ---
 
 ## Voice & Copy Guidelines
+
+### Brand kit (2026-10-15)
+
+Use lowercase, concrete copy with no em or en dashes. Download links name the asset and format instead of presenting filenames as the main label. Keep the full-kit action visible before the preview art. Section links are always visible, wrapping on mobile and sticky only in the desktop sidebar. The brand page uses existing house tokens, Chakra Petch 600 for headings and Roboto Mono for running copy. Body copy is 14px minimum and the introduction is 16px; 11px is reserved for the existing house rail. Buttons and navigation have at least 44px hit areas and a 2px ink focus outline with an offset. Shared footer links use 13px mono with normal lowercase tracking. No mark redraws, new color palette, or global body-font migration.
 
 ### Headlines
 

@@ -153,7 +153,7 @@ describe('shouldReserveViewerChrome', () => {
   it('folds collapsed chrome tracks into the stage stack so the poster is one surface', () => {
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'app/globals.css'), 'utf8')
     assert.match(css, /--house-sleeve-chrome-row:\s*5\.75rem/)
-    assert.match(css, /@media \(min-width: 951px\)[\s\S]{0,120}--house-sleeve-chrome-row:\s*2\.5rem/)
+    assert.match(css, /@media \(min-width: 951px\)[\s\S]{0,120}--house-sleeve-chrome-row:\s*3rem/)
     assert.match(css, /--house-sleeve-modes-gap:\s*1\.5rem/)
     assert.match(css, /--house-sleeve-presets-gap:\s*0\.75rem/)
     assert.match(css, /--house-sleeve-modes-track:/)

@@ -1,6 +1,7 @@
 import { Children, isValidElement, type ReactElement, type ReactNode } from 'react'
 import HouseFooter from '@/components/house/HouseFooter'
 import HouseRail from '@/components/house/HouseRail'
+import HouseNav from '@/components/house/HouseNav'
 import TitleCard from '@/components/house/TitleCard'
 
 function isElementOf(
@@ -36,6 +37,7 @@ export default function HouseShell({ children }: { children: ReactNode }) {
       <a href="#house-content" className="house-skip">
         skip to content
       </a>
+      <HouseNav />
       {Children.toArray(before)}
       <main id="house-content" tabIndex={-1}>
         {Children.toArray(content)}
