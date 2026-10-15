@@ -1,3 +1,9 @@
+IMPLEMENTED FOR PREVIEW (2026-10-15, homepage cadence and doingflips restoration):
+- Homepage cycles products → ideas → teams every two seconds, with a brief dim at the transition. The shared grid slot reserves the widest word, screen readers receive one complete sentence, and the control supports keyboard pause/resume. Motion pauses offscreen or in a hidden tab; reduced motion and no JavaScript keep products visible.
+- Restored doingflips as the /flip heading and reused the original one-shot flipLand jump/clockwise turn. The song question remains beneath it. Added proportional headroom so the flip arc clears the eyebrow at 320/390/850/1440px.
+- Local browser checks: measured word order/timing and stable heading bounds; keyboard pause/resume; offscreen pause; reduced motion on both pages; no-JavaScript fallback; responsive widths; flip arc bounds; editable song search. 606 tests, TypeScript, lint, and production build pass. Build uses local Supabase placeholders; backend request delivery was not part of this change.
+- Evidence: outputs/2026-10-15-headline-motion/. Publish through the existing PR #83 branch preview; no merge or production promotion.
+
 IMPLEMENTED FOR PREVIEW (2026-10-15, Paper Shaders logo playground):
 - Added /brand/motion with chrome, molten, pearl, ember, thermal, and ice; each works on black, navy, and white. Scale, speed, pause, visible selected states, and keyboard controls support hands-on exploration. Homepage offers silver/heat/room and a playground link; brand kit links to the playground.
 - Official @paper-design/shaders is pinned at 0.0.81. One lazy canvas, cached source processing, original SVG fallback, context-loss cleanup, reduced-motion default, and offscreen/hidden-tab pausing preserve the rest of the site. Canonical asset files are unchanged.

@@ -323,3 +323,9 @@ Updated: 2026-10-14
 - Heatmap preprocessing composites the source on white and uses luminance; feed the supplied dark mark, not the white mark, or the result is empty. Liquid Metal uses the white mark alpha mask.
 - Next development blocks 127.0.0.1 resources unless that origin is allowed. Use localhost for development checks; a static render with inactive controls is not an interaction pass.
 - After shader hot replacement, reload before lifecycle checks. Inspect actual frame progression, pause, and the original SVG after context loss rather than counting a canvas as proof of rendering.
+
+## 2026-10-15: preserve headline identity and motion
+
+- Copy revisions must preserve intentional brand motion. Keep doingflips as the heading and place the song question beneath it; the existing flipLand animation is part of that identity.
+- Reserve the widest rotating word's space, provide an explicit pause control, and keep one complete accessible sentence. Reduced motion and missing JavaScript must leave readable text immediately.
+- Measure the entire flip arc at desktop and mobile widths. The original animation needs extra headroom at the new display size to avoid crossing the eyebrow.

@@ -1,0 +1,1120 @@
+[
+  {
+    "at": 77725.79999995232,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "ideas"
+    ]
+  },
+  {
+    "at": 77928.09999996424,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "ideas"
+    ]
+  },
+  {
+    "at": 78128.5,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "ideas"
+    ]
+  },
+  {
+    "at": 78329.59999996424,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "ideas"
+    ]
+  },
+  {
+    "at": 78530.89999997616,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "ideas"
+    ]
+  },
+  {
+    "at": 78731.59999996424,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "0.0754343",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": []
+  },
+  {
+    "at": 78933,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "teams"
+    ]
+  },
+  {
+    "at": 79134.39999997616,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "teams"
+    ]
+  },
+  {
+    "at": 79335,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "teams"
+    ]
+  },
+  {
+    "at": 79535.69999998808,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "teams"
+    ]
+  },
+  {
+    "at": 79737.29999995232,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "teams"
+    ]
+  },
+  {
+    "at": 79938.39999997616,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "teams"
+    ]
+  },
+  {
+    "at": 80139.39999997616,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "teams"
+    ]
+  },
+  {
+    "at": 80340.19999998808,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "teams"
+    ]
+  },
+  {
+    "at": 80541.19999998808,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "teams"
+    ]
+  },
+  {
+    "at": 80742.5,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0.0229409",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": []
+  },
+  {
+    "at": 80944.39999997616,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "products"
+    ]
+  },
+  {
+    "at": 81145.69999998808,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "products"
+    ]
+  },
+  {
+    "at": 81345.89999997616,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "products"
+    ]
+  },
+  {
+    "at": 81547,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "products"
+    ]
+  },
+  {
+    "at": 81747.5,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "products"
+    ]
+  },
+  {
+    "at": 81949,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "products"
+    ]
+  },
+  {
+    "at": 82150.79999995232,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "products"
+    ]
+  },
+  {
+    "at": 82352.29999995232,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "products"
+    ]
+  },
+  {
+    "at": 82553.09999996424,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "products"
+    ]
+  },
+  {
+    "at": 82753.29999995232,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "ideas"
+    ]
+  },
+  {
+    "at": 82954,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "ideas"
+    ]
+  },
+  {
+    "at": 83154.09999996424,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "ideas"
+    ]
+  },
+  {
+    "at": 83355,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "ideas"
+    ]
+  },
+  {
+    "at": 83555.79999995232,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "ideas"
+    ]
+  },
+  {
+    "at": 83757.09999996424,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "ideas"
+    ]
+  },
+  {
+    "at": 83958.29999995232,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "ideas"
+    ]
+  },
+  {
+    "at": 84159.09999996424,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "ideas"
+    ]
+  },
+  {
+    "at": 84360.39999997616,
+    "box": {
+      "bottom": 409.2421875,
+      "height": 164,
+      "left": 64,
+      "right": 819.125,
+      "top": 245.2421875,
+      "width": 755.125,
+      "x": 64,
+      "y": 245.2421875
+    },
+    "states": [
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "products"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "word": "ideas"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "word": "teams"
+      }
+    ],
+    "word": [
+      "ideas"
+    ]
+  }
+]

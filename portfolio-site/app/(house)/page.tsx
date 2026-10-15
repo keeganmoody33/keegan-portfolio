@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import LogoMotion from '@/components/house/LogoMotion'
+import HomeHeadline from '@/components/house/HomeHeadline'
 import HouseFooter from '@/components/house/HouseFooter'
 import HouseShell from '@/components/house/HouseShell'
 import { houseOrganizationJsonLd, JsonLd } from '@/lib/jsonld'
@@ -19,7 +20,7 @@ export default function HouseHome() {
         <section className={styles.hero} aria-labelledby="home-title">
           <div className={styles.intro}>
             <p className={styles.eyebrow}>LECTURESFROM / ATLANTA / INDEPENDENT</p>
-            <h1 id="home-title" className={styles.title}>i help products<br />find their momentum.</h1>
+            <HomeHeadline />
             <p className={styles.lede}>i’m keegan moody. when you believe in a product and i do too, i get into the work across product and business. from the first questions to development, customer feedback, iteration, operations, and reaching the right customers.</p>
             <div className={styles.actions}>
               <a href="mailto:33@lecturesfrom.com" className="house-button">talk about your product <span aria-hidden="true">↗</span></a>

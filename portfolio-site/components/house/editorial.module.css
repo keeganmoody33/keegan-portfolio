@@ -3,6 +3,7 @@
 .intro { display: flex; flex-direction: column; gap: 28px; }
 .eyebrow { font: 12px/18px var(--house-font-mono); letter-spacing: .14em; color: var(--house-muted); }
 .title { font: 600 76px/82px var(--house-font-display); letter-spacing: -.01em; }
+.flipTitle { padding-top: .7em; }
 .lede { max-width: 760px; font: 17px/29px var(--house-font-mono); }
 .actions { display: flex; flex-wrap: wrap; gap: 16px; padding-top: 8px; }
 .actions a { min-height: 54px; padding: 16px 22px; }

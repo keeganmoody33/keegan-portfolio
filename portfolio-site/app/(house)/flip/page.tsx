@@ -28,7 +28,8 @@ export default async function FlipPage({
       <div className={styles.page}>
         <header className={styles.companyHero}>
           <p className={styles.eyebrow}>doingflips / a song in. a flip back.</p>
-          <h1 className={styles.title}>what’s stuck<br />in your head?</h1>
+          <h1 className={`${styles.title} ${styles.flipTitle}`} aria-label="doingflips"><span aria-hidden="true">doing<span className="flip-h1">flip</span>s</span></h1>
+          <p className={styles.sectionTitle}>what’s stuck in your head?</p>
           <p className={styles.lede}>{FLIP_COPY.lede}</p>
         </header>
         <FlipRoom
