@@ -643,3 +643,7 @@ All API routes follow the same pattern:
 ## Flip optional public credit · 2026-10-15
 
 `/api/flip/request` accepts optional `creditOptIn` (strict boolean) and `publicName` (1–60 characters only when opted in). Store consent and the separate public name in the existing request JSON; discard the name when consent is false. Email and phone are never display names. Existing requests remain readable without these optional fields. Requests never publish themselves. Redis namespace/write locks and notification behavior stay unchanged.
+
+## 2026-10-15: current public chat context
+
+The Next.js chat proxy adds the current public catalog and house positioning to the forwarded question. This supplements older portfolio records for current-build questions without modifying shared Supabase data or deploying an Edge Function. Visitor questions stay separate from server-supplied facts.

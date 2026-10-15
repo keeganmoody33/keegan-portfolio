@@ -92,9 +92,16 @@ export default function Chat({ conversation }: { conversation: ReturnType<typeof
     }
   }, [messages])
 
+  const restoreInputFocus = () => requestAnimationFrame(() => {
+    const input = inputRef.current
+    if (input?.getClientRects().length && (document.activeElement === document.body || root.current?.contains(document.activeElement))) {
+      input.focus({ preventScroll: true })
+    }
+  })
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    void sendMessage(input).then(() => inputRef.current?.focus({ preventScroll: true }))
+    void sendMessage(input).then(restoreInputFocus)
   }
 
   return (
@@ -112,7 +119,7 @@ export default function Chat({ conversation }: { conversation: ReturnType<typeof
                     question: q,
                     question_index: i
                   })
-                  void sendMessage(q, true).then(() => inputRef.current?.focus({ preventScroll: true }))
+                  void sendMessage(q, true).then(restoreInputFocus)
                 }}
                 aria-label={q}
                 className="min-h-11 px-3 py-2 text-sm bg-[var(--bg-body)] border border-[var(--border-dim)]

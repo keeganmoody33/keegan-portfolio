@@ -314,3 +314,6 @@ Updated: 2026-10-14
 - Public attribution needs its own unchecked consent and public-name field. Never derive it from private email or phone; discard a supplied name when consent is absent, and validate again on the server.
 - Test interactive behavior against a fresh production build when a long-running dev server presents inactive controls. A correct screenshot alone does not verify hydration, focus, or form submission.
 - Share conversation state between inline and dialog chat, keep typed content on failures, and return focus to the useful input without scrolling the page unexpectedly.
+
+- Hosted AI can answer successfully using stale project context. Supply current public catalog facts from the website branch so preview copy and AI product descriptions stay aligned without changing a shared production database. Verify the answer as well as the HTTP success.
+- Restore a disabled chat input on the next animation frame after completion, and only while its component is visible and focus has not moved elsewhere.

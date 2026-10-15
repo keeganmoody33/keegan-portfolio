@@ -67,7 +67,7 @@ export const sleeves: Sleeve[] = [
     year: 2026,
     aside: 'a vocal transcript that follows the track inside your daw.',
     notes:
-      'a mac audio plugin in development for recording sessions. read the words as the track plays, find the line under the playhead, and correct a word in place. designed for local or cloud transcription.',
+      'punch2pen transcribes vocals inside your daw. the words follow the session, so you can read a take while you listen and correct what the engine misheard. mac au + vst3, with local transcription. in development; see the project site for status and install notes.',
     why: 'a good take should leave you with the words, not just the audio.',
     notThis: 'a meeting notetaker with a music skin',
     credits: [],
