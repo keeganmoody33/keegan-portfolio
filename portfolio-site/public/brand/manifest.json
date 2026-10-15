@@ -10,7 +10,7 @@
     "paper": "#ffffff"
   },
   "source": "2026-09-26 master SVG",
-  "generatedAt": "2026-10-15T00:51:01.461Z",
+  "generatedAt": "2026-10-15T00:59:34.419Z",
   "assets": [
     {
       "file": "logo.svg",
@@ -104,10 +104,10 @@
       "type": "image/x-icon",
       "width": 48,
       "height": 48,
-      "bytes": 6838,
-      "sha256": "8a320cdb9ff7417113c1e8b9f7dbdc1385b229c96d6d1ce9df7c90de68b9d787",
+      "bytes": 6386,
+      "sha256": "eb8d3a74ea282716f84abf53020954273b0d3e00b13e6d4928a7659e737d5980",
       "url": "https://www.lecturesfrom.com/brand/favicon.ico",
-      "immutable": "https://www.lecturesfrom.com/brand/v/favicon.8a320cdb9f.ico"
+      "immutable": "https://www.lecturesfrom.com/brand/v/favicon.eb8d3a74ea.ico"
     },
     {
       "file": "favicon-32.png",
@@ -116,10 +116,10 @@
       "type": "image/png",
       "width": 32,
       "height": 32,
-      "bytes": 2160,
-      "sha256": "357cbf5c48cfeeb0b225e77280f2080185bed922a5b21f19ed636dfd7f9b2ab1",
+      "bytes": 2122,
+      "sha256": "95c575fa6d7abf25800c0d33cec174926d3b0466664528cd1035b8013ea609ca",
       "url": "https://www.lecturesfrom.com/brand/favicon-32.png",
-      "immutable": "https://www.lecturesfrom.com/brand/v/favicon-32.357cbf5c48.png"
+      "immutable": "https://www.lecturesfrom.com/brand/v/favicon-32.95c575fa6d.png"
     },
     {
       "file": "apple-touch-icon.png",
