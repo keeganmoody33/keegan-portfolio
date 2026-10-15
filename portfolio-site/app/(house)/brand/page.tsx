@@ -34,6 +34,15 @@ const KIT = [
   { file: 'kit/lf-spin.gif', note: 'slack emoji · the orbit turning once' },
 ]
 
+const LOCKUPS = [
+  { file: 'kit/lockups/lf-lockup-horizontal-ink.svg', note: 'horizontal · ink on white · vector' },
+  { file: 'kit/lockups/lf-lockup-horizontal-white.svg', note: 'horizontal · white on black · vector' },
+  { file: 'kit/lockups/lf-lockup-vertical-ink.svg', note: 'vertical · ink on white · vector' },
+  { file: 'kit/lockups/lf-lockup-vertical-white.svg', note: 'vertical · white on black · vector' },
+  { file: 'kit/lockups/lf-lockup-horizontal-ink-transparent.png', note: 'horizontal · ink · transparent png' },
+  { file: 'kit/lockups/lf-lockup-horizontal-white-transparent.png', note: 'horizontal · white · transparent png' },
+]
+
 const PRINT = [
   { file: 'kit/lf-mark-ink.eps', note: 'eps · ink · for printers and plants' },
   { file: 'kit/lf-mark-ink.pdf', note: 'pdf · ink · vector' },
@@ -88,6 +97,32 @@ export default function BrandPage() {
         <p className="mt-4 font-mono text-sm leading-relaxed text-[var(--house-ink)]">
           lecturesfrom. One word, always lowercase. Not Lectures From, not LecturesFrom. lecturesfrom LLC only in legal lines.
         </p>
+
+        <h2 className="mt-14 font-display text-2xl font-semibold tracking-[-0.01em]">Lockups</h2>
+        <p className="mt-4 font-mono text-sm leading-relaxed text-[var(--house-ink)]">
+          The mark with the name set in Chakra Petch 600. Use the mark alone when the name is already on the page.
+        </p>
+        <div className="mt-4 grid gap-px border border-[var(--house-line)] bg-[var(--house-line)] sm:grid-cols-2">
+          <figure className="flex items-center justify-center bg-white p-6">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/kit/lockups/lf-lockup-horizontal-ink.svg" alt="lecturesfrom horizontal lockup, ink" width={360} height={100} className="h-auto w-full max-w-[360px]" />
+          </figure>
+          <figure className="flex items-center justify-center bg-[#0a0a0a] p-6">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/kit/lockups/lf-lockup-vertical-white.svg" alt="lecturesfrom vertical lockup, white" width={180} height={151} className="h-auto w-full max-w-[180px]" />
+          </figure>
+        </div>
+        <ul className="mt-4 divide-y divide-[var(--house-line)] border-y border-[var(--house-line)] font-mono text-sm">
+          {LOCKUPS.map((d) => (
+            <li key={d.file} className="flex flex-col gap-1 py-3 sm:flex-row sm:items-baseline sm:justify-between">
+              <a href={`/brand/${d.file}`} download className="break-all text-[var(--house-ink)] underline underline-offset-4">
+                {d.file.replace('kit/lockups/', '')}
+              </a>
+              <span className="text-[var(--house-muted)]">{d.note}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-3 font-mono text-sm text-[var(--house-muted)]">Dark and transparent versions of every lockup are in the zip.</p>
 
         <h2 className="mt-14 font-display text-2xl font-semibold tracking-[-0.01em]">Downloads</h2>
         <ul className="mt-4 divide-y divide-[var(--house-line)] border-y border-[var(--house-line)] font-mono text-sm">

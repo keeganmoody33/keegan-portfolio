@@ -14,7 +14,8 @@
   --ember-dark: #5c1d0a;
   --house-font-mono: "Roboto Mono", monospace;
   --house-font-lcd: "Doto", monospace;
-  /* display face: pending decision, michroma vs chakra petch (board 15) */
+  --house-font-display: "Chakra Petch", sans-serif; /* 600, -0.01em · picked 2026-10-14 */
+  --house-font-sans: "Space Grotesk", sans-serif;
 }
 @media (prefers-color-scheme: light) {
   :root {
