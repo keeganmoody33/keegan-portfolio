@@ -1,0 +1,28 @@
+/* lecturesfrom house tokens · source of truth: Paper file "lecturesfrom" · 2026-10-14 */
+:root {
+  --house-bg: #0a0a0a;
+  --house-ink: #ececec;
+  --house-muted: #8a8a8a;
+  --house-dim: #7a7a7a;
+  --house-line: #242424;
+  --house-orange: #e23d00;      /* the one key */
+  --house-orange-text: #e8582a; /* small orange text on dark */
+  --house-mark-ink: #20262b;    /* logo on light only */
+  --house-lcd: #afc875;
+  --house-lcd-ink: #0a0a0a;
+  --ember-light: #f6c9b6;       /* product + merch only */
+  --ember-dark: #5c1d0a;
+  --house-font-mono: "Roboto Mono", monospace;
+  --house-font-lcd: "Doto", monospace;
+  /* display face: pending decision, michroma vs chakra petch (board 15) */
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --house-bg: #ffffff;
+    --house-ink: #0a0a0a;
+    --house-muted: #666666;
+    --house-dim: #757575;
+    --house-line: #e3e3e3;
+    --house-orange: #d73100;
+  }
+}
