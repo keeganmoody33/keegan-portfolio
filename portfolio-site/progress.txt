@@ -1,3 +1,46 @@
+READY TO MERGE (2026-10-15, owner-approved release):
+- Keegan authorized merging the approved website work. PR #83 is stacked on brand-kit PR #82; landing the stack on main is the release path.
+- Fixed the remaining #83 review finding: keyboard-selected song results scroll into view while focus stays on the combobox. Reproduced the hidden last result before the fix, then verified ArrowUp/ArrowDown wrapping and Enter selection at 390px and 1440px with local fixtures.
+- Confirmed #82's prior fixes: the ZIP contains a byte-identical manifest, and the favicon renderer draws the white plate for raster exports while retaining the adaptive SVG.
+- 606 tests, TypeScript, lint, and production build pass. Local Supabase configuration is placeholder-only. Release/production evidence is recorded in the task Ref after merging; no real song request was submitted during verification.
+
+IMPLEMENTED FOR PREVIEW (2026-10-15, homepage cadence and doingflips restoration):
+- Homepage cycles products → ideas → teams every two seconds, with a brief dim at the transition. The shared grid slot reserves the widest word, screen readers receive one complete sentence, and the control supports keyboard pause/resume. Motion pauses offscreen or in a hidden tab; reduced motion and no JavaScript keep products visible.
+- Restored doingflips as the /flip heading and reused the original one-shot flipLand jump/clockwise turn. The song question remains beneath it. Added proportional headroom so the flip arc clears the eyebrow at 320/390/850/1440px.
+- Local browser checks: measured word order/timing and stable heading bounds; keyboard pause/resume; offscreen pause; reduced motion on both pages; no-JavaScript fallback; responsive widths; flip arc bounds; editable song search. 606 tests, TypeScript, lint, and production build pass. Build uses local Supabase placeholders; backend request delivery was not part of this change.
+- Evidence: outputs/2026-10-15-headline-motion/. Publish through the existing PR #83 branch preview; no merge or production promotion.
+
+IMPLEMENTED FOR PREVIEW (2026-10-15, Paper Shaders logo playground):
+- Added /brand/motion with chrome, molten, pearl, ember, thermal, and ice; each works on black, navy, and white. Scale, speed, pause, visible selected states, and keyboard controls support hands-on exploration. Homepage offers silver/heat/room and a playground link; brand kit links to the playground.
+- Official @paper-design/shaders is pinned at 0.0.81. One lazy canvas, cached source processing, original SVG fallback, context-loss cleanup, reduced-motion default, and offscreen/hidden-tab pausing preserve the rest of the site. Canonical asset files are unchanged.
+- Local checks: all 18 treatment/background combinations, production-build layouts at 320/390/768/1440px, mobile sticky preview, keyboard sliders, play/pause frame behavior, offscreen pause, no-WebGL startup, context loss, and room-photo canvas disposal. 606 tests, lint, TypeScript, and production build pass.
+- Hosted shader verification passed at implementation commit 4a02a31: all six treatments, three backgrounds, play/pause, keyboard sliders, 320/390/768/1440px layout, and home/brand-kit navigation. Both Vercel checks passed. Hosted screenshots and evidence are in outputs/2026-10-15-logo-shaders/. Experiments remain open for creative selection; no merge or production promotion.
+
+IMPLEMENTED FOR PREVIEW (2026-10-15, Paper layouts and approved copy):
+- Replaced the house homepage, company/credits page, personal portfolio, doingflips flow, and punch2pen/yadiggg introductions with the approved Paper layouts, exact copy, founder photo, and supplied product artwork.
+- House and portfolio remain distinct: lowercase dark house, white/navy personal page. Shared navigation uses canonical light/dark lockups; existing enlarged brand-kit previews remain intact.
+- Personal navigation leads to projects, independent builds, filterable career details, role fit, contact, and Ask AI. Inline and dialog chat share the conversation. Dialog keyboard boundaries, Escape, focus restoration, and input-preserving error states were exercised in a local production build.
+- Doingflips retains recording identity, search/lookup race guards, SMS consent, and request recovery. Public credit is unchecked by default, uses a separate public name, validates on client/server, and persists only with explicit consent. Fixture submission exercised contact and SMS validation, opt-in, confirmation, and reset without storing or notifying a real request.
+- Song lookup has no verified video ID; listening opens an explicitly labeled YouTube search. Completed flips have an honest empty state. TIDAL, payments, and unverified inline playback remain proposals.
+- Local verification: 606 tests passed, lint and TypeScript passed, production build passed with placeholder Supabase configuration. All ten main routes fit at 320 CSS px. Desktop and 390px mobile layouts and keyboard flows were reviewed. Successful hosted career/AI behavior is checked separately from local error paths.
+- PR #83 received the Paper update at 432a5a0; both Vercel checks passed. Hosted checks loaded 15 career entries, opened matching project details and research publications, played/paused music, switched activity panels, and received an AI answer. That answer exposed stale product context; the follow-up passes current public catalog facts through the existing chat proxy and restores input focus after React enables it. No shared Supabase data or Edge Function was changed. No merge or production promotion is authorized by this entry.
+
+READY FOR REVIEW (2026-10-15, annotated brand previews):
+- Enlarged both mark previews from 128px to 192px, reduced preview padding from 48px to 24px, and removed the fixed minimum stage height.
+- Enlarged the horizontal lockup maximum width from 360px to 720px and reduced its vertical padding to 24px. Canonical asset bytes and proportions are unchanged.
+- Browser verified at 320, 390, 992, and 1440 CSS px: no horizontal overflow; both marks remain square; the lockup scales proportionally. Screenshots are in outputs/2026-10-15-paper-review/.
+- Historical checkpoint: the brand sizing change preceded the Paper implementation recorded above. Proposed payment and unmatched inline playback flows remain unimplemented.
+
+READY FOR REVIEW (2026-10-15, website copy and usability):
+- User scope: "The whole lecturesfrom website." Implemented in a separate checkout based on brand/v2-kit at 12c29e74d60ea2ea2adc808661540a295f65df56. Existing dirty Documents checkout was preserved.
+- Added visible house navigation, active-section indication, explicit homepage actions, descriptive catalog rows, project link shortcuts, mobile introductions before software cover art, and shared accessible action styles.
+- Rewrote house, catalog, product, brand, doingflips, company, personal, and recovery copy. Updated public Markdown twins. Brand assets and global body font remain unchanged.
+- Collection has local search by artist/title/year/label/catalog number, filtered counts, clear search, shuffle, and filtered random selection. Browser verified against 279 records; Bootsy filtering returned two, and returning from a record preserved search/focus.
+- Flip flow separates song choice from contact, collapses optional sample history, distinguishes busy/error/success states, and preserves existing phone consent and privacy. Fixed search-submit blur closing the choices.
+- Personal Projects now routes to catalog; Role fit has its own anchor. Added direct email contact and career retry/LinkedIn recovery. Chat dialog wraps keyboard focus, supports Escape, and restores trigger focus. AI and fit errors preserve entered text. Name animation is CSS-driven with an immediate reduced-motion rendering and no JavaScript visibility dependency.
+- All ten main routes fit at 320 CSS px. Additional desktop/390px, record overlays, brand light mode, reduced-motion, keyboard, download, and local fixture checks are recorded in outputs/2026-10-15-site-usability/verification.md.
+- No production merge, deployment, backend write, or real email/SMS request was performed. Local Supabase uses placeholders: error paths verified, successful production AI responses and career data not claimed.
+
 COMPLETED (2026-10-14 — picked song keeps year and ISRC):
 - Search for Hotline Bling returns Drake, rid 3602, year 2015, ISRC USCM51500238. Lookup then rebuilt the song as title+artist only, so the detail row hid the year and ISRC and a request stored nulls. Lookup now takes `rid`, `year`, and `isrc` from the hit. A title+artist cache hit fills those fields from the request instead of keeping the empty cached song. The room fills the same way.
 - Search, samples, and request email on lecturesfrom.com were already live before this (deploy of `3286b15`). The older note that the live site still 503s is stale.

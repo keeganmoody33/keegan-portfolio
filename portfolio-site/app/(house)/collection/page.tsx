@@ -11,11 +11,11 @@ export const revalidate = 300
 
 export const metadata: Metadata = houseMetadata(
   '/collection',
-  'collection — lecturesfrom',
-  'every release in the lecturesfrom discogs collection. not a curated window.'
+  'record collection | lecturesfrom',
+  'browse the lecturesfrom record collection by artist, title, year, or label. explore pressing details, tracklists, and sample connections.'
 )
 
-const CRATE_UNAVAILABLE = 'crate temporarily unavailable'
+const CRATE_UNAVAILABLE = 'the records are taking a break. try again shortly, or browse the collection on discogs below.'
 
 function isProductionBuild(): boolean {
   return process.env.NEXT_PHASE === 'phase-production-build'
@@ -58,7 +58,7 @@ export default async function CollectionPage() {
     <div className="px-6 py-12 sm:px-10">
       <p className="house-meta">crate · lf-00 · issued</p>
       <h1 className="mt-4 font-display text-4xl font-semibold tracking-[-0.01em] sm:text-6xl">
-        collection
+        record collection
       </h1>
       {collectionSleeve && (
         <p className="mt-3 max-w-xl font-mono text-sm text-[var(--house-muted)]">

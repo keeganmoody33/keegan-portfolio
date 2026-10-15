@@ -42,10 +42,24 @@ fav=f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none
 </svg>
 '''
 w('favicon.svg', fav)
-simple = mark(INK, SIMPLE, '0.095', 236, title=False)
-ico=[png(simple,s) for s in (16,32,48)]
+# raster favicons: white plate inside the circle so the ink mark reads on dark tabs.
+# Browsers cannot adapt .ico/.png to dark mode the way favicon.svg does.
+PLATE_PATHS='''<circle r="1"/>
+    <ellipse rx="1" ry="0.43" transform="rotate(-60)"/>
+    <path d="M 0.605385 -0.384961 C 0.86 -0.09 0.94 0.22 0.852 0.501"/>
+    <path d="M 0.605385 -0.384961 L 0 0 L 0.852 0.501 M 0 0 L 0.837356 0 M 0 0 L 0.237 -0.482"/>'''
+plate=f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <g transform="translate(256 256) scale(236)">
+    <circle r="1" fill="{WHITE}" stroke="none"/>
+    <g stroke="{INK}" stroke-width="0.095" stroke-linecap="round" stroke-linejoin="round">
+    {PLATE_PATHS}
+    </g>
+  </g>
+</svg>
+'''
+ico=[png(plate,s) for s in (16,32,48)]
 ico[2].save(f'{OUT}/favicon.ico', sizes=[(16,16),(32,32),(48,48)], append_images=ico[:2])
-png(simple,32).save(f'{OUT}/favicon-32.png')
+png(plate,32).save(f'{OUT}/favicon-32.png')
 # app icons: full mark on solid white (iOS/Android fill transparency badly)
 app = mark(INK, scale=190, bg=WHITE, title=False)
 png(app,180).convert('RGB').save(f'{OUT}/apple-touch-icon.png')

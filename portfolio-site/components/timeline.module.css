@@ -1,0 +1,22 @@
+.filters { display: flex; flex-wrap: wrap; gap: 12px 16px; margin-bottom: 24px; font: 13px/24px 'Roboto Mono', monospace; }
+.filters button { min-height: 44px; padding: 10px 18px; border: 1px solid var(--border-dim); }
+.filters button[aria-pressed='true'] { background: var(--text-main); color: #fff; border-color: var(--text-main); }
+.row { border-top: 1px solid var(--border-dim); }
+.row summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 100px 220px minmax(0, 1fr) 180px; gap: 24px; align-items: center; padding: 24px 0; }
+.row summary::-webkit-details-marker { display: none; }
+.row summary:focus-visible { outline: 2px solid var(--accent-orange); outline-offset: 4px; }
+.year { font: 13px/24px 'Roboto Mono', monospace; color: var(--text-muted); }
+.company { font-size: 23px; line-height: 30px; font-weight: 600; }
+.role { font-size: 17px; line-height: 26px; }
+.action { font: 13px/24px 'Roboto Mono', monospace; text-align: right; color: var(--accent-orange); }
+.details { padding: 0 0 28px 124px; font-size: 17px; line-height: 28px; }
+.dates { color: var(--text-muted); font: 13px/24px 'Roboto Mono', monospace; }
+.companyLink { margin: 12px 0; color: var(--accent-orange); text-decoration: underline; text-underline-offset: 4px; }
+.details ul { list-style: disc; padding-left: 20px; display: grid; gap: 10px; }
+.tech { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.tech span { font: 12px/20px 'Roboto Mono', monospace; padding: 4px 8px; background: var(--bg-surface); }
+.actions { display: flex; flex-wrap: wrap; gap: 24px; padding-top: 20px; border-top: 1px solid var(--border-dim); }
+.actions button { min-height: 44px; color: var(--accent-orange); font: 14px/24px 'Roboto Mono', monospace; text-align: left; }
+.empty { padding: 24px 0; }
+@media (max-width: 1199px) { .row summary { grid-template-columns: 64px 160px minmax(0, 1fr) 130px; gap: 16px; } .details { padding-left: 80px; } }
+@media (max-width: 767px) { .row summary { grid-template-columns: minmax(0, 1fr); gap: 8px; } .action { text-align: left; min-height: 44px; display: flex; align-items: center; } .details { padding-left: 0; font-size: 16px; line-height: 26px; } }

@@ -11,28 +11,32 @@ import { FLIP_PATH } from '@/lib/flip/route.ts'
  */
 export default function HouseFooter() {
   return (
-    <footer className="mt-16 border-t border-[var(--house-line)] px-6 py-8 sm:px-10">
+    <footer className="house-footer">
       <p className="font-mono text-[11px] tracking-wide text-[var(--house-muted)]">
-        lecturesfrom LLC · Atlanta, Georgia
+        lecturesfrom LLC · atlanta, georgia
       </p>
       <p className="mt-2 font-mono text-[11px] tracking-wide text-[var(--house-muted)]">
-        we think through every thing we ship.
+        have a project in mind? <a href="mailto:33@lecturesfrom.com" className="inline-flex min-h-11 items-center text-[var(--house-ink)] underline underline-offset-4">email 33@lecturesfrom.com</a>
       </p>
-      <nav className="mt-4 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[11px] tracking-[0.18em] uppercase text-[var(--house-dim)]">
+      <nav aria-label="footer" className="mt-4 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[13px] text-[var(--house-ink)] [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_a]:underline [&_a]:underline-offset-4 [&_a:focus-visible]:outline [&_a:focus-visible]:outline-2 [&_a:focus-visible]:outline-offset-4 [&_a:focus-visible]:outline-[var(--house-ink)]">
         <Link href="/" className="hover:text-[var(--house-orange)]">
-          root
+          home
         </Link>
         <Link href="/catalog" className="hover:text-[var(--house-orange)]">
           catalog
         </Link>
         <Link href="/collection" prefetch={false} className="hover:text-[var(--house-orange)]">
-          collection
+          records
         </Link>
         <Link href={FLIP_PATH} className="hover:text-[var(--house-orange)]">
           {FLIP_COPY.nav}
         </Link>
+        <Link href="/brand" className="hover:text-[var(--house-orange)]">
+          brand kit
+        </Link>
+        <Link href="/keeganmoody33" className="hover:text-[var(--house-orange)]">keegan + contact</Link>
         <Link href="/legal" className="hover:text-[var(--house-orange)]">
-          legal
+          company + credits
         </Link>
       </nav>
       <RequestTally />

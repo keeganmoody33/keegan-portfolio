@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPostHogClient } from '@/lib/posthog-server'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { withCurrentWebsiteContext } from '@/lib/chat-context'
 
 export async function POST(request: NextRequest) {
   const posthog = getPostHogClient()
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
   try {
     const { question } = await request.json()
 
-    if (!question || question.trim().length === 0) {
+    if (typeof question !== 'string' || question.trim().length === 0) {
       return NextResponse.json(
         { error: 'Question is required' },
         { status: 400 }
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${supabaseAnonKey}`,
       },
-      body: JSON.stringify({ question }),
+      body: JSON.stringify({ question: withCurrentWebsiteContext(question) }),
     })
 
     if (!response.ok) {

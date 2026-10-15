@@ -196,9 +196,9 @@ export default function RecordDetail({
               closeRef.current = node
             }}
             onClick={close}
-            className={`hover:text-[var(--house-orange)] ${focusRing}`}
+            className={`house-text-button ${focusRing}`}
           >
-            collection
+            back to records
           </button>
         ) : (
           <Link
@@ -207,9 +207,9 @@ export default function RecordDetail({
             ref={(node) => {
               closeRef.current = node
             }}
-            className={`hover:text-[var(--house-orange)] ${focusRing}`}
+            className={`house-text-button ${focusRing}`}
           >
-            collection
+            back to records
           </Link>
         )}
         <span className="mx-3">/</span>
@@ -222,9 +222,9 @@ export default function RecordDetail({
           <button
             type="button"
             onClick={() => router.refresh()}
-            className={`hover:text-[var(--house-orange)] ${focusRing}`}
+            className={`house-text-button ${focusRing}`}
           >
-            retry
+            try loading again
           </button>
         </p>
       )}

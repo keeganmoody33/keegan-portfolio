@@ -1,0 +1,182 @@
+[
+  {
+    "path": "/brand/kit/house.css",
+    "status": 200,
+    "bytes": 975,
+    "sha256": "e4ec0b34608d23454e22462b6b47ef5b135a3a07cd393a69f27ebf49f8593d4c"
+  },
+  {
+    "path": "/brand/kit/lf-app-icon-dark-1024.png",
+    "status": 200,
+    "bytes": 52370,
+    "sha256": "0dfbf378a7bc68fec1ab6abe6d3fe2aaa600b973c967fc5b0772bb47c280152f"
+  },
+  {
+    "path": "/brand/kit/lf-app-icon-light-1024.png",
+    "status": 200,
+    "bytes": 53804,
+    "sha256": "33f2b9d99cfbc38267f93942656b29fb0b70a4322ea1526c4a06c6d1c11af6fa"
+  },
+  {
+    "path": "/brand/kit/lf-avatar-dark-1024.png",
+    "status": 200,
+    "bytes": 56777,
+    "sha256": "a52fe632758f8b4dc4b571ceff849a77293a689b8bfe61651680d84cece207c0"
+  },
+  {
+    "path": "/brand/kit/lf-avatar-dark-400.png",
+    "status": 200,
+    "bytes": 19739,
+    "sha256": "1e9ee410cbc6e0a33cdaeb6319af063ff36268fe42bd7dae7449d06d2a33f469"
+  },
+  {
+    "path": "/brand/kit/lf-avatar-light-1024.png",
+    "status": 200,
+    "bytes": 58148,
+    "sha256": "17226df03841fae7aff4840378be94a1e384022aef7158162e1647cb46af8ee6"
+  },
+  {
+    "path": "/brand/kit/lf-avatar-light-400.png",
+    "status": 200,
+    "bytes": 20516,
+    "sha256": "54d3c73af85182d41ea4acadf157ffb5f464c8eb5c183752eded71c13d58c3dc"
+  },
+  {
+    "path": "/brand/kit/lf-brand-kit.zip",
+    "status": 200,
+    "bytes": 1161022,
+    "sha256": "00544ffe14e2b08f0917b3e3b715c67ed4a42f7f326dc0d09e373512f78a1004"
+  },
+  {
+    "path": "/brand/kit/lf-favicon-plate.svg",
+    "status": 200,
+    "bytes": 523,
+    "sha256": "cadeebd2cb627405e83556b1a72eb6a07e1120df00db65c66ff237023854613a"
+  },
+  {
+    "path": "/brand/kit/lf-mark-ink.eps",
+    "status": 200,
+    "bytes": 3293,
+    "sha256": "bd818f4d428a510bad283cb4a9b346af65265f6054aab4e46733ab1a68c663ef"
+  },
+  {
+    "path": "/brand/kit/lf-mark-ink.pdf",
+    "status": 200,
+    "bytes": 1353,
+    "sha256": "f9396e3cbc9d787ccdeb9706a391fed8e15de57a083800bf425138b688250916"
+  },
+  {
+    "path": "/brand/kit/lf-maskable-dark-512.png",
+    "status": 200,
+    "bytes": 19789,
+    "sha256": "76eeb631045cebf4027cb1273c3f307589350adacca85921590b284ac535607c"
+  },
+  {
+    "path": "/brand/kit/lf-maskable-light-512.png",
+    "status": 200,
+    "bytes": 20594,
+    "sha256": "6adab8f15721253bae825670f5cc377aa45ab6d4b309b2ca2cf92affd93375a3"
+  },
+  {
+    "path": "/brand/kit/lf-slack-128.png",
+    "status": 200,
+    "bytes": 8506,
+    "sha256": "9047aec821c2c41d9f3aa701c697e8c695f0ebdf2b514baca17353188dd0cf61"
+  },
+  {
+    "path": "/brand/kit/lf-spin.gif",
+    "status": 200,
+    "bytes": 65662,
+    "sha256": "b941b2a58d624169cbe5138426bf8184fa7bd1f3dfdf3d0b532a6b76d016cf4f"
+  },
+  {
+    "path": "/brand/kit/lockups/lf-lockup-horizontal-ink-transparent.png",
+    "status": 200,
+    "bytes": 64663,
+    "sha256": "13ceae9788067e0d4f9c207fdbd55838d712d01fb3c0907895b55caa983f9a6a"
+  },
+  {
+    "path": "/brand/kit/lockups/lf-lockup-horizontal-ink-transparent.svg",
+    "status": 200,
+    "bytes": 3690,
+    "sha256": "0705062bd82cd45785f8224fcdf860bb8c3ee7a5d3da641d76dbe256340652cd"
+  },
+  {
+    "path": "/brand/kit/lockups/lf-lockup-horizontal-white-transparent.png",
+    "status": 200,
+    "bytes": 63080,
+    "sha256": "360f351947542e51cce9ed32dd9c78785bac7a2122e177e992f3a459f1f1985f"
+  },
+  {
+    "path": "/brand/kit/lockups/lf-lockup-horizontal-white-transparent.svg",
+    "status": 200,
+    "bytes": 3690,
+    "sha256": "5aa1029a3b097d1109393dc8bf88b43e2d8bd7bd7d4ddfe9c068fe8073418cdb"
+  },
+  {
+    "path": "/brand/kit/lockups/lf-lockup-vertical-ink-transparent.png",
+    "status": 200,
+    "bytes": 85788,
+    "sha256": "236f1bee570a4bd8bab68dc68fce6f6e563d3210091028c5a4e31e608cb7d5a7"
+  },
+  {
+    "path": "/brand/kit/lockups/lf-lockup-vertical-ink-transparent.svg",
+    "status": 200,
+    "bytes": 3546,
+    "sha256": "786f2d33db172b7ebc9af61007548171802c4b5e9d09df15a7fe201988e61c8d"
+  },
+  {
+    "path": "/brand/kit/lockups/lf-lockup-vertical-white-transparent.png",
+    "status": 200,
+    "bytes": 83846,
+    "sha256": "93aafcf2a89076d0a5cda932e0bc42fa88e04df0bfc8102df8f7ba58256c48c8"
+  },
+  {
+    "path": "/brand/kit/lockups/lf-lockup-vertical-white-transparent.svg",
+    "status": 200,
+    "bytes": 3546,
+    "sha256": "fd618a861cc674f67ea194e91a662c1571061f37b9ef246c97ce1bd219a49cd0"
+  },
+  {
+    "path": "/brand/logo-1024.png",
+    "status": 200,
+    "bytes": 80808,
+    "sha256": "d411b96be5bc474e50f4a8e8f1144704fef4a699106acd9628428d5040e8a62a"
+  },
+  {
+    "path": "/brand/logo-512.png",
+    "status": 200,
+    "bytes": 36705,
+    "sha256": "e63e2e898db5594fb224db5290afad5b58a87682035a99ce28a15f704a036e4a"
+  },
+  {
+    "path": "/brand/logo-white-1024.png",
+    "status": 200,
+    "bytes": 61458,
+    "sha256": "aa5acb17434578ec678809a9592c95753423716fa72a5f54f5fcfb145f1b89cb"
+  },
+  {
+    "path": "/brand/logo-white-512.png",
+    "status": 200,
+    "bytes": 24391,
+    "sha256": "72a214f20cde1886959711be1d0c5ee6443e22214c46789ca5629dc85faf2ddf"
+  },
+  {
+    "path": "/brand/logo-white.svg",
+    "status": 200,
+    "bytes": 625,
+    "sha256": "aff89ee7b3dd8512b6232c6c8c541415deb0324bbbc5bdec6470bb2b659a48e0"
+  },
+  {
+    "path": "/brand/logo.svg",
+    "status": 200,
+    "bytes": 625,
+    "sha256": "7b6fd890981f3b30d60ce3ccdcfcb58e6744795fb2f85dd7e6304899b4e2e492"
+  },
+  {
+    "path": "/brand/manifest.json",
+    "status": 200,
+    "bytes": 5615,
+    "sha256": "450478207e460e66eb8253c97034219fb3b64daff1b0a14d7c03753ef67567b9"
+  }
+]

@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import styles from './timeline.module.css'
 import Publications from './Publications'
 import posthog from 'posthog-js'
 
@@ -15,12 +17,13 @@ interface Experience {
 
 interface TimelineProps {
   experiences: Experience[]
+  requestedCompany?: { company: string; at: number } | null
 }
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr)
   const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-  return `${months[date.getMonth()]} ${date.getFullYear()}`
+  return `${months[date.getUTCMonth()]} ${date.getUTCFullYear()}`
 }
 
 function formatDuration(months: number): string {
@@ -32,81 +35,53 @@ function formatDuration(months: number): string {
   return `${years} yr ${remainingMonths} mo`
 }
 
-export default function Timeline({ experiences }: TimelineProps) {
-  if (!experiences || experiences.length === 0) {
-    return (
-      <div className="text-[var(--text-muted)] font-mono text-sm">
-        Loading experiences...
-      </div>
-    )
-  }
+const filters = ['All experience', 'Sales + GTM', 'Research', 'Education + service'] as const
+function category(exp: Experience) {
+  if (isASGMResearch(exp.company_name) || /research|scientist/i.test(exp.role_title)) return 'Research'
+  if (/sales|gtm|go.to.market|business development|account executive|revenue/i.test(exp.role_title)) return 'Sales + GTM'
+  return 'Education + service'
+}
+const normalizeCompany = (name: string) => name.toLowerCase().replace(/[^a-z]/g, '').replace(/ai$/, '')
 
+export default function Timeline({ experiences, requestedCompany }: TimelineProps) {
+  const [filter, setFilter] = useState<string>('All experience')
+  const [showAll, setShowAll] = useState(false)
+  const [expanded, setExpanded] = useState<Set<number>>(new Set())
+  useEffect(() => {
+    if (!requestedCompany) return
+    const exp = experiences.find(item => normalizeCompany(item.company_name).includes(normalizeCompany(requestedCompany.company)))
+    setFilter('All experience')
+    setShowAll(true)
+    if (exp) {
+      setExpanded(previous => new Set([...previous, exp.id]))
+      requestAnimationFrame(() => document.getElementById(`career-${exp.id}`)?.querySelector('summary')?.focus({ preventScroll: true }))
+    }
+  }, [requestedCompany, experiences])
+  const filtered = experiences.filter(exp => filter === 'All experience' || category(exp) === filter)
+  const visible = showAll || filter !== 'All experience' ? filtered : filtered.slice(0, 3)
   return (
-    <div className="relative">
-      {/* Timeline Line */}
-      <div className="absolute left-[70px] sm:left-[100px] top-0 bottom-0 w-px timeline-line" />
-
-      {/* Timeline Items */}
-      <div className="space-y-8">
-        {experiences.map((exp, index) => (
-          <div key={exp.id} className="flex gap-4 sm:gap-8">
-            {/* Date Column */}
-            <div className="w-[70px] sm:w-[100px] flex-shrink-0 text-right">
-              <div className="text-[var(--text-bright)] font-mono text-sm">
-                {formatDate(exp.start_date)} — {exp.end_date ? formatDate(exp.end_date) : 'Present'}
-              </div>
-              <div className="text-[var(--text-muted)] font-mono text-xs">
-                {formatDuration(exp.duration_months)}
-              </div>
-              {/* Removed "Current" label - Keegan is actively job seeking */}
-            </div>
-
-            {/* Timeline Node */}
-            <div className="relative flex-shrink-0">
-              <div className="w-3 h-3 rotate-45 bg-[var(--bg-body)] border border-[var(--border-dim)] timeline-node" />
-            </div>
-
-            {/* Content Card */}
-            <div className="flex-1 experience-card p-4 sm:p-6 rounded-lg">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h4 className="text-xl font-bold text-[var(--text-bright)]">
-                    <CompanyLink company={exp.company_name} />
-                  </h4>
-                  <p className="text-[var(--accent-orange)] font-mono text-sm uppercase tracking-wider">
-                    {exp.role_title}
-                  </p>
-                </div>
-              </div>
-
-              {/* Bullets */}
-              {exp.public_bullets && exp.public_bullets.length > 0 && (
-                <p className="text-[var(--text-main)] mb-4 leading-relaxed">
-                  {exp.public_bullets.join(' ')}
-                </p>
-              )}
-
-              {/* Tech Stack - would need to add to database */}
-              <div className="flex flex-wrap gap-2">
-                {getTechStack(exp.company_name).map((tech, i) => (
-                  <span key={i} className="tech-pill">
-                    {tech}
-                  </span>
-                ))}
-              </div>
-
-              {/* Publications Section - for ASGM Research */}
-              {isASGMResearch(exp.company_name) && (
-                <div className="mt-6 pt-4 border-t border-[var(--border-dim)]">
-                  <h5 className="text-[var(--accent-lime)] font-mono text-xs mb-3 uppercase tracking-wider">
-                    Peer-Reviewed Publications
-                  </h5>
-                  <Publications />
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
+    <div>
+      <div className={styles.filters} aria-label="Filter career history">
+        {filters.map(label => <button key={label} type="button" aria-pressed={filter === label} onClick={() => setFilter(label)}>{label}</button>)}
+      </div>
+      <p className="sr-only" role="status">{filtered.length} career entries in {filter}</p>
+      {!visible.length && <p className={styles.empty}>No entries in this view. Choose another filter or <a href="https://linkedin.com/in/keeganmoody33" target="_blank" rel="noopener noreferrer">view LinkedIn ↗</a>.</p>}
+      {visible.map(exp => <details key={exp.id} id={`career-${exp.id}`} className={styles.row} open={expanded.has(exp.id)} onToggle={event => {
+        const isOpen = event.currentTarget.open
+        setExpanded(previous => { if (previous.has(exp.id) === isOpen) return previous; const next = new Set(previous); if (isOpen) next.add(exp.id); else next.delete(exp.id); return next })
+      }}>
+        <summary><span className={styles.year}>{new Date(exp.start_date).getUTCFullYear()}</span><span className={styles.company}>{exp.company_name}</span><span className={styles.role}>{exp.role_title}</span><span className={styles.action}>{expanded.has(exp.id) ? 'Close details ↑' : 'Details + tools ↓'}</span></summary>
+        <div className={styles.details}>
+          <p className={styles.dates}>{formatDate(exp.start_date)} to {exp.end_date ? formatDate(exp.end_date) : 'Present'} · {formatDuration(exp.duration_months)}</p>
+          <p className={styles.companyLink}><CompanyLink company={exp.company_name} /></p>
+          {exp.public_bullets?.length > 0 && <ul>{exp.public_bullets.map((bullet, i) => <li key={i}>{bullet}</li>)}</ul>}
+          <div className={styles.tech}>{getTechStack(exp.company_name).map(tech => <span key={tech}>{tech}</span>)}</div>
+          {isASGMResearch(exp.company_name) && <div className="mt-6"><h3 className="mb-4 font-semibold">Peer-reviewed publications</h3><Publications /></div>}
+        </div>
+      </details>)}
+      <div className={styles.actions}>
+        {filter === 'All experience' && experiences.length > 3 && <button onClick={() => setShowAll(value => !value)}>{showAll ? 'Show recent career history ↑' : 'Show full career history ↓'}</button>}
+        <button onClick={() => { setFilter('Research'); setShowAll(true); setExpanded(new Set(experiences.filter(exp => category(exp) === 'Research').map(exp => exp.id))) }}>Research publications ↗</button>
       </div>
     </div>
   )

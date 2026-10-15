@@ -67,6 +67,7 @@ interface BannerRotatorProps {
   labels?: string[]
   /** Rotation interval in ms (default 8000) */
   intervalMs?: number
+  controls?: 'dots' | 'labels'
 }
 
 /**
@@ -79,6 +80,7 @@ export default function BannerRotator({
   children,
   labels = [],
   intervalMs = 8000,
+  controls = 'dots',
 }: BannerRotatorProps) {
   const panels = Children.toArray(children)
   const count = panels.length
@@ -141,7 +143,7 @@ export default function BannerRotator({
   }, [visibleIndices, resolvedActiveIndex])
 
   useEffect(() => {
-    if (paused || reduceMotion || visibleIndices.length <= 1) return
+    if (controls === 'labels' || paused || reduceMotion || visibleIndices.length <= 1) return
     const timer = setInterval(() => {
       setActiveIndex((prev) => {
         const position = visibleIndices.indexOf(prev)
@@ -151,7 +153,7 @@ export default function BannerRotator({
       })
     }, intervalMs)
     return () => clearInterval(timer)
-  }, [paused, reduceMotion, visibleIndices, intervalMs])
+  }, [controls, paused, reduceMotion, visibleIndices, intervalMs])
 
   if (visibleIndices.length === 0) {
     return null
@@ -170,7 +172,7 @@ export default function BannerRotator({
   }
 
   return (
-    <BannerChromeContext.Provider value={{ showDots }}>
+    <BannerChromeContext.Provider value={{ showDots: showDots && controls === 'dots' }}>
       <div
         className="relative w-full"
         data-banner-rotator=""
@@ -211,17 +213,18 @@ export default function BannerRotator({
         {showDots && (
           <div
             data-banner-dots=""
-            className="absolute right-3 top-1/2 z-20 flex -translate-y-1/2 items-center gap-1"
+            className={controls === 'labels' ? "flex flex-wrap gap-6 pt-4" : "absolute right-3 top-1/2 z-20 flex -translate-y-1/2 items-center gap-1"}
           >
             {visibleIndices.map((i) => (
               <button
                 key={i}
                 onClick={() => goTo(i)}
-                className="relative flex h-6 w-6 shrink-0 items-center justify-center"
+                className={controls === 'labels' ? `min-h-11 border-b-2 px-1 font-mono text-sm ${i === resolvedActiveIndex ? 'border-[var(--text-main)] text-[var(--text-main)]' : 'border-transparent text-[var(--text-muted)]'}` : "relative flex h-6 w-6 shrink-0 items-center justify-center"}
+                aria-pressed={i === resolvedActiveIndex}
                 aria-label={labels[i] ? `Switch to ${labels[i]}` : `Switch to banner ${i + 1}`}
                 title={labels[i] || undefined}
               >
-                <span
+                {controls === 'labels' ? labels[i] : <span
                   className={`
                     pointer-events-none block h-1.5 w-1.5 rounded-full transition-all duration-200
                     ${i === activeIndex
@@ -229,7 +232,7 @@ export default function BannerRotator({
                       : 'bg-[var(--border-dim)] hover:bg-[var(--text-muted)]'
                     }
                   `}
-                />
+                />}
               </button>
             ))}
           </div>

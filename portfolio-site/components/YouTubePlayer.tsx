@@ -82,7 +82,6 @@ export default function YouTubePlayer() {
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [volume, setVolume] = useState(50)
-  const [expanded, setExpanded] = useState(false)
 
   // ── Persist state to sessionStorage ───────────────────────
   // Derives playing from player.getPlayerState() instead of React state
@@ -511,7 +510,7 @@ export default function YouTubePlayer() {
       {isLoading ? (
         <div className="min-h-12 w-full border-b border-[var(--border-dim)] bg-[var(--bg-surface)] font-mono">
           <div className={panelPad}>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               {/* Play button skeleton */}
               <div className="w-6 h-6 rounded bg-[var(--bg-body)] border border-[var(--border-dim)] animate-pulse" />
               {/* Track info skeleton */}
@@ -527,16 +526,14 @@ export default function YouTubePlayer() {
         /* Visible custom controls */
         <div
           className="min-h-12 w-full border-b border-[var(--border-dim)] bg-[var(--bg-surface)] font-mono group"
-          onMouseEnter={() => setExpanded(true)}
-          onMouseLeave={() => setExpanded(false)}
         >
           <div className={panelPad}>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               {/* Play / Pause */}
               <button
                 onClick={handlePlayPause}
                 className={`
-                w-6 h-6 flex items-center justify-center rounded border
+                w-11 h-11 shrink-0 flex items-center justify-center border
                 transition-colors duration-150
                 ${recovery.ariaDisabled ? 'opacity-40 cursor-not-allowed' : ''}
                 ${playing
@@ -585,12 +582,12 @@ export default function YouTubePlayer() {
               <div
                 className={`
                 flex items-center gap-2 overflow-hidden transition-all duration-200
-                ${expanded ? 'max-w-[200px] opacity-100' : 'max-w-0 opacity-0'}
+                max-w-full opacity-100
               `}
               >
                 <button
                   onClick={handlePrev}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] transition-colors"
+                  className="min-h-11 min-w-11 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent-lime)] transition-colors"
                   aria-label="Previous track"
                 >
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
@@ -600,7 +597,7 @@ export default function YouTubePlayer() {
                 </button>
                 <button
                   onClick={handleNext}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] transition-colors"
+                  className="min-h-11 min-w-11 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent-lime)] transition-colors"
                   aria-label="Next track"
                 >
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
@@ -616,7 +613,7 @@ export default function YouTubePlayer() {
                   max={100}
                   value={volume}
                   onChange={handleVolumeChange}
-                  className="w-16 h-1 accent-[var(--accent-lime)] cursor-pointer"
+                  className="w-24 h-11 accent-[var(--accent-lime)] cursor-pointer"
                   aria-label="Volume"
                 />
               </div>

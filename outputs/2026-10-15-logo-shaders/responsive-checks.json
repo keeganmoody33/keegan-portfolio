@@ -1,0 +1,30 @@
+[
+  {
+    "canvasCount": 0,
+    "overflow": false,
+    "ready": "false",
+    "scrollWidth": 312,
+    "width": 320
+  },
+  {
+    "canvasCount": 1,
+    "overflow": false,
+    "ready": "true",
+    "scrollWidth": 382,
+    "width": 390
+  },
+  {
+    "canvasCount": 1,
+    "overflow": false,
+    "ready": "true",
+    "scrollWidth": 760,
+    "width": 768
+  },
+  {
+    "canvasCount": 1,
+    "overflow": false,
+    "ready": "true",
+    "scrollWidth": 1432,
+    "width": 1440
+  }
+]

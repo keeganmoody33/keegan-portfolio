@@ -1,10 +1,27 @@
 # App Flow — lecturesfrom.com Portfolio
 
-**Last Updated:** 2026-10-13
+**Last Updated:** 2026-10-15
 **Framework:** Next.js (App Router)
 **Deployment:** Vercel (auto-deploy on push to main)
 
+## Logo playground · 2026-10-15
+
+`/brand/motion` is a preview experiment linked from the homepage and brand kit. Six treatments (chrome, molten, pearl, ember, thermal, ice) combine with black, navy, or white; scale and speed adjust the same live canvas. Pause holds its current frame. On phones the stage stays visible while controls scroll. The homepage offers silver, heat, and the existing room photograph. Reduced motion starts still; a graphics failure leaves the supplied SVG visible.
+
+## Paper implementation · 2026-10-15
+
+Approved by Keegan: port the Paper website explorations into PR #83 and refresh the preview. Home uses the product-momentum introduction and workbench; company adds mission, working principles, and supplied credits. The personal page uses white, navy #12284A, surface #F4F7FB, line #DCE3EC, and link #215FC9 with Space Grotesk. House retains Chakra Petch, Roboto Mono, and the supplied marks. Paper supersedes the older lime/orange personal presentation below. Preserve career history, publications, AI, role comparison, music, GitHub, records, and 3D study behavior. Doingflips gains consented public-name storage and an empty finished-work section; no payment or TIDAL integration. No matched video IDs are supplied by song lookup, so listening uses an explicitly labeled YouTube search fallback. Preview only; Keegan merges.
+
 ---
+
+## Website usability pass (2026-10-15, local review)
+
+- Shared house navigation links to catalog, records, doingflips, brand kit, and Keegan, with the current section indicated. Home and project inquiry are explicit homepage actions. Footer includes a direct email link.
+- Catalog rows include a description before opening a project. Software project introductions precede cover art on phones; a project-links shortcut reaches external sites and source. The yadiggg study-first order stays intact.
+- Collection search matches artist, title, year, label, and catalog number locally. Counts, clear search, shuffle, and random record follow the filtered results. Closing an overlay preserves the search and restores the originating record's focus.
+- Doingflips uses find-song, select-recording, contact, and request states. Sample connections are optional disclosure content. Empty contact submission shows validation; phone consent remains required. Suggestions stay open when the search button is clicked. No production request was submitted in local verification.
+- Personal Projects goes to `/catalog`; Role fit goes to `#fit`. Career loading has retry and LinkedIn recovery on failure. Ask AI uses a native modal dialog, wraps keyboard focus, closes on Escape, and restores trigger focus. Contact includes email. Chat and role comparison retain inputs when a request fails.
+- Human copy is reflected in the corresponding Markdown pages. Existing public/private source content and backend request contracts are preserved.
 
 ## Route Inventory
 
@@ -19,9 +36,9 @@
 | `/collection/[releaseId]` | `app/(house)/collection/[releaseId]/page.tsx` | Record detail (overview / tracks). Intercepting overlay at `@detail/(.)[releaseId]` when opened from the grid; full page on direct visit / refresh. |
 | `/flip`          | `app/(house)/flip/page.tsx`          | **Shipped.** `doingflips`: look up a song, pick from suggestions, request a sample flip. Editing the field clears the selected song. Connect arm (call / services) is mailto only. Route constant `FLIP_PATH`. `robots` noindex. Not in the sitemap. Production search uses `EVERYSONG_API_KEY`. Production main stores requests in `lf:flip:requests` and emails via Resend; non-main production refs stay locked. |
 | `/legal`         | `app/(house)/legal/page.tsx`         | Entity + long about + Data sources (Discogs API non-affiliation). Markdown twin `/legal.md`. Organization JSON-LD is not a /legal twin. |
-| `/brand`        | `app/(house)/brand/page.tsx`         | Official mark: light/dark preview, downloads, stable URLs, usage rules. Files live in `public/brand/` (`logo.svg` is canonical; hashed immutable copies in `public/brand/v/`; `manifest.json`). |
+| `/brand`        | `app/(house)/brand/page.tsx`         | Official mark: light/dark preview, one-file kit (`kit/lf-brand-kit.zip`), name rule, downloads, avatars and icons, print files (eps, pdf), color list + `kit/house.css`, built-by rule, stable URLs, usage rules. Files live in `public/brand/` (`logo.svg` is canonical; hashed immutable copies in `public/brand/v/`; `manifest.json`); kit files in `public/brand/kit/`. |
 | `/icon.svg`      | `app/icon.svg`                       | Site icon. Simplified official mark (2026-09-26 master minus flag, stroke 0.095); `prefers-color-scheme` stroke `#20262b` / `#ffffff`. Copy of `public/brand/favicon.svg`. Applies to house and person. |
-| `/favicon.ico`   | `app/favicon.ico`                    | 16/32/48 ico, simplified official mark `#20262b` on transparent. Copy of `public/brand/favicon.ico`. |
+| `/favicon.ico`   | `app/favicon.ico`                    | 16/32/48 ico, simplified official mark `#20262b` on a white plate inside the circle, so it reads on dark tabs (2026-10-14). Copy of `public/brand/favicon.ico`. |
 | `/apple-icon.png`| `app/apple-icon.png`                 | 180px, full official mark `#20262b` on white. Copy of `public/brand/apple-touch-icon.png`. |
 | `/opengraph-image` | `app/(house)/opengraph-image.tsx`  | House share image 1200×630 (older line-mark — left untouched this pass; follow-up). Person page keeps `/og.jpg`. |
 | `/keeganmoody33` | `app/keeganmoody33/page.tsx` | Principal / person page (Ask AI, JD Fit Analyzer, timeline)     |
@@ -137,6 +154,14 @@ Land on /keeganmoody33
 ---
 
 ## Interaction Flows
+
+### Brand kit navigation (2026-10-15, local review)
+
+`/brand` opens with a full-kit download and a link to individual assets. A section index links directly to logos, the mark with the name, profile and app icons, print files, and guidelines. The index stays beside the content on desktop and wraps above it on mobile. Each download uses a purpose-led label, shows its file format, and keeps the original filename in the downloaded file. SVG and PNG guidance sits beside the choices. Print files have their own section; stable URLs and the manifest remain available under guidelines. Existing assets and geometry are unchanged.
+
+The page links back to the house at the top. Shared house footer navigation includes `brand kit`, labels `/` as `home`, and uses visible focus styles and 44px minimum tap targets. Downloads and anchor navigation use native links and work without JavaScript.
+
+Verification: download every linked asset; use the section index and browser back; follow the footer to `/brand`; check keyboard focus, 320px/390px mobile and desktop layouts, and reduced motion. This entry describes the branch implementation, not a production release.
 
 ### 1. AI Chat
 
