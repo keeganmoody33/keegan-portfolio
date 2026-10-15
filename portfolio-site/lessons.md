@@ -300,3 +300,9 @@ Updated: 2026-10-14
 - A failed tool run is not verification. The initial Documents checkout stalled on file hydration; the working copy was recovered to an isolated local checkout and tests were rerun there.
 
 - Keep hero names in server-rendered markup. CSS can preserve the entrance effect while reduced-motion users see the complete name immediately and screen readers receive whole words.
+
+## 2026-10-15: annotated brand preview sizing
+
+- A large preview frame can make a canonical mark look too small. Adjust the presentation width and padding without editing the asset geometry.
+- Set logo height to auto when enlarging the width, and constrain the image to its container so the same treatment still fits at 320px.
+- Distinguish Paper explorations from deployed functionality, and close design threads only after reviewing the corresponding layout.

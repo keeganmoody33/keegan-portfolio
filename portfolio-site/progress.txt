@@ -1,3 +1,9 @@
+READY FOR REVIEW (2026-10-15, annotated brand previews):
+- Enlarged both mark previews from 128px to 192px, reduced preview padding from 48px to 24px, and removed the fixed minimum stage height.
+- Enlarged the horizontal lockup maximum width from 360px to 720px and reduced its vertical padding to 24px. Canonical asset bytes and proportions are unchanged.
+- Browser verified at 320, 390, 992, and 1440 CSS px: no horizontal overflow; both marks remain square; the lockup scales proportionally. Screenshots are in outputs/2026-10-15-paper-review/.
+- Paper explorations and comment resolutions are design artifacts; the navy portfolio, founder photography, and proposed playback/payment flows have not been implemented in this website change.
+
 READY FOR REVIEW (2026-10-15, website copy and usability):
 - User scope: "The whole lecturesfrom website." Implemented in a separate checkout based on brand/v2-kit at 12c29e74d60ea2ea2adc808661540a295f65df56. Existing dirty Documents checkout was preserved.
 - Added visible house navigation, active-section indication, explicit homepage actions, descriptive catalog rows, project link shortcuts, mobile introductions before software cover art, and shared accessible action styles.

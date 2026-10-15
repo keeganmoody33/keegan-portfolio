@@ -48,13 +48,13 @@
 .content section { border-top: 1px solid var(--house-line); padding-block: 40px; scroll-margin-top: 24px; }
 .pair { display: grid; gap: 32px; margin-top: 28px; }
 .pair h3 { margin-top: 20px; }
-.lightPreview, .darkPreview { display: flex; align-items: center; justify-content: center; min-height: 232px; padding: 48px; border: 1px solid var(--house-line); }
+.lightPreview, .darkPreview { display: flex; align-items: center; justify-content: center; padding: 24px; border: 1px solid var(--house-line); }
 .lightPreview { background: #fff; }
 .darkPreview { background: #0a0a0a; }
-.lightPreview img, .darkPreview img { width: 128px; height: 128px; }
+.lightPreview img, .darkPreview img { width: 192px; max-width: 100%; height: auto; }
 .formats { display: flex; flex-wrap: wrap; gap: 4px 24px; margin-top: 8px; }
-.lockupPreview { display: flex; justify-content: center; align-items: center; background: #fff; padding: 40px 24px; margin-top: 28px; }
-.lockupPreview img { max-width: 360px; width: 100%; height: auto; }
+.lockupPreview { display: flex; justify-content: center; align-items: center; background: #fff; padding: 24px; margin-top: 28px; }
+.lockupPreview img { max-width: 720px; width: 100%; height: auto; }
 .downloads { margin-top: 24px; border-top: 1px solid var(--house-line); }
 .downloads li { border-bottom: 1px solid var(--house-line); }
 .fileLink { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding-block: 18px; min-height: 44px; }
