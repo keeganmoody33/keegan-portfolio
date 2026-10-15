@@ -329,3 +329,8 @@ Updated: 2026-10-14
 - Copy revisions must preserve intentional brand motion. Keep doingflips as the heading and place the song question beneath it; the existing flipLand animation is part of that identity.
 - Reserve the widest rotating word's space, provide an explicit pause control, and keep one complete accessible sentence. Reduced motion and missing JavaScript must leave readable text immediately.
 - Measure the entire flip arc at desktop and mobile widths. The original animation needs extra headroom at the new display size to avoid crossing the eyebrow.
+
+## 2026-10-15: keyboard results and release review
+
+- A scrollable combobox list must scroll its active descendant into view. Updating aria-activedescendant alone leaves keyboard selection outside the visible list. Verify wrapping to the last/first row and retain input focus.
+- Query substantive unresolved review threads before merging, independently of successful deployment checks. Verify existing fixes before resolving old threads, then recheck the exact head before merging the stack.

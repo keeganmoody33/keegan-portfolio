@@ -1,3 +1,9 @@
+READY TO MERGE (2026-10-15, owner-approved release):
+- Keegan authorized merging the approved website work. PR #83 is stacked on brand-kit PR #82; landing the stack on main is the release path.
+- Fixed the remaining #83 review finding: keyboard-selected song results scroll into view while focus stays on the combobox. Reproduced the hidden last result before the fix, then verified ArrowUp/ArrowDown wrapping and Enter selection at 390px and 1440px with local fixtures.
+- Confirmed #82's prior fixes: the ZIP contains a byte-identical manifest, and the favicon renderer draws the white plate for raster exports while retaining the adaptive SVG.
+- 606 tests, TypeScript, lint, and production build pass. Local Supabase configuration is placeholder-only. Release/production evidence is recorded in the task Ref after merging; no real song request was submitted during verification.
+
 IMPLEMENTED FOR PREVIEW (2026-10-15, homepage cadence and doingflips restoration):
 - Homepage cycles products → ideas → teams every two seconds, with a brief dim at the transition. The shared grid slot reserves the widest word, screen readers receive one complete sentence, and the control supports keyboard pause/resume. Motion pauses offscreen or in a hidden tab; reduced motion and no JavaScript keep products visible.
 - Restored doingflips as the /flip heading and reused the original one-shot flipLand jump/clockwise turn. The song question remains beneath it. Added proportional headroom so the flip arc clears the eyebrow at 320/390/850/1440px.

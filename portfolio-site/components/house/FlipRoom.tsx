@@ -489,6 +489,14 @@ export default function FlipRoom({
   const activeHit = visibleHits[activeIndex]
   const busy = looking || searching
 
+  useEffect(() => {
+    if (!listOpen || !activeHit) return
+    document.getElementById(`${listId}-${activeIndex}`)?.scrollIntoView({
+      block: 'nearest',
+      inline: 'nearest',
+    })
+  }, [listOpen, activeHit, listId, activeIndex])
+
   return (
     <div>
       <form onSubmit={onLookup} className={styles.search} aria-controls={resultsId}>
