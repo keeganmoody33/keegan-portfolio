@@ -1,10 +1,12 @@
 'use client'
 
-import { Component, useEffect, useState, type ReactNode } from 'react'
+import { Component, useEffect, useRef, useState, type ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
-import Chat from '@/components/Chat'
+import Chat, { useConversation } from '@/components/Chat'
+import Image from 'next/image'
+import Link from 'next/link'
+import styles from './portfolio.module.css'
 import JDAnalyzer from '@/components/JDAnalyzer'
-import SprayText from '@/components/SprayText'
 import Timeline from '@/components/Timeline'
 import Marquee from '@/components/Marquee'
 import GitHubActivity from '@/components/GitHubActivity'
@@ -65,8 +67,12 @@ interface Experience {
 export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [experiences, setExperiences] = useState<Experience[]>([])
+  const conversation = useConversation()
+  const [careerRequest, setCareerRequest] = useState<{ company: string; at: number } | null>(null)
   const [showChat, setShowChat] = useState(false)
-  const [showJD, setShowJD] = useState(false)
+  const [experienceStatus, setExperienceStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [reload, setReload] = useState(0)
+  const chatDialog = useRef<HTMLDialogElement>(null)
 
   // Event handlers with PostHog tracking
   const handleOpenChat = () => {
@@ -89,161 +95,136 @@ export default function Home() {
   }
 
   useEffect(() => {
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), 15000)
+    let cancelled = false
     async function fetchData() {
-      // Fetch profile
-      const { data: profileData } = await supabase
-        .from('candidate_profile')
-        .select('*')
-        .eq('id', 'keegan-moody-001')
-        .single()
-
-      if (profileData) setProfile(profileData)
-
-      // Fetch experiences
-      const { data: expData } = await supabase
-        .from('experiences')
-        .select('*')
-        .eq('candidate_id', 'keegan-moody-001')
-        .order('display_order', { ascending: true })
-
-      if (expData) setExperiences(expData)
+      setExperienceStatus('loading')
+      try {
+        const [profileResult, experienceResult] = await Promise.all([
+          supabase.from('candidate_profile')
+            .select('id,first_name,last_name,headline,summary,linkedin_url,github_url')
+            .eq('id', 'keegan-moody-001').abortSignal(controller.signal).single(),
+          supabase.from('experiences')
+            .select('id,company_name,role_title,start_date,end_date,duration_months,public_bullets,display_order')
+            .eq('candidate_id', 'keegan-moody-001')
+            .order('display_order', { ascending: true }).abortSignal(controller.signal),
+        ])
+        if (cancelled) return
+        if (profileResult.data) setProfile(profileResult.data)
+        if (experienceResult.error) {
+          setExperienceStatus('error')
+        } else {
+          setExperiences(experienceResult.data ?? [])
+          setExperienceStatus('ready')
+        }
+      } catch {
+        if (!cancelled) setExperienceStatus('error')
+      } finally {
+        window.clearTimeout(timeout)
+      }
     }
+    void fetchData()
+    return () => {
+      cancelled = true
+      window.clearTimeout(timeout)
+      controller.abort()
+    }
+  }, [reload])
 
-    fetchData()
-  }, [])
+  useEffect(() => {
+    if (!showChat) return
+    const dialog = chatDialog.current
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const previousOverflow = document.body.style.overflow
+    dialog?.showModal()
+    document.body.style.overflow = 'hidden'
+    return () => {
+      dialog?.close()
+      document.body.style.overflow = previousOverflow
+      trigger?.focus({ preventScroll: true })
+    }
+  }, [showChat])
 
   return (
-    <div className="min-h-screen overflow-x-hidden">
+    <div className={`person-page ${styles.page}`}>
+      <a href="#person-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-[var(--bg-body)] focus:p-4">Skip to content</a>
       <NowPlayingLiveRegion />
-      <header>
-        {/* Marquee Ticker */}
-        <Marquee />
-
-        {/* Rotating Banner — one widget visible at a time, auto-cycles */}
-        <BannerRotator labels={['Now Playing', 'GitHub']}>
-          <WidgetErrorBoundary>
-            <YouTubePlayer />
-          </WidgetErrorBoundary>
-          <WidgetErrorBoundary>
-            <GitHubActivity />
-          </WidgetErrorBoundary>
-        </BannerRotator>
+      <header className={styles.nav}>
+        <a href="#person-content" className={styles.name}>Keegan Moody</a>
+        <nav aria-label="Personal page navigation">
+          <a href="#projects">Projects</a><a href="#builds">Builds</a><a href="#experience">Experience</a><a href="#fit">Role fit</a><a href="#contact">Contact</a>
+          <button onClick={handleOpenChat} className={styles.primary} aria-label="Ask AI about Keegan">Ask AI ↗</button>
+        </nav>
       </header>
-
-      <main className="min-w-0 px-4 sm:px-8 lg:px-16 py-8">
-          {/* Navigation */}
-          <nav className="mb-12 flex flex-wrap items-center justify-between gap-3 sm:mb-16">
-            <div className="flex items-center gap-2">
-              <span className="text-[var(--text-muted)] font-mono text-sm">/</span>
-              <SignalCut
-                href="/"
-                direction="toHouse"
-                className="text-[var(--text-bright)] font-space"
-              >
-                lecturesfrom
-              </SignalCut>
-            </div>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-x-8">
-              <a href="#experience" className="whitespace-nowrap text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
-                XP
-              </a>
-              <a href="#projects" className="whitespace-nowrap text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
-                Projects <span className="text-[var(--text-muted)]">[P]</span>
-              </a>
-              <a href="#contact" className="whitespace-nowrap text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors">
-                Contact <span className="text-[var(--text-muted)]">[C]</span>
-              </a>
-              <button
-                onClick={handleOpenChat}
-                aria-label="Ask AI"
-                className="ask-ai-btn inline-flex min-h-11 items-center whitespace-nowrap px-3 py-2 sm:px-4 font-mono text-sm"
-              >
-                Ask AI
-              </button>
-            </div>
-          </nav>
-
-          {/* Hero Section */}
-          <section className="mb-24">
-            {/* Taglines */}
-            <div className="space-y-2 mb-8">
-              <div className="flex items-center gap-3 text-[var(--text-muted)]">
-                <span className="text-[var(--accent-orange)]">//</span>
-                <span className="font-mono text-sm">Revenue systems. Built from zero.</span>
+      <main id="person-content" tabIndex={-1}>
+        <section className={styles.hero}>
+          <div className={styles.heroCopy}>
+            <p className={styles.eyebrow}>ATLANTA, GA / SALES EXECUTION</p>
+            <h1>Revenue systems.<br />Built from zero.</h1>
+            <p className={styles.lede}>I build the research, outreach, and automation behind sales execution. Here’s the work, how it came together, and what I’m building next.</p>
+            <div className={styles.actions}><a href="#projects" className={styles.primary}>Explore the projects ↓</a><a href="#experience" className={styles.secondary}>Read my experience ↓</a></div>
+          </div>
+          <aside className={styles.looking}>
+            <p className={styles.eyebrow}>WHAT I’M LOOKING FOR</p><h2>Work close to<br />the sales floor.</h2>
+            <p>Roles and projects where research, outreach, and automation turn into useful tools for the team.</p>
+            <a href="mailto:33@lecturesfrom.com">Discuss a role or project ↗</a>
+          </aside>
+        </section>
+        <section id="projects">
+          <div className={styles.sectionHeading}><h2>Professional projects</h2><p className={styles.eyebrow}>RESEARCH → SYSTEMS → EXECUTION</p></div>
+          {[
+            ['Mixmax', 'OUTBOUND SYSTEMS', 'Built outbound infrastructure, account intelligence, and campaign workflows with the revenue team.'],
+            ['Mobb AI', 'MARKET INTELLIGENCE', 'Connected regulatory filing research with segmentation and prospect prioritization.'],
+            ['TraceAir', 'SALES DEVELOPMENT', 'Built a greenfield territory through self-sourced contacts and project-specific outreach.'],
+          ].map(([name, label, description]) => <div className={styles.projectRow} key={name}><div><h3>{name}</h3><p className={styles.eyebrow}>{label}</p></div><p>{description}</p><button onClick={() => { setCareerRequest({ company: name, at: Date.now() }); document.getElementById('experience')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }) }}>View the work ↗</button></div>)}
+        </section>
+        <section id="builds" className={styles.buildsSection}>
+          <div className={styles.sectionHeading}><h2>Independent builds</h2><Link href="/catalog">Open the lecturesfrom catalog ↗</Link></div>
+          <div className={styles.builds}>
+            {[
+              ['punch2pen', 'Vocals written down, inside the session.', 'Software · In development', '/catalog/punch2pen/wordmark.svg'],
+              ['proper-respect', 'The tools you use. The people who put you on.', 'Software · In development', '/catalog/proper-respect/cover.png'],
+              ['yadiggg', 'A record identification device, taking shape.', 'Hardware study', '/catalog/yadiggg/wordmark.svg'],
+            ].map(([name, description, status, image]) => <Link key={name} href={`/catalog/${name}`} className={styles.build}><div className={styles.buildArt} data-project={name}><Image src={image} alt="" width={390} height={178} /></div><h3>{name}<span aria-hidden="true">↗</span></h3><p>{description}</p><small>{status}</small></Link>)}
+          </div>
+        </section>
+          {/* The work so far */}
+          <section id="experience" className={styles.career}>
+            <div className={styles.sectionHeading}><h2>Career history</h2><a href="https://linkedin.com/in/keeganmoody33" target="_blank" rel="noopener noreferrer">View LinkedIn ↗</a></div>
+            {experienceStatus === 'loading' ? (
+              <p role="status" className="font-mono text-sm text-[var(--text-muted)]">Loading career history...</p>
+            ) : experienceStatus === 'error' ? (
+              <div role="status" className="space-y-4 font-mono text-sm">
+                <p>Career history could not load. You can retry or read my experience on LinkedIn.</p>
+                <div className="flex flex-wrap gap-4">
+                  <button className="ask-ai-btn min-h-11 px-4 py-2" onClick={() => setReload((value) => value + 1)}>Retry career history</button>
+                  <a href="https://linkedin.com/in/keeganmoody33" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center underline underline-offset-4">View LinkedIn ↗</a>
+                </div>
               </div>
-              <div className="flex items-center gap-3 text-[var(--text-muted)]">
-                <span className="text-[var(--accent-lime)]">//</span>
-                <span className="font-mono text-sm">Useful in every room.</span>
-              </div>
-              <div className="flex items-center gap-3 text-[var(--text-muted)]">
-                <span className="text-[var(--accent-red)]">//</span>
-                <span className="font-mono text-sm">Here for the long build.</span>
-              </div>
-            </div>
-
-            {/* Name */}
-            <h1 className="text-5xl sm:text-7xl lg:text-9xl font-bold tracking-tight mb-8">
-              <SprayText
-                text={profile?.first_name?.toUpperCase() || 'KEEGAN'}
-                className="text-[var(--accent-lime)]"
-              />
-              <br />
-              <SprayText
-                text={profile?.last_name?.toUpperCase() || 'MOODY'}
-                className="text-[var(--accent-orange)]"
-                delay={500}
-              />
-            </h1>
-
-            {/* CTA */}
-            <div className="flex items-start gap-4">
-              <div className="w-1 h-16 bg-[var(--accent-lime)]" />
-              <div>
-                <p className="text-[var(--text-muted)] font-mono text-sm mb-4">
-                  Don't guess. Query the system directly.<br />
-                  The answer is in the data.
-                </p>
-                <button
-                  onClick={handleOpenChat}
-                  aria-label="Ask AI"
-                  className="ask-ai-btn px-6 py-3 font-mono"
-                >
-                  Ask AI
-                </button>
-              </div>
-            </div>
+            ) : <Timeline experiences={experiences} requestedCompany={careerRequest} />}
           </section>
 
-          {/* Career Timeline */}
-          <section id="experience" className="mb-24">
-            <h2 className="text-[var(--accent-orange)] font-mono text-sm mb-8">
-              // Chronological Execution Log
-            </h2>
-            <h3 className="text-3xl font-bold text-[var(--text-bright)] mb-12">
-              Career Timeline
-            </h3>
-            <Timeline experiences={experiences} />
+          <section className={styles.tools} aria-label="Ask and compare">
+            <div><h2>Ask about my work</h2><p className={styles.toolIntro}>AI answers from my experience and project notes. For a direct answer, <a href="mailto:33@lecturesfrom.com">email me</a>.</p><Chat conversation={conversation} /></div>
+            <div id="fit"><h2>Have a role in mind?</h2><p className={styles.toolIntro}>Compare a job description with my experience. See relevant strengths and questions to discuss.</p><JDAnalyzer /></div>
           </section>
-
-          {/* JD Analyzer */}
-          <section id="projects" className="mb-24">
-            <h2 className="text-[var(--accent-orange)] font-mono text-sm mb-8">
-              // Fit Analysis Tool
-            </h2>
-            <h3 className="text-3xl font-bold text-[var(--text-bright)] mb-8">
-              JD Fit Analyzer
-            </h3>
-            <p className="text-[var(--text-muted)] mb-8 max-w-xl">
-              Paste a job description. I'll give you an honest assessment of fit—including where I fall short.
-            </p>
-            <JDAnalyzer />
+          <section className={styles.activity} aria-label="Music and recent activity">
+            <BannerRotator labels={['Now Playing', 'GitHub activity']} controls="labels">
+              <WidgetErrorBoundary><YouTubePlayer /></WidgetErrorBoundary>
+              <WidgetErrorBoundary><GitHubActivity /></WidgetErrorBoundary>
+            </BannerRotator>
+            <Marquee />
           </section>
       </main>
 
-      <footer id="contact" className="border-t border-[var(--border-dim)] px-4 pb-8 pt-8 sm:px-8 lg:px-16">
+      <footer id="contact" className={styles.footer}>
+        <h2 className="text-3xl font-bold text-[var(--text-bright)]">Have something in mind?</h2>
+        <p className="mt-4 max-w-xl text-[var(--text-main)]">A role, a project, or a good question. Send me a note with what you are working on.</p>
+        <a href="mailto:33@lecturesfrom.com" className="ask-ai-btn my-6 inline-flex min-h-12 items-center px-6 py-3 font-mono">Email Keegan ↗</a>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <span className="text-[var(--text-muted)] font-mono text-sm">
-            © 2026 lecturesfrom
+            © 2026 lecturesfrom · <SignalCut href="/" direction="toHouse">Back to the house ↗</SignalCut>
           </span>
           <div className="flex flex-wrap gap-4 sm:gap-6">
             <a
@@ -251,7 +232,7 @@ export default function Home() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => handleExternalLinkClick('linkedin', profile?.linkedin_url || 'https://linkedin.com/in/keeganmoody33')}
-              className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+              className="inline-flex min-h-11 items-center text-[var(--text-main)] underline underline-offset-4 hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
             >
               LINKEDIN
             </a>
@@ -260,7 +241,7 @@ export default function Home() {
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => handleExternalLinkClick('x', 'https://x.com/keeganmoody33')}
-            className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+            className="inline-flex min-h-11 items-center text-[var(--text-main)] underline underline-offset-4 hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
           >
             X
           </a>
@@ -269,7 +250,7 @@ export default function Home() {
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => handleExternalLinkClick('substack', 'https://substack.com/@keeganmoody33')}
-            className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+            className="inline-flex min-h-11 items-center text-[var(--text-main)] underline underline-offset-4 hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
           >
             SUBSTACK
           </a>
@@ -278,7 +259,7 @@ export default function Home() {
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => handleExternalLinkClick('github', profile?.github_url || 'https://github.com/keeganmoody33')}
-            className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+            className="inline-flex min-h-11 items-center text-[var(--text-main)] underline underline-offset-4 hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
           >
             GITHUB
           </a>
@@ -287,7 +268,7 @@ export default function Home() {
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => handleExternalLinkClick('discord', 'https://discord.com/users/lecturesfrom')}
-            className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+            className="inline-flex min-h-11 items-center text-[var(--text-main)] underline underline-offset-4 hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
           >
             DISCORD
           </a>
@@ -296,7 +277,7 @@ export default function Home() {
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => handleExternalLinkClick('bluesky', 'https://bsky.app/profile/lecturesfrom.bsky.social')}
-            className="text-[var(--text-muted)] hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
+            className="inline-flex min-h-11 items-center text-[var(--text-main)] underline underline-offset-4 hover:text-[var(--accent-lime)] font-mono text-sm transition-colors"
           >
             BLUESKY
           </a>
@@ -306,23 +287,35 @@ export default function Home() {
 
       {/* Chat Modal */}
       {showChat && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-dim)] rounded-lg w-full max-w-2xl max-h-[80vh] overflow-hidden">
+        <dialog ref={chatDialog} aria-labelledby="chat-heading" aria-describedby="chat-description" onCancel={handleCloseChat}
+          onKeyDown={(event) => {
+            if (event.key !== 'Tab') return
+            const controls = event.currentTarget.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled])')
+            const first = controls[0]
+            const last = controls[controls.length - 1]
+            if (event.shiftKey && document.activeElement === first) {
+              event.preventDefault()
+              last?.focus()
+            } else if (!event.shiftKey && document.activeElement === last) {
+              event.preventDefault()
+              first?.focus()
+            }
+          }} className="person-dialog bg-[var(--bg-surface)] border border-[var(--border-dim)] rounded-lg max-w-2xl">
             <div className="flex items-center justify-between p-4 border-b border-[var(--border-dim)]">
-              <h3 className="text-[var(--text-bright)] font-mono">Ask AI</h3>
+              <h2 id="chat-heading" className="text-[var(--text-bright)] font-mono">Ask about Keegan</h2>
               <button
                 onClick={handleCloseChat}
                 aria-label="Close chat"
-                className="text-[var(--text-muted)] hover:text-[var(--text-bright)]"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center text-[var(--text-main)] hover:text-[var(--text-bright)]"
               >
-                ✕
+                Close
               </button>
             </div>
             <div className="p-4 overflow-y-auto max-h-[calc(80vh-60px)]">
-              <Chat />
+              <p id="chat-description" className="mb-5 text-sm text-[var(--text-muted)]">AI answers from my experience and project notes. For a direct answer, <a href="mailto:33@lecturesfrom.com" className="underline underline-offset-4">email me</a>.</p>
+              <Chat conversation={conversation} />
             </div>
-          </div>
-        </div>
+        </dialog>
       )}
     </div>
   )

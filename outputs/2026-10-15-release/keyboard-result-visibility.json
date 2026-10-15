@@ -1,0 +1,78 @@
+{
+  "before": {
+    "activeBottom": 1003.8359375,
+    "activeTop": 934.3359375,
+    "focus": "flip-lookup",
+    "listBottom": 734.8359375,
+    "listTop": 446.8359375,
+    "scrollTop": 0,
+    "selected": "I Love You More Than You'll Ever KnowDonny Hathaway · 1973"
+  },
+  "after": {
+    "activeBottom": 733.8359375,
+    "activeTop": 664.3359375,
+    "focus": "flip-lookup",
+    "listBottom": 734.8359375,
+    "listTop": 446.8359375,
+    "scrollTop": 270,
+    "selected": "I Love You More Than You'll Ever KnowDonny Hathaway · 1973"
+  },
+  "checks": [
+    {
+      "focus": "flip-lookup",
+      "inView": true,
+      "scrollTop": 0,
+      "selected": "Voices Inside (Everything Is Everything)Donny Hathaway · 1970",
+      "width": 390
+    },
+    {
+      "focus": "flip-lookup",
+      "inView": true,
+      "scrollTop": 270,
+      "selected": "I Love You More Than You'll Ever KnowDonny Hathaway · 1973",
+      "width": 390
+    },
+    {
+      "focus": "flip-lookup",
+      "inView": true,
+      "scrollTop": 270,
+      "selected": "Someday We'll All Be FreeDonny Hathaway · 1973",
+      "width": 390
+    },
+    {
+      "focus": "flip-lookup",
+      "inView": true,
+      "scrollTop": 270,
+      "selected": "I Love You More Than You'll Ever KnowDonny Hathaway · 1973",
+      "width": 390
+    },
+    {
+      "focus": "flip-lookup",
+      "inView": true,
+      "scrollTop": 0,
+      "selected": "Voices Inside (Everything Is Everything)Donny Hathaway · 1970",
+      "width": 1440
+    },
+    {
+      "focus": "flip-lookup",
+      "inView": true,
+      "scrollTop": 270,
+      "selected": "I Love You More Than You'll Ever KnowDonny Hathaway · 1973",
+      "width": 1440
+    },
+    {
+      "focus": "flip-lookup",
+      "inView": true,
+      "scrollTop": 270,
+      "selected": "Someday We'll All Be FreeDonny Hathaway · 1973",
+      "width": 1440
+    },
+    {
+      "focus": "flip-lookup",
+      "inView": true,
+      "scrollTop": 270,
+      "selected": "I Love You More Than You'll Ever KnowDonny Hathaway · 1973",
+      "width": 1440
+    }
+  ]
+}

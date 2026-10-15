@@ -7,13 +7,13 @@ export default function NotFound() {
     <HouseShell>
       <div className="px-6 pt-24 sm:px-10">
         <p className="house-meta">404</p>
-        <h1 className="mt-4 font-display text-4xl font-semibold tracking-[-0.01em]">not found</h1>
+        <h1 className="mt-4 font-display text-4xl font-semibold tracking-[-0.01em]">this page is missing</h1>
         <p className="mt-3 font-mono text-sm text-[var(--house-muted)]">
-          no sleeve at this slug.
+          the link may have moved. browse the catalog or head back to the house.
         </p>
         <p className="mt-8 font-mono text-sm">
-          <Link href="/" className="hover:text-[var(--house-orange)]">
-            lecturesfrom
+          <Link href="/" className="house-button">
+            back to home
           </Link>
         </p>
       </div>

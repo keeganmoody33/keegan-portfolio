@@ -12,23 +12,23 @@ import type { Metadata } from 'next'
 export async function recordDetailMetadata(rawId: string): Promise<Metadata> {
   const releaseId = parseReleaseParam(rawId)
   if (!releaseId) {
-    return { title: 'not found — lecturesfrom' }
+    return { title: 'not found | lecturesfrom' }
   }
   const read = await readStoredPressingOnce(releaseId)
   if (read.status === 'not_found') {
-    return { title: 'not found — lecturesfrom' }
+    return { title: 'not found | lecturesfrom' }
   }
   if (read.status === 'unavailable') {
     return houseMetadata(
       `/collection/${releaseId}`,
-      'collection — lecturesfrom',
+      'collection | lecturesfrom',
       "couldn't reach discogs"
     )
   }
   const { artist, title } = read.pressing.facts
   const description =
-    read.pressing.description?.text || [artist, title].filter(Boolean).join(' — ')
-  return houseMetadata(`/collection/${releaseId}`, `${title} — lecturesfrom`, description)
+    read.pressing.description?.text || [artist, title].filter(Boolean).join(' | ')
+  return houseMetadata(`/collection/${releaseId}`, `${title} | lecturesfrom`, description)
 }
 
 export default async function RecordDetailRoute({

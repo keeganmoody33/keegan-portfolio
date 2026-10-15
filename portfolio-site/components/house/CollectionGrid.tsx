@@ -65,10 +65,10 @@ export default function CollectionGrid({
 
         const caption = (
           <>
-            <p className="mt-2 font-mono text-[11px] leading-snug text-[var(--house-ink)] group-hover:text-[var(--house-orange)]">
+            <p className="mt-3 font-mono text-[13px] leading-relaxed text-[var(--house-ink)] group-hover:text-[var(--house-orange)]">
               {release.artist}
             </p>
-            <p className="font-mono text-[11px] text-[var(--house-muted)]">{release.title}</p>
+            <p className="font-mono text-[13px] leading-relaxed text-[var(--house-muted)]">{release.title}</p>
             {year ? <p className="house-meta mt-1">{year}</p> : null}
           </>
         )

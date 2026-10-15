@@ -1,0 +1,10 @@
+.page { max-width: 1440px; margin: 0 auto; padding: 56px 64px 72px; }
+.heading { display: flex; justify-content: space-between; gap: 48px; align-items: flex-end; margin-bottom: 48px; }
+.eyebrow { font: 11px/20px var(--house-font-mono); color: var(--house-muted); margin-bottom: 20px; }
+.heading h1 { font: 600 clamp(40px, 4.6vw, 64px)/1.08 var(--house-font-display); letter-spacing: -.02em; }
+.intro { max-width: 280px; font: 13px/22px var(--house-font-mono); }
+.intro p { margin-bottom: 12px; color: var(--house-muted); }
+.credit { margin-top: 28px; font: 11px/20px var(--house-font-mono); color: var(--house-muted); }
+.credit a { text-decoration: underline; text-underline-offset: 4px; }
+@media (max-width: 1000px) { .page { padding-inline: 32px; } }
+@media (max-width: 767px) { .page { padding: 32px 24px 48px; } .heading { display: block; margin-bottom: 28px; } .intro { margin-top: 24px; max-width: none; } }

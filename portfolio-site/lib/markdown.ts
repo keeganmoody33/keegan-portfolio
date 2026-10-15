@@ -13,13 +13,13 @@ export function markdownHeaders(): HeadersInit {
 
 export function llmsTxt(): string {
   return `# lecturesfrom
-> lecturesfrom is an atlanta llc — a garage, not a studio — that issues gtm systems, software, and physical products. work is catalogued as sleeves. the principal is keegan moody at /keeganmoody33.
+> lecturesfrom is keegan moody's independent house in atlanta. sales systems, software, records, and things you can hold. explore the catalog or get in touch through /keeganmoody33.
 
 ## catalog
-- [catalog](${SITE_URL}/catalog): crate permalink. sleeves currently in build: punch2pen, proper-respect, yadiggg.
-- [punch2pen](${SITE_URL}/catalog/punch2pen): lf-01 software. vocals become a living transcript inside the DAW. [markdown](${SITE_URL}/catalog/punch2pen.md)
-- [proper-respect](${SITE_URL}/catalog/proper-respect): lf-02 software. evidence proposes. the person confirms. [markdown](${SITE_URL}/catalog/proper-respect.md)
-- [yadiggg](${SITE_URL}/catalog/yadiggg): lf-03 physical. pocket crate-digger. no phone. no shazam. [markdown](${SITE_URL}/catalog/yadiggg.md)
+- [catalog](${SITE_URL}/catalog): projects currently in build: punch2pen, proper-respect, yadiggg.
+- [punch2pen](${SITE_URL}/catalog/punch2pen): lf-01 software. a vocal transcript that follows the track inside your daw. [markdown](${SITE_URL}/catalog/punch2pen.md)
+- [proper-respect](${SITE_URL}/catalog/proper-respect): lf-02 software. a place to share the tools you use and who put you on. [markdown](${SITE_URL}/catalog/proper-respect.md)
+- [yadiggg](${SITE_URL}/catalog/yadiggg): lf-03 physical. a pocket device concept for identifying records in the bin. [markdown](${SITE_URL}/catalog/yadiggg.md)
 
 ## collection
 - [collection](${SITE_URL}/collection): lf-00 issued crate. every release in the lecturesfrom discogs collection, live within a 5-minute revalidate. [markdown](${SITE_URL}/collection.md) · [api](${SITE_URL}/api/discogs/collection)
@@ -61,16 +61,21 @@ export function indexMarkdown(): string {
 
   return `# lecturesfrom
 
-llc
+i help products find their momentum.
 
-not a studio. a garage.
-GTME & revenue architecture.
-publishing house & physical products.
-it is always deeper than it looks.
+i’m keegan moody. when you believe in a product and i do too, i get into the work across product and business. from the first questions to development, customer feedback, iteration, operations, and reaching the right customers.
+
+[talk about your product](mailto:33@lecturesfrom.com) · [see what i’m building](${SITE_URL}/#workbench)
+
+## product decisions. business problems.
+
+i follow the problem across disciplines. what needs to be built, what customers are telling you, what is slowing the team down, and what gives people a reason to choose you.
+
+[how i work](${SITE_URL}/legal)
 
 ${HOUSE_TAGLINE}
 
-## crate
+## on the workbench
 
 ${rows}
 
@@ -90,9 +95,9 @@ export function catalogIndexMarkdown(): string {
     })
     .join('\n')
 
-  return `# catalog — lecturesfrom
+  return `# catalog | lecturesfrom
 
-a catalog item is a record sleeve that holds artifacts. front = cover. back = liner notes. contents = numbered tracks.
+software for the booth. a place for the tools you stand behind. a device for the record bin. open a sleeve to see what each project does, where it stands, and where to go next.
 
 ${rows}
 `
@@ -118,12 +123,10 @@ ${sleeve.aside}
 
 ${sleeve.notes}
 
-why: ${sleeve.why}
-
-not this: ${sleeve.notThis}
+${sleeve.why}
 
 ${sleeve.credits.length ? `credits: ${sleeve.credits.join(', ')}` : ''}
-${sleeve.viewer ? `\nviewer: ${sleeve.viewer.title} (${sleeve.viewer.mode}) — inline on the sleeve, not the crate click.\n` : ''}
+${sleeve.viewer ? `\nviewer: ${sleeve.viewer.title} (${sleeve.viewer.mode}) | inline on the sleeve, not the crate click.\n` : ''}
 
 ## tracks
 
@@ -138,7 +141,7 @@ export function collectionMarkdown(itemCount?: number): string {
       ? `${itemCount} releases currently in the crate.`
       : 'count unavailable'
 
-  return `# collection — lecturesfrom
+  return `# collection | lecturesfrom
 
 ${sleeve?.aside ?? ''}
 
@@ -146,7 +149,7 @@ ${sleeve?.notes ?? ''}
 
 ${countLine}
 
-shuffle and pull one live on the html crate only (client shuffle; pull one uses the overlay).
+search by artist, title, year, label, or catalog number on the html page. shuffle records or open a random record from your results.
 
 do not dump the full album list into markdown. use:
 
@@ -156,39 +159,74 @@ do not dump the full album list into markdown. use:
 }
 
 export function legalMarkdown(): string {
-  return `# legal — lecturesfrom
+  return `# company + credits | lecturesfrom
 
-lecturesfrom LLC · Atlanta, Georgia 30316 · founded 2025 · self-owned
+lecturesfrom LLC · atlanta, georgia · founded 2025
 
-${HOUSE_TAGLINE}
+## built by hand. made to move.
 
-lecturesfrom is where technology helps creative expression see the light of day, and where the systems powering modern businesses honor authenticity, originality, and the intangible edge behind lasting success.
+lecturesfrom is keegan moody’s independent house for sales systems, software, and records. a place to work on how a business grows and make things worth spending time with.
 
-Not a studio. More like a garage or workshop.
+## get closer to the work.
 
-Our advantage is embedding ourselves in your business from the ground up to understand the motions you are trying to carry out, the constraints holding them back, and the opportunity inside them.
+when you believe in a product and i do too, i want to help it move. i get hands-on with the questions, product development, customer feedback, iteration, operations, and go-to-market.
 
-We hold a high standard for authenticity. If that is not important to you, we may not be aligned.
+i work across product and business. that means following the problem wherever it leads: an unfamiliar market, a product decision, a customer’s frustration, or an operation that cannot keep up.
 
-## GTME & Revenue Architecture
+the aim is to find what makes the product worth choosing, build on it, and turn that into momentum. the research, the product, and the way it reaches people have to inform each other.
 
-From customer journeys and revenue architecture to integrations, outbound operations, and workflow automation, every motion is engineered with intention. We partner with businesses ready to turn originality and authenticity into durable growth.
+[see the work](${SITE_URL}/keeganmoody33) · [start a conversation](mailto:33@lecturesfrom.com)
 
-## Publishing House & Physical Products
+## mission
 
-lecturesfrom designs physical products that cultivate authenticity alongside digital experiences. Pressed records, printed books, art editions, objects, and original designs give ideas, brands, and creative work a permanent form in the physical world.
+make the path from a good idea to useful work shorter.
 
-We collaborate with businesses and artists committed to craft, vision, and principle. What others may view as sprawl, we see as an opportunity: even a cloud-native company can crystallize its identity into tangible objects for its team, customers, and community.
+## how i work
 
-Done with purpose, physical products become more than merchandise. They create artifacts people keep, signals people share, and touchpoints that reinforce adoption, employee retention, and brand belief.
+### learn the real constraints.
+listen to the people doing the work. get specific about what they need, what they have tried, and what keeps breaking.
 
-It is always deeper than it looks. We think through every thing we ship.
+### make it useful in practice.
+build something a person can understand, use, and keep running. stay close enough to see what happens after handoff.
 
-Our HQ is a basement. The scope is an ACOG.
+### keep your own point of view.
+care about the details. make room for experiments, music, and the things that give the work a voice.
+
+## fuel, growth, culture
+
+fuel is curiosity: an unfamiliar market, a record i cannot put down, a problem someone has learned to work around.
+
+growth is turning what we learn into a motion the team can repeat and improve.
+
+culture is the part people bring with them. the taste, care, and point of view should survive the process.
+
+## shoutouts.
+
+to the people and things that have helped along the way. thank you.
+
+- [gtmcafe.com](https://gtmcafe.com/)
+- kellen casebeer
+- gtm engineering school
+- jordan crawford
+- and this entire community.
+
+my dad: an entrepreneur and a hustler. a man of the people. blue collar, hands-on, and creative.
+
+hip hop. god.
+
+## contact
+
+for project inquiries, site questions, or a correction: [33@lecturesfrom.com](mailto:33@lecturesfrom.com)
 
 ## Data sources
 
 ${DISCOGS_API_NOTICE}
+
+record pages identify the sources behind available credits and sample connections. missing information means it is not on file here.
+
+## brand files
+
+the [brand kit](${SITE_URL}/brand) includes the official mark, lockups, icons, and usage guidance.
 `
 }
 

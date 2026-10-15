@@ -1,0 +1,30 @@
+[
+  {
+    "animation": "flipLand",
+    "eyebrowBottom": 274.3359375,
+    "minTop": 290.8908996582031,
+    "scrollWidth": 312,
+    "width": 320
+  },
+  {
+    "animation": "flipLand",
+    "eyebrowBottom": 256.3359375,
+    "minTop": 270.2729797363281,
+    "scrollWidth": 382,
+    "width": 390
+  },
+  {
+    "animation": "flipLand",
+    "eyebrowBottom": 281.2421875,
+    "minTop": 295.42669677734375,
+    "scrollWidth": 842,
+    "width": 850
+  },
+  {
+    "animation": "flipLand",
+    "eyebrowBottom": 217.2421875,
+    "minTop": 226.7793884277344,
+    "scrollWidth": 1432,
+    "width": 1440
+  }
+]

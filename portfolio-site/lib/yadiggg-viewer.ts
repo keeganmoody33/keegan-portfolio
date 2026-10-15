@@ -110,7 +110,7 @@ export const PART_READOUT_FALLBACK_NOTE =
   'dimensioned study, not manufacturing cad. poster when the live canvas cannot run.'
 
 export const YADIGGG_RAIL_LIVE =
-  'hover or click the model. the lcd reads parts and facts — not a capture demo. one orange side button on the reserved opening.'
+  'hover or click the model. the lcd reads parts and facts. this is not a capture demo. one orange side button on the reserved opening.'
 
 export const YADIGGG_RAIL_FALLBACK =
   'locked product facts on the poster. one orange side button on the reserved opening. live canvas is not running on this device.'

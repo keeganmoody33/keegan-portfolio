@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import HouseFooter from '@/components/house/HouseFooter'
-import HouseRail from '@/components/house/HouseRail'
+import styles from '@/components/house/editorial.module.css'
 import HouseShell from '@/components/house/HouseShell'
 import FlipRoom from '@/components/house/FlipRoom'
 import { FLIP_COPY } from '@/lib/flip/copy.ts'
@@ -8,7 +8,7 @@ import { FLIP_PATH } from '@/lib/flip/route.ts'
 import { houseMetadata } from '@/lib/metadata'
 
 export const metadata: Metadata = {
-  ...houseMetadata(FLIP_PATH, 'doingflips — lecturesfrom', FLIP_COPY.lede),
+  ...houseMetadata(FLIP_PATH, 'doingflips | lecturesfrom', FLIP_COPY.lede),
   robots: { index: false, follow: false },
 }
 
@@ -25,14 +25,13 @@ export default async function FlipPage({
   const params = await searchParams
   return (
     <HouseShell>
-      <HouseRail left="atl 33.70n" center={FLIP_COPY.nav} right="lf" />
-      <div className="px-6 pb-16 pt-16 sm:px-10">
-        <h1 className="overflow-visible font-display text-4xl font-semibold tracking-[-0.01em] sm:text-6xl">
-          <span>doing</span>
-          <span className="flip-h1">{FLIP_COPY.h1Mark}</span>
-          <span>s</span>
-        </h1>
-        <p className="mt-3 max-w-xl font-mono text-sm text-[var(--house-muted)]">{FLIP_COPY.lede}</p>
+      <div className={styles.page}>
+        <header className={styles.companyHero}>
+          <p className={styles.eyebrow}>doingflips / a song in. a flip back.</p>
+          <h1 className={`${styles.title} ${styles.flipTitle}`} aria-label="doingflips"><span aria-hidden="true">doing<span className="flip-h1">flip</span>s</span></h1>
+          <p className={styles.sectionTitle}>what’s stuck in your head?</p>
+          <p className={styles.lede}>{FLIP_COPY.lede}</p>
+        </header>
         <FlipRoom
           track={first(params.track)}
           title={first(params.title)}

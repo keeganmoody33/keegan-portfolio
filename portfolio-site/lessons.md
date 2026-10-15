@@ -289,3 +289,48 @@ Updated: 2026-10-14
 - **`request.ip` is not in the standard `NextRequest` type.** Next.js exposes it at runtime but TypeScript doesn't know about it. Use `(request as NextRequest & { ip?: string }).ip` to access it without TS errors. The rate-limit.ts helper handles this; API routes that reference `request.ip` directly in PostHog properties need the same cast.
 - **In-memory rate limiting is a stopgap for Vercel.** Each serverless instance has its own memory, so rate limits won't be accurate across multiple instances. Acceptable for a low-traffic portfolio site. For production-grade, use Upstash Redis or Vercel KV.
 - **Always grep all docs after cancelling a feature.** Cancelling Worthy Reads + Alan Iverson required edits across 10+ files (PRD, IMPLEMENTATION_PLAN, BANNER_WIDGETS_SPEC, AURA_PROMPTS, AURA_PROMPTS_V2, DESIGN_PLAYBOOK, TURNTABLE_LOADING_SPEC, NAVIGATION_PATHWAYS_SPEC, HUMAN_MACHINE_TOGGLE_SPEC, lessons.md, progress.txt). The first subagent pass missed references in spec docs that weren't in the original task list. A final grep caught them.
+
+
+## 2026-10-15: copy and navigation corrections
+
+- Labels must describe their destination: Projects routes to the catalog, while the role comparison has its own link and section.
+- A combobox blur timer can hide new results when a visitor clicks its submit button. Keep results open when focus moves within the search form, and test the actual button click as well as typing.
+- Native dialogs provide modal semantics, but explicitly check both Tab boundaries, Escape, and trigger focus restoration in the target browser.
+- Supabase's abort signal must be set before `.single()` in the installed client. Keep the career request bounded and present a useful failure state.
+- A failed tool run is not verification. The initial Documents checkout stalled on file hydration; the working copy was recovered to an isolated local checkout and tests were rerun there.
+
+- Keep hero names in server-rendered markup. CSS can preserve the entrance effect while reduced-motion users see the complete name immediately and screen readers receive whole words.
+
+## 2026-10-15: annotated brand preview sizing
+
+- A large preview frame can make a canonical mark look too small. Adjust the presentation width and padding without editing the asset geometry.
+- Set logo height to auto when enlarging the width, and constrain the image to its container so the same treatment still fits at 320px.
+- Distinguish Paper explorations from deployed functionality, and close design threads only after reviewing the corresponding layout.
+
+## 2026-10-15: Paper implementation and interaction verification
+
+- Export Paper dimensions, tokens, and copy before implementation; preserve the canonical mark and supplied artwork instead of redrawing them.
+- A listening mockup cannot identify a recording. When lookup supplies no verified playable video, label the external search honestly and preserve the selected song identity in the request.
+- Public attribution needs its own unchecked consent and public-name field. Never derive it from private email or phone; discard a supplied name when consent is absent, and validate again on the server.
+- Test interactive behavior against a fresh production build when a long-running dev server presents inactive controls. A correct screenshot alone does not verify hydration, focus, or form submission.
+- Share conversation state between inline and dialog chat, keep typed content on failures, and return focus to the useful input without scrolling the page unexpectedly.
+
+- Hosted AI can answer successfully using stale project context. Supply current public catalog facts from the website branch so preview copy and AI product descriptions stay aligned without changing a shared production database. Verify the answer as well as the HTTP success.
+- Restore a disabled chat input on the next animation frame after completion, and only while its component is visible and focus has not moved elsewhere.
+
+## 2026-10-15: Paper Shaders
+
+- Heatmap preprocessing composites the source on white and uses luminance; feed the supplied dark mark, not the white mark, or the result is empty. Liquid Metal uses the white mark alpha mask.
+- Next development blocks 127.0.0.1 resources unless that origin is allowed. Use localhost for development checks; a static render with inactive controls is not an interaction pass.
+- After shader hot replacement, reload before lifecycle checks. Inspect actual frame progression, pause, and the original SVG after context loss rather than counting a canvas as proof of rendering.
+
+## 2026-10-15: preserve headline identity and motion
+
+- Copy revisions must preserve intentional brand motion. Keep doingflips as the heading and place the song question beneath it; the existing flipLand animation is part of that identity.
+- Reserve the widest rotating word's space, provide an explicit pause control, and keep one complete accessible sentence. Reduced motion and missing JavaScript must leave readable text immediately.
+- Measure the entire flip arc at desktop and mobile widths. The original animation needs extra headroom at the new display size to avoid crossing the eyebrow.
+
+## 2026-10-15: keyboard results and release review
+
+- A scrollable combobox list must scroll its active descendant into view. Updating aria-activedescendant alone leaves keyboard selection outside the visible list. Verify wrapping to the last/first row and retain input focus.
+- Query substantive unresolved review threads before merging, independently of successful deployment checks. Verify existing fixes before resolving old threads, then recheck the exact head before merging the stack.

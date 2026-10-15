@@ -1,0 +1,21 @@
+.words { display: inline-grid; vertical-align: baseline; }
+.word { grid-area: 1 / 1; opacity: 0; animation: wordCadence 6s linear infinite; animation-play-state: paused; }
+.word:first-child { opacity: 1; }
+.word:nth-child(2) { animation-delay: 2s; }
+.word:nth-child(3) { animation-delay: 4s; }
+.headline[data-playing='true'] .word { animation-play-state: running; }
+.control { display: flex; align-items: center; gap: 10px; min-height: 44px; margin-top: 8px; color: var(--house-muted); font: 12px/18px var(--house-font-mono); visibility: hidden; }
+.headline[data-ready='true'] .control { visibility: visible; }
+.control:hover { color: var(--house-ink); }
+.control:focus-visible { outline: 2px solid var(--house-ink); outline-offset: 4px; }
+
+/* Four half-second beats per word, with a quick dim on the last beat. */
+@keyframes wordCadence {
+  0%, 30.666% { opacity: 1; }
+  33.333%, 100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .word { animation: none; }
+  .control { display: none; }
+}

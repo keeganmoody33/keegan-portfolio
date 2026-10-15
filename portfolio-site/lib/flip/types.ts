@@ -49,6 +49,8 @@ export type FlipValidation =
   | { ok: false; error: string }
 
 export type FlipStoredRequest = {
+  creditOptIn?: boolean
+  publicName?: string | null
   at: string
   rid: number | null
   title: string
