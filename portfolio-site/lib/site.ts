@@ -1,7 +1,7 @@
 export const SITE_URL = 'https://www.lecturesfrom.com'
 
 export const HOUSE_TITLE = 'lecturesfrom'
-export const HOUSE_DESCRIPTION = 'sales systems, software, records, and things you can hold. an independent house by keegan moody in atlanta.'
+export const HOUSE_DESCRIPTION = 'i help products find their momentum. product development, customer feedback, operations, and sales execution. built by keegan moody in atlanta.'
 /** Stable house share still. Nested house routes set this on openGraph so
  *  their own openGraph objects do not drop the file-convention image. */
 export const HOUSE_OG_IMAGE = {

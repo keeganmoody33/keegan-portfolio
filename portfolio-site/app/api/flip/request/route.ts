@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPostHogClient } from '@/lib/posthog-server'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { validatePublicCredit } from '@/lib/flip/credit.ts'
 import { FLIP_COPY } from '@/lib/flip/copy.ts'
 import { hasSongIdentity, validateFlipRequest } from '@/lib/flip/validate.ts'
 import { notifyFlipRequest } from '@/lib/flip/notify.ts'
@@ -71,6 +72,9 @@ export async function POST(request: NextRequest) {
     return jsonError(validated.error, 400)
   }
 
+  const credit = validatePublicCredit({ creditOptIn: rec.creditOptIn, publicName: rec.publicName })
+  if (!credit.ok) return jsonError(credit.error, 400)
+
   const stub = parseFlipStub(asString(rec.stub) || null)
   const fixtureAccept = Boolean(stub) && !flipProductionLocked()
   const payload = {
@@ -83,6 +87,8 @@ export async function POST(request: NextRequest) {
     email: validated.email,
     phone: validated.phone,
     smsOptIn: validated.smsOptIn,
+    creditOptIn: credit.creditOptIn,
+    publicName: credit.publicName,
   }
   const stored = fixtureAccept ? true : await storeFlipRequest(payload)
 

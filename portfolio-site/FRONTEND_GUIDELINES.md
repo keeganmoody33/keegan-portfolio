@@ -5,6 +5,10 @@
 **CSS Framework:** Tailwind CSS 3.4.19 + CSS Custom Properties
 **Fonts:** Google Fonts (Chakra Petch, Doto, Space Grotesk, Roboto Mono, Roboto Slab)
 
+## Paper implementation · 2026-10-15
+
+Approved by Keegan: port the Paper website explorations into PR #83 and refresh the preview. Home uses the product-momentum introduction and workbench; company adds mission, working principles, and supplied credits. The personal page uses white, navy #12284A, surface #F4F7FB, line #DCE3EC, and link #215FC9 with Space Grotesk. House retains Chakra Petch, Roboto Mono, and the supplied marks. Paper supersedes the older lime/orange personal presentation below. Preserve career history, publications, AI, role comparison, music, GitHub, records, and 3D study behavior. Doingflips gains consented public-name storage and an empty finished-work section; no payment or TIDAL integration. No matched video IDs are supplied by song lookup, so listening uses an explicitly labeled YouTube search fallback. Preview only; Keegan merges.
+
 ---
 
 ## Shared navigation and actions (2026-10-15)

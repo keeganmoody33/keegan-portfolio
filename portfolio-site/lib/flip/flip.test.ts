@@ -92,7 +92,7 @@ describe('copy', () => {
     assert.equal(FLIP_COPY.submit, 'request a sample flip')
     assert.equal(FLIP_COPY.askFlip, 'request a sample flip')
     assert.equal(FLIP_COPY.contactHint, 'email or phone. one is enough.')
-    assert.equal(FLIP_COPY.privacy, 'used only to send you this beat. never shared or added to a list.')
+    assert.equal(FLIP_COPY.privacy, 'your email and phone stay private. used only for this request, never added to a list.')
     assert.ok(productInquiryLine().includes('33@lecturesfrom.com'))
     assert.equal(showAllLabel(12), 'show all (12)')
     assert.equal(sourceLine('2026-10-13', true), 'everysong.site · fixture')
@@ -468,7 +468,6 @@ describe('privacy in the room and APIs', () => {
   it('FlipRoom keeps the connect mailto, privacy line, and song combobox', () => {
     const room = readSite('../../components/house/FlipRoom.tsx')
     const page = readSite('../../app/(house)/flip/page.tsx')
-    const css = readSite('../../app/globals.css')
     assert.equal(room.includes('PRODUCT_MAILTO'), true)
     assert.equal(room.includes('FLIP_COPY.privacy'), true)
     assert.equal(room.includes('ProductInquiry'), true)
@@ -484,8 +483,8 @@ describe('privacy in the room and APIs', () => {
     assert.equal(room.includes('lookupGen.current !== gen'), true)
     assert.equal(room.includes('requestGen.current !== gen'), true)
     assert.equal(page.includes('doing'), true)
-    assert.equal(page.includes('flip-h1'), true)
-    assert.equal(css.includes('@keyframes flipLand'), true)
+    assert.equal(page.includes('what’s stuck'), true)
+    assert.equal(room.includes('creditOptIn: credit.creditOptIn'), true)
     assert.equal(/GTM|Morph/.test(room), false)
   })
 

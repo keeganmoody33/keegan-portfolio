@@ -306,3 +306,11 @@ Updated: 2026-10-14
 - A large preview frame can make a canonical mark look too small. Adjust the presentation width and padding without editing the asset geometry.
 - Set logo height to auto when enlarging the width, and constrain the image to its container so the same treatment still fits at 320px.
 - Distinguish Paper explorations from deployed functionality, and close design threads only after reviewing the corresponding layout.
+
+## 2026-10-15: Paper implementation and interaction verification
+
+- Export Paper dimensions, tokens, and copy before implementation; preserve the canonical mark and supplied artwork instead of redrawing them.
+- A listening mockup cannot identify a recording. When lookup supplies no verified playable video, label the external search honestly and preserve the selected song identity in the request.
+- Public attribution needs its own unchecked consent and public-name field. Never derive it from private email or phone; discard a supplied name when consent is absent, and validate again on the server.
+- Test interactive behavior against a fresh production build when a long-running dev server presents inactive controls. A correct screenshot alone does not verify hydration, focus, or form submission.
+- Share conversation state between inline and dialog chat, keep typed content on failures, and return focus to the useful input without scrolling the page unexpectedly.

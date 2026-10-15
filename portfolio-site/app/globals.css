@@ -1268,3 +1268,24 @@ html[data-logo-paused='true'] .lf-logo-globe-rim-wall {
   .house-spine { grid-template-columns: 1.25rem minmax(0, 1fr); }
   .house-spine-status { grid-column: 2; justify-self: start; margin-top: 0.5rem; }
 }
+
+/* Paper website layouts · 2026-10-15 */
+.house-navigation { max-width: 1312px; margin-inline: auto; padding: 40px 0 28px; gap: 20px 32px; font-size: 14px; }
+.house-navigation nav { gap: 0 30px; }
+.house-navigation nav a { color: var(--house-ink); }
+.house-nav-logo { width: 238px; height: auto; }
+.house-footer { max-width: 1312px; margin: 64px auto 0; padding: 32px 0; border-top: 1px solid var(--house-line); }
+@media (max-width: 1439px) { .house-navigation, .house-footer { margin-inline: 64px; } }
+@media (max-width: 767px) {
+ .house-navigation { margin-inline: 24px; padding: 16px 0 24px; gap: 12px; }
+ .house-navigation nav { gap: 4px 20px; }
+ .house-nav-logo { width: 206px; }
+ .house-footer { margin-inline: 24px; }
+}
+
+html:has(.person-page) { --bg-body: #fff; --bg-surface: #f4f7fb; --accent-lime: #12284a; }
+body:has(.person-page) { background: #fff; animation: none; }
+
+.house-nav-logo-ink { display: none; }
+.house[data-theme='light'] .house-nav-logo-white { display: none; }
+.house[data-theme='light'] .house-nav-logo-ink { display: block; }

@@ -11,9 +11,9 @@ import { FLIP_PATH } from '@/lib/flip/route.ts'
  */
 export default function HouseFooter() {
   return (
-    <footer className="mt-16 border-t border-[var(--house-line)] px-6 py-8 sm:px-10">
+    <footer className="house-footer">
       <p className="font-mono text-[11px] tracking-wide text-[var(--house-muted)]">
-        lecturesfrom LLC · Atlanta, Georgia
+        lecturesfrom LLC · atlanta, georgia
       </p>
       <p className="mt-2 font-mono text-[11px] tracking-wide text-[var(--house-muted)]">
         have a project in mind? <a href="mailto:33@lecturesfrom.com" className="inline-flex min-h-11 items-center text-[var(--house-ink)] underline underline-offset-4">email 33@lecturesfrom.com</a>
@@ -36,7 +36,7 @@ export default function HouseFooter() {
         </Link>
         <Link href="/keeganmoody33" className="hover:text-[var(--house-orange)]">keegan + contact</Link>
         <Link href="/legal" className="hover:text-[var(--house-orange)]">
-          legal
+          company + credits
         </Link>
       </nav>
       <RequestTally />

@@ -49,7 +49,8 @@ export function notifyEmailBody(request: FlipStoredRequest): string {
     .filter((line) => line.length > 0)
     .join('\n')
   const sms = request.smsOptIn ? 'text the beat: yes' : ''
-  return [song, who, sms].filter((block) => block.length > 0).join('\n\n')
+  const credit = request.creditOptIn === true && request.publicName ? `public credit: ${request.publicName}` : 'public credit: not requested'
+  return [song, who, sms, credit].filter((block) => block.length > 0).join('\n\n')
 }
 
 export function flipNotifyIdempotencyKey(request: FlipStoredRequest): string {

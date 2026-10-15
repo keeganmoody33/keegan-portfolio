@@ -15,20 +15,10 @@ const SUGGESTED_QUESTIONS = [
   "What are you building right now?",
 ]
 
-export default function Chat() {
+export function useConversation() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
-  }
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
-
   const sendMessage = async (question: string, isSuggested: boolean = false) => {
     if (!question.trim() || isLoading) return
 
@@ -88,13 +78,27 @@ export default function Chat() {
     }
   }
 
+  return { messages, setMessages, input, setInput, isLoading, sendMessage }
+}
+
+export default function Chat({ conversation }: { conversation: ReturnType<typeof useConversation> }) {
+  const { messages, setMessages, input, setInput, isLoading, sendMessage } = conversation
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const root = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (messages.length && root.current?.contains(document.activeElement)) {
+      messagesEndRef.current?.scrollIntoView({ block: 'nearest', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+    }
+  }, [messages])
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    sendMessage(input)
+    void sendMessage(input).then(() => inputRef.current?.focus({ preventScroll: true }))
   }
 
   return (
-    <div className="w-full">
+    <div ref={root} className="w-full">
       {/* Suggested Questions (show when no messages) */}
       {messages.length === 0 && (
         <div className="mb-6">
@@ -108,7 +112,7 @@ export default function Chat() {
                     question: q,
                     question_index: i
                   })
-                  sendMessage(q, true)
+                  void sendMessage(q, true).then(() => inputRef.current?.focus({ preventScroll: true }))
                 }}
                 aria-label={q}
                 className="min-h-11 px-3 py-2 text-sm bg-[var(--bg-body)] border border-[var(--border-dim)]
@@ -161,6 +165,7 @@ export default function Chat() {
       {/* Input Form */}
       <form onSubmit={handleSubmit} className="flex gap-2">
         <input
+          ref={inputRef}
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}

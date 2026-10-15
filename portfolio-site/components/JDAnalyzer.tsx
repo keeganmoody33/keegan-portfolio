@@ -9,6 +9,7 @@ export default function JDAnalyzer() {
   const [analysis, setAnalysis] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const resultRef = useRef<HTMLHeadingElement>(null)
 
   const handleAnalyze = async () => {
@@ -60,6 +61,7 @@ export default function JDAnalyzer() {
       })
       posthog.captureException(err)
 
+      requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }))
       setError('The comparison could not load. Your description is still here. Try again, or email me at 33@lecturesfrom.com.')
     } finally {
       setLoading(false)
@@ -71,6 +73,7 @@ export default function JDAnalyzer() {
       <label htmlFor="role-description" className="mb-3 block font-mono text-sm text-[var(--text-bright)]">Job description or link</label>
       <p id="role-hint" className="mb-4 text-sm text-[var(--text-muted)]">Paste the full text for the most context. If a link cannot be read, try the description instead.</p>
       <textarea
+        ref={inputRef}
         id="role-description"
         aria-describedby="role-hint"
         aria-invalid={Boolean(error)}

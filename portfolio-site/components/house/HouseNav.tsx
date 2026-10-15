@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 
 const links = [
@@ -17,7 +18,8 @@ export default function HouseNav() {
   return (
     <header className="house-navigation">
       <Link href="/" className="house-home-link" aria-current={pathname === '/' ? 'page' : undefined}>
-        lecturesfrom<span className="sr-only"> home</span>
+        <Image src="/brand/kit/lockups/lf-lockup-horizontal-white-transparent.svg" width={238} height={66} alt="lecturesfrom home" className="house-nav-logo house-nav-logo-white" priority />
+        <Image src="/brand/kit/lockups/lf-lockup-horizontal-ink-transparent.svg" width={238} height={66} alt="lecturesfrom home" className="house-nav-logo house-nav-logo-ink" />
       </Link>
       <nav aria-label="main navigation">
         {links.map(({ href, label }) => (

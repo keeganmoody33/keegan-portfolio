@@ -61,13 +61,21 @@ export function indexMarkdown(): string {
 
   return `# lecturesfrom
 
-not a studio. a garage.
+i help products find their momentum.
 
-lecturesfrom is keegan moody's independent house in atlanta. i build revenue systems and make tools and objects for creative work.
+i’m keegan moody. when you believe in a product and i do too, i get into the work across product and business. from the first questions to development, customer feedback, iteration, operations, and reaching the right customers.
+
+[talk about your product](mailto:33@lecturesfrom.com) · [see what i’m building](${SITE_URL}/#workbench)
+
+## product decisions. business problems.
+
+i follow the problem across disciplines. what needs to be built, what customers are telling you, what is slowing the team down, and what gives people a reason to choose you.
+
+[how i work](${SITE_URL}/legal)
 
 ${HOUSE_TAGLINE}
 
-## crate
+## on the workbench
 
 ${rows}
 
@@ -155,17 +163,56 @@ export function legalMarkdown(): string {
 
 lecturesfrom LLC · atlanta, georgia · founded 2025
 
-an independent house for revenue systems, creative tools, and physical products. built and run by keegan moody in atlanta.
+## built by hand. made to move.
 
-## sales systems
+lecturesfrom is keegan moody’s independent house for sales systems, software, and records. a place to work on how a business grows and make things worth spending time with.
 
-research, outbound operations, integrations, and workflow automation. the work starts with how a team sells and what is getting in its way.
+## get closer to the work.
 
-## publishing + products
+when you believe in a product and i do too, i want to help it move. i get hands-on with the questions, product development, customer feedback, iteration, operations, and go-to-market.
 
-software, records, printed work, and physical objects. the catalog holds the projects and their current state, with links to the work behind them.
+i work across product and business. that means following the problem wherever it leads: an unfamiliar market, a product decision, a customer’s frustration, or an operation that cannot keep up.
 
-[explore the catalog](${SITE_URL}/catalog)
+the aim is to find what makes the product worth choosing, build on it, and turn that into momentum. the research, the product, and the way it reaches people have to inform each other.
+
+[see the work](${SITE_URL}/keeganmoody33) · [start a conversation](mailto:33@lecturesfrom.com)
+
+## mission
+
+make the path from a good idea to useful work shorter.
+
+## how i work
+
+### learn the real constraints.
+listen to the people doing the work. get specific about what they need, what they have tried, and what keeps breaking.
+
+### make it useful in practice.
+build something a person can understand, use, and keep running. stay close enough to see what happens after handoff.
+
+### keep your own point of view.
+care about the details. make room for experiments, music, and the things that give the work a voice.
+
+## fuel, growth, culture
+
+fuel is curiosity: an unfamiliar market, a record i cannot put down, a problem someone has learned to work around.
+
+growth is turning what we learn into a motion the team can repeat and improve.
+
+culture is the part people bring with them. the taste, care, and point of view should survive the process.
+
+## shoutouts.
+
+to the people and things that have helped along the way. thank you.
+
+- [gtmcafe.com](https://gtmcafe.com/)
+- kellen casebeer
+- gtm engineering school
+- jordan crawford
+- and this entire community.
+
+my dad: an entrepreneur and a hustler. a man of the people. blue collar, hands-on, and creative.
+
+hip hop. god.
 
 ## contact
 

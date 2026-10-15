@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+import styles from './flip.module.css'
+import { validatePublicCredit } from '@/lib/flip/credit.ts'
 
 import {
   useEffect,
@@ -144,6 +146,9 @@ export default function FlipRoom({
   const [submitted, setSubmitted] = useState(stub === 'success')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
+  const [creditOptIn, setCreditOptIn] = useState(false)
+  const [publicName, setPublicName] = useState('')
+  const searchInput = useRef<HTMLInputElement>(null)
   const [smsOptIn, setSmsOptIn] = useState(false)
   const [formError, setFormError] = useState<FormError>(null)
   const [sending, setSending] = useState(false)
@@ -428,6 +433,8 @@ export default function FlipRoom({
       setFormError(contact.error)
       return
     }
+    const credit = validatePublicCredit({ creditOptIn, publicName })
+    if (!credit.ok) { setFormError(credit.error); return }
     const gen = ++requestGen.current
     setSending(true)
     setFormError(null)
@@ -447,6 +454,8 @@ export default function FlipRoom({
           email,
           phone,
           smsOptIn,
+          creditOptIn: credit.creditOptIn,
+          publicName: credit.publicName,
           stub: stub ?? undefined,
         }),
       })
@@ -481,13 +490,15 @@ export default function FlipRoom({
   const busy = looking || searching
 
   return (
-    <div className="mt-10">
-      <form onSubmit={onLookup} className="max-w-xl" aria-controls={resultsId}>
+    <div>
+      <form onSubmit={onLookup} className={styles.search} aria-controls={resultsId}>
         <label className="house-meta" htmlFor="flip-lookup">
           {FLIP_COPY.lookup}
         </label>
-        <div className="relative mt-2">
+        <div className={styles.searchRow}>
+        <div className="relative">
           <input
+            ref={searchInput}
             id="flip-lookup"
             name="q"
             type="text"
@@ -553,23 +564,26 @@ export default function FlipRoom({
             </ul>
           ) : null}
         </div>
+        <button
+          type="submit"
+          className="house-button"
+          disabled={busy}
+          aria-busy={busy}
+        >
+          {busy ? 'finding your song...' : FLIP_COPY.lookupButton}
+        </button>
+        </div>
         <p id={hintId} className="mt-2 font-mono text-[13px] leading-relaxed text-[var(--house-muted)]">
           {FLIP_COPY.lookupHint}
         </p>
         {listOpen && visibleHits.length > 1 ? (
           <p className="mt-2 font-mono text-sm text-[var(--house-dim)]">{FLIP_COPY.pick}</p>
         ) : null}
-        <button
-          type="submit"
-          className="house-button mt-4"
-          disabled={busy}
-          aria-busy={busy}
-        >
-          {busy ? 'finding your song...' : FLIP_COPY.lookupButton}
-        </button>
+
       </form>
 
-      <div id={resultsId} className="house-fade mt-10" aria-live="polite">
+      <div className={song && lookup?.status === 'ok' ? styles.selected : styles.resultState}>
+      <div id={resultsId} className="house-fade min-w-0" aria-live="polite">
         {lookup?.status === 'down' ? (
           <div>
             <p className="font-mono text-sm text-[var(--house-ink)]">{FLIP_COPY.down}</p>
@@ -597,6 +611,8 @@ export default function FlipRoom({
 
         {lookup?.status === 'ok' && song ? (
           <div>
+            <div className={styles.songHeading}><div>
+            <p className="house-meta mb-3">selected recording</p>
             <h2 className="font-display text-2xl font-semibold tracking-[-0.01em] [overflow-wrap:anywhere] sm:text-4xl">
               {song.title}
             </h2>
@@ -604,6 +620,13 @@ export default function FlipRoom({
             {song.year ? (
               <p className="mt-1 font-mono text-[11px] text-[var(--house-dim)]">{song.year}</p>
             ) : null}
+            </div><button type="button" className="house-text-button shrink-0" onClick={() => { onQueryChange(''); searchInput.current?.focus(); searchInput.current?.scrollIntoView({ block: 'center' }) }}>change song</button></div>
+            <div className={styles.preview}>
+              <h3>listen before you send.</h3>
+              <p>find this recording on youtube. check the artist and version, then come back to request your flip.</p>
+              <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${song.artist} ${song.title}`)}`} target="_blank" rel="noopener noreferrer" className="house-button house-button-secondary">find on youtube ↗</a>
+              <p>opens youtube in a new tab.</p>
+            </div>
             {song.isrc ? (
               <p className="mt-3 font-mono text-[11px] text-[var(--house-dim)]">{song.isrc}</p>
             ) : null}
@@ -632,8 +655,9 @@ export default function FlipRoom({
       </div>
 
       {showForm ? (
-        <form onSubmit={onRequest} className="mt-10 max-w-xl">
-          <h2 className="mb-3 font-display text-2xl font-semibold">2. where should the beat go?</h2>
+        <form onSubmit={onRequest} className={styles.request}>
+          <p className="house-meta mb-3">make a request</p>
+          <h2 className="mb-3 font-display text-2xl font-semibold">where should it land?</h2>
           <p id={contactHintId} className="mb-6 font-mono text-[13px] leading-relaxed text-[var(--house-muted)]">
             {FLIP_COPY.contactHint}
           </p>
@@ -678,6 +702,15 @@ export default function FlipRoom({
               {FLIP_COPY.smsOptIn}
             </label>
           ) : null}
+          <label className={styles.credit}>
+            <input type="checkbox" checked={creditOptIn} onChange={event => setCreditOptIn(event.target.checked)} />
+            credit me if you post the finished flip.
+          </label>
+          {creditOptIn && <div className="mt-4">
+            <label htmlFor="flip-public-name" className="house-meta">public name</label>
+            <input id="flip-public-name" name="publicName" type="text" maxLength={60} required autoComplete="nickname" value={publicName} onChange={event => setPublicName(event.target.value)} className={`mt-2 ${fieldClass}`} aria-describedby="flip-credit-preview" />
+            <p id="flip-credit-preview" className="mt-3 font-mono text-sm text-[var(--house-muted)]">{publicName.trim() ? `credit preview: requested by ${publicName.trim()}` : 'choose the name you want shown. your email and phone stay private.'}</p>
+          </div>}
           {formError ? (
             <p id={errorId} className="mt-6 font-mono text-sm text-[var(--house-dim)]" role="alert">
               {formError}
@@ -702,10 +735,18 @@ export default function FlipRoom({
         <div className="mt-10 max-w-xl border border-[var(--house-muted)] p-6" role="status">
           <h2 className="font-display text-2xl font-semibold">your song is in.</h2>
           <p className="mt-3 font-mono text-sm leading-relaxed">{FLIP_COPY.success}</p>
+          <button type="button" className="house-button mt-4 mr-4" onClick={() => { onQueryChange(''); searchInput.current?.focus() }}>pick another song</button>
+          <a href="#requests-filled" className="house-text-button">requests filled ↓</a>
           <Link href="/collection" prefetch={false} className="house-text-button mt-4">keep digging in the records</Link>
         </div>
       ) : null}
 
+      </div>
+      <section id="requests-filled" className={styles.filled}>
+        <h2>requests filled.</h2>
+        <p>the original song, the finished flip, and a little about how it came together.</p>
+        <div className={styles.empty}><p>the first one will live here.</p><a href="#flip-lookup" className="house-text-button">put a song in the queue ↑</a></div>
+      </section>
       <ProductInquiry />
     </div>
   )
